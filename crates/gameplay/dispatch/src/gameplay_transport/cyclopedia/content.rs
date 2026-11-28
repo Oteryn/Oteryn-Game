@@ -1,5 +1,8 @@
 //! W12: discovery membership and POI candidates come from admitted native subarea masks.
 use super::*;
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+use crate::content::{ActiveGeneration, NativeEntryMovementCells};
+use crate::map::boot::{BundleCollisionIndexExt, BundleMap};
 
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
@@ -9,10 +12,18 @@ pub(in crate::gameplay_transport) struct AdmittedArea {
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
 }
-pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<AdmittedArea> {
-    let map = owner.bundle_map()?;
-    admit_at(
-        owner,
+pub(in crate::gameplay_transport) fn admit_entry(
+    active: Option<&ActiveGeneration>,
+    cells: &NativeEntryMovementCells,
+) -> Option<AdmittedArea> {
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return None;
+    };
+    let map = index.map();
+    admit_source(
+        active,
+        cells,
+        map,
         Point {
             x: i32::from(map.entry_start.x),
             y: i32::from(map.entry_start.y),
@@ -20,12 +31,27 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
         },
     )
 }
+
 pub(super) fn admit_at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     start: Point,
 ) -> Option<AdmittedArea> {
+    admit_source(
+        owner.active_generation,
+        owner.movement_cells(),
+        owner.bundle_map()?,
+        start,
+    )
+}
+
+fn admit_source(
+    active: Option<&ActiveGeneration>,
+    cells: &NativeEntryMovementCells,
+    map: &BundleMap,
+    start: Point,
+) -> Option<AdmittedArea> {
     let sampling = BasicArea::embedded()?;
-    let native = owner.active_generation?.native_gameplay()?;
+    let native = active?.native_gameplay()?;
     let index = native.item_index()?;
     for key in [
         "oteryn:item.tibia.i2854",
@@ -35,7 +61,6 @@ pub(super) fn admit_at(
     ] {
         index.revision(key)?;
     }
-    let map = owner.bundle_map()?;
     let table = &map.overlay.base().subareas;
     let (area, subarea) = table.resolve(
         u16::try_from(start.x).ok()?,
@@ -59,7 +84,6 @@ pub(super) fn admit_at(
         {
             return false;
         }
-        let cells = owner.movement_cells();
         cells.index().lookup(
             cells.scope(),
             LogicalCell {

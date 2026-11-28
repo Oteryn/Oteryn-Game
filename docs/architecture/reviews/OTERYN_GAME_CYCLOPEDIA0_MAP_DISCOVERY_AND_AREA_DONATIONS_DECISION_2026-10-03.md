@@ -290,9 +290,11 @@ two title thresholds are derived from the subarea rows and content. None of them
 - **Discoverer outfit.** Charos (NPC-0 dialog) checks the count of fully discovered areas: 10 for
   the outfit, 15 for the first addon, 20 for the second. It grants through the account outfit path
   (D47), and the dialog content ships with the NPC lane.
-- **Raid warning.** For characters with the raid's area at 100%, RAID-1 sends the warning 1 hour
-  ahead and the subarea 15 minutes ahead, but not for an underground raid. This uses the
-  BOSS-RAID-0 announcement path.
+- **Raid warning.** Capability 626 exposes a read-only warning query for characters with the
+  raid's area at 100%. The server returns the area if the first wave of a committed raid is within
+  the next hour, and returns the affected subarea during the last 15 minutes if it reaches ground
+  floor. Native Cyclopedia Map display awaits the client integration. The existing BOSS-RAID-0
+  text announcements continue to use their committed steps.
 - **Creature list.** The client gets the subarea creature list from content (spawn points by
   subarea), plus the character's Bestiary state for silhouettes.
 - **Speed bonus.** This is a movement speed contribution in fully discovered areas that stacks
@@ -438,9 +440,10 @@ the value is set. Nothing is guessed.
 1. **Must decide now?** YES. The owner admitted the system (1a), and its durable shapes (per
    character discovery, per world pools, a new burn cause) must be fixed before any child writes
    state.
-2. **What is blocked?** CYC-CONTENT-1 through CYC-WIRE-1. Also blocked: the Cyclopedia map raid
-   warning that BOSS-RAID-0 deferred, the Improved Respawn Rate factor that CREATURE-AI-0 §6.4
-   defers, the Discoverer outfit and area achievements.
+2. **What was blocked at the time of this decision?** CYC-CONTENT-1 through CYC-WIRE-1,
+   the Improved Respawn Rate factor that CREATURE-AI-0 §6.4 defers, the Discoverer outfit
+   and area achievements. The 2026-11-28 owner decision admits the Cyclopedia map raid
+   warning through capability 626 (§4.5).
 3. **What becomes harder later?** Moving discovery from per character to per account, or pools
    from per world to per channel, after rows exist would need a migration and a fairness ruling.
    Burned donations cannot be refunded, so the pool semantics are final once players donate. The

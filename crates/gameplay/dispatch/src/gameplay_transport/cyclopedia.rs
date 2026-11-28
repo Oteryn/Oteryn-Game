@@ -16,9 +16,11 @@ use sha2::{Digest, Sha256};
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
 #[path = "cyclopedia/content.rs"]
-mod content;
+pub(super) mod content;
 #[path = "cyclopedia/overview.rs"]
 mod overview;
+#[path = "cyclopedia/raid_warnings.rs"]
+mod raid_warnings;
 #[path = "cyclopedia/respawn.rs"]
 mod respawn;
 #[path = "cyclopedia/speed.rs"]
@@ -27,10 +29,11 @@ mod speed;
 mod step;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
+    let warning_id = wire::raid_warnings::CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1;
     let mut offers: Vec<_> = base
         .iter()
         .copied()
-        .filter(|c| c.id != wire::CAPABILITY_CYCLOPEDIA_MAP_V1)
+        .filter(|c| c.id != wire::CAPABILITY_CYCLOPEDIA_MAP_V1 && c.id != warning_id)
         .collect();
     if available {
         let at = offers.partition_point(|c| c.id < wire::CAPABILITY_CYCLOPEDIA_MAP_V1);
@@ -39,6 +42,14 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
             OfferedCapability {
                 id: wire::CAPABILITY_CYCLOPEDIA_MAP_V1,
                 requires: &[],
+            },
+        );
+        let at = offers.partition_point(|c| c.id < warning_id);
+        offers.insert(
+            at,
+            OfferedCapability {
+                id: warning_id,
+                requires: &[wire::CAPABILITY_CYCLOPEDIA_MAP_V1],
             },
         );
     }
@@ -62,7 +73,7 @@ impl CyclopediaPremiumGate for Premium<'_> {
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn cyclopedia_content(&self) -> Option<content::AdmittedArea> {
-        content::admit(self)
+        content::admit_entry(self.active_generation, self.movement_cells())
     }
     pub(super) async fn cyclopedia_wire(
         &self,
@@ -76,6 +87,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
             return self.cyclopedia_atlas_wire(admitted, id, payload).await;
+        }
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY
+            && payload.first() == wire::raid_warnings::QUERY.first()
+        {
+            return raid_warnings::dispatch(self, admitted, id, payload).await;
         }
         self.cyclopedia_basic_wire(admitted, id, kind, payload)
             .await

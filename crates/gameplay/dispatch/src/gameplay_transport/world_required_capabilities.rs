@@ -175,6 +175,29 @@ pub fn with_native_map_presentation_offer(
     set
 }
 
+/// Bind the same qualified Cyclopedia offers as fresh negotiation. Cache only
+/// immutable offer lists, never the result of the per-Channel source check.
+pub fn with_cyclopedia_offer(
+    base: &'static [OfferedCapability],
+    active: Option<&crate::content::ActiveGeneration>,
+    cells: &crate::content::NativeEntryMovementCells,
+) -> &'static [OfferedCapability] {
+    if super::cyclopedia::content::admit_entry(active, cells).is_none() {
+        return base;
+    }
+    type Set = &'static [OfferedCapability];
+    static CACHE: std::sync::Mutex<Vec<(Set, Set)>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+        return set;
+    }
+    let set: Set = Box::leak(super::cyclopedia::offered(base, true).into_boxed_slice());
+    cache.push((base, set));
+    set
+}
+
 /// Filter native-only capabilities once per offer set.
 fn without_native_offers(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
     type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);

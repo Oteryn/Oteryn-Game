@@ -1,0 +1,13 @@
+{
+  "id": 626,
+  "name": "CYCLOPEDIA_RAID_WARNINGS_V1",
+  "owner_decision": "2026-11-28 Cyclopedia advance raid warnings protocol approval",
+  "owner": "World raid scheduler and Character Cyclopedia discovery",
+  "requires": [
+    57
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered alongside the qualified Cyclopedia map. Enables the opt-in command 72 raid-warning query in cyclopedia-basic-v1.md."
+}
