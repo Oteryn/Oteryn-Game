@@ -3,6 +3,48 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_object::*;
 
+fn connection_reset(mut error: &(dyn std::error::Error + 'static)) -> bool {
+    loop {
+        let io =
+            error
+                .downcast_ref::<std::io::Error>()
+                .or_else(
+                    || match error.downcast_ref::<oteryn_dev_client::SessionError>() {
+                        Some(oteryn_dev_client::SessionError::Io(io)) => Some(io),
+                        _ => None,
+                    },
+                );
+        if let Some(io) = io {
+            return io.kind() == std::io::ErrorKind::ConnectionReset;
+        }
+        match error.source() {
+            Some(source) => error = source,
+            None => return false,
+        }
+    }
+}
+
+#[test]
+fn m07_reconnect_classifies_only_typed_connection_resets() {
+    use oteryn_dev_client::{DevClientError, SessionError};
+    use std::io::{Error, ErrorKind};
+
+    for kind in [
+        ErrorKind::ConnectionReset,
+        ErrorKind::BrokenPipe,
+        ErrorKind::TimedOut,
+    ] {
+        let error = DevClientError::Context {
+            phase: "command",
+            elapsed: Duration::ZERO,
+            last_frame: String::new(),
+            source: Box::new(DevClientError::Session(SessionError::Io(Error::from(kind)))),
+        };
+        assert_eq!(connection_reset(&error), kind == ErrorKind::ConnectionReset);
+    }
+    assert!(!connection_reset(&Error::other("Connection reset by peer")));
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::observe(verify_ascent(clients)).await;
@@ -90,10 +132,32 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let mut path = VecDeque::from(path);
     let mut detours = 0;
+    let mut reconnected = false;
     while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let planned = destination(world, from, direction).ok_or("M07 route edge missing")?;
-        let step = client.step(direction).await?;
+        let step = match client.step(direction).await {
+            Ok(step) => step,
+            Err(error) if !reconnected && connection_reset(&error) => {
+                reconnected = true;
+                let lost = client.join_snapshot().game_session_id;
+                evidence(&format!(
+                    "M07_RESET retry=1 phase=approach from={from:?} error={error}"
+                ));
+                drop(client);
+                client =
+                    tokio::time::timeout(Duration::from_secs(180), connect_world(clients, 0xa7))
+                        .await??;
+                if client.join_snapshot().game_session_id == lost
+                    || tile(client.world_spatial().actor_position)? != from
+                {
+                    return Err("M07 reset did not read back the exact pre-step position on a fresh session".into());
+                }
+                path.push_front(direction);
+                continue;
+            }
+            Err(error) => return Err(error.into()),
+        };
         if step.disposition == StepDisposition::Blocked
             && step.world_spatial_delta.is_none()
             && tile(client.world_spatial().actor_position)? == from
@@ -183,7 +247,24 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         use_with_position: None,
     })
     .map_err(|error| format!("M07 rope intent: {error:?}"))?;
-    let result = client.session_mut().world_context_use(&payload).await?;
+    let result = match client.session_mut().world_context_use(&payload).await {
+        Ok(result) => result,
+        Err(error) if !reconnected && connection_reset(&error) => {
+            evidence(&format!(
+                "M07_RESET retry=1 phase=rope-use from={before:?} error={error}"
+            ));
+            drop(client);
+            let fresh =
+                tokio::time::timeout(Duration::from_secs(180), connect_world(clients, 0xa7))
+                    .await??;
+            return Err(format!(
+                "M07 rope result lost after reset: fresh position={:?}; original command outcome and frame unverified",
+                fresh.world_spatial().actor_position,
+            )
+            .into());
+        }
+        Err(error) => return Err(error.into()),
+    };
     let disposition = decode_use_result(&result.payload)
         .map_err(|error| format!("M07 rope result: {error:?}"))?;
     if result.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
