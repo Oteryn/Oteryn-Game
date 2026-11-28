@@ -36,13 +36,14 @@ readonly C06_CASTER_ACCOUNT=01934f10-7c00-7000-8000-00000000001c
 readonly C06_PEER_ACCOUNT=01934f10-7c00-7000-8000-00000000001d
 readonly W18_ACCOUNT=01934f10-7c00-7000-8000-00000000001e
 readonly C01_ACCOUNT=01934f10-7c00-7000-8000-00000000001f
+readonly W17_ACCOUNT=01934f10-7c00-7000-8000-000000000020
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7020-805b-3b1122334420)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "Arena Challenger")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -161,6 +162,22 @@ case "$NODE_BOOT_D150_LEGACY" in
     ;;
   *) blocked invalid_d150_mode ;;
 esac
+w17_row_selected() {
+  python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" "$1" <<'PY_W17_BATCH'
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+start, sep, count = batch.partition(":")
+if not sep or not all(p.removeprefix("+").isascii() and p.removeprefix("+").isdecimal()
+                      and len(p.removeprefix("+").lstrip("0")) <= 20 for p in (start, count)):
+    sys.exit(1)
+start, count = (int(p.removeprefix("+").lstrip("0") or "0") for p in (start, count))
+sys.exit(not (start <= int(sys.argv[2]) < start + count and count < 2**64))
+PY_W17_BATCH
+}
+
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
@@ -170,6 +187,9 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    if [[ ",${selected_groups//[[:space:]]/}," =~ ^,,$|,rows, ]] && w17_row_selected 33; then
+      WORLD_REGIONS+=";125,121"
+    fi
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
@@ -179,7 +199,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W17_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -373,7 +393,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W17_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -395,7 +415,8 @@ def seed(entity, args):
 seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
 row_accounts = {}
 for account in accounts:
-    credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
+    label = "q_w17" if account.endswith("000000000020") else f"nb-{account}"
+    credentials = {"email": f"{label}@example.invalid", "password": secrets.token_urlsafe(48)}
     seed("account", {"accountId": account, **credentials})
     if account.endswith(("000000000016", "00000000001c", "00000000001d")):
         row_accounts[account] = credentials
@@ -1557,6 +1578,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_EXIVA_ACCOUNT_ID=$EXIVA_ACCOUNT_ID")
     test_env+=("NODE_BOOT_F5_C17A_ACCOUNT=$F5_C17A_ACCOUNT" "NODE_BOOT_F5_C17C_ACCOUNT=$F5_C17C_ACCOUNT" "NODE_BOOT_F5_C13_ACCOUNT=$F5_C13_ACCOUNT" "NODE_BOOT_F5_C18A_ACCOUNT=$F5_C18A_ACCOUNT" "NODE_BOOT_F5_C17D_ACCOUNT=$F5_C17D_ACCOUNT")
     test_env+=("NODE_BOOT_C11_UNASSIGNED_ACCOUNT=$C11_UNASSIGNED_ACCOUNT" "NODE_BOOT_C11_KNIGHT_ACCOUNT=$C11_KNIGHT_ACCOUNT" "NODE_BOOT_C12_MONK_ACCOUNT=$C12_MONK_ACCOUNT" "NODE_BOOT_S13_ACCOUNT=$S13_ACCOUNT")
+    test_env+=("NODE_BOOT_W17_ACCOUNT=$W17_ACCOUNT")
     test_env+=("NODE_BOOT_W19A_ACCOUNT=$W19A_ACCOUNT")
     test_env+=("NODE_BOOT_C05_TARGET_ACCOUNT=$C05_TARGET_ACCOUNT")
     test_env+=("NODE_BOOT_S13_PEER_ACCOUNT=$S13_PEER_ACCOUNT")
@@ -1580,22 +1602,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
   local w17_capture="" w17_seam_log=/dev/null
-  local row_batch="${OTERYN_E2E_ROW_BATCH-0:15}"
   if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 &&
         ",${NODE_BOOT_E2E_ONLY:-}," =~ ^,,$|,rows, ]] &&
-     python3 - "$row_batch" <<'PY_W17_BATCH'
-import sys
-
-batch = sys.argv[1]
-if batch == "all":
-    sys.exit(0)
-start, sep, count = batch.partition(":")
-if not sep or not all(p.removeprefix("+").isascii() and p.removeprefix("+").isdecimal()
-                      and len(p.removeprefix("+").lstrip("0")) <= 20 for p in (start, count)):
-    sys.exit(1)
-start, count = (int(p.removeprefix("+").lstrip("0") or "0") for p in (start, count))
-sys.exit(not (start <= 215 < start + count and count < 2**64))
-PY_W17_BATCH
+     w17_row_selected 215
   then
     w17_capture="$(mktemp -d "$WORK/w17-capture.XXXXXX")"
     w17_seam_log="$WORK/w17-seam.log"

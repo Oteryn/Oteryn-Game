@@ -22,9 +22,8 @@
 //! 8. The player logs out, obtains a fresh admission, requests both statuses,
 //!    and re-checks completed rank, claim masks, and Tibiadrome progress.
 //!
-//! The provisioned character is never edited or repositioned out of band. This
-//! phase intentionally stops at the first failed player step and prints that
-//! observed native reply; later steps therefore cannot be mistaken for proven.
+//! The dedicated fixture supplies the starting build, entry fee, and entrance position.
+//! Combat, rank, and reward custody come from the ordinary player commands.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -97,7 +96,7 @@ fn compact(detail: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), run(&mut journey, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(330), run(&mut journey, clients))
         .await
         .unwrap_or_else(|_| Err(format!("step-{}-timeout waiting for native arena reply", journey.completed + 1).into()));
     journey.finish(result);
@@ -145,12 +144,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn arena_entrance(at: TilePos) -> bool {
-    at.floor == -6 && (32220..=32260).contains(&at.x) && (31080..=31105).contains(&at.y)
-}
-
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb7).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W17_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = connect_character(clients, 0xb7, 0).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
         return Err("step-1 selected-capabilities missing arena-v1".into());
     }
@@ -190,99 +187,240 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
 
-    logout(&mut client).await?;
-    drop(client);
-    let mut client = connect_world(clients, 0xb8).await?;
-    let after_relog = command(&mut client, ArenaAction::Status).await?;
-    if after_relog.state != initial.state {
-        return Err(format!(
-            "step-8 fresh-admission arena state mismatch before={initial:?} observed={after_relog:?}"
-        )
-        .into());
-    }
-    let drome_after = drome(&mut client, DromeAction::Status).await?;
-    if drome_after != drome_before {
-        return Err(format!(
-            "step-8 fresh-admission Tibiadrome state mismatch before={drome_before:?} observed={drome_after:?}"
-        )
-        .into());
+    let offsite = command(&mut client, ArenaAction::Enter).await?;
+    if offsite.disposition != ArenaDisposition::WrongState || offsite.state != initial.state {
+        return Err(format!("W17 off-site Enter mutated arena state: {offsite:?}").into());
     }
 
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
-    let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, arena_entrance);
-    if let Some(path) = &path {
-        walk(&mut client, world, path).await?;
+    character_prep::declare_seeded(
+        "W17.full", "knight-level-100,1000-carried-gold,magic-sword,arena-entrance",
+        "travel and build preparation exceed the row budget",
+    );
+    let preparation_session = client.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(preparation_session.as_bytes()), "--profile", "knight".into()).await?;
+    character_prep::grant_item(&client, 3035, 10).await?;
+    character_prep::grant_item(&client, 3288, 1).await?;
+    logout(&mut client).await?;
+    drop(client);
+    wait_character_released(clients, 0).await?;
+    place_at_entrance(clients).await?;
+    let mut client = connect_character(clients, 0xb8, 0).await?;
+    if client.join_snapshot().game_session_id == preparation_session {
+        return Err("W17 fixture admission reused its preparation session".into());
     }
-    let entered = probe_entry(
-        path.is_some(),
-        after_relog.state,
-        command(&mut client, ArenaAction::Enter),
-    ).await?;
-    if entered.disposition != ArenaDisposition::Applied
-        || entered.state.active_rank == 0
-        || entered.state.pit != 1
-        || entered.state.phase != 1
+    assert_position(&client, ENTRANCE)?;
+    let vitals = client.actor_vitals().ok_or("W17 missing derived knight vitals")?;
+    if vitals.max_health != 1565 || vitals.max_mana != 550 {
+        return Err(format!("W17 level-100 knight vitals observed={vitals:?}").into());
+    }
+    let definitions = provisioning::item_index()?;
+    let platinum = provisioning::item_reference(&definitions, 3035)?;
+    let sword = provisioning::item_reference(&definitions, 3288)?;
+    let trophy = provisioning::item_reference(&definitions, 5807)?;
+    if count(&client, platinum)? != 10 || count(&client, trophy)? != 0 {
+        return Err("W17 entry inputs or empty trophy pre-state differ".into());
+    }
+    client.session_mut().equip_item_definition(sword).await?;
+    if !client.inventory().is_some_and(|inventory| inventory.equipment.iter()
+        .any(|slot| slot.item.item_definition_ref == sword))
     {
-        return Err(format!(
-            "step-4 Enter observed={entered:?}; server-needs=reachable-Svargrond-entrance-and-player-earned-1000-gold"
-        ).into());
+        return Err("W17 magic sword did not enter equipment".into());
+    }
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+    let modes = FightModes { fight_mode: FightMode::Offensive, chase: ChaseMode::Chase, secure: true };
+    let fight_mode = client.session_mut().set_fight_modes(&modes).await?;
+    if fight_mode.disposition != AttackIntentDisposition::Ok
+        || client.session_mut().combat_state().is_none_or(|combat| combat.modes != modes)
+    {
+        return Err(format!("W17 offensive chase setup refused: {fight_mode:?}").into());
+    }
+    let ready = command(&mut client, ArenaAction::Status).await?;
+    if ready != initial {
+        return Err(format!("W17 fixture changed arena state: {ready:?}").into());
+    }
+    let entered = command(&mut client, ArenaAction::Enter).await?;
+    check_pit(entered, 1)?;
+    assert_position(&client, pit_position(1))?;
+    if count(&client, platinum)? != 0 {
+        return Err("W17 first entry did not consume exactly ten platinum coins".into());
     }
     journey.pass(4, entered)?;
 
-    // Advance is also the protocol's negative proof that a client cannot forge
-    // a kill. Sending it here is a real first-pit attempt; do not infer victory
-    // merely because entry succeeded.
-    let premature = command(&mut client, ArenaAction::Advance).await?;
-    if premature.disposition == ArenaDisposition::WrongState && premature.state == entered.state {
-        return Err(format!(
-            "step-5 Advance-after-Enter observed={premature:?}; need=credited-arena-opponent-kill-before-Advance"
-        ).into());
+    for pit in 1..=10 {
+        defeat_opponent(&mut client, pit).await?;
+        let victory = command(&mut client, ArenaAction::Status).await?;
+        if victory.disposition != ArenaDisposition::Applied
+            || (victory.state.active_rank, victory.state.pit, victory.state.phase) != (1, pit, 2)
+        {
+            return Err(format!("W17 pit {pit} kill not credited: {victory:?}").into());
+        }
+        let next = command(&mut client, ArenaAction::Advance).await?;
+        if pit < 10 {
+            check_pit(next, pit + 1)?;
+            assert_position(&client, pit_position(pit + 1))?;
+        } else {
+            if next.disposition != ArenaDisposition::Applied
+                || (next.state.completed_rank, next.state.active_rank, next.state.pit, next.state.phase)
+                    != (1, 1, 0, 3)
+            {
+                return Err(format!("W17 final Advance did not complete Greenhorn: {next:?}").into());
+            }
+            assert_position(&client, REWARD_ROOM)?;
+        }
+        evidence(&format!("W17_PIT pit={pit} credited=true next={:?}", next.state));
+        verdict::Harness::global().progress("W17 pit credited");
     }
-    Err(format!("step-5 unexpected Advance-after-Enter observed={premature:?}").into())
+    journey.pass(5, "ten credited Greenhorn opponents")?;
+
+    let claim = ArenaAction::ClaimReward { rank: 1, category: 4, choice: 1 };
+    let claimed = command(&mut client, claim).await?;
+    if claimed.disposition != ArenaDisposition::Applied
+        || claimed.state.claimed_masks != [8, 0, 0]
+        || count(&client, trophy)? != 1
+    {
+        return Err(format!("W17 bronze goblet claim missing: {claimed:?}").into());
+    }
+    let repeated = command(&mut client, claim).await?;
+    if repeated.disposition != ArenaDisposition::AlreadyClaimed
+        || repeated.state != claimed.state || count(&client, trophy)? != 1
+    {
+        return Err(format!("W17 repeat trophy claim mutated custody: {repeated:?}").into());
+    }
+    let left = command(&mut client, ArenaAction::Leave).await?;
+    if left.disposition != ArenaDisposition::Applied
+        || left.state != (ArenaState { completed_rank: 1, claimed_masks: [8, 0, 0], ..ArenaState::default() })
+    {
+        return Err(format!("W17 Leave did not preserve completion and claim: {left:?}").into());
+    }
+    assert_position(&client, ENTRANCE)?;
+    journey.pass(6, left)?;
+    journey.pass(7, drome_enter)?;
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while client.session_mut().combat_state().is_none_or(|state| state.in_fight) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W17 combat lock did not clear after leaving the arena".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, 0xb9, 0).await?;
+    let after = command(&mut fresh, ArenaAction::Status).await?;
+    let drome_after = drome(&mut fresh, DromeAction::Status).await?;
+    if fresh.join_snapshot().game_session_id == session || after != left
+        || drome_after != drome_before || count(&fresh, trophy)? != 1 || count(&fresh, platinum)? != 0
+    {
+        return Err(format!("W17 relog lost arena progress, reward or fee: {after:?}, {drome_after:?}").into());
+    }
+    assert_position(&fresh, ENTRANCE)?;
+    logout(&mut fresh).await?;
+    journey.pass(8, after)
 }
 
-async fn probe_entry(
-    route_found: bool,
-    before: ArenaState,
-    send: impl std::future::Future<Output = TestResult<wire::ArenaResult>>,
-) -> TestResult<wire::ArenaResult> {
-    let reply = send.await?;
-    if !route_found {
-        if reply.disposition != ArenaDisposition::WrongState || reply.state != before {
-            return Err(format!("step-4 off-site Enter expected unchanged WrongState; observed={reply:?} before={before:?}").into());
-        }
-        return Err("step-4 Enter observed=WrongState with unchanged arena state; need=starter route to Svargrond entrance x=32220..32260,y=31080..31105,floor=6".into());
+const ENTRANCE: (i32, i32, i32) = (32251, 31098, 6);
+const REWARD_ROOM: (i32, i32, i32) = (32222, 31080, 6);
+
+fn pit_position(pit: u8) -> (i32, i32, i32) {
+    let (x, y) = oteryn_gameplay_durability::durability::arena_match::donor::CENTERS[usize::from(pit - 1)];
+    (x, y, 7)
+}
+
+fn assert_position(client: &DevClientSession, expected: (i32, i32, i32)) -> TestResult {
+    let actual = client.world_spatial().actor_position;
+    let actual = (actual.x, actual.y, i32::from(actual.floor));
+    if actual != expected {
+        return Err(format!("W17 position expected={expected:?} observed={actual:?}").into());
     }
-    Ok(reply)
+    Ok(())
+}
+
+async fn place_at_entrance(clients: &SeamClients<'_>) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let placed = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=$1::uuid AND world_id=$2::uuid",
+    )
+    .bind(uuid_text(&clients.characters[0]))
+    .bind(uuid_text(&clients.world))
+    .bind(ENTRANCE.0)
+    .bind(ENTRANCE.1)
+    .bind(i16::try_from(ENTRANCE.2)?)
+    .execute(&mut database).await?;
+    database.close().await?;
+    if placed.rows_affected() != 1 {
+        return Err("W17 fixture has no saved position to place".into());
+    }
+    evidence("FIXTURE row=W17.full account=q_w17 position=32251,31098,6");
+    Ok(())
+}
+
+fn count(client: &DevClientSession, key: std::num::NonZeroU32) -> TestResult<u64> {
+    let inventory = client.inventory().ok_or("W17 inventory not visible")?;
+    Ok(inventory.entries.iter()
+        .filter(|item| item.item_definition_ref == key)
+        .map(|item| u64::from(item.count.get())).sum())
+}
+
+fn check_pit(reply: wire::ArenaResult, pit: u8) -> TestResult {
+    if reply.disposition != ArenaDisposition::Applied
+        || (reply.state.active_rank, reply.state.pit, reply.state.phase) != (1, pit, 1)
+        || !(1..=600).contains(&reply.state.remaining_seconds)
+    {
+        return Err(format!("W17 pit {pit} entry did not apply: {reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn defeat_opponent(client: &mut DevClientSession, pit: u8) -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+    let (x, y, floor) = pit_position(pit);
+    let entities = client.world_entities().ok_or("W17 missing entity view")?;
+    let opponents: Vec<_> = entities.iter().filter(|entity| {
+        entity.kind == EntityKind::Creature && entity.position.x == x
+            && entity.position.y == y + 2 && i32::from(entity.position.floor) == floor
+    }).collect();
+    let [target] = opponents.as_slice() else {
+        return Err(format!("W17 pit {pit} expected one opponent, observed={opponents:?}").into());
+    };
+    if !matches!(target.detail, EntityDetail::Actor { health_percent: 100, .. }) {
+        return Err(format!("W17 pit {pit} opponent did not start at full health: {target:?}").into());
+    }
+    let id = target.entity;
+    let attack = client.session_mut().attack_target(Some(&id)).await?;
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("W17 pit {pit} attack refused: {attack:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("W17 pit {pit} opponent {id:?} did not die").into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        if client.take_events().iter().any(|event| {
+            matches!(event, oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta)
+                if delta.value.leave.contains(&id))
+        }) {
+            break;
+        }
+    }
+    if client.world_entities().is_none_or(|entities| entities.get(&id).is_some()) {
+        return Err(format!("W17 pit {pit} opponent {id:?} still present").into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn review_regression_missing_route_still_sends_enter() -> TestResult {
-        let mut sent = false;
-        let state = ArenaState::default();
-        let reply = wire::ArenaResult { disposition: ArenaDisposition::WrongState, state };
-        let result = probe_entry(false, state, async {
-            sent = true;
-            Ok(reply)
-        }).await;
-        assert!(sent);
-        assert!(result.err().is_some_and(|error| error.to_string().contains("observed=WrongState")));
-        assert_eq!(probe_entry(true, state, async { Ok(reply) }).await?, reply);
-        Ok(())
+    #[test]
+    fn wrong_state_does_not_satisfy_arena_entry() {
+        let reply = wire::ArenaResult { disposition: ArenaDisposition::WrongState, state: ArenaState::default() };
+        assert!(check_pit(reply, 1).is_err());
     }
-
 
     #[test]
     fn journey_regression_names_the_first_unobserved_arena_step() {
