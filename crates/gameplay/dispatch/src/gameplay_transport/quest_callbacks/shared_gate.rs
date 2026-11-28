@@ -43,6 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 paid_arrivals: Vec::new(),
                 flame: None,
                 ingress_settled: false,
+                nest_spawn: None,
                 participants: Vec::new(),
                 projection_target: None,
                 flame_effect_sent: false,
