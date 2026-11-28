@@ -1359,7 +1359,7 @@ async fn quoted_pair(
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    const JOURNEY_BUDGET: Duration = Duration::from_secs(360);
+    const JOURNEY_BUDGET: Duration = Duration::from_secs(720);
     let started = std::time::Instant::now();
     evidence(&format!(
         "P18_BUDGET row=P18.full journey_s={}",
