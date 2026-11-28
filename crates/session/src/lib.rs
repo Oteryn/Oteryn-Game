@@ -20,6 +20,28 @@
 #[cfg(feature = "test-support")]
 pub mod test_support {
     pub use oteryn_protocol_oteryn as wire;
+
+    tokio::task_local! {
+        pub(crate) static INBOUND_FRAMES: std::cell::RefCell<Vec<Vec<u8>>>;
+    }
+
+    /// Number of complete envelopes in the current qualification capture.
+    pub fn captured_frame_count() -> usize {
+        INBOUND_FRAMES.with(|frames| frames.borrow().len())
+    }
+
+    /// Record complete inbound envelopes for one qualification exchange.
+    pub async fn capture_inbound<T>(
+        exchange: impl std::future::Future<Output = T>,
+    ) -> (T, Vec<Vec<u8>>) {
+        INBOUND_FRAMES
+            .scope(Default::default(), async {
+                let result = exchange.await;
+                let frames = INBOUND_FRAMES.with(|frames| frames.take());
+                (result, frames)
+            })
+            .await
+    }
 }
 
 /// Account achievement query and typed result.

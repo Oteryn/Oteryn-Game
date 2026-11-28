@@ -7,6 +7,7 @@
 //! `tools/dev-client/src/lib.rs::DevClientSession::inventory`).
 use super::*;
 use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+use oteryn_dev_client::native_session as native;
 use oteryn_protocol_oteryn::item_view as items;
 
 const ENERGY_RING: u32 = 3051;
@@ -48,34 +49,22 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     let handle = ring.handle;
     let slot = items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring);
-    let delta = move_ring(&mut client, handle, slot).await?;
+    let delta = move_ring(client.session_mut(), handle, slot).await?;
     verify_active_ring(&delta.value, active)?;
     logout(client).await?;
 
-    let mut client = connect_character(clients, 0xb4, 0).await?;
-    let handle = verify_active_ring(
-        client
-            .inventory()
-            .ok_or("i05-initial-equipped-inventory-missing")?,
-        active,
-    )?;
-    let removed = move_ring(
-        &mut client,
-        handle,
-        items::ItemMoveDestination::MainBackpack,
-    )
-    .await?;
-    if equipped_ring(&removed.value).is_some()
-        || !removed.value.entries.iter().any(|item| {
-            item.handle == handle && item.item_definition_ref == base && item.count.get() == 1
-        })
-    {
-        return Err("i05-unequip-did-not-restore-base-ring".into());
-    }
-    let delta = move_ring(&mut client, handle, slot).await?;
-    verify_active_ring(&delta.value, active)?;
-    let payload = items::encode_character_inventory_with_equip_drop(&delta.value, true)
-        .map_err(|error| format!("i05-capture-encode:{error:?}"))?;
+    let (live, frames) = native::test_support::capture_inbound(async {
+        let mut client = connect_character(clients, 0xb4, 0).await?;
+        let session = client.session_mut();
+        let id = session.join_snapshot().game_session_id;
+        let handle = unequip(session, base, active).await?;
+        let split = native::test_support::captured_frame_count();
+        let delta = move_ring(session, handle, slot).await?;
+        verify_active_ring(&delta.value, active)?;
+        Ok::<_, Box<dyn std::error::Error>>((client, id, delta.server_sequence, split))
+    })
+    .await;
+    let (client, id, sequence, split) = live?;
     logout(client).await?;
 
     let client = connect_character(clients, 0xb5, 0).await?;
@@ -86,13 +75,15 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         active,
     )?;
     logout(client).await?;
-    write_capture(
-        &payload,
-        &format!(
-            "{} 1 {} {} {}\n",
-            active, delta.base_revision, delta.new_revision, delta.server_sequence
-        ),
-    )?;
+    replay(
+        clients.characters[0],
+        id,
+        sequence,
+        (frames, split),
+        base,
+        active,
+    )
+    .await?;
     evidence("I05_CLIENT_CHECK PASS observed=base-to-active+active-to-base+active-after-relog");
     Ok(())
 }
@@ -115,14 +106,13 @@ fn verify_active_ring(
     Ok(ring.item.handle)
 }
 
-async fn move_ring(
-    client: &mut oteryn_dev_client::DevClientSession,
+async fn move_ring<S: native::SessionStream>(
+    client: &mut native::Session<S>,
     source: items::ItemHandle,
     destination: items::ItemMoveDestination,
 ) -> TestResult<oteryn_dev_client::AppliedDelta<items::CharacterInventory>> {
     client.take_events();
     let moved = client
-        .session_mut()
         .move_item_counted(MoveRequest {
             source,
             destination,
@@ -158,16 +148,94 @@ async fn logout(mut client: oteryn_dev_client::DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn write_capture(payload: &[u8], expected: &str) -> TestResult {
+async fn unequip<S: native::SessionStream>(
+    session: &mut native::Session<S>,
+    base: std::num::NonZeroU32,
+    active: std::num::NonZeroU32,
+) -> TestResult<items::ItemHandle> {
+    let handle = verify_active_ring(
+        session
+            .inventory()
+            .ok_or("i05-initial-equipped-inventory-missing")?,
+        active,
+    )?;
+    let removed = move_ring(session, handle, items::ItemMoveDestination::MainBackpack).await?;
+    if equipped_ring(&removed.value).is_some()
+        || !removed.value.entries.iter().any(|item| {
+            item.handle == handle && item.item_definition_ref == base && item.count.get() == 1
+        })
+    {
+        return Err("i05-unequip-did-not-restore-base-ring".into());
+    }
+    Ok(handle)
+}
+
+async fn replay(
+    character: [u8; 16],
+    id: oteryn_protocol_oteryn::GameSessionId,
+    sequence: u64,
+    capture_frames: (Vec<Vec<u8>>, usize),
+    base: std::num::NonZeroU32,
+    active: std::num::NonZeroU32,
+) -> TestResult {
     use std::io::Write as _;
 
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
-    let path = Path::new(&path);
-    let mut inventory_file = std::fs::File::create_new(path.join("i05-inventory.bin"))?;
-    let mut expected_file = std::fs::File::create_new(path.join("i05-expected.txt"))?;
-    inventory_file.write_all(payload)?;
-    expected_file.write_all(expected.as_bytes())?;
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+    let path = root.join(format!("i05-{}.wire", uuid_text(id.as_bytes())));
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    let mut capture = options.open(&path)?;
+    let (frames, split) = capture_frames;
+    let mut boundary = 0;
+    for (index, frame) in frames.into_iter().enumerate() {
+        if index == split {
+            boundary = usize::try_from(std::io::Seek::stream_position(&mut capture)?)?;
+        }
+        capture.write_all(&(u32::try_from(frame.len())?).to_be_bytes())?;
+        capture.write_all(&frame)?;
+    }
+    if boundary == 0 {
+        return Err("i05-capture-missing-move-boundary".into());
+    }
+    drop(capture);
+    let bytes = std::fs::read(&path)?;
+    let (stream, mut peer) = tokio::io::duplex(bytes.len().max(65_536));
+    use tokio::io::AsyncWriteExt as _;
+    peer.write_all(&bytes[..boundary]).await?;
+    let mut session = native::Session::admit(
+        stream,
+        native::Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: oteryn_protocol_oteryn::CharacterId::decode(&character)?,
+            admission_material: b"i05-local-replay",
+            client_build_id: "oteryn-dev-client/world-qualification",
+            supported_capabilities: native::CLIENT_SUPPORTED_CAPABILITIES,
+            deadline: Duration::from_secs(5),
+        },
+    )
+    .await?;
+    if session.join_snapshot().game_session_id != id {
+        return Err("i05-replay-session-mismatch".into());
+    }
+    let handle = unequip(&mut session, base, active).await?;
+    peer.write_all(&bytes[boundary..]).await?;
+    let delta = move_ring(
+        &mut session,
+        handle,
+        items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
+    )
+    .await?;
+    verify_active_ring(&delta.value, active)?;
+    if delta.server_sequence != sequence {
+        return Err("i05-replay-sequence-mismatch".into());
+    }
+    evidence(&format!(
+        "I05_REPLAY session={} sequence={sequence} status=PASS",
+        uuid_text(id.as_bytes())
+    ));
     Ok(())
 }

@@ -98,13 +98,6 @@ async fn replay() -> Result<(), BoxError> {
 }
 
 fn fixture() -> Result<(Vec<u8>, String), BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok((
-            std::fs::read(path.join("i05-inventory.bin"))?,
-            std::fs::read_to_string(path.join("i05-expected.txt"))?,
-        ));
-    }
     let inventory = CharacterInventory {
         equipment: vec![item_view::EquippedItem {
             slot: item_view::EquipmentSlot::Ring,
