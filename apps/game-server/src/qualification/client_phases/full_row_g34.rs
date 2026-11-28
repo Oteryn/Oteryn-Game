@@ -6,7 +6,7 @@
 //! before logout and after fresh admission.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::CommandStatus;
+use oteryn_protocol_oteryn::{CommandStatus, npc_service as wire};
 use sqlx::Connection;
 
 const NPC: &str = "oteryn:npc.hanna";
@@ -92,6 +92,16 @@ async fn track_value(clients: &SeamClients<'_>, track: &str) -> TestResult<Optio
     Ok(value)
 }
 
+fn receipt_effect_matches(keys: &[String], before: &[i64], after: &[i64], completes: bool) -> bool {
+    !completes
+        && keys.len() == TRACKS.len()
+        && TRACKS
+            .iter()
+            .all(|track| keys.iter().any(|key| key == track))
+        && before == [0, 0]
+        && after == [1, 1]
+}
+
 /// Identify the single command receipt bound to the track’s exact before and after values.
 async fn bound_receipt(
     clients: &SeamClients<'_>,
@@ -101,8 +111,10 @@ async fn bound_receipt(
     command: u64,
 ) -> TestResult<Option<String>> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let receipts: Vec<String> = sqlx::query_scalar(
-        "SELECT concat_ws(':', r.cause_id, r.cause_ordinal, r.committed_character_revision) \
+    type ReceiptRow = (String, Vec<String>, Vec<i64>, Vec<i64>, bool);
+    let receipts: Vec<ReceiptRow> = sqlx::query_as(
+        "SELECT concat_ws(':', r.cause_id, r.cause_ordinal, r.committed_character_revision), \
+                r.track_keys, r.values_before, r.values_after, r.completes \
          FROM game_character_quest_receipts r \
          JOIN game_character_quest_tracks t ON t.character_id = r.character_id AND t.track_key = $2 \
          WHERE r.character_id = encode($1, 'hex')::uuid \
@@ -126,7 +138,14 @@ async fn bound_receipt(
     database.close().await?;
     match receipts.as_slice() {
         [] => Ok(None),
-        [receipt] => Ok(Some(receipt.clone())),
+        [(identity, keys, before, after, completes)] => {
+            if !receipt_effect_matches(keys, before, after, *completes) {
+                return Err(format!(
+                    "step=receipt;observed=unexpected-effects;keys={keys:?};before={before:?};after={after:?};completes={completes}"
+                ).into());
+            }
+            Ok(Some(identity.clone()))
+        }
         _ => Err(format!(
             "track={track};expected=one-bound-receipt;observed={}",
             receipts.len()
@@ -144,13 +163,22 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn conversation_batch_matches(
+    replies: &[wire::NpcConversation],
+    actor: oteryn_dev_client::EntityRef,
+    expected_line: &str,
+) -> bool {
+    matches!(replies, [reply]
+        if reply.open == Some((actor, wire::NpcConversationState::Open))
+            && dialogue_matches(&reply.lines, expected_line))
+}
+
 async fn talk(
     client: &mut DevClientSession,
     actor: oteryn_dev_client::EntityRef,
     text: &str,
     expected_line: &str,
 ) -> TestResult<u64> {
-    use oteryn_protocol_oteryn::npc_service as wire;
     client.take_events();
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: actor,
@@ -173,24 +201,22 @@ async fn talk(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(delta) = client
+        let replies: Vec<_> = client
             .take_events()
             .into_iter()
-            .find_map(|event| match event {
+            .filter_map(|event| match event {
                 SessionEvent::NpcConversation(delta)
                     if delta.server_sequence > reply.server_sequence =>
                 {
-                    Some(delta)
+                    Some(delta.value)
                 }
                 _ => None,
             })
-        {
-            if delta.value.open != Some((actor, wire::NpcConversationState::Open))
-                || !dialogue_matches(&delta.value.lines, expected_line)
-            {
+            .collect();
+        if !replies.is_empty() {
+            if !conversation_batch_matches(&replies, actor, expected_line) {
                 return Err(format!(
-                    "step=reply;npc={NPC};keyword={text};observed={:?};expected={expected_line:?}",
-                    delta.value
+                    "step=reply;npc={NPC};keyword={text};observed={replies:?};expected={expected_line:?}"
                 )
                 .into());
             }
@@ -207,7 +233,6 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    use oteryn_protocol_oteryn::npc_service as wire;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -386,6 +411,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let expected_greeting = greeting(&fresh)?;
     talk(&mut fresh, actor, "hi", &expected_greeting).await?;
     talk(&mut fresh, actor, "hat", RETURN_PROMPT).await?;
+    require_hat_ungranted(clients).await?;
     for ((track, prior), committed) in TRACKS.into_iter().zip(before).zip(committed_receipts) {
         let value = track_value(clients, track).await?;
         let receipt = bound_receipt(
@@ -436,5 +462,44 @@ mod tests {
             ));
         }
         assert!(dialogue_matches(&[RETURN_PROMPT.into()], RETURN_PROMPT));
+    }
+    #[test]
+    fn receipt_rejects_extra_tracks_and_premature_completion() {
+        let mut keys = TRACKS.map(str::to_owned).to_vec();
+        assert!(receipt_effect_matches(&keys, &[0, 0], &[1, 1], false));
+        assert!(!receipt_effect_matches(&keys, &[0, 0], &[1, 1], true));
+        keys.push("unexpected-track".into());
+        assert!(!receipt_effect_matches(
+            &keys,
+            &[0, 0, 0],
+            &[1, 1, 1],
+            false
+        ));
+    }
+
+    #[test]
+    fn conversation_batch_rejects_conflicting_followup() {
+        let actor = oteryn_dev_client::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let correct = wire::NpcConversation {
+            open: Some((actor, wire::NpcConversationState::Open)),
+            lines: vec![RETURN_PROMPT.into()],
+        };
+        assert!(conversation_batch_matches(
+            std::slice::from_ref(&correct),
+            actor,
+            RETURN_PROMPT
+        ));
+        let conflict = wire::NpcConversation {
+            lines: vec![PROMPT.into()],
+            ..correct.clone()
+        };
+        assert!(!conversation_batch_matches(
+            &[correct, conflict],
+            actor,
+            RETURN_PROMPT
+        ));
     }
 }
