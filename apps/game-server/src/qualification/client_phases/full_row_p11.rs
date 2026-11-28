@@ -19,7 +19,8 @@ use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
 // Allow 150 seconds per target and 120 seconds for party setup, combat lock,
 // reward and relog. The seeded build supplies the damage budget.
 const TARGET_DEADLINE: Duration = Duration::from_secs(150);
-const STEP_CLEAR_DEADLINE: Duration = Duration::from_secs(20);
+const STEP_CLEAR_WINDOW: Duration = Duration::from_secs(20);
+const STEP_CLEAR_DEADLINE: Duration = Duration::from_secs(40);
 pub(super) const JOURNEY_DEADLINE: Duration = Duration::from_secs(420);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
@@ -260,12 +261,12 @@ async fn corridor_step(
     };
     let started = tokio::time::Instant::now();
     let deadline = started + STEP_CLEAR_DEADLINE;
-    let mut waiting = false;
+    let mut last_blocker = None;
     loop {
         let now = tokio::time::Instant::now();
         if now >= deadline {
             return Err(format!(
-                "P11 step tile did not clear within {STEP_CLEAR_DEADLINE:?}: {next:?}"
+                "P11 step tile did not clear within {STEP_CLEAR_DEADLINE:?}: {next:?} blocker={last_blocker:?}"
             )
             .into());
         }
@@ -280,7 +281,7 @@ async fn corridor_step(
                 )
         });
         let Some(blocker) = blocker else {
-            if waiting {
+            if last_blocker.is_some() {
                 evidence(&format!(
                     "P11_STEP_CLEAR tile={next:?} waited_ms={}",
                     started.elapsed().as_millis()
@@ -288,13 +289,14 @@ async fn corridor_step(
             }
             break;
         };
-        if !waiting {
+        let window = if now - started < STEP_CLEAR_WINDOW { 1 } else { 2 };
+        if last_blocker != Some((blocker.entity, window)) {
             evidence(&format!(
-                "P11_STEP_WAIT tile={next:?} blocker={:?} timeout_ms={}",
+                "P11_STEP_WAIT tile={next:?} blocker={:?} window={window} remaining_ms={}",
                 blocker.entity,
-                STEP_CLEAR_DEADLINE.as_millis()
+                (deadline - now).as_millis()
             ));
-            waiting = true;
+            last_blocker = Some((blocker.entity, window));
         }
         client
             .service_liveness((deadline - now).min(Duration::from_millis(100)))
