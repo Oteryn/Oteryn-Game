@@ -193,7 +193,7 @@ pub(super) async fn reconcile(
     assert_eq!(fences, 7);
     if matches!(snapshot, Snapshot::Fenced) {
         assert_eq!(reservations(harness).await?, (1, 1, 1, 4));
-        sqlx::raw_sql(include_str!("../../../../../../../apps/game-server/migrations/3300_store_restore_reservations.sql"))
+        sqlx::raw_sql(include_str!("../../../../../../../apps/game-server/migrations/3351_store_restore_reservations.sql"))
             .execute(&harness.pool).await?;
     }
     if let Some((request, answer)) = late {
