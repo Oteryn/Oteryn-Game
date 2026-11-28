@@ -2,6 +2,16 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
+    /// Waits for the server's clean EOF after an accepted logout without writing to the stream.
+    pub async fn observe_logout_close(&mut self) -> Result<(), SessionError> {
+        bounded(
+            self.deadline,
+            "logout transport close",
+            expect_clean_eof(&mut self.stream),
+        )
+        .await
+    }
+
     /// Reads the next non-probe frame, requires it to be `expected`, and requires its
     /// `server_sequence` to be exactly the last applied one plus one. Returns that sequence and
     /// the frame's payload.
@@ -63,5 +73,42 @@ impl<S: SessionStream> Session<S> {
         }
         self.last_server_sequence = expected_sequence;
         Ok(expected_sequence)
+    }
+}
+
+async fn expect_clean_eof(stream: &mut impl SessionStream) -> Result<(), SessionError> {
+    use tokio::io::AsyncReadExt;
+    let mut byte = [0];
+    if stream.read(&mut byte).await? != 0 {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "server sent data after accepted logout",
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod logout_close_tests {
+    use super::*;
+    use tokio::io::AsyncWriteExt;
+
+    #[tokio::test]
+    async fn logout_close_rejects_open_stream_and_trailing_data() -> Result<(), SessionError> {
+        let (mut client, mut server) = tokio::io::duplex(8);
+        assert!(
+            bounded(
+                Duration::from_millis(10),
+                "close",
+                expect_clean_eof(&mut client)
+            )
+            .await
+            .is_err()
+        );
+        server.write_all(&[1]).await?;
+        assert!(expect_clean_eof(&mut client).await.is_err());
+        server.shutdown().await?;
+        expect_clean_eof(&mut client).await
     }
 }

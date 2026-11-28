@@ -1,6 +1,6 @@
 //! S09 live protection-zone logout, persisted position, release and original reply replay.
 use super::*;
-use oteryn_protocol_oteryn::logout::LogoutResult;
+use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, logout::LogoutResult};
 use std::io::Write;
 
 type SavedPosition = (i32, i32, i16, String, String);
@@ -67,6 +67,99 @@ fn bound_frame<'a>(contents: &'a [u8], binding: &[u8], original: &[u8]) -> TestR
         .ok_or_else(|| "S09 replay capture binding or frame mismatch".into())
 }
 
+async fn walk_s09(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("S09 planned step has no landing")?;
+        let step = client.step_retrying(direction).await?;
+        if step.disposition != StepDisposition::Moved
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "step=move from={before:?} expected={expected:?} observed={step:?}"
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+async fn establish_combat(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let outside = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    })
+    .ok_or("S09 has no route outside protection")?;
+    walk_s09(client, world, &outside).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let rat = parse_spawned_entity(&request_spawn(session, "oteryn:creature.rat".into()).await?)?;
+    let visible_by = tokio::time::Instant::now() + Duration::from_secs(5);
+    let position = loop {
+        if let Some(entity) = client.world_entities().and_then(|view| view.get(&rat)) {
+            if entity.kind != oteryn_dev_client::EntityKind::Creature {
+                return Err("S09 spawned Rat was not a creature".into());
+            }
+            break tile(entity.position)?;
+        }
+        if tokio::time::Instant::now() >= visible_by {
+            return Err("S09 spawned Rat never entered the entity view".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
+    let approach = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| {
+            at.floor == position.floor
+                && u32::from(at.x.abs_diff(position.x)) + u32::from(at.y.abs_diff(position.y)) == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        },
+        |at| at != position,
+    )
+    .ok_or("S09 has no unprotected approach to the Rat")?;
+    walk_s09(client, world, &approach).await?;
+    let attack = client.session_mut().attack_target(Some(&rat)).await?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step=attack observed={attack:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    while !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.in_fight && state.target == Some(rat))
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("S09 Rat fight did not establish a combat lock".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let clear = client.session_mut().attack_target(None).await?;
+    if clear.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step=clear-rat observed={clear:?}").into());
+    }
+    Ok(())
+}
+
+fn require_combat_lock(in_fight: bool) -> TestResult {
+    if !in_fight {
+        return Err("S09 protection-zone logout requires an active combat lock".into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let root =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S09 requires a fresh capture directory")?;
@@ -87,20 +180,14 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         y: 32238,
         floor: -7,
     };
-    let plan = route(world, start, |at| {
+    establish_combat(&mut client, world).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let plan = route(world, from, |at| {
         at != start && at != default && is_logout_rest_tile(world, at)
     })
     .ok_or("S09 has no route to a distinct authored logout tile")?;
-    let mut target = start;
-    for direction in plan {
-        target = destination(world, target, direction).ok_or("S09 planned step has no landing")?;
-        let step = client.step(direction).await?;
-        if step.disposition != StepDisposition::Moved
-            || tile(client.world_spatial().actor_position)? != target
-        {
-            return Err(format!("step=move expected={target:?} observed={step:?}").into());
-        }
-    }
+    walk_s09(&mut client, world, &plan).await?;
+    let target = tile(client.world_spatial().actor_position)?;
     if target == start || target == default || !is_logout_rest_tile(world, target) {
         return Err(format!("step=pz tile={target:?}").into());
     }
@@ -118,10 +205,17 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     }
     let session = client.join_snapshot().game_session_id;
     let command = client.next_command_id();
+    require_combat_lock(
+        client
+            .session_mut()
+            .combat_state()
+            .is_some_and(|state| state.in_fight),
+    )?;
     let (outcome, frame) = client.session_mut().logout_with_frame().await?;
     if outcome.status != CommandStatus::Accepted || outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed {outcome:?}").into());
     }
+    client.session_mut().observe_logout_close().await?;
     let lease = terminal_lease(clients, &mut db, session.as_bytes()).await?;
     let saved = saved_position(clients, &mut db).await?;
     require_logout_save(expected, &lease, &before, &saved)?;
@@ -143,6 +237,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err(format!("step=relog-logout observed {cleanup:?}").into());
     }
 
+    fresh.session_mut().observe_logout_close().await?;
     terminal_lease(clients, &mut db, fresh_session.as_bytes()).await?;
 
     let binding = format!(
@@ -163,7 +258,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err(format!("step=replay original={outcome:?} decoded={decoded:?}").into());
     }
     Ok(format!(
-        "logout=Accepted release=terminal saved={target:?} replay=PASS"
+        "logout=Accepted combat_lock=active server_close=clean release=terminal saved={target:?} replay=PASS"
     ))
 }
 
@@ -190,6 +285,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_logout_without_an_active_combat_lock() -> TestResult {
+        assert!(require_combat_lock(false).is_err());
+        require_combat_lock(true)
+    }
 
     #[test]
     fn rejects_unsaved_default_unchanged_and_prior_lease_positions() -> TestResult {
