@@ -788,7 +788,7 @@ def build_dragon_corpse(root=ROOT):
             0,
             594,
             (3457, 5710, 9594, 9596, 9598),
-            [storage("s2/shoveled", 0, 1)],
+            [storage("s1", 1, 1, True), storage("s2/shoveled", 0, 1)],
         ),
         *(
             (
@@ -799,7 +799,7 @@ def build_dragon_corpse(root=ROOT):
                 1,
                 3651,
                 (3453, 9596),
-                [storage("s2/shoveled", 1, 1, True), storage("s2", 0, 1)],
+                [storage("s1", 1, 1, True), storage("s2", 0, 1)],
             )
             for x in range(32170, 32173)
         ),
@@ -838,7 +838,7 @@ def build_dragon_corpse(root=ROOT):
                 "recipe_sha256": hashlib.sha256(raw).hexdigest(),
                 "tracks": [
                     {"key": prefix + t, "initial": 0, "minimum": 0, "maximum": 1}
-                    for t in ("s2", "s2/shoveled")
+                    for t in ("s1", "s2", "s2/shoveled")
                 ],
                 "stages": stages,
                 "sources": [path + ":s2", wiki],

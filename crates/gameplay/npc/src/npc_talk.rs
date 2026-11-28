@@ -49,6 +49,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/outfit-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-quest-rewards.json"),
     include_str!("../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
@@ -1489,6 +1490,17 @@ fn start<K: Copy + PartialEq>(
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn classic_reward_contacts_use_their_authored_messages() -> Result<(), &'static str> {
+        let trooper = reward_messages("oteryn:npc.gnome_trooper").ok_or("Gnome Trooper")?;
+        assert_eq!(trooper.greet, "Greetings, |PLAYERNAME|.");
+        for key in ["gnomargery", "gnombold", "gnomilly", "gnommander"] {
+            let messages = reward_messages(&format!("oteryn:npc.{key}")).ok_or(key)?;
+            assert_eq!(messages.farewell, "Good bye, |PLAYERNAME|.");
+        }
+        Ok(())
+    }
 
     #[test]
     fn m04_native_terminal_npcs_have_talk_entries_without_static_keyword_authority()

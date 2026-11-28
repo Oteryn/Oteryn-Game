@@ -184,3 +184,36 @@ fn terrain_use_rejects_conflicting_or_overflowing_storage_modes() -> Result<(), 
     }
     Ok(())
 }
+
+#[test]
+fn dragon_corpse_tools_require_cave_entry_and_wheat_accepts_a_shared_hole() -> Result<(), String> {
+    use crate::quest::{QuestRefusal, loader};
+    use std::collections::BTreeMap;
+
+    let loaded = loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let prefix = "oteryn:quest-progress/chosen-source/dragon_corpse_quest/";
+    let entered = BTreeMap::from([(format!("{prefix}s1"), 1)]);
+    for (tool, credit) in [
+        ("shovel", "s2/shoveled"),
+        ("scythe-32170", "s2"),
+        ("scythe-32171", "s2"),
+        ("scythe-32172", "s2"),
+    ] {
+        let key = format!("oteryn:quest-terrain-use/dragon-corpse-{tool}");
+        let transition = catalogue.transition(&key).ok_or(&key)?;
+        assert_eq!(
+            catalogue.evaluate(transition, &BTreeMap::new(), 0),
+            Err(QuestRefusal::StageMismatch),
+        );
+        let changes = catalogue
+            .evaluate(transition, &entered, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track == format!("{prefix}{credit}") && change.after == 1)
+        );
+    }
+    Ok(())
+}

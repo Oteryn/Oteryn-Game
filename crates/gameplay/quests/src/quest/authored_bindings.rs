@@ -446,6 +446,14 @@ impl Bindings {
             if let Some(previous) = base.hashes.get(&quest.quest) {
                 digest.update(previous);
             }
+            let stampede_predecessor = stampede_pre_refresh_binding(quest)
+                .map(|previous| serde_json::to_vec(&previous))
+                .transpose()
+                .map_err(|error| error.to_string())?
+                .map(|bytes| super::NpcDefinitionPredecessor {
+                    hash: digest.clone().chain_update(bytes).finalize().into(),
+                    defaults: Default::default(),
+                });
             digest.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
             *before = digest.finalize().into();
             if matches!(
@@ -492,6 +500,11 @@ impl Bindings {
                 catalogue.npc_legacy.remove(&quest.quest);
             }
             catalogue.predecessors.remove(&quest.quest);
+            if let Some(previous) = stampede_predecessor {
+                catalogue
+                    .predecessors
+                    .insert(quest.quest.clone(), vec![previous]);
+            }
             // The first Threatened Dreams bindings extend the published NPC
             // route. Shared-track and transition validation above preserves its
             // original state and defaults, including in-progress characters.
@@ -546,6 +559,39 @@ impl Bindings {
                 _ => None,
             })
     }
+}
+
+// World and reward transitions exclude citations from their effect hashes. Only the
+// serialized authored binding changed when the Stampede region citation was refreshed.
+fn stampede_pre_refresh_binding(quest: &BoundQuest) -> Option<BoundQuest> {
+    const CURRENT: &str = "content/world/placements/region-z07-x128-y127.b3:sha256:d573663d82fd23e3b8a80a4ff5eff3649ed5fc679101322486a1e7caabdc1270";
+    const PREVIOUS: &str = "content/world/placements/region-z07-x128-y127.b3:sha256:efe19bb99a5dc32cdf68813184f9965f3c3e2fa3500be021fdc9207e2ff96faa";
+    if quest.quest != "oteryn:quest.stampede_mini_world_change" {
+        return None;
+    }
+    let mut previous = quest.clone();
+    let [entry, _, collector] = previous.stages.as_mut_slice() else {
+        return None;
+    };
+    let (
+        Trigger::StepIn { callback: world },
+        Trigger::NpcDialogue {
+            callback: reward, ..
+        },
+    ) = (&mut entry.trigger, &mut collector.trigger)
+    else {
+        return None;
+    };
+    for sources in [
+        &mut previous.sources,
+        &mut world.sources,
+        &mut reward.sources,
+    ] {
+        *sources
+            .iter_mut()
+            .find(|source| source.as_str() == CURRENT)? = PREVIOUS.into();
+    }
+    Some(previous)
 }
 
 impl Stage {

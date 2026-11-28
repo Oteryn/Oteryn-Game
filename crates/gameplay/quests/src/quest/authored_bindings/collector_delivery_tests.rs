@@ -140,3 +140,34 @@ fn stampede_collector_is_bound_to_personal_trial_and_five_elephant_kills() -> Re
     assert!(reward.give.is_none(), "no guaranteed elephant tusks");
     Ok(())
 }
+
+#[test]
+fn stampede_collector_accepts_the_pre_refresh_definition() -> Result<(), String> {
+    let document =
+        include_str!("../../../../../../content/quests/authored-bindings/qmech-m01c-stampede.json");
+    let published = document.replace(
+        "d573663d82fd23e3b8a80a4ff5eff3649ed5fc679101322486a1e7caabdc1270",
+        "efe19bb99a5dc32cdf68813184f9965f3c3e2fa3500be021fdc9207e2ff96faa",
+    );
+    let quest = "oteryn:quest.stampede_mini_world_change";
+    let mut previous = super::embedded::load()?.ok_or("embedded bindings")?;
+    let slot = previous
+        .quests
+        .iter_mut()
+        .find(|q| q.quest == quest)
+        .ok_or("Stampede")?;
+    *slot = super::Bindings::parse(published.as_bytes())?
+        .quests
+        .pop()
+        .ok_or("published binding")?;
+    let saved = loader::load_embedded_quest_state_with_bindings("content-1", &previous)
+        .map_err(|e| format!("{e:?}"))?;
+    let hash = saved
+        .catalogue()
+        .definition_hash(quest)
+        .ok_or("published Stampede hash")?;
+    let live = loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    assert_ne!(live.catalogue().definition_hash(quest), Some(hash));
+    assert!(crate::quest::npc_rules::legacy_defaults(live.catalogue(), quest, &hash).is_some());
+    Ok(())
+}
