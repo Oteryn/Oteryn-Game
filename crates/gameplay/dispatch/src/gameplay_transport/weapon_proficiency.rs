@@ -9,6 +9,7 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::Arc;
 
+use crate::content::{ReferenceItemField, native_gameplay::NativeGameplayState};
 use crate::durability::character_proficiency::{
     ProficiencyDefinitions, ResolvedProficiencyDefinition,
 };
@@ -195,6 +196,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+pub(super) fn weapon_display_name(
+    native: &NativeGameplayState,
+    key: &str,
+    revision: &str,
+    definition: std::num::NonZeroU32,
+) -> String {
+    native
+        .item_policy(key, revision)
+        .and_then(|policy| match &policy.record().semantics.presentation {
+            ReferenceItemField::Known(presentation) => match &presentation.name {
+                ReferenceItemField::Known(name) => Some(name.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .unwrap_or_else(|| format!("Weapon {definition}"))
+}
+
 /// Immutable production adapter over the promoted proficiency catalogue.
 ///
 /// Construction validates the committed shards and bindings through the content importer.  The
@@ -211,6 +230,7 @@ impl ProductionProficiencyCatalogue {
     pub(super) fn catalogue_page(
         &self,
         index: &oteryn_gameplay_content::content::item_ref::ItemDefinitionIndex,
+        native: &NativeGameplayState,
         tracks: Option<&WeaponProficiencyDispatch>,
         offset: u32,
     ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage> {
@@ -255,13 +275,18 @@ impl ProductionProficiencyCatalogue {
                     })
                 })
                 .collect::<Option<Vec<_>>>()?;
+            let item = index.revision(key).and_then(|revision| {
+                index
+                    .definition_ref("Item", key, revision)
+                    .map(|reference| (revision, reference))
+            });
             entries.push(ProficiencyCatalogueEntry {
-                definition: index
-                    .revision(key)
-                    .and_then(|revision| index.definition_ref("Item", key, revision))
-                    .map_or(0, |reference| reference.get()),
+                definition: item.map_or(0, |(_, reference)| reference.get()),
                 weapon: key.clone(),
-                name: definition.name.clone(),
+                name: item.map_or_else(
+                    || definition.name.clone(),
+                    |(revision, reference)| weapon_display_name(native, key, revision, reference),
+                ),
                 experience: track.map_or(0, |track| track.progress),
                 thresholds: *resolved.shape.track_shape().class().thresholds(),
                 levels,

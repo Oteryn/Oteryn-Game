@@ -1624,6 +1624,15 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Read committed Channel movement effects from the current runtime owner.
+    fn observe_movement_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        self.observe_vitals(actor, admitted.game_session_id)
+    }
+
     fn observe_join_vitals(
         &self,
         actor: ExactActorRef,

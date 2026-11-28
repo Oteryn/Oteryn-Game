@@ -1684,6 +1684,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_movement_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let session = admitted.game_session_id;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if !states.current_cooldown_transport(
+            actor,
+            session,
+            admitted.continuity.connection_generation,
+        ) {
+            return None;
+        }
+        actor_spell::observe_vitals(&runtime, &states, actor, session)
+    }
+
     async fn observe_join_vitals(
         &self,
         actor: ExactActorRef,

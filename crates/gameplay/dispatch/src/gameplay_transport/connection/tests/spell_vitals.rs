@@ -267,3 +267,143 @@ fn admitted_cast_pays_once_publishes_vitals_and_a_retry_expires() -> Result<(), 
         Ok(())
     })
 }
+
+struct FieldVitalsAuthority {
+    runtime: RefCell<crate::gameplay_transport::ChannelRuntimeV1>,
+    states: RefCell<crate::gameplay_transport::actor_spell::ChannelSpellStates>,
+    room: crate::content::QualifiedNativeEntryRoom,
+}
+
+impl FreshAdmissionAuthority for FieldVitalsAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(at(0))
+    }
+
+    async fn observe_vitals(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, ActorVitals)> {
+        crate::gameplay_transport::actor_spell::observe_vitals(
+            &self.runtime.borrow(),
+            &self.states.borrow(),
+            actor,
+            session,
+        )
+    }
+
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<std::time::Duration>) {
+        use crate::gameplay_transport::actor_spell::actor_movement::creature_field_step_tests;
+        assert_eq!(direction, StepDirection::East);
+        let mut runtime = self.runtime.borrow_mut();
+        let contact = creature_field_step_tests::contact(&runtime);
+        let (_, duration) = self
+            .states
+            .borrow_mut()
+            .step_with_non_player_field_contact(
+                &mut runtime,
+                self.room.movement_cells(),
+                actor,
+                session,
+                0,
+                crate::movement::CardinalStep::East,
+                &std::collections::BTreeSet::new(),
+                None,
+                None,
+                Some(contact),
+            )
+            .expect("field step commits");
+        (
+            StepOutcome {
+                disposition: StepDisposition::Moved,
+                moved_to: Some(at(1)),
+            },
+            Some(duration),
+        )
+    }
+}
+
+#[test]
+fn field_step_dispatch_publishes_committed_vitals_before_cadence() -> Result<(), Box<dyn Error>> {
+    use crate::gameplay_transport::actor_spell::actor_movement::creature_field_step_tests;
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let (runtime, mut states, room, actor, session) =
+                    creature_field_step_tests::ready();
+                states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("field victim state")?
+                    .install_equipped_mana_shield(true);
+                let authority = FieldVitalsAuthority {
+                    runtime: RefCell::new(runtime),
+                    states: RefCell::new(states),
+                    room,
+                };
+                let mut admitted = positioned()?;
+                admitted.game_session_id = session;
+                admitted.runtime_actor = Some(actor);
+                let (before_revision, before) = authority
+                    .observe_vitals(actor, session)
+                    .await
+                    .ok_or("initial vitals")?;
+                let (_, frames) = drive_session(
+                    &authority,
+                    admitted,
+                    &[command(
+                        1,
+                        1,
+                        u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                        StepDirection::East,
+                    )],
+                )
+                .await?;
+                let (after_revision, after) = authority
+                    .observe_vitals(actor, session)
+                    .await
+                    .ok_or("committed vitals")?;
+                assert_eq!(
+                    after.health, before.health,
+                    "the shield absorbed the field hit"
+                );
+                assert!(
+                    after.mana < before.mana,
+                    "the real field entry consumed shield mana"
+                );
+                let mut actual = Vec::new();
+                for frame in &frames {
+                    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(frame)?;
+                    if envelope.message_type() == oteryn_protocol_oteryn::MessageType::StateDelta {
+                        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                        if delta.domain_id == STATE_DOMAIN_ACTOR_VITALS {
+                            actual.push((delta.base_revision, delta.new_revision, delta.payload));
+                        }
+                    }
+                }
+                let expected = encode_actor_vitals(&after).map_err(|_| "vitals encoding")?;
+                assert_eq!(
+                    actual,
+                    [(before_revision, after_revision, expected.as_slice())],
+                    "the STEP response must publish the committed field damage immediately"
+                );
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "field STEP dispatch thread panicked")?
+        .map_err(Into::into)
+}

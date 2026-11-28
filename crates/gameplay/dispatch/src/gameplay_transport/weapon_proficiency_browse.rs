@@ -1,6 +1,5 @@
 //! CL7 P08: read-only, pinned catalogue and live session progress. No custody or XP writes.
 use super::{ComposedFreshAdmission, item_ref_admission::pinned_index};
-use crate::content::ReferenceItemField;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::weapon_proficiency::{
     PROFICIENCY_PAGE_SIZE, ProficiencyPage, ProficiencyRow,
@@ -50,6 +49,7 @@ pub(super) async fn execute(
     runtime.owner_fence().ok()?;
     runtime.player_control_facts(actor, session).ok()?;
     let index = pinned_index(&runtime, owner.active_generation)?;
+    let native = owner.active_generation?.native_gameplay()?;
     let states = owner.states.proficiencies.lock().ok()?;
     let progress = states.get(&session);
     let mut rows = Vec::with_capacity(PROFICIENCY_PAGE_SIZE);
@@ -65,18 +65,7 @@ pub(super) async fn execute(
             let track = track.unwrap_or(&empty);
             rows.push(ProficiencyRow {
                 definition,
-                name: owner
-                    .active_generation?
-                    .native_gameplay()?
-                    .item_policy(key, revision)
-                    .and_then(|policy| match &policy.record().semantics.presentation {
-                        ReferenceItemField::Known(presentation) => match &presentation.name {
-                            ReferenceItemField::Known(name) => Some(name.clone()),
-                            _ => None,
-                        },
-                        _ => None,
-                    })
-                    .unwrap_or_else(|| format!("Weapon {definition}")),
+                name: super::weapon_proficiency::weapon_display_name(native, key, revision, definition),
                 experience: track.progress,
                 level: track.shape.track_shape().level(track.progress),
                 selections: track.selections.clone(),

@@ -1871,10 +1871,10 @@ mod tests {
 }
 
 #[cfg(test)]
-mod creature_field_step_tests {
+pub(in crate::gameplay_transport) mod creature_field_step_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
-    fn ready() -> (
+    pub(in crate::gameplay_transport) fn ready() -> (
         ChannelRuntimeV1,
         ChannelSpellStates,
         crate::content::QualifiedNativeEntryRoom,
@@ -1901,7 +1901,9 @@ mod creature_field_step_tests {
             .unwrap();
         (runtime, states, room, actor, session)
     }
-    fn contact(runtime: &ChannelRuntimeV1) -> super::super::NonPlayerFieldContact {
+    pub(in crate::gameplay_transport) fn contact(
+        runtime: &ChannelRuntimeV1,
+    ) -> super::super::NonPlayerFieldContact {
         // Real immutable qualified field recipe, actual Player/movement owner fixture.
         let catalog: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"

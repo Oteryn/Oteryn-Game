@@ -33,6 +33,15 @@ where
     {
         return Err(ServeEnd::Disconnected);
     }
+    if outcome.disposition == StepDisposition::Moved
+        && session.admitted.continuity.vitals_revision != 0
+        && let Some(current) = authority
+            .observe_movement_vitals(session.actor, session.admitted)
+            .await
+        && current.0 > session.admitted.continuity.vitals_revision
+    {
+        write_vitals(stream, session, current).await?;
+    }
     refresh_newhaven_inventory(
         stream,
         authority,
@@ -85,22 +94,30 @@ where
                 *observed_revision > session.admitted.continuity.vitals_revision
             }))
     {
-        let Some((delta_sequence, delta)) = vitals_delta(
-            session.generation,
-            session.sequence,
-            session.admitted.continuity.vitals_revision,
-            to,
-            &value,
-        ) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        session.sequence = delta_sequence;
-        session.admitted.continuity.server_sequence = session.sequence;
-        if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
-        }
-        session.admitted.continuity.vitals_revision = to;
+        write_vitals(stream, session, (to, value)).await?;
     }
+    Ok(())
+}
+
+async fn write_vitals<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    (to, value): (u64, ActorVitals),
+) -> Result<(), ServeEnd> {
+    let (sequence, delta) = vitals_delta(
+        session.generation,
+        session.sequence,
+        session.admitted.continuity.vitals_revision,
+        to,
+        &value,
+    )
+    .ok_or(ServeEnd::Disconnected)?;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    write_frame(stream, &delta)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.admitted.continuity.vitals_revision = to;
     Ok(())
 }
 

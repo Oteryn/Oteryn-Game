@@ -144,6 +144,24 @@ fn scenario() -> TestResult {
                 .await
                 .is_some()
         );
+        let mut browse_names = std::collections::BTreeMap::new();
+        let mut offset = 0;
+        loop {
+            let page = FreshAdmissionAuthority::weapon_proficiency_browse(
+                &owner, deps.actor, session, offset,
+            )
+            .await
+            .ok_or("browse page")?;
+            offset += u32::try_from(page.rows.len())?;
+            let empty = page.rows.is_empty();
+            for row in page.rows {
+                assert!(browse_names.insert(row.definition.get(), row.name).is_none());
+            }
+            if offset == page.total {
+                break;
+            }
+            assert!(!empty, "browse stopped before its total");
+        }
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -179,6 +197,15 @@ fn scenario() -> TestResult {
             assert_eq!(page.offset, offset);
             for entry in &page.entries {
                 assert!(keys.insert(entry.weapon.clone()), "catalogue repeats a weapon");
+                if entry.definition != 0 {
+                    assert_eq!(
+                        Some(&entry.name),
+                        browse_names.remove(&entry.definition).as_ref(),
+                        "catalogue and browse display names for {} ({})",
+                        entry.weapon,
+                        entry.definition
+                    );
+                }
                 assert!(!entry.levels.is_empty());
                 assert!(entry.levels.iter().all(|level| !level.perks.is_empty()));
                 if entry.weapon == key {
@@ -195,6 +222,7 @@ fn scenario() -> TestResult {
             assert!(!page.entries.is_empty(), "catalogue stopped before its total");
         }
         assert!(saw_sword);
+        assert!(browse_names.is_empty());
         assert_eq!(keys.len(), crate::durability::character_proficiency::ProficiencyDefinitions::active_weapon_count(catalogue.as_ref()));
         eprintln!("nx8_proficiency_catalogue: executed all {offset} weapon tracks through production wire in {:?}", started.elapsed());
         Ok(())

@@ -136,7 +136,8 @@ macro_rules! composed_methods {
             )?;
             let catalogue = self.proficiency_catalogue.as_ref()?;
             let tracks = self.states.proficiencies.lock().ok()?;
-            catalogue.catalogue_page(index, tracks.get(&command.game_session_id), offset)
+            let native = self.active_generation?.native_gameplay()?;
+            catalogue.catalogue_page(index, native, tracks.get(&command.game_session_id), offset)
         }
         async fn weapon_proficiency_select(
             &self,
