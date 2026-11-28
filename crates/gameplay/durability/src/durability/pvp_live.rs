@@ -310,7 +310,7 @@ async fn read_receipt(
 /// The commit window retains the staged physical attempt across cancellation/unknown COMMIT.
 pub async fn commit_live_pvp_transaction<T: Send + 'static>(
     tx: Transaction<'_, Postgres>,
-    deadline: std::time::Instant,
+    deadline: tokio::time::Instant,
     window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
 ) -> std::result::Result<(), DurabilityError> {
     window.mark_already_committed();

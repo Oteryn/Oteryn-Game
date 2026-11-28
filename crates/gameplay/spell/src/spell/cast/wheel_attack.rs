@@ -96,16 +96,9 @@ impl PreparedWheelAttackHit {
         })
     }
 
-    /// Observe the exact first component through the same final HP owner, without mutation.
-    pub fn analyser_parts(&self) -> Option<(u32, PlayerHitKind, PlayerHitKind)> {
-        let (_, hit) = crate::spell::actor_conditions::stage_preprocessed_player_components(
-            &self.target.2,
-            self.components.0,
-            0,
-            self.now_us,
-        )
-        .ok()?;
-        Some((hit.applied, self.kinds.0, self.kinds.1))
+    /// The qualified elements in the same order as the final HP owner consumes them.
+    pub const fn component_kinds(&self) -> (PlayerHitKind, PlayerHitKind) {
+        self.kinds
     }
 
     pub const fn magnitude(&self) -> u32 {
@@ -123,6 +116,7 @@ impl PreparedWheelAttackHit {
         (
             PlayerSpellState,
             crate::ability::creature_bite::FlooredDamage,
+            u32,
         ),
         oteryn_protocol_oteryn::actor_spell::SpellCastDisposition,
     > {

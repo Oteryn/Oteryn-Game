@@ -208,9 +208,9 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     }) {
         return Err("S10 client fixture: one platinum coin missing on re-admission".into());
     }
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+    let now = crate::world_clock::now_utc_ms().ok_or("S10 client capture: World clock unavailable")?;
     let destination =
-        oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(now.as_millis())?);
+        oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(now)?);
     if destination.city != "Thursday" {
         return Err(format!(
             "S10 client capture: Ankrahmun requires Thursday, observed {}",
@@ -234,7 +234,7 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         })
     })
     .ok_or("S10 client capture: Rashid unreachable")?;
-    walk(&mut client, world, &path).await?;
+    super::full_row_s10::walk_exact(&mut client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -261,8 +261,25 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         })
         .map(|entity| entity.entity)
         .ok_or("S10 client capture: Rashid not visible")?;
-    let mut previous = None;
     let result: TestResult<String> = async {
+        let session = client.session_mut();
+        let details = session
+            .is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+        let conversation_snapshot = session
+            .gated_snapshot(wire::STATE_DOMAIN_NPC_CONVERSATION)
+            .ok_or("S10 client capture: missing conversation pre-state")?;
+        let conversation = wire::decode_npc_conversation(&conversation_snapshot.payload)
+            .map_err(|error| format!("S10 client capture: invalid conversation pre-state: {error:?}"))?;
+        let window_snapshot = session
+            .gated_snapshot(wire::STATE_DOMAIN_NPC_TRADE_WINDOW)
+            .ok_or("S10 client capture: missing shop pre-state")?;
+        let window = wire::decode_npc_trade_window_for(&window_snapshot.payload, details)
+            .map_err(|error| format!("S10 client capture: invalid shop pre-state: {error:?}"))?;
+        if conversation.open.is_some() || window.open.is_some() || !window.offers.is_empty() {
+            return Err("S10 client capture: conversation and shop must start closed".into());
+        }
+        let mut previous = Some(conversation_snapshot.revision);
+        let expected_window_base = window_snapshot.revision;
         let (mut expected, _) = talk(&mut client, actor, "hi", &mut previous, capture_dir).await?;
         let (line, reply_sequence) =
             talk(&mut client, actor, "trade", &mut previous, capture_dir).await?;
@@ -276,9 +293,9 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
                 break delta;
             }
         };
-        let details = client
-            .session_mut()
-            .is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+        if window_delta.base_revision != expected_window_base {
+            return Err(format!("step=trade window: expected base revision {expected_window_base}, observed {}", window_delta.base_revision).into());
+        }
         let window = wire::decode_npc_trade_window_for(&window_delta.payload, details)
             .map_err(|error| format!("step=trade window: {error:?}"))?;
         let revision = match window.open {

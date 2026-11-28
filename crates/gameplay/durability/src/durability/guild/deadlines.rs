@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 pub const GUILD_JOB_PASS_MAX: i64 = 100;
 
@@ -33,7 +34,7 @@ impl DurabilityRoot {
                 let ids = rows.into_iter().map(|id| {
                     GuildId::from_bytes(uuid_text(&id)?).map_err(|_| DurabilityError::InvalidStoredState)
                 }).collect::<std::result::Result<Vec<_>, _>>()?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(ids)
             })
         }).await?)
@@ -119,7 +120,7 @@ impl DurabilityRoot {
                 let ids = rows.into_iter().map(|id| {
                     GuildId::from_bytes(uuid_text(&id)?).map_err(|_| DurabilityError::InvalidStoredState)
                 }).collect::<std::result::Result<Vec<_>, _>>()?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(ids)
             })
         }).await?)

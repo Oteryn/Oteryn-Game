@@ -1,15 +1,23 @@
 //! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
 //! docs/reference/content-prep/travel-content-1, plus native S10S/S10T captain additions.
+//! Crystal 201189f8 NPC scripts supply the Cormaya return, Nostalgia return,
+//! Meluna ferry, Vengoth return, Ingol ferries and Oskayaat passage.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
-use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
+use crate::content::{
+    ProjectV2DefinitionRef, ProjectV2TravelQuestRequirement, ProjectV2TravelRoute,
+};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
 #[path = "travel_return.rs"]
 mod return_policy;
 pub use return_policy::TravelReturnRequirement;
+
+/// The donor storage advanced by each settled Postman tour passage.
+pub const POSTMAN_TOUR_TRACK: &str =
+    "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
 
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -33,6 +41,8 @@ pub struct TravelRoute {
     pub service: String,
     pub route: ProjectV2TravelRoute,
     pub keyword: String,
+    /// Use Crystal's MsgContains for the route key and confirmation.
+    pub crystal_callback: bool,
     pub postman: bool,
     pub carpet: bool,
     pub held: bool,
@@ -51,11 +61,18 @@ pub struct TravelRoute {
 struct Correction {
     key: String,
     keyword: String,
+    #[serde(default)]
+    aliases: Vec<String>,
     price: u64,
     premium: bool,
     x: i32,
     y: i32,
     floor: i16,
+    premium_override: Option<bool>,
+    #[serde(default)]
+    use_authored_fare_and_premium: bool,
+    #[serde(default)]
+    crystal_callback: bool,
     postman: bool,
     carpet: bool,
     held: bool,
@@ -65,6 +82,8 @@ struct Correction {
     yalahar_town_gate: Option<String>,
     #[serde(default)]
     native_addition: bool,
+    #[serde(default)]
+    quest_tracks: Vec<ProjectV2TravelQuestRequirement>,
     #[serde(default)]
     quest_gate: Option<String>,
     #[serde(default)]
@@ -81,9 +100,61 @@ struct Correction {
     partial_quest_callback: Option<PartialTravelQuestCallback>,
 }
 
+/// Source-qualified helpers that supersede older held route corrections.
+pub const CRYSTAL_HELPERS: &str =
+    include_str!("../../../../../../content/services/travel/crystal-helpers.json");
+
 /// Bind route corrections to the same revision as their production conversation book.
 pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
+}
+
+fn corrections() -> &'static [Correction] {
+    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
+    CORRECTIONS.get_or_init(|| {
+        let Ok(mut historical) = serde_json::from_str::<Vec<Correction>>(revision_material())
+        else {
+            return Vec::new();
+        };
+        let Ok(helpers) = serde_json::from_str::<Vec<Correction>>(CRYSTAL_HELPERS) else {
+            return historical;
+        };
+        historical.retain(|row| !helpers.iter().any(|helper| helper.key == row.key));
+        historical.extend(helpers);
+        historical
+    })
+}
+
+impl TravelRoute {
+    /// The before and after Postman stages for the exact route settled by paid travel.
+    pub fn postman_tour_passage(&self) -> Option<(i64, i64)> {
+        match (self.service.as_str(), self.route.key.as_str()) {
+            ("oteryn:service.travel.captain_bluebear", "carlin") => Some((1, 2)),
+            ("oteryn:service.travel.uzon", "edron") => Some((2, 3)),
+            ("oteryn:service.travel.captain_seahorse", "venore") => Some((3, 4)),
+            ("oteryn:service.travel.brodrosch", "cormaya") => Some((4, 5)),
+            _ => None,
+        }
+    }
+
+    /// Existing routes retain both their spoken destination and their route key.
+    pub fn matches_keyword(&self, text: &str) -> bool {
+        text == self.keyword
+            || text == self.route.key.replace('_', " ")
+            || corrections().iter().any(|row| {
+                !row.aliases.is_empty()
+                    && row.key.split_once('/')
+                        == Some((self.service.as_str(), self.route.key.as_str()))
+                    && row.aliases.iter().any(|alias| alias == text)
+            })
+    }
+}
+
+/// The complete service and route key persisted by the paid travel owner.
+pub fn is_carpet_route(key: &str) -> bool {
+    corrections()
+        .iter()
+        .any(|route| route.key == key && route.carpet && !route.held)
 }
 
 pub fn resolve(
@@ -91,9 +162,7 @@ pub fn resolve(
     npc_key: &str,
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
-    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections =
-        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
+    let corrections = corrections();
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
@@ -123,30 +192,41 @@ pub fn resolve(
             if template.is_none() && !correction.native_addition {
                 return None;
             }
+            let (x, y, floor) = (correction.x, correction.y, correction.floor);
+            let (price, premium) = template
+                .filter(|_| correction.use_authored_fare_and_premium)
+                .map_or((correction.price, correction.premium), |route| {
+                    (route.price, route.premium)
+                });
+            let premium = correction.premium_override.unwrap_or(premium);
             let mut route = template.cloned().unwrap_or(ProjectV2TravelRoute {
                 key: key.to_owned(),
                 destination: crate::content::ProjectV2TravelDestination {
                     coordinate_frame: "global-target-2026-09-27".to_owned(),
-                    x: correction.x,
-                    y: correction.y,
-                    floor: correction.floor,
+                    x,
+                    y,
+                    floor,
                 },
-                price: correction.price,
-                premium: correction.premium,
+                price,
+                premium,
                 min_level: None,
                 required_quest_tracks: Vec::new(),
             });
             route.key = key.to_owned();
-            route.price = correction.price;
-            route.premium = correction.premium;
+            route.price = price;
+            route.premium = premium;
             route.min_level = None;
-            route.destination.x = correction.x;
-            route.destination.y = correction.y;
-            route.destination.floor = correction.floor;
+            route.destination.x = x;
+            route.destination.y = y;
+            route.destination.floor = floor;
+            route
+                .required_quest_tracks
+                .extend(correction.quest_tracks.iter().cloned());
             Some(TravelRoute {
                 service: service.to_owned(),
                 route,
                 keyword: correction.keyword.clone(),
+                crystal_callback: correction.crystal_callback,
                 postman: correction.postman,
                 carpet: correction.carpet,
                 held: correction.held,
@@ -186,6 +266,7 @@ pub fn resolve(
                     service: reference.key.clone(),
                     route: route.clone(),
                     keyword: route.key.replace('_', " "),
+                    crystal_callback: false,
                     postman: false,
                     carpet: false,
                     held: false,
@@ -240,27 +321,43 @@ mod tests {
                     .ok_or("Postman stage")?
                     .parse()?)
             };
-            if npc == "brodrosch" {
-                // The admitted service offers Gnomprona, and has no Cormaya route.
-                assert_eq!(destination, "cormaya");
-                assert!(production_route(&model, npc, destination)?.is_none());
-                continue;
-            }
             let route = production_route(&model, npc, destination)?.ok_or("Postman route")?;
-            let callback = route
-                .partial_quest_callback
-                .ok_or("missing Postman callback")?;
+            let (before, after) = (stage("condition")?, stage("effect")?);
             assert_eq!(
-                callback.track,
-                "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01"
+                route.postman_tour_passage(),
+                Some((before, after)),
+                "{npc}/{destination}"
             );
+            let legacy_callback = route
+                .partial_quest_callback
+                .as_ref()
+                .map(|callback| (callback.track.as_str(), callback.stage, callback.next_stage));
             assert_eq!(
-                (callback.stage, callback.next_stage),
-                (stage("condition")?, stage("effect")?)
+                legacy_callback,
+                (npc == "captain_bluebear").then_some((super::POSTMAN_TOUR_TRACK, before, after)),
+                "{npc}/{destination} legacy receipt metadata"
+            );
+            let fare = source["condition"]
+                .as_str()
+                .and_then(|condition| condition.split_once(";travel koszt"))
+                .and_then(|(_, fare)| fare.split_once(' '))
+                .ok_or("Postman donor fare")?
+                .0
+                .parse::<u64>()?;
+            let cell = &route.route.destination;
+            let landing = format!(
+                "Mission01={after};podróż do{},{},{}",
+                cell.x, cell.y, cell.floor
+            );
+            assert_eq!(source["effect"], landing, "{npc}/{destination}");
+            assert_eq!(route.route.price, fare, "{npc}/{destination}");
+            assert!(
+                route.postman && !route.held && !route.route.premium,
+                "{npc}/{destination}"
             );
             callbacks += 1;
         }
-        assert_eq!(callbacks, 3);
+        assert_eq!(callbacks, 4);
         Ok(())
     }
 
@@ -450,7 +547,6 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 236);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
@@ -467,6 +563,43 @@ mod tests {
             dalbrect.quest_gate.as_deref(),
             Some("oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log")
         );
+        let eclipse = corrections
+            .iter()
+            .find(|row| row.key == "oteryn:service.travel.uzon/eclipse")
+            .ok_or("source-qualified Eclipse route")?;
+        assert!(eclipse.native_addition && !eclipse.held && !eclipse.premium);
+        assert_eq!(
+            (eclipse.x, eclipse.y, eclipse.floor, eclipse.price),
+            (32659, 31915, 0, 110)
+        );
+        let [gate] = eclipse.quest_tracks.as_slice() else {
+            return Err("one Eclipse gate".into());
+        };
+        assert_eq!(
+            gate.track,
+            "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"
+        );
+        assert_eq!((gate.minimum, gate.maximum), (4, Some(5)));
+        for (key, fare, x, y, floor) in [
+            (
+                "oteryn:service.travel.brodrosch/cormaya",
+                160,
+                33_311,
+                31_989,
+                15,
+            ),
+            ("oteryn:service.travel.eremo/cormaya", 0, 33_288, 31_956, 6),
+        ] {
+            let route = corrections
+                .iter()
+                .find(|route| route.key == key)
+                .ok_or(key)?;
+            assert!(route.native_addition && !route.held && !route.premium);
+            assert_eq!(
+                (route.price, route.x, route.y, route.floor),
+                (fare, x, y, floor)
+            );
+        }
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let nargor = "oteryn:service.travel.sebastian/nargor";
@@ -475,6 +608,7 @@ mod tests {
             .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
+        assert_eq!(corrections.len() - corrected.len(), 60);
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {
@@ -486,14 +620,14 @@ mod tests {
                 keyword => keyword,
             };
             assert_eq!(row.keyword, keyword);
-            assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
-            // Crystal 201189f8 captain_bluebear.lua:60-79 admits both routes without Premium.
-            let premium = match row.key.as_str() {
-                "oteryn:service.travel.captain_bluebear/edron"
-                | "oteryn:service.travel.captain_bluebear/port_hope" => &source["donor_premium"],
-                _ => &source["selected_premium"],
+            // Crystal harlow_vengoth.lua:53-55 supplies a free return.
+            let price = if row.key == "oteryn:service.travel.harlow_vengoth/yalahar" {
+                serde_json::json!(0)
+            } else {
+                source["selected_fare"].clone()
             };
-            assert_eq!(&serde_json::json!(row.premium), premium);
+            assert_eq!(serde_json::json!(row.price), price);
+            assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
             match row.key.as_str() {
                 // The native Marapur landing is one tile north of the donor destination.
                 "oteryn:service.travel.melian/marapur"
@@ -502,6 +636,10 @@ mod tests {
                 // Share Ziyad's Kazordoon landing, clear of Gewen's occupied donor tile.
                 "oteryn:service.travel.uzon/kazor" | "oteryn:service.travel.uzon/kazordoon" => {
                     assert_eq!(row.y, 31_941, "{}", row.key);
+                }
+                // Captain Max stands on the donor arrival cell; land on the clear tile south.
+                "oteryn:service.travel.captain_max_calassa/liberty_bay" => {
+                    assert_eq!(row.y, 32_896, "{}", row.key);
                 }
                 _ => assert_eq!(serde_json::json!(row.y), source["destination"]["y"]),
             }
@@ -682,7 +820,10 @@ mod tests {
             assert_eq!(found.route.price, price);
             assert_eq!(
                 found.route.premium,
-                !matches!(npc, "captain_jack_rat" | "captain_waverider")
+                !matches!(
+                    npc,
+                    "captain_jack_rat" | "captain_max" | "captain_waverider"
+                )
             );
             assert_eq!(
                 (
@@ -695,6 +836,96 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn regional_captain_routes_resolve_to_donor_fares_and_premium()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &root.join("content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("docs/reference/content-prep/travel-content-1/source-correction-check.json"),
+        )?)?;
+        let rows = source["rows"].as_array().ok_or("travel source rows")?;
+        for (npc, slug, held) in [
+            ("captain_gulliver", "issavi", false),
+            ("captain_gulliver", "krailos", true),
+            ("captain_gulliver", "thais", false),
+            ("petros", "issavi", true),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, entry)| entry)
+                .ok_or("NPC")?;
+            let route = super::resolve(&model, &key, &entry.services)
+                .into_iter()
+                .find(|candidate| candidate.route.key == slug)
+                .ok_or("route")?;
+            let route_key = format!("{}/{slug}", route.service);
+            let donor = rows
+                .iter()
+                .find(|row| row["key"] == route_key)
+                .ok_or("donor route")?;
+            assert_eq!(
+                (
+                    route.route.price,
+                    route.route.premium,
+                    route.held,
+                    route.postman
+                ),
+                (
+                    donor["donor_cost"].as_u64().ok_or("donor fare")?,
+                    donor["donor_premium"].as_bool().ok_or("donor premium")?,
+                    held,
+                    true
+                ),
+                "{route_key}"
+            );
+            let destination = &route.route.destination;
+            let x = donor["destination"]["x"].as_i64().ok_or("donor x")?;
+            let y = donor["destination"]["y"].as_i64().ok_or("donor y")?;
+            let floor = donor["destination"]["z"].as_i64().ok_or("donor floor")?;
+            assert_eq!(
+                (
+                    i64::from(destination.x),
+                    i64::from(destination.y),
+                    i64::from(destination.floor)
+                ),
+                (x, y, floor),
+                "{route_key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn postman_tour_routes_accept_free_accounts() -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let mut routes = Vec::new();
+        for (key, npc) in model.npcs() {
+            for route in super::resolve(&model, &key.key, &npc.services) {
+                if let Some((stage, _)) = route.postman_tour_passage() {
+                    routes.push((stage, route.route.premium));
+                }
+            }
+        }
+        routes.sort_unstable();
+        assert_eq!(routes, [(1, false), (2, false), (3, false), (4, false)]);
+        Ok(())
+    }
+
     #[test]
     fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
     -> Result<(), Box<dyn std::error::Error>> {

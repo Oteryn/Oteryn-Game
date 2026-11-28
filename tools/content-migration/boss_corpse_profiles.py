@@ -13,6 +13,8 @@ import re
 import sys
 from pathlib import Path
 
+from srx1_profile_updates import compact_item_record
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
@@ -22,7 +24,7 @@ PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 PATH = 'tools/content-schema/native-gameplay/boss-corpse-item-profiles.json'
 PIN_PATH = 'tools/content-schema/native-gameplay/boss-corpse-item-profiles-pin.json'
 SCHEMA = 'OTERYN_NATIVE_BOSS_CORPSE_ITEM_PROFILES/v1'
-ROOT_IDS = frozenset({39344,39530,23564,111,5973,5993,5995,6028,6081,23478,32610,33792,33797,33801,33805,33809,33813,33817,33859,33863,33867,33871,33875,33876,33889,33891,33897,33901,33905,33909,33949,33984,34121,34125,34133,43555,43559,43567,43571,43579,43583,43669,43816,43820,43824,43828,43832,43836,43840,43844,44012,44015,44018,44021,44024})
+ROOT_IDS = frozenset({39344,39530,23564,111,5973,5993,5995,6028,6081,9607,23478,32610,33792,33797,33801,33805,33809,33813,33817,33859,33863,33867,33871,33875,33876,33889,33891,33897,33901,33905,33909,33949,33984,34121,34125,34133,43555,43559,43567,43571,43579,43583,43669,43816,43820,43824,43828,43832,43836,43840,43844,44012,44015,44018,44021,44024})
 SOURCE_HASHES = {
     'data/items/appearances.dat': '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
     'data/items/items.xml': '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509',
@@ -123,7 +125,7 @@ def capture(cache: Path, root: Path = ROOT):
             item_id = int(attributes.get('decayto', '0'))
         chains.append(chain)
         wanted.update(chain)
-    if len(wanted) != 199 or any(str(item_id) not in bindings for item_id in wanted):
+    if len(wanted) != 203 or any(str(item_id) not in bindings for item_id in wanted):
         raise ValueError('BOSS_CORPSE_EXACT_BOUND_SET')
     objects = source.engine_items.load_appearance_objects(blobs['data/items/appearances.dat'])
     physics = {row['server_item_id']: row for row in source.policies(
@@ -189,13 +191,13 @@ def admit(root, generated, destination, manifest_path, order, canonical):
     import boss_corpse_terminal_reference as terminal
     packet = terminal.checked_packet(root)
     expected_sources = [{'repository':'zimbadev/crystalserver','revision':PIN,'path':path,'sha256':digest} for path,digest in {**SOURCE_HASHES, **terminal.EXTRA_SOURCES}.items()]
-    if data['sources'] != expected_sources or len(data['records']) != 199:
+    if data['sources'] != expected_sources or len(data['records']) != 203:
         raise ValueError('BOSS_CORPSE_SOURCE_AUTHORITY')
     bindings = binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
     if '43666' in bindings:raise ValueError('ELDER_TERMINAL_ALREADY_PROTECTED')
     bindings['43666'] = packet['bindings'][0]
     wanted = {item for chain in data['decay_chains'] for item in chain}
-    if len(wanted) != 199 or {chain[0] for chain in data['decay_chains']} != ROOT_IDS:
+    if len(wanted) != 203 or {chain[0] for chain in data['decay_chains']} != ROOT_IDS:
         raise ValueError('BOSS_CORPSE_DECAY_SET')
     document = json.loads(generated[destination])
     existing = {row['production_definition']['production_key']:row for row in document['records']}
@@ -238,7 +240,7 @@ def admit(root, generated, destination, manifest_path, order, canonical):
                 for name in ('always_on_top', 'always_on_top_order'):
                     if name in decorated['attributes']:
                         expected['attributes'][name] = decorated['attributes'][name]
-            if previous != expected:
+            if compact_item_record(copy.deepcopy(previous)) != compact_item_record(expected):
                 raise ValueError(f'BOSS_CORPSE_PROFILE_CONFLICT:{key}')
         else:
             document['records'].append(record)
@@ -249,17 +251,12 @@ def admit(root, generated, destination, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-cache', type=Path, required=True)
-    parser.add_argument('--check', action='store_true')
-    args = parser.parse_args()
+def publish_capture(source_cache, check=False):
     import boss_corpse_terminal_reference as terminal
-    terminal.publish(args.source_cache, ROOT, args.check)
-    raw = encode(capture(args.source_cache))
+    raw = encode(capture(source_cache))
     pin = encode({'path':PATH, 'sha256':hashlib.sha256(raw).hexdigest()})
     for path, content in ((PATH,raw),(PIN_PATH,pin)):
-        if args.check:
+        if check:
             if (ROOT/path).read_bytes() != content:
                 raise SystemExit(f'BOSS_CORPSE_GENERATED_DRIFT:{path}')
         else:
@@ -267,10 +264,19 @@ def main():
     rust=('// Generated only by tools/content-migration/boss_corpse_profiles.py.\n'
         'pub(super) const CAPTURE_SHA256: &str =\n    \"'+hashlib.sha256(raw).hexdigest()+'\";\n'
         'pub(super) const PACKET_SHA256: &str =\n    \"'+hashlib.sha256((ROOT/terminal.PACKET).read_bytes()).hexdigest()+'\";\n').encode()
-    if args.check:
+    if check:
         if (ROOT/terminal.RUST_PIN).read_bytes()!=rust:raise ValueError('ELDER_TERMINAL_RUST_PIN_DRIFT')
     else:(ROOT/terminal.RUST_PIN).write_bytes(rust)
-    print('BOSS_CORPSE_NATIVE_SOURCE_PROFILES', len(json.loads(raw)['records']), 'CHECK' if args.check else 'GENERATED')
+    print('BOSS_CORPSE_NATIVE_SOURCE_PROFILES', len(json.loads(raw)['records']), 'CHECK' if check else 'GENERATED')
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--source-cache', type=Path, required=True)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    import boss_corpse_terminal_reference as terminal
+    terminal.publish(args.source_cache, ROOT, args.check)
+    publish_capture(args.source_cache, args.check)
 
 if __name__ == '__main__':
     main()

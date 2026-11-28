@@ -207,3 +207,151 @@ fn expired_idle_window_does_not_start_queued_delta_but_finishes_started_frame()
         Ok::<_, BoxError>(())
     })?
 }
+
+async fn gift_pair(capabilities: &'static [u32]) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+    let (client, mut peer) = tokio::io::duplex(64 * 1024);
+    let joining = tokio::spawn(async move {
+        let low = actor_spell::encode_actor_vitals(&vitals(1, 5)).map_err(|e| format!("{e:?}"))?;
+        let raw = [(3, 3, 1, low), (19, 0, 1, vec![]), (20, 0, 1, vec![])];
+        join_peer_with(
+            &mut peer,
+            capabilities,
+            capabilities,
+            &[],
+            entity_snapshot(vec![]),
+            &raw,
+        )
+        .await?;
+        Ok::<_, BoxError>(peer)
+    });
+    let session = Session::admit(client, admission_with(capabilities)?).await?;
+    Ok((session, joining.await??))
+}
+
+fn gift_cooldown_frame(sequence: u64) -> Result<Vec<u8>, BoxError> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let payload = wire::encode_actor_cooldowns(&wire::ActorCooldowns {
+        server_now_ms: 0,
+        rtt_ms: None,
+        entries: vec![wire::ActorCooldown {
+            kind: wire::ActorCooldownKind::Spell,
+            id: 1,
+            expires_at_ms: 30_000,
+        }],
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    vitals_frame(
+        1,
+        sequence,
+        wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+        0,
+        1,
+        wire::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1,
+        &payload,
+    )
+}
+
+#[test]
+fn gift_cooldown_and_vitals_cross_an_idle_deadline_together() -> Result<(), BoxError> {
+    block_on(async {
+        let (mut session, mut peer) = gift_pair(&[6, 23]).await?;
+        write_frame(&mut peer, &gift_cooldown_frame(41)?).await?;
+        let rescued =
+            actor_spell::encode_actor_vitals(&vitals(30, 20)).map_err(|e| format!("{e:?}"))?;
+        {
+            let mut serving = std::pin::pin!(session.service_liveness(Duration::from_millis(20)));
+            assert!(
+                tokio::time::timeout(Duration::from_millis(100), &mut serving)
+                    .await
+                    .is_err(),
+                "the idle turn returned with the cooldown while the peer still held the vitals frame",
+            );
+            send_vitals_delta(&mut peer, 42, 3, 4, &rescued).await?;
+            serving.await?;
+        }
+        assert_eq!(session.actor_vitals(), Some(&vitals(30, 20)));
+        assert!(matches!(
+            session.take_events().as_slice(),
+            [SessionEvent::GiftOfLife { cooldowns, .. }] if cooldowns.value.snapshot
+        ));
+        Ok(())
+    })?
+}
+
+#[test]
+fn cast_claims_the_vitals_in_its_queued_rescue_pair() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1;
+    block_on(async {
+        let (mut session, mut peer) =
+            gift_pair(&[6, 23, CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1]).await?;
+        let responder = tokio::spawn(async move {
+            let command = read_frame(&mut peer).await?;
+            let id = decode_wire_envelope(&command)?
+                .client_command(1)?
+                .command_id;
+            write_frame(
+                &mut peer,
+                &encode_command_result(
+                    1,
+                    41,
+                    id,
+                    CommandStatus::Accepted,
+                    &actor_spell::encode_spell_cast_result(SpellCastDisposition::Cast),
+                )?,
+            )
+            .await?;
+            write_frame(&mut peer, &gift_cooldown_frame(42)?).await?;
+            let rescued =
+                actor_spell::encode_actor_vitals(&vitals(30, 20)).map_err(|e| format!("{e:?}"))?;
+            send_vitals_delta(&mut peer, 43, 3, 4, &rescued).await?;
+            Ok::<_, BoxError>(())
+        });
+        let cast = session
+            .cast_spell(NonZeroU32::MIN, SpellTarget::None, false)
+            .await?;
+        let claimed = cast
+            .actor_vitals_delta
+            .ok_or("cast must claim the rescued vitals")?;
+        assert_eq!(claimed.server_sequence, 43);
+        assert_eq!(claimed.value, vitals(30, 20));
+        let events = session.take_events();
+        let [
+            SessionEvent::GiftOfLife {
+                cooldowns,
+                vitals: delivered,
+            },
+        ] = events.as_slice()
+        else {
+            return Err(format!("expected one queued rescue pair, got {events:?}").into());
+        };
+        assert_eq!(cooldowns.server_sequence, 42);
+        assert!(!cooldowns.value.snapshot);
+        assert_eq!(delivered, &claimed);
+        assert_eq!(session.actor_vitals(), Some(&claimed.value));
+        responder.await??;
+        Ok(())
+    })?
+}
+
+#[test]
+fn malformed_rescue_vitals_leave_both_domain_revisions_unchanged() -> Result<(), BoxError> {
+    block_on(async {
+        let (mut session, mut peer) = gift_pair(&[6, 23]).await?;
+        write_frame(&mut peer, &gift_cooldown_frame(41)?).await?;
+        send_vitals_delta(&mut peer, 42, 2, 4, &[]).await?;
+        assert!(
+            session
+                .service_liveness(Duration::from_millis(20))
+                .await
+                .is_err()
+        );
+        assert!(session.take_events().is_empty());
+        assert_eq!(session.actor_vitals(), Some(&vitals(1, 5)));
+        assert_eq!(session.vitals_revision, 3);
+        assert_eq!(
+            session.gated_revisions.iter().find(|(id, _)| *id == 20),
+            Some(&(20, 0)),
+        );
+        Ok(())
+    })?
+}

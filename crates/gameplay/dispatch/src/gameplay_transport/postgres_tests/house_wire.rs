@@ -237,6 +237,22 @@ fn scenario() -> TestResult {
         // connections start there from this continuity to reach the durable House receipts.
         let initial = admitted;
         assert_eq!(initial.continuity.next_command_id, 1);
+        let owned: bool = sqlx::query_scalar(
+            "SELECT p.state=3 AND p.content_digest=$3 AND
+                    game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid
+             FROM game_house_properties p WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2",
+        )
+        .bind(id(42).as_slice())
+        .bind(HOUSE)
+        .bind(digest.as_slice())
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            owned,
+            "the fixture must reproduce S7's settled, served owner"
+        );
+        super::journal_inventory::runtime_role(&h.root).await?;
         assert_eq!(
             send(&owner, &mut admitted, 56, &body).await?,
             (CommandStatus::Accepted, ok.clone())

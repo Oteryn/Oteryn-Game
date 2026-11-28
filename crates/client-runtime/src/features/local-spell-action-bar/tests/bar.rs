@@ -27,9 +27,14 @@ fn bindings_keep_cast_indices_and_project_spell_and_group_cooldowns() -> Result<
         ],
     };
     assert_eq!(state.entries[0].kind, ActorCooldownKind::Spell);
-    bar.cooldowns = Some(state);
-    assert_eq!(bar.remaining_ms(spell, &[]), 20);
-    assert_eq!(bar.remaining_ms(spell, &[2]), 50);
+    let received_at = Instant::now();
+    bar.apply_cooldowns(&ActorCooldownUpdate {
+        value: state,
+        received_at,
+        snapshot: true,
+    });
+    assert_eq!(bar.remaining_ms_at(spell, &[], received_at), 20);
+    assert_eq!(bar.remaining_ms_at(spell, &[2], received_at), 50);
     assert!(bar.bind(0, None));
     assert_eq!(bar.spell(slot), None);
     Ok(())

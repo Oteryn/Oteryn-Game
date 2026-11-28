@@ -6,13 +6,15 @@ const BRUTUS: &str = "oteryn:npc.brutus_the_baker";
 const BRUTUS_POSITION: (u16, u16, i8) = (33303, 32064, 7);
 
 const SANTA: &str = "oteryn:npc.santa_claus";
+pub(super) const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
+const SANTA_COUNT: usize = 15;
 
 // Crystal201189f data-global/npc/santa_claus.lua:1-25 identifies the native NPC;
 // its donor spawn registry supplies no seasonal placement. Exact positions are
 // retained structured BR source, not donor spawn coordinates:
 // docs/reference/content-prep/season-20261107/seasonal-calendar-source.json:87
 // binds all15 placements to Santa Claus revision443236, original lines38-52.
-const SANTA_POSITIONS: [(u16, u16, i8); 20] = [
+const POSITIONS: [(u16, u16, i8); 20] = [
     (32655, 31665, 8),
     (33070, 32878, 6),
     (32307, 31837, 8),
@@ -45,20 +47,26 @@ const BAKERS: [&str; 5] = [
     "oteryn:npc.billy_the_baker",
 ];
 fn key(index: usize) -> &'static str {
-    if index < 15 {
+    if index < SANTA_COUNT {
         SANTA
     } else {
-        BAKERS[index - 15]
+        BAKERS[index - SANTA_COUNT]
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug)]
+struct SeasonalPlacement {
+    key: &'static str,
+    placement: NpcPlacement,
+    actor: Option<crate::foundation::ExactActorRef>,
+}
+
+#[derive(Debug, Default)]
 pub(super) struct SeasonalNpcSpawns {
     brutus_admitted: bool,
     brutus_present: bool,
     brutus_actor: Option<crate::foundation::ExactActorRef>,
-    positions: [bool; SANTA_POSITIONS.len()],
-    actors: [Option<crate::foundation::ExactActorRef>; SANTA_POSITIONS.len()],
+    placements: Vec<SeasonalPlacement>,
 }
 
 impl SeasonalNpcSpawns {
@@ -67,30 +75,67 @@ impl SeasonalNpcSpawns {
         seasonal: &[String],
         enterable: impl Fn(TilePos) -> bool,
     ) -> Self {
-        let positions = std::array::from_fn(|index| {
-            let event = if index < 15 {
-                "christmas"
-            } else {
-                "piece_of_cake"
-            };
-            let (x, y, z) = SANTA_POSITIONS[index];
-            seasonal.iter().any(|active| active == event)
-                && boot.is_some_and(|boot| boot.admits(key(index)))
+        let mut placements = Vec::new();
+        let christmas = seasonal.iter().any(|event| event == "christmas");
+        let cake = seasonal.iter().any(|event| event == "piece_of_cake");
+        for (index, (x, y, z)) in POSITIONS.into_iter().enumerate() {
+            let key = key(index);
+            let active = if index < SANTA_COUNT { christmas } else { cake };
+            if active
+                && boot.is_some_and(|boot| boot.admits(key))
                 && enterable(TilePos { x, y, floor: -z })
-        });
+            {
+                placements.push(SeasonalPlacement {
+                    key,
+                    placement: NpcPlacement {
+                        x,
+                        y,
+                        floor: -z,
+                        direction: MovementFacing::South,
+                    },
+                    actor: None,
+                });
+            }
+        }
+        // The bundle supplies the cells and facing; the reset calendar supplies activation.
+        if christmas
+            && let Some(NpcBoot::Place {
+                table, admitted, ..
+            }) = boot
+            && admitted.contains(MESSENGER)
+            && let Some(messenger) = table.npcs.iter().find(|npc| npc.key == MESSENGER)
+        {
+            placements.extend(
+                messenger
+                    .placements
+                    .iter()
+                    .copied()
+                    .filter_map(|placement| {
+                        enterable(TilePos {
+                            x: placement.x,
+                            y: placement.y,
+                            floor: placement.floor,
+                        })
+                        .then_some(SeasonalPlacement {
+                            key: MESSENGER,
+                            placement,
+                            actor: None,
+                        })
+                    }),
+            );
+        }
         let (x, y, z) = BRUTUS_POSITION;
         Self {
             brutus_admitted: boot.is_some_and(|boot| boot.admits(BRUTUS))
                 && enterable(TilePos { x, y, floor: -z }),
             brutus_present: false,
             brutus_actor: None,
-            positions,
-            actors: [None; SANTA_POSITIONS.len()],
+            placements,
         }
     }
 
-    pub(super) fn is_empty(self) -> bool {
-        !self.brutus_admitted && !self.positions.iter().any(|admitted| *admitted)
+    pub(super) fn is_empty(&self) -> bool {
+        !self.brutus_admitted && self.placements.is_empty()
     }
 
     /// Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:456-483 and cake_server_save.lua:8-10: the persisted
@@ -142,35 +187,27 @@ impl SeasonalNpcSpawns {
             .map(|npc| (npc.actor, npc.position))
             .collect();
         let mut outcome = self.reconcile_brutus(runtime);
-        for (index, (x, y, z)) in SANTA_POSITIONS.into_iter().enumerate() {
-            let floor = -z;
-            let key = key(index);
-            if !self.positions[index]
-                || self.actors[index].is_some_and(|actor| runtime.npc_key(actor) == Some(key))
+        for entry in &mut self.placements {
+            let key = entry.key;
+            let NpcPlacement { x, y, floor, .. } = entry.placement;
+            if entry
+                .actor
+                .is_some_and(|actor| runtime.npc_key(actor) == Some(key))
             {
                 continue;
             }
             if let Some((actor, _)) = present.iter().find(|(actor, position)| {
                 position.x == i32::from(x)
                     && position.y == i32::from(y)
-                    && position.floor == i16::from(z)
+                    && position.floor == -i16::from(floor)
                     && runtime.npc_key(*actor) == Some(key)
             }) {
-                self.actors[index] = Some(*actor);
+                entry.actor = Some(*actor);
                 continue;
             }
-            // Crystal src/creatures/creature.hpp:806 defaults an unconfigured NPC south.
-            let placed = runtime.place_dynamic_npc(
-                key,
-                NpcPlacement {
-                    x,
-                    y,
-                    floor,
-                    direction: MovementFacing::South,
-                },
-            );
+            let placed = runtime.place_dynamic_npc(key, entry.placement);
             outcome = outcome.and(placed.map(|actor| {
-                self.actors[index] = Some(actor);
+                entry.actor = Some(actor);
             }));
         }
         outcome

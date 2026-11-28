@@ -1,4 +1,5 @@
 //! Bounded, once-only authored kill objectives over the existing quest writer.
+use super::reward_callbacks::StateOperation;
 use super::world_callbacks::Position;
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,8 @@ pub struct DeathObjective {
     pub stage_value: i64,
     pub counter: String,
     pub required: u16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    state_ops: Vec<StateOperation>,
     pub minimum: Position,
     pub maximum: Position,
     pub sources: Vec<String>,
@@ -55,13 +58,13 @@ impl GuardianSpawn {
 
 impl DeathObjective {
     pub(crate) fn transition(&self) -> QuestTransition {
-        let mut transition = QuestTransition {
+        QuestTransition {
             key: self.key.clone(),
             quest: self.quest.clone(),
             completes: false,
             experience: None,
             world_change: None,
-            effects: vec![
+            effects: [
                 QuestEffect {
                     track: self.stage.clone(),
                     from: QuestComparison::Eq(self.stage_value),
@@ -72,18 +75,11 @@ impl DeathObjective {
                     from: QuestComparison::Between(0, i64::from(self.required) - 1),
                     effect: QuestEffectKind::Add(1),
                 },
-            ],
-        };
-        if self.key == super::grave_danger::ZELOS_DEATH {
-            // Crystal 201189f grave_danger_access.lua advances the questline after
-            // the knights and Zelos. The existing passages guard proves the knights.
-            transition.effects.push(QuestEffect {
-                track: super::grave_danger::QUESTLINE.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::RaiseTo(4),
-            });
+            ]
+            .into_iter()
+            .chain(self.state_ops.iter().map(StateOperation::quest_effect))
+            .collect(),
         }
-        transition
     }
 
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
@@ -144,6 +140,11 @@ fn parse(text: &str) -> Result<Vec<DeathObjective>, String> {
                 .is_none_or(str::is_empty)
             || objective.stage == objective.counter
             || objective.required == 0
+            || objective.state_ops.len() > super::QUESTSTATE0_RL_02 - 2
+            || objective
+                .state_ops
+                .iter()
+                .any(|operation| !operation.valid())
             || !(-15..=0).contains(&objective.minimum.floor)
             || objective.minimum.floor != objective.maximum.floor
             || objective.maximum.x < objective.minimum.x
@@ -323,7 +324,7 @@ mod tests {
                     .any(|row| row.key == key && row.guardian.is_some())
             );
         }
-        assert_eq!(objectives.len(), 61);
+        assert_eq!(objectives.len(), 69);
         assert_eq!(
             objectives
                 .iter()

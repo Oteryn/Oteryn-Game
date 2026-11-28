@@ -1,0 +1,2825 @@
+<items>
+  <item id="396" article="a" name="technomancer beard">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="946" name="eternal flames">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="250" />
+  </item>
+  <item article="a" name="picture" id="2639">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="2814" article="a" name="parchment">
+    <attribute key="primarytype" value="documents and papers" />
+    <attribute key="description" value="It is rewriteable" />
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1023" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="2817" article="a" name="blank parchment">
+    <attribute key="primarytype" value="documents and papers" />
+    <attribute key="description" value="It is rewriteable" />
+    <attribute key="writeable" value="1" />
+    <attribute key="writeonceitemid" value="2819" />
+    <attribute key="maxtextlen" value="1023" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item article="a" name="book" id="2828">
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1023" />
+    <attribute key="weight" value="1300" />
+  </item>
+  <item article="a" name="book" id="2831">
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1023" />
+    <attribute key="weight" value="1300" />
+  </item>
+  <item id="2843" article="a" name="book">
+    <attribute key="writeable" value="1" />
+    <attribute key="writeonceitemid" value="2828" />
+    <attribute key="maxtextlen" value="1023" />
+    <attribute key="weight" value="1300" />
+  </item>
+  <item id="2875" article="a" name="bottle">
+    <attribute key="primarytype" value="fluid containers" />
+    <attribute key="allowpickUpAble" value="1" />
+    <attribute key="weight" value="250" />
+  </item>
+  <item id="2901" article="a" name="waterskin">
+    <attribute key="primarytype" value="fluid containers" />
+    <attribute key="allowpickUpAble" value="1" />
+    <attribute key="weight" value="700" />
+  </item>
+  <item id="2914" article="a" name="lamp">
+    <attribute key="primarytype" value="light sources" />
+    <attribute key="stopduration" value="1" />
+    <attribute key="weight" value="3000" />
+  </item>
+  <item id="3013" article="a" name="golden amulet">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="description" value="Many gems glitter on the amulet" />
+    <attribute key="weight" value="830" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="necklace" />
+    </attribute>
+  </item>
+  <item id="3021" article="a" name="sapphire amulet">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="weight" value="680" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="necklace" />
+    </attribute>
+  </item>
+  <item id="3047" article="a" name="magic light wand">
+    <attribute key="primarytype" value="light sources" />
+    <attribute key="description" value="The wand glows" />
+    <attribute key="showduration" value="1" />
+    <attribute key="duration" value="3000" />
+    <attribute key="decayTo" value="0" />
+    <attribute key="weight" value="1500" />
+  </item>
+  <item id="3094" article="a" name="sword ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="showduration" value="1" />
+    <attribute key="skillsword" value="4" />
+    <attribute key="duration" value="1800" />
+    <attribute key="transformdeequipto" value="3091" />
+    <attribute key="decayTo" value="0" />
+    <attribute key="weight" value="90" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="ring" />
+    </attribute>
+  </item>
+  <item id="3100" article="a" name="ring of healing">
+    <attribute key="showduration" value="1" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="manaticks" value="6000" />
+    <attribute key="managain" value="24" />
+    <attribute key="healthticks" value="6000" />
+    <attribute key="healthgain" value="6" />
+    <attribute key="duration" value="450" />
+    <attribute key="transformdeequipto" value="3098" />
+    <attribute key="decayTo" value="0" />
+    <attribute key="weight" value="80" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="ring" />
+    </attribute>
+  </item>
+  <item id="3104" article="a" name="banana skin">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="30" />
+  </item>
+  <item id="3106" article="an" name="old twig">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="3110" article="a" name="piece of iron" plural="pieces of iron">
+    <attribute key="weight" value="20" />
+  </item>
+  <item id="3111" article="a" name="fishbone">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="70" />
+  </item>
+  <item id="3116" article="a" name="big bone">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="1900" />
+  </item>
+  <item id="3124" article="a" name="burnt scroll">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="40" />
+  </item>
+  <item id="3129" name="some leaves">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="80" />
+  </item>
+  <item name="wooden trash" id="3139">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="570" />
+  </item>
+  <item id="3211" article="a" name="witchesbroom">
+    <attribute key="primarytype" value="tools" />
+    <attribute key="description" value="Don't use it without flying license. Not suitable for minors" />
+    <attribute key="weight" value="1100" />
+  </item>
+  <item id="3303" article="a" name="great axe">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="description" value="A masterpiece of a dwarven smith" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="52" />
+    <attribute key="defense" value="22" />
+    <attribute key="weight" value="9000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost axe" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="95" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="3309" article="a" name="thunder hammer">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="description" value="It is blessed by the gods of Tibia" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="attack" value="49" />
+    <attribute key="extradef" value="1" />
+    <attribute key="defense" value="35" />
+    <attribute key="weight" value="12500" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="85" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="3345" article="a" name="templar scytheblade">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="attack" value="23" />
+    <attribute key="extradef" value="1" />
+    <attribute key="defense" value="15" />
+    <attribute key="weight" value="2900" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="3347" article="a" name="hunting spear">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="shootType" value="huntingspear" />
+    <attribute key="maxhitchance" value="80" />
+    <attribute key="range" value="3" />
+    <attribute key="attack" value="32" />
+    <attribute key="weight" value="2200" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="breakChance" value="6" />
+      <attribute key="level" value="20" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="missile" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="3393" article="an" name="amazon helmet">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="7" />
+    <attribute key="weight" value="2950" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="3394" article="an" name="amazon armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="skilldist" value="3" />
+    <attribute key="armor" value="13" />
+    <attribute key="weight" value="4500" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="60" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="3407" article="a" name="charmer's tiara">
+    <attribute key="armor" value="2" />
+    <attribute key="weight" value="2200" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="3422" article="a" name="great shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="description" value="The shield is made of dragon scales" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="38" />
+    <attribute key="weight" value="8400" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="3437" article="an" name="amazon shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="32" />
+    <attribute key="weight" value="6200" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="3444" article="a" name="sentinel shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="22" />
+    <attribute key="weight" value="4900" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="3445" article="a" name="salamander shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="26" />
+    <attribute key="weight" value="5900" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="3451" article="a" name="pitchfork">
+    <attribute key="primarytype" value="tools" />
+    <attribute key="weight" value="2500" />
+  </item>
+  <item id="3454" article="a" name="broom">
+    <attribute key="primarytype" value="tools" />
+    <attribute key="weight" value="1100" />
+  </item>
+  <item id="3465" article="a" name="pot">
+    <attribute key="primarytype" value="fluid containers" />
+    <attribute key="allowpickUpAble" value="1" />
+    <attribute key="weight" value="5250" />
+  </item>
+  <item id="3565" article="a" name="cape">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="3200" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+    </attribute>
+  </item>
+  <item id="3568" article="a" name="simple dress">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="weight" value="1000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+    </attribute>
+  </item>
+  <item id="3576" article="a" name="post officer's hat">
+    <attribute key="description" value="This hat is the insignia of all Tibian post officers" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="700" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="5552" article="a" name="rum flask">
+    <attribute key="primarytype" value="fluid containers" />
+    <attribute key="allowpickUpAble" value="1" />
+    <attribute key="weight" value="280" />
+  </item>
+  <item id="5668" article="a" name="mysterious voodoo skull">
+    <attribute key="primarytype" value="magical items" />
+    <attribute key="weight" value="1400" />
+  </item>
+  <item id="5808" name="Orshabaal's brain">
+    <attribute key="weight" value="3500" />
+  </item>
+  <item id="5813" article="a" name="skull candle">
+    <attribute key="primarytype" value="light sources" />
+    <attribute key="stopduration" value="1" />
+    <attribute key="showduration" value="1" />
+    <attribute key="weight" value="2200" />
+  </item>
+  <item id="5943" name="Morgaroth's heart">
+    <attribute key="weight" value="3500" />
+  </item>
+  <item id="5951" article="a" name="fish tail">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="250" />
+  </item>
+  <item id="6087" article="a" name="music sheet">
+    <attribute key="description" value="It contains the first verse of a hymn" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="6088" article="a" name="music sheet">
+    <attribute key="description" value="It contains the second verse of a hymn" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="6089" article="a" name="music sheet">
+    <attribute key="description" value="It contains the third verse of a hymn" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="6090" article="a" name="music sheet">
+    <attribute key="description" value="It contains the fourth and last verse of a hymn" />
+    <attribute key="weight" value="50" />
+  </item>
+  <item id="6104" article="a" name="jewel case">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="containersize" value="1" />
+    <attribute key="weight" value="170" />
+  </item>
+  <item id="6566" article="a" name="stuffed dragon">
+    <attribute key="primarytype" value="dolls and bears" />
+    <attribute key="duration" value="3" />
+    <attribute key="decayTo" value="5791" />
+    <attribute key="weight" value="850" />
+  </item>
+  <item id="7431" article="a" name="demonbone">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="attack" value="48" />
+    <attribute key="extradef" value="-2" />
+    <attribute key="defense" value="38" />
+    <attribute key="weight" value="18000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="80" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="7453" article="an" name="executioner">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="51" />
+    <attribute key="defense" value="20" />
+    <attribute key="weight" value="9900" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost axe" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="85" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="7458" article="a" name="fur cap">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="description" value="It feels nice and warm on your ears" />
+    <attribute key="armor" value="3" />
+    <attribute key="weight" value="1800" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="7459" article="a" name="pair of earmuffs">
+    <attribute key="description" value="They feel nice and warm on your ears" />
+    <attribute key="absorbpercentice" value="2" />
+    <attribute key="weight" value="500" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="7533" article="a" name="nomad parchment">
+    <attribute key="primarytype" value="documents and papers" />
+    <attribute key="description" value="It seems to be a list of people to be eliminated. The first name on the list is 'Arito'" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="7786" article="an" name="orc tusk">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="7884" article="a" name="rope">
+    <attribute key="primarytype" value="tools" />
+    <attribute key="weight" value="1800" />
+  </item>
+  <item id="8023" article="a" name="royal crossbow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="hitchance" value="3" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="5" />
+    <attribute key="weight" value="12000" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="130" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8024" article="the" name="devileye">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="hitchance" value="-20" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="20" />
+    <attribute key="weight" value="5500" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="100" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8025" article="the" name="ironworker">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="range" value="5" />
+    <attribute key="attack" value="4" />
+    <attribute key="weight" value="15000" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="80" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8029" article="a" name="silkweaver bow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="hitchance" value="3" />
+    <attribute key="range" value="6" />
+    <attribute key="weight" value="2500" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="40" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8037" article="a" name="dark lord's cape">
+    <attribute key="description" value="There is a dark aura surrounding it" />
+    <attribute key="absorbpercentdeath" value="8" />
+    <attribute key="absorbpercentholy" value="-8" />
+    <attribute key="armor" value="11" />
+    <attribute key="weight" value="2900" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="65" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+  </item>
+  <item id="8039" article="a" name="dragon robe">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="description" value="It is covered with runic symbols" />
+    <attribute key="absorbpercentice" value="-12" />
+    <attribute key="absorbpercentfire" value="12" />
+    <attribute key="armor" value="12" />
+    <attribute key="weight" value="2850" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="75" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+  </item>
+  <item id="8044" article="a" name="belted cape">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="10" />
+    <attribute key="weight" value="3500" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8051" article="a" name="voltage armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentpoison" value="-3" />
+    <attribute key="absorbpercentenergy" value="3" />
+    <attribute key="armor" value="13" />
+    <attribute key="weight" value="8450" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="60" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Knight;true, Paladin;true, Elite Knight, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8053" article="a" name="fireborn giant armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentice" value="-5" />
+    <attribute key="absorbpercentfire" value="5" />
+    <attribute key="skillsword" value="2" />
+    <attribute key="armor" value="15" />
+    <attribute key="weight" value="12000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="100" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="8054" article="an" name="earthborn titan armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentpoison" value="5" />
+    <attribute key="absorbpercentfire" value="-5" />
+    <attribute key="skillaxe" value="2" />
+    <attribute key="armor" value="15" />
+    <attribute key="weight" value="12000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="100" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="8056" article="an" name="oceanborn leviathan armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentice" value="5" />
+    <attribute key="absorbpercentenergy" value="-5" />
+    <attribute key="skillshield" value="1" />
+    <attribute key="armor" value="15" />
+    <attribute key="weight" value="10000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="100" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="8058" article="a" name="molten plate">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentice" value="-7" />
+    <attribute key="absorbpercentfire" value="7" />
+    <attribute key="armor" value="13" />
+    <attribute key="weight" value="7500" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="75" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8059" article="a" name="frozen plate">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentice" value="7" />
+    <attribute key="absorbpercentenergy" value="-7" />
+    <attribute key="armor" value="13" />
+    <attribute key="weight" value="7500" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="75" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="8076" article="a" name="spellscroll of prophecies">
+    <attribute key="description" value="It shows your spells and can also shield against attacks when worn" />
+    <attribute key="weaponType" value="spellbook" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="defense" value="12" />
+    <attribute key="weight" value="2650" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="70" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="8090" article="a" name="spellbook of dark mysteries">
+    <attribute key="description" value="It shows your spells and can also shield against attacks when worn" />
+    <attribute key="weaponType" value="spellbook" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="defense" value="16" />
+    <attribute key="weight" value="2850" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="80" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="8098" article="a" name="demonwing axe">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="53" />
+    <attribute key="defense" value="20" />
+    <attribute key="weight" value="12000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost axe" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="120" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="8100" article="an" name="obsidian truncheon">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="attack" value="50" />
+    <attribute key="extradef" value="2" />
+    <attribute key="defense" value="30" />
+    <attribute key="weight" value="6500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="100" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="8101" article="the" name="stomper">
+    <attribute key="weaponType" value="club" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="51" />
+    <attribute key="defense" value="20" />
+    <attribute key="weight" value="11500" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="100" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="8820" name="Morik's helmet">
+    <attribute key="description" value="It belonged to a famous gladiator" />
+    <attribute key="weight" value="4600" />
+  </item>
+  <item id="8901" article="a" name="rusted shield">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="description" value="If you can remove the rust layer and dirt from the shield you will be able to see what it is" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="1" />
+    <attribute key="weight" value="6500" />
+  </item>
+  <item id="8902" article="a" name="slightly rusted shield">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="description" value="If you can remove the rust layer and dirt from the shield you will be able to see what it is" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="1" />
+    <attribute key="weight" value="6500" />
+  </item>
+  <item id="8907" article="a" name="rusted helmet">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="description" value="If you can remove the rust layer and dirt from the helmet you will be able to see what it is" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="5200" />
+  </item>
+  <item id="8908" article="a" name="slightly rusted helmet">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="description" value="If you can remove the rust layer and dirt from the helmet you will be able to see what it is" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="5200" />
+  </item>
+  <item id="9045" article="a" name="royal tapestry">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="9056" article="a" name="black skull">
+    <attribute key="weight" value="2400" />
+  </item>
+  <item id="9064" article="a" name="crystal pedestal">
+    <attribute key="duration" value="10" />
+    <attribute key="transformOnUse" value="9065" />
+    <attribute key="weight" value="4000" />
+  </item>
+  <item id="9185" article="a" name="very old piece of paper">
+    <attribute key="description" value="You have the slight impression that it bears a secret" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="9376" article="a" name="stale bread of ancientness">
+    <attribute key="description" value="This bread is so old that it has become unbreakable and a formidable weapon" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="attack" value="18" />
+    <attribute key="defense" value="8" />
+    <attribute key="weight" value="500" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="9377" article="a" name="shield of the white knight">
+    <attribute key="description" value="It seems a bit chunky, but what was good enough for a white knight should be good for everyone" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="8" />
+    <attribute key="weight" value="500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="9380" article="a" name="shield of care">
+    <attribute key="description" value="This shield will surely care for anyone who can bear it" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="defense" value="8" />
+    <attribute key="weight" value="1700" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="9381" article="a" name="helmet of ultimate terror">
+    <attribute key="description" value="There is evil inside" />
+    <attribute key="armor" value="3" />
+    <attribute key="weight" value="1250" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="9386" article="a" name="farmer's avenger">
+    <attribute key="description" value="A weapon forged to fight oppression of the poor underdogs" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="17" />
+    <attribute key="defense" value="7" />
+    <attribute key="weight" value="2500" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="weaponType" value="axe" />
+    </attribute>
+  </item>
+  <item id="9387" article="a" name="poet's fencing quill">
+    <attribute key="description" value="This feather is mightier than a sword" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="attack" value="10" />
+    <attribute key="defense" value="8" />
+    <attribute key="weight" value="200" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="9396" article="an" name="incredible mumpiz slayer">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="description" value="This magnificent weapon was forged to slay arch mumpiz demons with a single blow" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="attack" value="17" />
+    <attribute key="defense" value="14" />
+    <attribute key="weight" value="4200" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="9400" article="the" name="rain coat">
+    <attribute key="description" value="The wearer of this cape commands the forces of heaven" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="3200" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+    </attribute>
+  </item>
+  <item id="9613" article="a" name="sea serpent trophy">
+    <attribute key="primarytype" value="trophies" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="10201" name="dragon scale boots">
+    <attribute key="primarytype" value="boots" />
+    <attribute key="absorbpercentice" value="-3" />
+    <attribute key="absorbpercentfire" value="3" />
+    <attribute key="armor" value="3" />
+    <attribute key="weight" value="1850" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase speed" value="3" />
+      <attribute key="paralysis removal" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="70" />
+      <attribute key="slot" value="feet" />
+      <attribute key="vocation" value="Knight;true, Paladin;true, Elite Knight, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="10207" article="a" name="snowman package">
+    <attribute key="primarytype" value="furniture" />
+    <attribute key="description" value="Use it in your house to reveal a snowman" />
+    <attribute key="weight" value="3500" />
+  </item>
+  <item id="10328" article="a" name="bunch of ripe rice" plural="bunches of ripe rice">
+    <attribute key="weight" value="750" />
+  </item>
+  <item id="10422" article="a" name="clay lump">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="description" value="You could use it and try to form a statue out of it" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="11679" article="a" name="souleater trophy">
+    <attribute key="primarytype" value="trophies" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="11693" article="a" name="blade of corruption">
+    <attribute key="weaponType" value="sword" />
+    <attribute key="attack" value="48" />
+    <attribute key="extradef" value="2" />
+    <attribute key="defense" value="29" />
+    <attribute key="weight" value="6400" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost sword" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="82" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="12304" article="a" name="maxilla maximus">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="12307" article="a" name="harness">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="12311" article="a" name="carrot on a stick">
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="12543" article="a" name="golden hyaena pendant">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="weight" value="350" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="necklace" />
+    </attribute>
+  </item>
+  <item id="12603" article="a" name="wand of dimensions">
+    <attribute key="description" value="This wand controls the rift between time and space" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="shootType" value="energy" />
+    <attribute key="range" value="3" />
+    <attribute key="weight" value="2800" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="37" />
+      <attribute key="mana" value="9" />
+      <attribute key="fromDamage" value="44" />
+      <attribute key="toDamage" value="62" />
+      <attribute key="weaponType" value="wand" />
+      <attribute key="wandType" value="death" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="12801" article="a" name="golden can of oil">
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="12805" name="yielocks" plural="yielocks">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="description" value="A piece of skin from a yielothax. Tiny hairs are visible on its surface - and they seem to be alive" />
+    <attribute key="showCount" value="0" />
+    <attribute key="weight" value="295" />
+  </item>
+  <item id="13429" article="a" name="bag with stolen gold">
+    <attribute key="description" value="It contains so much cash that you wouldn't have any idea how to use it. Return it to a nearby bank" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="14172" article="a" name="gooey mass" plural="gooey masses">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="description" value="Perhaps it contains something useful" />
+    <attribute key="weight" value="5500" />
+  </item>
+  <item id="14249" article="a" name="buggy backpack">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="containersize" value="20" />
+    <attribute key="weight" value="1800" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase capacity" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="backpack" />
+    </attribute>
+  </item>
+  <item id="16099" article="a" name="mushroom backpack">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="containersize" value="20" />
+    <attribute key="weight" value="1800" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase capacity" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="backpack" />
+    </attribute>
+  </item>
+  <item id="16155" article="a" name="decorative ribbon">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="16161" article="a" name="crystalline axe">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="description" value="Even in the light of day, the stars seem to reflect in each facet of this crystalline axe" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="skillaxe" value="1" />
+    <attribute key="attack" value="51" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="29" />
+    <attribute key="weight" value="7600" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost axe" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="120" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="16162" article="a" name="mycological mace">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="skillclub" value="1" />
+    <attribute key="attack" value="50" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="31" />
+    <attribute key="weight" value="5900" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="120" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="16175" article="a" name="shiny blade">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="skillsword" value="1" />
+    <attribute key="attack" value="49" />
+    <attribute key="extradef" value="2" />
+    <attribute key="defense" value="35" />
+    <attribute key="weight" value="4500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost sword" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="120" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="16205" name="Gnomevil's hat">
+    <attribute key="weight" value="210" />
+  </item>
+  <item id="16279" article="a" name="crystal rubbish">
+    <attribute key="primarytype" value="rubbish" />
+    <attribute key="weight" value="980" />
+  </item>
+  <item id="19362" article="an" name="icicle bow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="hitchance" value="4" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="1" />
+    <attribute key="weight" value="4200" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+    </attribute>
+  </item>
+  <item id="19363" article="a" name="runic ice shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="defense" value="31" />
+    <attribute key="weight" value="4900" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="19369" article="an" name="eye of the storm">
+    <attribute key="weight" value="150" />
+  </item>
+  <item id="20062" article="a" name="cluster of solace">
+    <attribute key="weight" value="280" />
+  </item>
+  <item id="20063" article="a" name="dream matter">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="390" />
+  </item>
+  <item id="20088" article="a" name="crude umbral spellbook">
+    <attribute key="primarytype" value="spellbooks" />
+    <attribute key="weaponType" value="spellbook" />
+    <attribute key="absorbpercentice" value="2" />
+    <attribute key="absorbpercentpoison" value="2" />
+    <attribute key="absorbpercentfire" value="2" />
+    <attribute key="absorbpercentenergy" value="2" />
+    <attribute key="magiclevelpoints" value="1" />
+    <attribute key="defense" value="14" />
+    <attribute key="weight" value="4000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="75" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="20089" article="an" name="umbral spellbook">
+    <attribute key="primarytype" value="spellbooks" />
+    <attribute key="weaponType" value="spellbook" />
+    <attribute key="absorbpercentice" value="3" />
+    <attribute key="absorbpercentpoison" value="3" />
+    <attribute key="absorbpercentfire" value="3" />
+    <attribute key="absorbpercentenergy" value="3" />
+    <attribute key="magiclevelpoints" value="2" />
+    <attribute key="defense" value="16" />
+    <attribute key="weight" value="3500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="150" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="20131" name="remains of a crude dream">
+    <attribute key="description" value="They melt away as you look at them" />
+  </item>
+  <item id="20264" article="an" name="unrealized dream">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="weight" value="3300" />
+  </item>
+  <item id="20274" article="a" name="nightmare horn">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="A hermit near Carlin might be able to tell you more about it" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="20277" article="a" name="psychedelic tapestry">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="20278" article="a" name="demonic tapestry">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="20279" article="an" name="eye pod">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="20282" article="a" name="nightmare hook">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="21218" article="a" name="Lisa's doll">
+    <attribute key="weight" value="650" />
+  </item>
+  <item id="21292" article="a" name="feedbag">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="containersize" value="20" />
+    <attribute key="weight" value="1800" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase capacity" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="backpack" />
+    </attribute>
+  </item>
+  <item id="21755" article="a" name="bronze gear wheel">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="weight" value="5" />
+  </item>
+  <item id="21814" article="a" name="glooth capsule">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="weight" value="150" />
+  </item>
+  <item id="21816" article="a" name="tainted glooth capsule">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="weight" value="150" />
+  </item>
+  <item id="22083" article="a" name="moonlight crystals">
+    <attribute key="primarytype" value="valuables" />
+    <attribute key="weight" value="400" />
+  </item>
+  <item id="22171" article="an" name="ogre klubba">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="45" />
+    <attribute key="defense" value="25" />
+    <attribute key="weight" value="7900" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="50" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+    </attribute>
+  </item>
+  <item id="22172" article="an" name="ogre choppa">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="39" />
+    <attribute key="defense" value="23" />
+    <attribute key="weight" value="7500" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="25" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+    </attribute>
+  </item>
+  <item id="22183" article="an" name="ogre scepta">
+    <attribute key="primarytype" value="rods" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="shootType" value="smallearth" />
+    <attribute key="range" value="3" />
+    <attribute key="weight" value="2900" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="critical hit" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="37" />
+      <attribute key="mana" value="13" />
+      <attribute key="fromDamage" value="56" />
+      <attribute key="toDamage" value="74" />
+      <attribute key="weaponType" value="wand" />
+      <attribute key="wandType" value="earth" />
+      <attribute key="vocation" value="Druid;true, Elder Druid" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="22192" article="a" name="shamanic mask">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="4" />
+    <attribute key="weight" value="3100" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="22755" article="a" name="book of lies">
+    <attribute key="weaponType" value="shield" />
+    <attribute key="magiclevelpoints" value="4" />
+    <attribute key="defense" value="18" />
+    <attribute key="weight" value="2400" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="150" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="22760" article="an" name="impaler of the igniter">
+    <attribute key="weaponType" value="sword" />
+    <attribute key="elementfire" value="26" />
+    <attribute key="attack" value="25" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="31" />
+    <attribute key="weight" value="5900" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="150" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="23811" article="a" name="reinvigorating seeds">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="description" value="A small bag full of healthy seeds" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="24397" article="a" name="Ferumbras' Candy Hat">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="description" value="It is a sweet candy replica of the famous Ferumbras' hat" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="850" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="24402" article="a" name="chocolatey dragon scale legs">
+    <attribute key="primarytype" value="legs" />
+    <attribute key="description" value="This is a chocolate replica of the famous dragon scale legs" />
+    <attribute key="armor" value="2" />
+    <attribute key="weight" value="1800" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="legs" />
+    </attribute>
+  </item>
+  <item article="a" name="part of a rune" id="24957">
+    <attribute key="weight" value="850" />
+  </item>
+  <item article="a" name="part of a rune" id="24958">
+    <attribute key="weight" value="850" />
+  </item>
+  <item article="a" name="part of a rune" id="24959">
+    <attribute key="weight" value="850" />
+  </item>
+  <item id="24973" article="a" name="shadow mask">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="650" />
+  </item>
+  <item id="24974" article="a" name="shadow paint">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="650" />
+  </item>
+  <item id="24977" article="a" name="glowing carrot">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="650" />
+  </item>
+  <item id="24978" name="coal eyes">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="650" />
+  </item>
+  <item id="25735" article="a" name="leaf star">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="shootType" value="leafstar" />
+    <attribute key="elementearth" value="2" />
+    <attribute key="maxhitchance" value="86" />
+    <attribute key="hitchance" value="90" />
+    <attribute key="range" value="5" />
+    <attribute key="attack" value="48" />
+    <attribute key="weight" value="200" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="breakChance" value="40" />
+      <attribute key="level" value="60" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="missile" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="27511" article="the" name="cube">
+    <attribute key="description" value="It's black" />
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="27653" article="a" name="suspicious device">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="description" value="This thing looks like it was carried around by someone for a long time" />
+    <attribute key="weight" value="1000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="necklace" />
+    </attribute>
+  </item>
+  <item id="27932" article="a" name="sinister book">
+    <attribute key="primarytype" value="books" />
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1500" />
+    <attribute key="weight" value="1500" />
+  </item>
+  <item id="27933" article="an" name="ominous book">
+    <attribute key="primarytype" value="books" />
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1500" />
+    <attribute key="weight" value="1500" />
+  </item>
+  <item id="27934" article="a" name="knowledgeable book">
+    <attribute key="primarytype" value="books" />
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="1500" />
+    <attribute key="weight" value="2000" />
+  </item>
+  <item id="28572" article="an" name="ornate tome">
+    <attribute key="primarytype" value="books" />
+    <attribute key="writeable" value="1" />
+    <attribute key="maxtextlen" value="3997" />
+    <attribute key="weight" value="1500" />
+  </item>
+  <item id="28714" article="a" name="falcon circlet">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="absorbpercentfire" value="9" />
+    <attribute key="magiclevelpoints" value="2" />
+    <attribute key="armor" value="8" />
+    <attribute key="weight" value="1300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="300" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="28715" article="a" name="falcon coif">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="absorbpercentphysical" value="3" />
+    <attribute key="absorbpercentfire" value="10" />
+    <attribute key="skillshield" value="2" />
+    <attribute key="skilldist" value="2" />
+    <attribute key="armor" value="10" />
+    <attribute key="weight" value="2800" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+      <attribute key="skillboost magic level" value="2" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="300" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Knight;true, Paladin;true, Elite Knight, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="28716" article="a" name="falcon rod">
+    <attribute key="primarytype" value="rods" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="shootType" value="earth" />
+    <attribute key="absorbpercentenergy" value="8" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="range" value="5" />
+    <attribute key="weight" value="3700" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="critical hit" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="mana" value="20" />
+      <attribute key="fromDamage" value="87" />
+      <attribute key="toDamage" value="101" />
+      <attribute key="weaponType" value="wand" />
+      <attribute key="wandType" value="earth" />
+      <attribute key="vocation" value="Druid;true, Elder Druid" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="28717" article="a" name="falcon wand">
+    <attribute key="primarytype" value="wands" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="shootType" value="energy" />
+    <attribute key="absorbpercentfire" value="8" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="range" value="5" />
+    <attribute key="weight" value="3300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="critical hit" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="mana" value="21" />
+      <attribute key="fromDamage" value="86" />
+      <attribute key="toDamage" value="102" />
+      <attribute key="weaponType" value="wand" />
+      <attribute key="wandType" value="energy" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="28718" article="a" name="falcon bow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="absorbpercentfire" value="5" />
+    <attribute key="skilldist" value="2" />
+    <attribute key="hitchance" value="5" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="7" />
+    <attribute key="weight" value="3500" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="28719" article="a" name="falcon plate">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentphysical" value="12" />
+    <attribute key="skillshield" value="4" />
+    <attribute key="armor" value="18" />
+    <attribute key="weight" value="18800" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="300" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="28720" name="falcon greaves">
+    <attribute key="primarytype" value="legs" />
+    <attribute key="absorbpercentphysical" value="7" />
+    <attribute key="absorbpercentice" value="7" />
+    <attribute key="skilldist" value="3" />
+    <attribute key="skillclub" value="3" />
+    <attribute key="skillaxe" value="3" />
+    <attribute key="skillsword" value="3" />
+    <attribute key="armor" value="10" />
+    <attribute key="weight" value="3600" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="300" />
+      <attribute key="slot" value="legs" />
+      <attribute key="vocation" value="Knight;true, Paladin;true, Elite Knight, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="28721" article="a" name="falcon shield">
+    <attribute key="primarytype" value="shields" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="absorbpercentphysical" value="6" />
+    <attribute key="absorbpercentfire" value="10" />
+    <attribute key="defense" value="39" />
+    <attribute key="weight" value="5700" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="300" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Knight;true, Paladin;true, Elite Knight, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="28723" article="a" name="falcon longsword">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="absorbpercentpoison" value="10" />
+    <attribute key="skillsword" value="4" />
+    <attribute key="attack" value="56" />
+    <attribute key="defense" value="34" />
+    <attribute key="weight" value="8200" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost sword" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="28724" article="a" name="falcon battleaxe">
+    <attribute key="primarytype" value="axe weapons" />
+    <attribute key="weaponType" value="axe" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="elementenergy" value="47" />
+    <attribute key="absorbpercentenergy" value="12" />
+    <attribute key="skillaxe" value="4" />
+    <attribute key="attack" value="10" />
+    <attribute key="defense" value="33" />
+    <attribute key="weight" value="9500" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost axe" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="axe" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="28725" article="a" name="falcon mace">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="elementenergy" value="41" />
+    <attribute key="absorbpercentenergy" value="7" />
+    <attribute key="skillclub" value="3" />
+    <attribute key="attack" value="11" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="33" />
+    <attribute key="weight" value="6800" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="28829" article="a" name="rotten demonbone">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="absorbpercentpoison" value="3" />
+    <attribute key="attack" value="46" />
+    <attribute key="extradef" value="-1" />
+    <attribute key="defense" value="40" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="18000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="80" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="28832" article="a" name="sulphurous demonbone">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="absorbpercentfire" value="3" />
+    <attribute key="attack" value="46" />
+    <attribute key="extradef" value="-1" />
+    <attribute key="defense" value="40" />
+    <attribute key="armor" value="1" />
+    <attribute key="weight" value="18000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="80" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="28853" article="the" name="Spatial Warp Almanac">
+    <attribute key="description" value="An extremely old book on teleportation containing a variety of spells on bending space. It seems tainted by something" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="29419" article="a" name="resizer">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="elementice" value="46" />
+    <attribute key="skillclub" value="2" />
+    <attribute key="attack" value="11" />
+    <attribute key="defense" value="33" />
+    <attribute key="weight" value="8900" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="230" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="29420" article="a" name="shoulder plate">
+    <attribute key="primarytype" value="spellbooks" />
+    <attribute key="weaponType" value="shield" />
+    <attribute key="absorbpercentphysical" value="2" />
+    <attribute key="absorbpercentpoison" value="6" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="defense" value="26" />
+    <attribute key="weight" value="3500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="180" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="29421" article="a" name="summerblade">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="elementfire" value="41" />
+    <attribute key="skillsword" value="1" />
+    <attribute key="attack" value="10" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="20" />
+    <attribute key="weight" value="4300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost sword" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="200" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="29422" article="a" name="winterblade">
+    <attribute key="primarytype" value="sword weapons" />
+    <attribute key="weaponType" value="sword" />
+    <attribute key="elementice" value="40" />
+    <attribute key="skillsword" value="1" />
+    <attribute key="attack" value="10" />
+    <attribute key="extradef" value="3" />
+    <attribute key="defense" value="22" />
+    <attribute key="weight" value="4300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost sword" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="200" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="sword" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="29425" article="an" name="energized limb">
+    <attribute key="primarytype" value="rods" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="shootType" value="fire" />
+    <attribute key="absorbpercentenergy" value="10" />
+    <attribute key="magiclevelpoints" value="2" />
+    <attribute key="range" value="5" />
+    <attribute key="weight" value="2700" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="critical hit" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="180" />
+      <attribute key="mana" value="24" />
+      <attribute key="fromDamage" value="88" />
+      <attribute key="toDamage" value="108" />
+      <attribute key="weaponType" value="wand" />
+      <attribute key="wandType" value="fire" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="29426" article="a" name="brain in a jar">
+    <attribute key="weaponType" value="shield" />
+    <attribute key="absorbpercentpoison" value="7" />
+    <attribute key="magiclevelpoints" value="3" />
+    <attribute key="defense" value="19" />
+    <attribute key="weight" value="2700" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="180" />
+      <attribute key="slot" value="shield" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="30170" article="a" name="turquoise tendril lantern">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="It is made of leaves and seems to be irresistible to moths and other insects" />
+    <attribute key="weight" value="919" />
+  </item>
+  <item id="30171" article="a" name="purple tendril lantern">
+    <attribute key="primarytype" value="taming items" />
+    <attribute key="description" value="It is made of leaves and seems to be irresistible to moths and other insects" />
+    <attribute key="weight" value="919" />
+  </item>
+  <item id="30187" article="a" name="versicolour fireworks powder">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30188" article="a" name="red fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30189" article="a" name="yellow fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30190" article="a" name="green fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30191" article="a" name="blue fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30197" article="a" name="festive backpack">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="containersize" value="22" />
+    <attribute key="weight" value="1500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase capacity" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="backpack" />
+    </attribute>
+  </item>
+  <item id="30208" article="a" name="fireworks capsule">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="2000" />
+  </item>
+  <item id="30268" article="an" name="orange fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30269" article="a" name="purple fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30270" article="a" name="turquoise fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30271" article="a" name="grainy fireworks powder">
+    <attribute key="primarytype" value="party items" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="30315" article="a" name="pinata">
+    <attribute key="primarytype" value="decoration" />
+    <attribute key="weight" value="3000" />
+  </item>
+  <item id="30316" article="a" name="surprise bag">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="30317" article="a" name="Ferumbras puppet">
+    <attribute key="primarytype" value="dolls and bears" />
+    <attribute key="weight" value="550" />
+  </item>
+  <item id="30325" article="a" name="dark bell">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="220" />
+  </item>
+  <item id="30393" article="a" name="cobra crossbow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="skilldist" value="2" />
+    <attribute key="range" value="6" />
+    <attribute key="hitChance" value="6" />
+    <attribute key="attack" value="7" />
+    <attribute key="weight" value="4000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="220" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="30394" name="cobra boots">
+    <attribute key="primarytype" value="boots" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="absorbpercentphysical" value="6" />
+    <attribute key="speed" value="10" />
+    <attribute key="armor" value="3" />
+    <attribute key="weight" value="900" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="paralysis removal" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="feet" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="30397" article="a" name="cobra hood">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="absorbpercentphysical" value="5" />
+    <attribute key="skillclub" value="1" />
+    <attribute key="skillaxe" value="1" />
+    <attribute key="skillsword" value="1" />
+    <attribute key="armor" value="9" />
+    <attribute key="weight" value="2700" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="270" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="30403" name="enchanted theurgic amulet">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="weight" value="500" />
+    <attribute key="transformEquipTo" value="30402" />
+    <attribute key="stopduration" value="1" />
+    <attribute key="showduration" value="1" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="necklace" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="31369" article="a" name="gryphon mask">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="description" value="It is carved from sequoia wood" />
+    <attribute key="weight" value="2000" />
+  </item>
+  <item id="31557" article="a" name="enchanted blister ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="stopduration" value="1" />
+    <attribute key="showduration" value="1" />
+    <attribute key="transformequipto" value="31616" />
+    <attribute key="weight" value="90" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="ring" />
+    </attribute>
+  </item>
+  <item id="31577" article="a" name="terra helmet">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="absorbpercentphysical" value="5" />
+    <attribute key="absorbpercentpoison" value="5" />
+    <attribute key="skillclub" value="2" />
+    <attribute key="skillaxe" value="2" />
+    <attribute key="skillsword" value="2" />
+    <attribute key="armor" value="9" />
+    <attribute key="weight" value="3100" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="230" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="31578" article="a" name="bear skin">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentpoison" value="11" />
+    <attribute key="absorbpercentfire" value="-2" />
+    <attribute key="magiclevelpoints" value="4" />
+    <attribute key="armor" value="16" />
+    <attribute key="weight" value="4400" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="230" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Druid;true, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="31579" article="an" name="embrace of nature">
+    <attribute key="absorbpercentice" value="11" />
+    <attribute key="absorbpercentenergy" value="-3" />
+    <attribute key="skilldist" value="4" />
+    <attribute key="armor" value="16" />
+    <attribute key="weight" value="2400" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="31580" article="a" name="mortal mace">
+    <attribute key="primarytype" value="club weapons" />
+    <attribute key="weaponType" value="club" />
+    <attribute key="elementdeath" value="44" />
+    <attribute key="skillclub" value="2" />
+    <attribute key="attack" value="8" />
+    <attribute key="extradef" value="2" />
+    <attribute key="defense" value="27" />
+    <attribute key="weight" value="4100" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost club" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="220" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="club" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+      <attribute key="slot" value="hand" />
+    </attribute>
+  </item>
+  <item id="31581" article="a" name="bow of cataclysm">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="absorbpercentdeath" value="4" />
+    <attribute key="skilldist" value="2" />
+    <attribute key="hitchance" value="4" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="6" />
+    <attribute key="weight" value="4700" />
+    <attribute key="imbuementslot" value="3">
+      <attribute key="elemental damage" value="3" />
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="250" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="distance" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="31582" article="a" name="galea mortis">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="absorbpercentdeath" value="6" />
+    <attribute key="absorbpercentholy" value="-3" />
+    <attribute key="magiclevelpoints" value="2" />
+    <attribute key="armor" value="7" />
+    <attribute key="weight" value="2300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost magic level" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+  </item>
+  <item id="31583" article="a" name="toga mortis">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="absorbpercentdeath" value="6" />
+    <attribute key="magiclevelpoints" value="4" />
+    <attribute key="armor" value="16" />
+    <attribute key="weight" value="5200" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+  </item>
+  <item id="31617" name="winged boots">
+    <attribute key="primarytype" value="boots" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="absorbpercentpoison" value="7" />
+    <attribute key="skilldist" value="1" />
+    <attribute key="speed" value="15" />
+    <attribute key="armor" value="2" />
+    <attribute key="weight" value="1200" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase speed" value="3" />
+      <attribute key="paralysis removal" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="220" />
+      <attribute key="slot" value="feet" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="32619" name="pair of nightmare boots">
+    <attribute key="absorbpercentenergy" value="6" />
+    <attribute key="magiclevelpoints" value="1" />
+    <attribute key="armor" value="2" />
+    <attribute key="weight" value="1300" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase speed" value="3" />
+      <attribute key="paralysis removal" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="140" />
+      <attribute key="slot" value="feet" />
+      <attribute key="vocation" value="Sorcerer;true, Druid;true, Master Sorcerer, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="32703" article="a" name="death toll">
+    <attribute key="primarytype" value="quest items" />
+    <attribute key="weight" value="4" />
+  </item>
+  <item id="34258" name="red silk flower">
+    <attribute key="primarytype" value="plants and herbs" />
+    <attribute key="description" value="The petals are made of silk, the buds and pistil of rubies. The werelions of the Darama Desert often use such flowers as decorations for bravery and valour" />
+    <attribute key="weight" value="300" />
+  </item>
+  <item id="36811" article="a" name="megasylvan sapling">
+    <attribute key="description" value="A sapling from the megasylvan form of Yselda of Bounac. The prime &quot;Seed of Life&quot;" />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="37398" article="a" name="wind-up loco">
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="37536" article="a" name="changing backpack">
+    <attribute key="primarytype" value="containers" />
+    <attribute key="description" value="It changes its appearance in the course of years, just like Tibia" />
+    <attribute key="containersize" value="20" />
+    <attribute key="weight" value="1500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase capacity" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="backpack" />
+    </attribute>
+  </item>
+  <item id="37607" name="green demon legs">
+    <attribute key="primarytype" value="legs" />
+    <attribute key="armor" value="9" />
+    <attribute key="weight" value="7000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="legs" />
+    </attribute>
+  </item>
+  <item id="37608" name="green demon armor">
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="16" />
+    <attribute key="weight" value="8000" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection death" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+    </attribute>
+  </item>
+  <item id="37609" name="green demon helmet">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="description" value="You hear an evil whispering from inside" />
+    <attribute key="armor" value="10" />
+    <attribute key="weight" value="2950" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost axe" value="3" />
+      <attribute key="skillboost sword" value="3" />
+      <attribute key="skillboost club" value="3" />
+      <attribute key="skillboost shielding" value="3" />
+      <attribute key="skillboost distance" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+    </attribute>
+  </item>
+  <item id="37610" name="green demon slippers">
+    <attribute key="primarytype" value="boots" />
+    <attribute key="weight" value="600" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="increase speed" value="3" />
+      <attribute key="paralysis removal" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="feet" />
+    </attribute>
+  </item>
+  <item id="37611" name="Morshabaal's mask">
+    <attribute key="weight" value="4100" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="150" />
+      <attribute key="slot" value="shield" />
+    </attribute>
+  </item>
+  <item id="39150" article="an" name="alicorn quiver">
+    <attribute key="primarytype" value="quivers" />
+    <attribute key="slotType" value="right-hand" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="containersize" value="12" />
+    <attribute key="weight" value="2000" />
+    <attribute key="magiclevelpoints" value="1" />
+    <attribute key="perfectshotdamage" value="20" />
+    <attribute key="perfectshotrange" value="3" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="right-hand" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="39179" article="a" name="spiritthorn ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="absorbpercentphysical" value="2" />
+    <attribute key="absorbpercentfire" value="4" />
+    <attribute key="absorbpercentearth" value="4" />
+    <attribute key="absorbpercentenergy" value="4" />
+    <attribute key="absorbpercentice" value="4" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="weight" value="95" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="ring" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+  </item>
+  <item id="39182" article="an" name="alicorn ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="absorbpercentfire" value="4" />
+    <attribute key="absorbpercentearth" value="4" />
+    <attribute key="absorbpercentenergy" value="4" />
+    <attribute key="absorbpercentice" value="4" />
+    <attribute key="holymagiclevelpoints" value="1" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="weight" value="85" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="ring" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+  </item>
+  <item id="39185" article="an" name="arcanomancer sigil">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="absorbpercentfire" value="4" />
+    <attribute key="absorbpercentearth" value="4" />
+    <attribute key="absorbpercentenergy" value="4" />
+    <attribute key="absorbpercentice" value="4" />
+    <attribute key="firemagiclevelpoints" value="1" />
+    <attribute key="energymagiclevelpoints" value="1" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="weight" value="90" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="ring" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+  </item>
+  <item id="39188" article="an" name="arboreal ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="absorbpercentfire" value="4" />
+    <attribute key="absorbpercentearth" value="4" />
+    <attribute key="absorbpercentenergy" value="4" />
+    <attribute key="absorbpercentice" value="4" />
+    <attribute key="healingmagiclevelpoints" value="2" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="weight" value="70" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="ring" />
+      <attribute key="vocation" value="Druid;true, Elder Druid" />
+    </attribute>
+  </item>
+  <item id="44440" article="a" name="yapunac dagger">
+    <attribute key="loottype" value="creature products" />
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="49909" article="a" name="demonic core essence">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="60" />
+  </item>
+  <item id="50055" article="a" name="hellhunter eye">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="60" />
+  </item>
+  <item id="50147" article="a" name="charged ethereal ring">
+    <attribute key="primarytype" value="rings" />
+    <attribute key="weight" value="70" />
+    <attribute key="transformEquipTo" value="50148" />
+    <attribute key="stopduration" value="1" />
+    <attribute key="showduration" value="1" />
+    <attribute key="showattributes" value="1" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="400" />
+      <attribute key="slot" value="ring" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50161" article="a" name="falcon sai">
+    <attribute key="primarytype" value="fist weapons" />
+    <attribute key="weaponType" value="fist" />
+    <attribute key="meleeAttackEffect" value="monkdaggers" />
+    <attribute key="elementalbond" value="physical" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="lifeleechamount" value="1400" />
+    <attribute key="lifeleechchance" value="10000" />
+    <attribute key="attack" value="45" />
+    <attribute key="defense" value="20" />
+    <attribute key="skillfist" value="4" />
+    <attribute key="weight" value="8200" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost fist" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="300" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="fist" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50176" article="a" name="depth claws">
+    <attribute key="primarytype" value="fist weapons" />
+    <attribute key="weaponType" value="fist" />
+    <attribute key="elementalbond" value="energy" />
+    <attribute key="slotType" value="two-handed" />
+    <attribute key="attack" value="42" />
+    <attribute key="defense" value="18" />
+    <attribute key="skillfist" value="2" />
+    <attribute key="magiclevelpoints" value="1" />
+    <attribute key="weight" value="6400" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+      <attribute key="skillboost fist" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="level" value="135" />
+      <attribute key="unproperly" value="true" />
+      <attribute key="weaponType" value="fist" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50193" name="jade conical hat">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="5" />
+    <attribute key="mantra" value="6" />
+    <attribute key="skillfist" value="2" />
+    <attribute key="absorbpercentice" value="4" />
+    <attribute key="weight" value="2100" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="mana leech" value="3" />
+      <attribute key="skillboost fist" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="110" />
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50194" name="light bandana">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="3" />
+    <attribute key="mantra" value="2" />
+    <attribute key="skillfist" value="1" />
+    <attribute key="weight" value="900" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50257" name="plain monk robe">
+    <attribute key="description" value="A plain variant of the traditional robe of Merudri monks" />
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="6" />
+    <attribute key="mantra" value="7" />
+    <attribute key="skillfist" value="1" />
+    <attribute key="weight" value="6500" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="life leech" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50259" name="zaoan monk robe">
+    <attribute key="description" value="A dark oyoroi with an even darker past. Worn and ragged from many a battle" />
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="7" />
+    <attribute key="skillfist" value="1" />
+    <attribute key="augments" value="1">
+      <attribute key="mystic repulse" value="critical extra damage">
+        <attribute key="value" value="800" />
+      </attribute>
+    </attribute>
+    <attribute key="weight" value="11000" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="50" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="50260" name="death oyoroi">
+    <attribute key="description" value="A dark oyoroi with an even darker past. Worn and ragged from many a battle" />
+    <attribute key="primarytype" value="armors" />
+    <attribute key="armor" value="9" />
+    <attribute key="mantra" value="16" />
+    <attribute key="absorbpercentdeath" value="5" />
+    <attribute key="magiclevelpoints" value="1" />
+    <attribute key="skillfist" value="4" />
+    <attribute key="imbuementslot" value="1">
+      <attribute key="life leech" value="3" />
+      <attribute key="elemental protection earth" value="3" />
+      <attribute key="elemental protection ice" value="3" />
+      <attribute key="elemental protection fire" value="3" />
+      <attribute key="elemental protection energy" value="3" />
+      <attribute key="elemental protection holy" value="3" />
+    </attribute>
+    <attribute key="weight" value="10500" />
+    <attribute key="script" value="moveevent">
+      <attribute key="level" value="230" />
+      <attribute key="slot" value="armor" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+  </item>
+  <item id="51275" article="a" name="greater garlic necklace">
+    <attribute key="primarytype" value="amulets and necklaces" />
+    <attribute key="showCharges" value="1" />
+    <attribute key="showAttributes" value="1" />
+    <attribute key="absorbpercentlifedrain" value="50" />
+    <attribute key="charges" value="500" />
+    <attribute key="weight" value="630" />
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="necklace" />
+    </attribute>
+  </item>
+  <item id="51428" article="a" name="pressed flower">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="5" />
+  </item>
+  <item id="51470" name="tiny bat coffin">
+    <attribute key="weight" value="630" />
+  </item>
+  <item id="51487" article="a" name="norcferatu talisman">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="20" />
+  </item>
+  <item id="52637" name="repair kit for boats">
+    <attribute key="description" value="A practical repair kit for small boats, complete with tar and all the necessary tools." />
+    <attribute key="weight" value="1500" />
+  </item>
+  <item id="52658" article="an" name="icy crypt rune">
+    <attribute key="description" value="This rune pulses with corrupt magic bound into bone. Only by offering a complete set to the guardian spirit may its blight be undone." />
+    <attribute key="weight" value="500" />
+  </item>
+  <item id="52708" article="a" name="fetid heart">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="52709" article="a" name="cryptic fossil">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="52726" article="an" name="icy scales">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="52727" article="an" name="icy horns">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="52728" article="a" name="frozen crapace">
+    <attribute key="weight" value="1000" />
+  </item>
+  <item id="52729" article="a" name="frozen claw">
+    <attribute key="weight" value="455" />
+  </item>
+  <item id="52744" article="a" name="personal letter of Michael the Stalwart I">
+    <attribute key="description" value="A personal letter of a knight of the Order of the Stag 1/3." />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="52748" name="battle tactics">
+    <attribute key="description" value="These plans show various tactical formations, troop locations and supply depots around the Isle of Ada." />
+  </item>
+  <item id="52758" name="salvaged bronze parts">
+    <attribute key="description" value="Salvaged bronze parts in good quality that can be reused to for various refinements." />
+    <attribute key="weight" value="2000" />
+  </item>
+  <item id="52822" article="a" name="personal letter of Michael the Stalwart II">
+    <attribute key="description" value="A personal letter of a knight of the Order of the Stag 2/3." />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="52823" article="a" name="personal letter of Michael the Stalwart III">
+    <attribute key="description" value="A personal letter of a knight of the Order of the Stag 3/3." />
+    <attribute key="weight" value="200" />
+  </item>
+  <item id="52964" article="a" name="charred mask">
+    <attribute key="slotType" value="head" />
+    <attribute key="weight" value="800" />
+    <attribute key="description" value="A mask scorched by infernal flames." />
+  </item>
+  <item id="53002" article="a" name="gold tooth">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="10" />
+  </item>
+  <item id="53003" article="a" name="lizard tail">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="55" />
+  </item>
+  <item id="53004" article="an" name="infernoid ember">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="description" value="A glowing ember pulsing with infernal heat." />
+    <attribute key="weight" value="80" />
+  </item>
+  <item id="53167" article="a" name="sail pass">
+    <attribute key="weight" value="10" />
+    <attribute key="description" value="A pass that grants passage by sail." />
+  </item>
+  <item id="53229" article="a" name="moonsilver battle visor">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="14" />
+    <attribute key="absorbpercentphysical" value="7" />
+    <attribute key="absorbpercentfire" value="10" />
+    <attribute key="skillsword" value="4" />
+    <attribute key="skillclub" value="4" />
+    <attribute key="skillaxe" value="4" />
+    <attribute key="weight" value="1450" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="level" value="800" />
+      <attribute key="vocation" value="Knight;true, Elite Knight" />
+    </attribute>
+    <attribute key="augments" value="1">
+      <attribute key="groundshaker" value="mana leech">
+        <attribute key="value" value="400" />
+      </attribute>
+    </attribute>
+  </item>
+  <item id="53230" article="a" name="moonsilver trail hood">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="12" />
+    <attribute key="absorbpercentphysical" value="5" />
+    <attribute key="absorbpercentearth" value="10" />
+    <attribute key="skilldist" value="4" />
+    <attribute key="weight" value="1200" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="level" value="800" />
+      <attribute key="vocation" value="Paladin;true, Royal Paladin" />
+    </attribute>
+    <attribute key="augments" value="1">
+      <attribute key="divine barrage" value="mana leech">
+        <attribute key="value" value="200" />
+      </attribute>
+    </attribute>
+  </item>
+  <item id="53231" article="a" name="moonsilver nimbus hat">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="10" />
+    <attribute key="absorbpercentphysical" value="3" />
+    <attribute key="absorbpercentice" value="8" />
+    <attribute key="magiclevelpoints" value="4" />
+    <attribute key="weight" value="1300" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="level" value="800" />
+      <attribute key="vocation" value="Sorcerer;true, Master Sorcerer" />
+    </attribute>
+    <attribute key="augments" value="1">
+      <attribute key="death echo" value="mana leech">
+        <attribute key="value" value="300" />
+      </attribute>
+    </attribute>
+  </item>
+  <item id="53232" article="a" name="moonsilver spirit mask">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="10" />
+    <attribute key="absorbpercentphysical" value="3" />
+    <attribute key="absorbpercentearth" value="8" />
+    <attribute key="magiclevelpoints" value="4" />
+    <attribute key="weight" value="3800" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="level" value="800" />
+      <attribute key="vocation" value="Druid;true, Elder Druid" />
+    </attribute>
+    <attribute key="augments" value="1">
+      <attribute key="forked glacier" value="mana leech">
+        <attribute key="value" value="300" />
+      </attribute>
+    </attribute>
+  </item>
+  <item id="53233" article="a" name="moonsilver strike helm">
+    <attribute key="primarytype" value="helmets" />
+    <attribute key="armor" value="8" />
+    <attribute key="absorbpercentphysical" value="5" />
+    <attribute key="absorbpercentearth" value="8" />
+    <attribute key="skillfist" value="4" />
+    <attribute key="magiclevelpoints" value="2" />
+    <attribute key="weight" value="4100" />
+    <attribute key="imbuementslot" value="2">
+      <attribute key="life leech" value="3" />
+      <attribute key="mana leech" value="3" />
+      <attribute key="critical hit" value="3" />
+    </attribute>
+    <attribute key="script" value="moveevent">
+      <attribute key="slot" value="head" />
+      <attribute key="level" value="800" />
+      <attribute key="vocation" value="Monk;true, Exalted Monk" />
+    </attribute>
+    <attribute key="augments" value="1">
+      <attribute key="thousand fist blows" value="mana leech">
+        <attribute key="value" value="600" />
+      </attribute>
+    </attribute>
+  </item>
+  <item id="54128" article="an" name="ice shard">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="18" />
+  </item>
+  <item id="54267" article="a" name="moonsilver crystals">
+    <attribute key="weight" value="300" />
+    <attribute key="decayTo" value="0" />
+    <attribute key="duration" value="30" />
+  </item>
+  <item id="54268" article="a" name="figurine of Mimar Haffar">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="65" />
+  </item>
+  <item id="54269" article="a" name="figurine of Maior Domus">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="80" />
+  </item>
+  <item id="54270" article="a" name="figurine of Phosphorus">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="100" />
+  </item>
+  <item id="54363" article="a" name="moonspawn tentacle">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="180" />
+  </item>
+  <item id="54364" article="a" name="moonspawn headpiece">
+    <attribute key="primarytype" value="creature products" />
+    <attribute key="weight" value="320" />
+  </item>
+  <item id="54480" article="an" name="auric moon sigil">
+    <attribute key="weight" value="180" />
+  </item>
+  <item id="54640" article="a" name="scraps of a radiant attire">
+    <attribute key="weight" value="30" />
+  </item>
+  <item id="54651" article="a" name="cloud in a bottle">
+    <attribute key="weight" value="45" />
+  </item>
+</items>

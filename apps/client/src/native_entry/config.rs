@@ -410,6 +410,33 @@ mod browser_command_tests {
         std::fs::remove_file(&marker)?;
         assert!(!stale("0"));
         assert!(!marker.exists(), "closed epoch spawned the helper");
+        let epoch = Arc::<BrowserEpoch>::default();
+        let opener = epoch.opener(&config);
+        let opening = std::thread::spawn(move || opener("60"));
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        let pid = loop {
+            if let Ok(pid) = std::fs::read_to_string(&marker)
+                && !pid.trim().is_empty()
+            {
+                break pid;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err("browser helper did not start".into());
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        };
+        let process = PathBuf::from("/proc").join(pid.trim());
+        let start = std::time::Instant::now();
+        epoch.close();
+        assert!(start.elapsed() < Duration::from_secs(1));
+        assert!(!opening.join().map_err(|_| "browser launch panicked")?);
+        let deadline = std::time::Instant::now() + Duration::from_secs(1);
+        while process.exists() && std::time::Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!process.exists(), "browser helper survived epoch close");
+        std::fs::remove_file(&marker)?;
+
         let client = crate::ClientBootstrap::new()?.with_native_login(config);
         let browser = client
             .native_login

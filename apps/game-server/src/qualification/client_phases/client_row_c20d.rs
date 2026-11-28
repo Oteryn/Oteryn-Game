@@ -27,8 +27,10 @@ async fn journey(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    let mut client = connect_world(clients, 0xc2).await?;
-    let result: TestResult = async {
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C20D_ACCOUNT").await?;
+    let scoped = fixture.clients(clients);
+    let mut client = connect_character(&scoped, 0xc2, 0).await?;
+    let result: TestResult<_> = async {
         let home = world
             .base()
             .subareas
@@ -41,11 +43,14 @@ async fn journey(
             y: i32::from(home.y),
             floor: -i16::from(home.floor),
         };
+        if client.world_spatial().actor_position == temple {
+            return Err("C20d encounter must start away from the temple".into());
+        }
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         client.session_mut().attack_target(None).await?;
         let mut damaged = false;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
+        verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
             for event in client.take_events() {
@@ -74,16 +79,23 @@ async fn journey(
                 temple.x, temple.y, temple.floor, vitals.health, vitals.max_health
             ),
         );
-        Ok(())
+        Ok((temple, vitals.max_health))
     }
     .await;
-    let restore: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
-            .ok_or("C20d capture return route unavailable")?;
-        walk(&mut client, world, &path).await
+    let prior = client.join_snapshot().game_session_id;
+    let released = logout(&mut client).await;
+    let (temple, max_health) = result.and_then(|proof| released.map(|()| proof))?;
+    drop(client);
+    let mut fresh = connect_character(&scoped, 0xc2, 0).await?;
+    if fresh.join_snapshot().game_session_id == prior
+        || fresh.world_spatial().actor_position != temple
+        || !fresh.actor_vitals().is_some_and(|vitals| {
+            vitals.health == max_health && vitals.max_health == max_health
+        })
+    {
+        return Err("C20d fresh admission did not preserve the temple and restored health".into());
     }
-    .await;
-    result.and(restore).and(logout(&mut client).await)
+    logout(&mut fresh).await
 }
 
 fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) {
@@ -103,9 +115,9 @@ fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) {
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C20d capture logout refused: {reply:?}").into());
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C20d capture logout refused: {detail}").into());
     }
     Ok(())
 }

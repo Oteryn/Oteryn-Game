@@ -21,8 +21,16 @@ const DROME_DRUNK_KEY: &str = "drome.drunk";
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
         scenario(None, false)?;
-        scenario_in_world(None, false, false)
+        scenario_in_world(None, false, false, false)
     })
+}
+
+#[test]
+fn m10_swimming_spatial_wire_restores_original_outfit_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(|| scenario_in_world(None, false, true, true))
 }
 
 #[test]
@@ -271,6 +279,106 @@ async fn step(
     Ok(())
 }
 
+async fn assert_swimming_wire(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::foundation::{CharacterId, CharacterLease};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use crate::gameplay_transport::connection::appearance_change::RegressionAppearanceWire;
+    use crate::gameplay_transport::world_spatial::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+    use oteryn_protocol_oteryn::appearance::{CAPABILITY_APPEARANCE_V1, Look};
+
+    let actor = admitted.runtime_actor.ok_or("swimming actor")?;
+    let session = admitted.game_session_id;
+    let lease =
+        CharacterLease::new(CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(actor, session, lease)
+        .map_err(debug)?;
+    let offers = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    let mover = (admitted, actor, session);
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &offers,
+        &[CAPABILITY_WORLD_SPATIAL_ENTITIES, CAPABILITY_APPEARANCE_V1],
+    )
+    .ok_or("swimming appearance capabilities")?;
+
+    let (mut wire, entities, bindings) = RegressionAppearanceWire::initial(owner, admitted)
+        .await
+        .ok_or("initial spatial and appearance snapshots")?;
+    let base = wire_outfit(actor, &entities, bindings)?;
+    assert!(matches!(base.look, Look::Outfit { look_type, .. } if look_type != 267));
+    step(owner, mover, StepDirection::West, 0).await?;
+    let (entities, mut upserts) = wire
+        .refresh(owner)
+        .await
+        .ok_or("dry-to-dry spatial delta")?;
+    upserts.push(base.clone());
+    assert_eq!(
+        wire_outfit(actor, &entities, upserts)?.look,
+        base.look,
+        "dry-to-dry step"
+    );
+    for x in 1..=4 {
+        step(owner, mover, StepDirection::East, x).await?;
+    }
+    step(owner, mover, StepDirection::East, 5).await?;
+    let (entities, upserts) = wire
+        .refresh(owner)
+        .await
+        .ok_or("swim entry spatial delta")?;
+    let swimming = wire_outfit(actor, &entities, upserts)?;
+    assert_eq!(swimming.appearance_ref, base.appearance_ref);
+    assert_eq!(
+        swimming.look,
+        Look::Outfit {
+            look_type: 267,
+            colours: [0; 4],
+            addons: 0
+        },
+        "entry into swim water",
+    );
+    step(owner, mover, StepDirection::West, 4).await?;
+    let (entities, upserts) = wire.refresh(owner).await.ok_or("swim exit spatial delta")?;
+    let restored = wire_outfit(actor, &entities, upserts)?;
+    assert_eq!(restored.appearance_ref, base.appearance_ref);
+    assert_eq!(restored.look, base.look, "exit to dry ground");
+    Ok(())
+}
+
+fn wire_outfit(
+    actor: ExactActorRef,
+    entities: &[crate::gameplay_transport::world_spatial::WorldSpatialEntity],
+    bindings: Vec<oteryn_protocol_oteryn::appearance::Binding>,
+) -> TestResult<oteryn_protocol_oteryn::appearance::Binding> {
+    use crate::gameplay_transport::world_spatial::EntityDetail;
+
+    let entity = entities
+        .iter()
+        .find(|entity| {
+            entity.entity.identity == actor.placement_identity()
+                && entity.entity.generation == actor.actor_local_generation()
+        })
+        .ok_or("swimming actor missing from spatial update")?;
+    let (EntityDetail::Actor { appearance_ref, .. }
+    | EntityDetail::ActorWithIcons { appearance_ref, .. }) = entity.detail
+    else {
+        return Err("swimming actor has no appearance reference".into());
+    };
+    bindings
+        .into_iter()
+        .find(|binding| binding.entity == entity.entity && binding.appearance_ref == appearance_ref)
+        .ok_or_else(|| "swimming actor has no matching wire appearance binding".into())
+}
+
 /// Reads the persisted equipment through the production admission owner and installs its
 /// effects. `diving_helmet` adds the `SUPPRESS_DROWN` suppression that the same read yields for
 /// a worn Item with that modifier (`equipment_effects_owner_uses_primary_slot_and_extra_never_
@@ -300,18 +408,23 @@ async fn install(
 }
 
 fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
-    scenario_in_world(callback, portals, true)
+    scenario_in_world(callback, portals, true, false)
 }
 
 fn scenario_in_world(
     callback: Option<(u16, u16, bool)>,
     portals: bool,
     optional: bool,
+    appearance_wire: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let result = run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "underwater_drown", true, false).await?;
+        let h = if appearance_wire {
+            Harness::create_appearance(admin, "underwater_drown").await?
+        } else {
+            Harness::create_with_admission_seed(admin, "underwater_drown", true, false).await?
+        };
         eprintln!(
             "POSTGRES_STARTED PAR-M10 callback={callback:?} portals={portals} optional={optional}"
         );
@@ -323,7 +436,16 @@ fn scenario_in_world(
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = activated_with_loot_tables(world, None);
+        let (controller, pin) = if appearance_wire {
+            use crate::content::native_gameplay::test_support::cosmetics_fixture::{
+                activated_with_optional_cosmetics, cosmetics_test_packet,
+            };
+            let mut packet = cosmetics_test_packet();
+            packet["authoring"]["document"]["content_revision"] = "content-1".into();
+            activated_with_optional_cosmetics(world, None, Some(&serde_json::to_vec(&packet)?))
+        } else {
+            activated_with_loot_tables(world, None)
+        };
         let active = controller.active().ok_or("active")?;
         // Activated content digests (custody reads pin them), the test row's map binding.
         let channel = Dependencies::new()?.admitted.channel_id;
@@ -410,6 +532,13 @@ fn scenario_in_world(
             .bind(id(42).as_slice()).bind(if optional { 1_i16 } else { 2_i16 }).execute(&h.pool).await?;
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mover = (deps.admitted, actor, session);
+        if appearance_wire {
+            assert_swimming_wire(&mut owner, deps.admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if portals {
             install(&owner, actor, session, false).await?;
             step(&mut owner, mover, StepDirection::West, 2).await?;

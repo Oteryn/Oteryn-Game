@@ -4,6 +4,8 @@ mod account_achievements_tests;
 mod activity_handoff_tests;
 #[path = "tests/activity_scope.rs"]
 mod activity_scope_tests;
+#[path = "tests/actor_cooldowns.rs"]
+mod actor_cooldowns_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
@@ -84,6 +86,8 @@ mod e2e_m09;
 mod e2e_m11a;
 #[path = "tests/e2e_p11.rs"]
 mod e2e_p11;
+#[path = "e2e_p19_replay_tests.rs"]
+mod e2e_p19;
 #[cfg(test)]
 #[path = "tests/e2e_s04c.rs"]
 mod e2e_s04c;
@@ -349,9 +353,13 @@ mod spell_aim_mode;
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;
 
+#[path = "e2e_c16c_replay_tests.rs"]
+mod c16c_summon_replay;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
 mod e2e_c16d;
+#[path = "tests/replay_input.rs"]
+mod replay_input;
 
 #[test]
 fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {

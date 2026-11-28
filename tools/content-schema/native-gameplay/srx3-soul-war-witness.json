@@ -11811,6 +11811,103 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 4,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.monk_s_apparition.attack-6",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "north": [
+                      "xxxxx",
+                      "xxxxx",
+                      "xxCxx",
+                      "xxxxx",
+                      "xxxxx"
+                    ],
+                    "shape": "Matrix"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "key": "oteryn:effect.spell.destroy_magic_walls.effect-remove",
+                        "operation": {
+                          "items": [
+                            {
+                              "family": "Item",
+                              "key": "oteryn:item.tibia.i10181",
+                              "revision": "definition-r1"
+                            },
+                            {
+                              "family": "Item",
+                              "key": "oteryn:item.tibia.i2128",
+                              "revision": "definition-r1"
+                            },
+                            {
+                              "family": "Item",
+                              "key": "oteryn:item.tibia.i10182",
+                              "revision": "definition-r1"
+                            },
+                            {
+                              "family": "Item",
+                              "key": "oteryn:item.tibia.i2130",
+                              "revision": "definition-r1"
+                            }
+                          ],
+                          "operation": "RemoveItems",
+                          "selection": "TopItemFirstTile"
+                        },
+                        "presentation": {
+                          "impact_asset_binding": "canary.appearance:effect/poff"
+                        }
+                      },
+                      "kind": "Inline"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.destroy_magic_walls",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "chain": {
                     "backtracking": false,
                     "chain_asset_binding": "canary.appearance:effect/icearea",
@@ -11894,6 +11991,24 @@
                     },
                     "chance_ppm": 230000,
                     "interval_ms": 3000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 190000,
+                    "interval_ms": 3000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.destroy_magic_walls",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 300000,
+                    "interval_ms": 1000
                   }
                 ],
                 "movement": {
@@ -11969,6 +12084,16 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.monk_s_apparition.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.destroy_magic_walls",
                     "revision": "definition-r1"
                   },
                   {
@@ -12157,6 +12282,25 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "physical",
+                "mitigated_by": [
+                  "Armor"
+                ],
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/groundshaker"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.monk_s_apparition.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "ice",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/iceattack"
@@ -12241,6 +12385,21 @@
               "key": "oteryn:formula.creature.monk_s_apparition.attack-5-1",
               "revision": "definition-r1"
             }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 850
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.monk_s_apparition.attack-6-1",
+              "revision": "definition-r1"
+            }
           }
         ],
         "records": [
@@ -12300,6 +12459,30 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.monk_s_apparition.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.monk_s_apparition.attack-6",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.destroy_magic_walls",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -12417,6 +12600,21 @@
             "effect_family": "Damage",
             "formula": {
               "family": "Formula",
+              "key": "oteryn:formula.creature.monk_s_apparition.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.monk_s_apparition.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
               "key": "oteryn:formula.creature.caster-magnitude",
               "revision": "definition-r1"
             },
@@ -12463,6 +12661,14 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.monk_s_apparition.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.monk_s_apparition.attack-6-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -12523,6 +12729,24 @@
                 },
                 "chance_ppm": 230000,
                 "interval_ms": 3000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 190000,
+                "interval_ms": 3000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.destroy_magic_walls",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 300000,
+                "interval_ms": 1000
               }
             ],
             "movement": {
@@ -12619,6 +12843,16 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.monk_s_apparition.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.monk_s_apparition.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.destroy_magic_walls",
                 "revision": "definition-r1"
               },
               {
@@ -12735,7 +12969,74 @@
           "key": "oteryn:creature.monk_s_apparition",
           "revision": "definition-r1"
         }
-      }
+      },
+      "source_item_abilities": [
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "north": [
+                    "xxxxx",
+                    "xxxxx",
+                    "xxCxx",
+                    "xxxxx",
+                    "xxxxx"
+                  ],
+                  "shape": "Matrix"
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "key": "oteryn:effect.spell.destroy_magic_walls.effect-remove",
+                      "operation": {
+                        "items": [
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i10181",
+                            "revision": "definition-r1"
+                          },
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2128",
+                            "revision": "definition-r1"
+                          },
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i10182",
+                            "revision": "definition-r1"
+                          },
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2130",
+                            "revision": "definition-r1"
+                          }
+                        ],
+                        "operation": "RemoveItems",
+                        "selection": "TopItemFirstTile"
+                      },
+                      "presentation": {
+                        "impact_asset_binding": "canary.appearance:effect/poff"
+                      }
+                    },
+                    "kind": "Inline"
+                  }
+                ],
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.destroy_magic_walls",
+            "revision": "definition-r1"
+          }
+        }
+      ]
     },
     {
       "attack_definitions": {
@@ -50812,5 +51113,5 @@
       }
     }
   ],
-  "source_definitions_sha256": "fef1502856592e2fdda5b0e5ad5f1ed0ef0c2743f96fd5c6dce2e342d48ba2bc"
+  "source_definitions_sha256": "0b2fe785ebcc9d3cc218ba80cee75e598cc35781b4576cd5511dea7e28456b69"
 }

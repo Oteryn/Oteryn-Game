@@ -132,20 +132,45 @@ fn o059_detail_card_consumes_server_cooldown_observation() -> Result<(), Box<dyn
         true,
         Some(encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?),
     )?;
+    let received_at = std::time::Instant::now() + std::time::Duration::from_secs(1);
     outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
         server_sequence: 3,
         base_revision: 1,
         new_revision: 2,
-        value: oteryn_session::ActorCooldowns {
-            server_now_ms: 100,
-            rtt_ms: None,
-            entries: vec![oteryn_session::ActorCooldown {
-                kind: oteryn_session::ActorCooldownKind::Group,
-                id: 1,
-                expires_at_ms: 350,
-            }],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: oteryn_session::ActorCooldowns {
+                server_now_ms: 100,
+                rtt_ms: None,
+                entries: vec![oteryn_session::ActorCooldown {
+                    kind: oteryn_session::ActorCooldownKind::Group,
+                    id: 1,
+                    expires_at_ms: 350,
+                }],
+            },
+            received_at,
+            snapshot: true,
         },
     })]);
+    outbox.push(vec![oteryn_session::SessionEvent::ActorCooldowns(
+        oteryn_session::AppliedDelta {
+            server_sequence: 4,
+            base_revision: 2,
+            new_revision: 3,
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_session::ActorCooldowns {
+                    server_now_ms: 0,
+                    rtt_ms: None,
+                    entries: vec![oteryn_session::ActorCooldown {
+                        kind: oteryn_session::ActorCooldownKind::Spell,
+                        id: 99,
+                        expires_at_ms: 1000,
+                    }],
+                },
+                received_at,
+                snapshot: false,
+            },
+        },
+    )]);
     let mailbox = crate::play::mailbox::lock(&link.mailbox);
     let text = oteryn_client_ui::spell_catalog::detail_text(
         &mailbox.spell_catalog,

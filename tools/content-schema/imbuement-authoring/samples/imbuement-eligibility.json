@@ -131498,7 +131498,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "94ad3b28a0e70a03453052addcaa9164e8e901eab5d91636354cce0a0a3dfc54",
+        "canonical_definition_sha256": "337156e102a6977bee2b81482a2855beb282d4d9af22e8afcfd5f9bdf1f65bb0",
         "canonical_name": "blade of destruction",
         "wiki_observations": [
           {
@@ -131620,7 +131620,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "3ab88cb1304b147435d453f001bd9a182aeb8f0fb3705ed154871773f6ebef7c",
+        "canonical_definition_sha256": "ceddcb87f0c8c8476f54550105e0621290b1a46eddb5e6b31360e2740476b4da",
         "canonical_name": "slayer of destruction",
         "wiki_observations": [
           {
@@ -131757,7 +131757,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "e6f4996d3ac1f9a808ea5f71b0204cf394b1a0d26d9ee2e40c23427f5a7bd9c6",
+        "canonical_definition_sha256": "3011ed9f5eb8006a775144bc5669f8c7bd7090f3f3397758250a4150785316c9",
         "canonical_name": "axe of destruction",
         "wiki_observations": [
           {
@@ -131879,7 +131879,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "d3c2d8746b19fc00f93748aa097781205962d980143573bdbac220cdcd485d14",
+        "canonical_definition_sha256": "aa7fda2cc08c00b5796f223d6ffee066b41d67e9d1d938d2d773624ee0ab1538",
         "canonical_name": "chopper of destruction",
         "wiki_observations": [
           {
@@ -131994,7 +131994,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "30e4684bad829f8096f33be8cb358db778fc059b5d7969c44c50e83ebc68c261",
+        "canonical_definition_sha256": "9110dd669f405cfd9202c786e31ff0ff316f1158a66709f7988d97f0b1fb9ab3",
         "canonical_name": "mace of destruction",
         "wiki_observations": [
           {
@@ -132116,7 +132116,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "33699ae6dd0e905e6917882defd43bb99eede6670b55ca1f834869e1d2e6db37",
+        "canonical_definition_sha256": "f1b7b8a2d244d9ca562df9a6db23ac27bf64aeccbd04f89f997970f110fde428",
         "canonical_name": "hammer of destruction",
         "wiki_observations": [
           {
@@ -132231,7 +132231,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "1b123f779897a336d38e1570548d0a910080f2567cc036551744e19bafde1b47",
+        "canonical_definition_sha256": "1e083c9cb3d18074f2cb6f5bc9736ae89ba644e5e74b65de7ea44ca98f1b5dfb",
         "canonical_name": "bow of destruction",
         "wiki_observations": [
           {
@@ -132346,7 +132346,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "5b7ae874242d9b9c45bb5334b218a50b91a74b3377c943ce31b00b144d39ecee",
+        "canonical_definition_sha256": "2f6e410aabd5daa5cb950f98df439fa7cbb50ab74bc322c59b79316a9591fccb",
         "canonical_name": "crossbow of destruction",
         "wiki_observations": [
           {
@@ -132483,7 +132483,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "5e2d2cc382de283c70b65a105bc3be075fa2269dcdfcfebfaa6056151db0e977",
+        "canonical_definition_sha256": "302e5e52549528648b1bce2730ef00c4ef6aae436c68c74d9c883571c1b857d6",
         "canonical_name": "wand of destruction",
         "wiki_observations": [
           {
@@ -132573,7 +132573,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "8e5b80756c88c692f32f4f2ad1257518800780433af6db775fe1a314e57933ae",
+        "canonical_definition_sha256": "c09a1d9503a32745106574a8e03497f03764f00f39d204c68e2ddc227921bc31",
         "canonical_name": "rod of destruction",
         "wiki_observations": [
           {
@@ -132663,7 +132663,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "4346494ef0c94e85c57d68f9aa421fcced1a6b155f1df45dce636dfa068d97e6",
+        "canonical_definition_sha256": "c7c0f0ef8dcff940d18f8b5da69b7e3b9d3f12e32a1fb2adbe3b3524a48b20f3",
         "canonical_name": "gnome helmet",
         "wiki_observations": [
           {
@@ -132794,7 +132794,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "42f0b40ebb580898726b3d350ac61545439b0b8c803e9cebe4f81def5c09f6de",
+        "canonical_definition_sha256": "e1a00d2cba23a38944e76929459960aeab9335f707bc4c440d8c28933f0f97ed",
         "canonical_name": "gnome armor",
         "wiki_observations": [
           {
@@ -132889,7 +132889,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "c89a403eace9d334e012d2e83c3201dfae147d3cb730dc304a588f100f0ab176",
+        "canonical_definition_sha256": "fcdafa86323bf0f14a4d2786d17d482358ef8d208558b2468113f19fb5303fba",
         "canonical_name": "gnome shield",
         "wiki_observations": [
           {
@@ -133398,7 +133398,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "066f95c172c536b46a1a9e3b7d03aa61ed8a0f69d93b757fe614d2768403514b",
+        "canonical_definition_sha256": "64f86eb8e0e41ac0145bf189a550aab54e5bd74f663cd202ca27725b873839d3",
         "canonical_name": "falcon circlet",
         "wiki_observations": [
           {
@@ -133535,7 +133535,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "ec33fd1b74c7be3693b09089089e0de476bf4cf77a8223b76e6ce8be36f3818d",
+        "canonical_definition_sha256": "7783161e3f7c78e63dc1f74b7a6e7ced3e62a81e3200e99d9ad15fe3b889428e",
         "canonical_name": "falcon coif",
         "wiki_observations": [
           {
@@ -133689,7 +133689,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "239c0411cbb8525ce549573f5867a8262178d5c5350fb1b11377a14e62a9d63c",
+        "canonical_definition_sha256": "b28e8173683086aac435115b4a931ec8052c339001828fa23d35d22a9c839270",
         "canonical_name": "falcon rod",
         "wiki_observations": [
           {
@@ -133785,7 +133785,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "acaf10bf645b33093b6d0e21592f986413184e5d197548a5ab288c3489e8bb6e",
+        "canonical_definition_sha256": "cab11f63ff5680cc98705bf602af207f928a763413917827a57d0d9d76c30b2f",
         "canonical_name": "falcon wand",
         "wiki_observations": [
           {
@@ -133881,7 +133881,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "a65a1aa79c143a01167afa2b8ad11baea38d3529aedbb89b7fd69b1a381298cb",
+        "canonical_definition_sha256": "8db19a95c217a499fc776dbd813c3e4b3ca93a13f42af7d9f0fd7e336150dd9a",
         "canonical_name": "falcon bow",
         "wiki_observations": [
           {
@@ -134002,7 +134002,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "d1817db5c2857d52764f139daf93f0f6cfabecee6bfadbcb173b018dfde7b080",
+        "canonical_definition_sha256": "f3d679225949b1204a66af83c1ba75adc1e780cc001d10b4e76b6a8b71872bb8",
         "canonical_name": "falcon plate",
         "wiki_observations": [
           {
@@ -134113,7 +134113,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "9e7aa155e8087f880a96a0c95c4a0f799bf20af89a954a402927ce33ff7d7814",
+        "canonical_definition_sha256": "355edcb8a9c01f7826c9cc0e1a6e2240970126d8067dc03fb5fdf8fcab2c6471",
         "canonical_name": "falcon shield",
         "wiki_observations": [
           {
@@ -134238,7 +134238,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "4520a6c7d71aa657b4bb5603976372f814440e58ded1a48f2a64f06e11dea8be",
+        "canonical_definition_sha256": "30d76899c6d4c997dfb3ac31c116b3b3ceb3a1dc9ba2fb61e173f303e4f03370",
         "canonical_name": "falcon escutcheon",
         "wiki_observations": [
           {
@@ -134363,7 +134363,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "f3191d66a5ed91c602f8ee915c39fa338c914d2ba9d90570252bfa52d5b1aebc",
+        "canonical_definition_sha256": "01cf8d2465c71798667d9893e18e50766ef7f7605b5199b75c63af26fb4b27c8",
         "canonical_name": "falcon longsword",
         "wiki_observations": [
           {
@@ -134676,7 +134676,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "d75ff34623129ff718e3ba0b12b6bc9c0a768f1e77b3970dbca72eb1e9ff596e",
+        "canonical_definition_sha256": "3c1e3a175e8b8fefc14a9464e016cdce416e43711884ea64467376f6e529ff2e",
         "canonical_name": "deepling ceremonial dagger",
         "wiki_observations": [
           {
@@ -134779,7 +134779,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "6e7573ed9cdbd55529484c0f70dffcb078fe71d594d6d6020e1d4e3c62391016",
+        "canonical_definition_sha256": "52b22b94f23c75cfbc31d7e49f7ae719eac30a1bd2f92020239e703563c07d3f",
         "canonical_name": "deepling fork",
         "wiki_observations": [
           {
@@ -134897,7 +134897,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "2a49e795b8b6331b0d6107cea04ef08d047d623324610f97563503ec5c08c158",
+        "canonical_definition_sha256": "a3ecb74bbfcd014c8dd8ad5b9d7b64350b1e7cd2f84a59f4f7ef90461acb9f32",
         "canonical_name": "rotten demonbone",
         "wiki_observations": [
           {
@@ -135035,7 +135035,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "359d1e2ac3dda95aa1c9c2beefcb8026e07615ff838e084e53cf78423d54c249",
+        "canonical_definition_sha256": "f8a44a03c374e8803fa08794d62a1b4397e08cfa4c61bad01c87d4a17c43482d",
         "canonical_name": "energized demonbone",
         "wiki_observations": [
           {
@@ -135173,7 +135173,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "176d22e1d45a32b7c5886ca6f253608b5a4508c8b9a0eb9f4753802bbcd1cdc0",
+        "canonical_definition_sha256": "a0325a4467b9a5e316a6c2d10f1130c23b64487fbfe495d237f62fabd55840b0",
         "canonical_name": "unliving demonbone",
         "wiki_observations": [
           {
@@ -135311,7 +135311,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "759118ce6d2ce1c24eac0613a60bae845b15741f68fdc9ef5171692564a37c28",
+        "canonical_definition_sha256": "3ff7ff017ffc2087ee5c5dae73a20955915bb648a1abbcfad49ed30ff3063e07",
         "canonical_name": "sulphurous demonbone",
         "wiki_observations": [
           {
@@ -135449,7 +135449,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "8ee7e0c040c5fc4f7fb9b84b8979836650e83eba056fef4fb818f951fa5ecc3d",
+        "canonical_definition_sha256": "d91022c2f17ecacab715832dd3b0ff0e5eec9edbef5d343fa6d2e1437b99bd8d",
         "canonical_name": "living vine bow",
         "wiki_observations": [
           {
@@ -135570,7 +135570,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "3e9c131bff9f231365517205596e0ad44915418f78ce37201623f5de6f623cfe",
+        "canonical_definition_sha256": "bcf45363a56ece9911e579324cb9528b33aabc9b183b37d0f80262bbc8b92511",
         "canonical_name": "living armor",
         "wiki_observations": [
           {
@@ -135776,7 +135776,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "0d3b332e16984a7117360304e3baef58f6b76eee537da5d6bbd4f50ee476eb8d",
+        "canonical_definition_sha256": "2ed43601f80f5dcbe2bc6ab586a678800832c7e4168874b613e92a944fd46640",
         "canonical_name": "shoulder plate",
         "wiki_observations": [
           {
@@ -136074,7 +136074,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "be564d8b53fd09af5661f462e4ded3049c07e8ae74ed03867978828dd78900c6",
+        "canonical_definition_sha256": "c70ecbcb3ceeea393f98b09fa194ada97c7b1d07efa0df9f05b9a5efe66ab567",
         "canonical_name": "dream shroud",
         "wiki_observations": [
           {
@@ -136180,7 +136180,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "5c66c974b453b897f85ce3cef1cf8194dd85f5746d14c48c1eecae83f07c4a69",
+        "canonical_definition_sha256": "f2a83acb371b796e097244c0614004cefac4959d4e61398232c3164b9b0d6a07",
         "canonical_name": "pair of dreamwalkers",
         "wiki_observations": [
           {
@@ -136266,7 +136266,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "3822ad74a3063a3f38f5e2ca4965b4521b9e1f31b88b9c351acd360bb7bdce80",
+        "canonical_definition_sha256": "ff0a5976df052edc1310264419795050ba247eea2e77ca4cc69b7ba1c9edd40f",
         "canonical_name": "energized limb",
         "wiki_observations": [
           {
@@ -136369,7 +136369,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "7cfc29fcefd117bad6b8d5dbd9dc2b1698b1523bd174e470f83bdc8ffd6dd18f",
+        "canonical_definition_sha256": "d7068a9cdf489d3ed515d4d108ebdfd7995cd6cf933c6daec06139a9257a08e4",
         "canonical_name": "brain in a jar",
         "wiki_observations": [
           {
@@ -136475,7 +136475,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "3eb136cfc53c7df3776a917b09359cbbe83663f0eeddf5f1a0e917e8e60f0380",
+        "canonical_definition_sha256": "2a4ef46b7c5b211160cdca0304df04a1b13f3b7dfb29176861c8fad53cb5b65b",
         "canonical_name": "dark whispers",
         "wiki_observations": [
           {
@@ -136612,7 +136612,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "eab5f064779d8bb6dec813b538c8a69d0a1c8bb044a63c5c96be21c8d2468bce",
+        "canonical_definition_sha256": "9ae24d6809af18bd22fc6a9d10c07ff30ca7974970545c7c453d83c8fd5f1258",
         "canonical_name": "ectoplasmic shield",
         "wiki_observations": [
           {
@@ -136736,7 +136736,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "c4320209e7f85a7522cfbe520c9211d0902aad3953f5b4b41be1b46a0abe6024",
+        "canonical_definition_sha256": "76f24a077273f81202341a0508f972aa95c8d712c02dbc24c5e1a8c246ea6f6e",
         "canonical_name": "spirit guide",
         "wiki_observations": [
           {
@@ -136923,7 +136923,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "56933f664807661323f5cf875e6a1e35deea121540dd1801b3c7efe03f1789c3",
+        "canonical_definition_sha256": "3a87f7da4e4d9d74388e2c760880761c4f0c742cb8ed4bbd2748c1e23bf95c90",
         "canonical_name": "cobra crossbow",
         "wiki_observations": [
           {
@@ -137066,7 +137066,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "a8bef498414f5ebcb4dc17471ae0a68ea347215a3202fd8752e54505d9f4a9a1",
+        "canonical_definition_sha256": "d180b9dee31d904f8d45b678d80d7e4fbe16c591fc0de97fd2662f97c9142cac",
         "canonical_name": "cobra boots",
         "wiki_observations": [
           {
@@ -137332,7 +137332,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "87b6e4e2e6d4e6f6b0e422b6af1b9b9c74556a4bd634ab101378237f0e206646",
+        "canonical_definition_sha256": "52d4c41824c4e1d8ba39d5722d53dbe7955432fc09cfeeeec03ab955852a7d6a",
         "canonical_name": "cobra hood",
         "wiki_observations": [
           {
@@ -137466,7 +137466,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "703ee88b94f4fbd21bdd54c69757fa34617253997fed34fee1e161d84b8860e5",
+        "canonical_definition_sha256": "9cf5fadce6f7c17bac16348f6c3e1cbb62bf50667fef06b46ebbda42954e5caf",
         "canonical_name": "cobra sword",
         "wiki_observations": [
           {
@@ -137587,7 +137587,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "d896e85f7aa093c5e2c2dba2cd28469aae86ac530b8bf37b243e9301e8f887f2",
+        "canonical_definition_sha256": "32ea0f9dc46018c92d562600cc91df73f75a14781ee294bd33a74924f29f8ee2",
         "canonical_name": "cobra wand",
         "wiki_observations": [
           {
@@ -137688,7 +137688,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "bbb51b6ee63302dcde6082924e9851be51012a932a55c2d3a2bf62db8088d449",
+        "canonical_definition_sha256": "43085a7e303bc6ac210c687b30dd5ee61c52db6af6316083c1b6c621a2868531",
         "canonical_name": "cobra rod",
         "wiki_observations": [
           {
@@ -137789,7 +137789,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "b841e199e5db0ecbef7e4752c0c3287dfe929c8400240dccd21701e1669c5f34",
+        "canonical_definition_sha256": "c4e10e0b3ad5e2556c325d204213fc8ad1974aa48a6987f46f4f87d1e7ae16e2",
         "canonical_name": "terra helmet",
         "wiki_observations": [
           {
@@ -137923,7 +137923,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "32e639c06a90f954acc91cc3a4a80c4e5db3b151fd6f5d2ae099ad0e309897c1",
+        "canonical_definition_sha256": "e55bce4991e1303f841a9318aa84d2c2f074c76897374441e87cc126824266fe",
         "canonical_name": "bear skin",
         "wiki_observations": [
           {
@@ -138024,7 +138024,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "6c77c00d95251900fbc819be40ce3e66fb50366450b825024d9e967fd82811ae",
+        "canonical_definition_sha256": "5942e91ad5c5f1cd7e9345c45f5dbfaee199a2540d89d2431939e672f7a7bde4",
         "canonical_name": "embrace of nature",
         "wiki_observations": [
           {
@@ -138125,7 +138125,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e51612090f52378cfbef699b05e4ecb3c366443ff94095fa7af752d261b82c19",
+        "canonical_definition_sha256": "fefbc81c9f52e821a7f81eb8ff6b9165247736fa6d039ae26d17b7a7da316b75",
         "canonical_name": "mortal mace",
         "wiki_observations": [
           {
@@ -138228,7 +138228,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e9487721c63b4f19d6e5b4febfd88714e96ce0a1b3f209ad818a4cf734cfe941",
+        "canonical_definition_sha256": "641b1750048efafd3844dc04f64639e5a5ec35c4af870576a3bdbb6e7532404b",
         "canonical_name": "bow of cataclysm",
         "wiki_observations": [
           {
@@ -138349,7 +138349,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e896575b56f915000f698a7cf7d24013092e4a6be552c88592b6916e15901731",
+        "canonical_definition_sha256": "cad22ff8537f46e8e5adb48d4b02ab581b3802a97c4291d3a77107353c160caf",
         "canonical_name": "galea mortis",
         "wiki_observations": [
           {
@@ -138466,7 +138466,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "3483acfa2da99ab5305cc5308f8a5d38dac80e8820abd68c928257d28ed05c9e",
+        "canonical_definition_sha256": "2143470c26ecfcd0157e703f029163b4cb5f9944e45a6bd0c0ce80b810dab496",
         "canonical_name": "toga mortis",
         "wiki_observations": [
           {
@@ -138668,7 +138668,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-19000-19499.json",
-        "canonical_definition_sha256": "cd1323b9ca3babb942380c441678f9c9aace35ea3d839efdf412fe441c7c3d47",
+        "canonical_definition_sha256": "e5dfd54926ec74b75f90e75f9cc8683cb4fa474730aa69f4a57ab47e8b31a48d",
         "canonical_name": "winged boots",
         "wiki_observations": [
           {
@@ -138946,7 +138946,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-19500-19999.json",
-        "canonical_definition_sha256": "35a1c49b9b5a76aa1c4516102a27a7a529cad055810df3c944b8b1f02641324f",
+        "canonical_definition_sha256": "53b1d67be81cfdd2039fe4fc5fb61c990dde27e3f3472072d9861c441ee200a3",
         "canonical_name": "pair of nightmare boots",
         "wiki_observations": [
           {
@@ -139113,7 +139113,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-19500-19999.json",
-        "canonical_definition_sha256": "c618fa8d221c0bb4e19f440950cdbf6fdc038da776325b4803d1a8ab98c23fa2",
+        "canonical_definition_sha256": "8c5a8bdd376ccd4409d87b7cfcebaae8e838ce5df1859a91d4885f3b889a76c4",
         "canonical_name": "ghost chestplate",
         "wiki_observations": [
           {
@@ -139803,7 +139803,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "fe38db7fcf36ee15bb90c59a5bf2d4feaf0930a55283a4e91d20f3482dd03d9a",
+        "canonical_definition_sha256": "8410d8ec81aebe51939d07910e6b10776498be85bbc2525d7834eba68faf2131",
         "canonical_name": "soulbleeder",
         "wiki_observations": [
           {
@@ -139924,7 +139924,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "b4b43d91e384d3d4de3bb7a4a38c538bb59b54586980489d9dff8d04d7dac70c",
+        "canonical_definition_sha256": "af3d66720556981e2f91d6d3830a8ef389b2f0001c598c654003216f585de7e0",
         "canonical_name": "soulpiercer",
         "wiki_observations": [
           {
@@ -140894,7 +140894,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "c766fc8b3e92bb61373995466465b33bf4545e4e19afabe0e4ce536f2908a844",
+        "canonical_definition_sha256": "39649d43323efa6fa9680395aea523b3aed5b7186bd63265a0e213500fa7db1e",
         "canonical_name": "lion longbow",
         "wiki_observations": [
           {
@@ -141015,7 +141015,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "458d33bbc2a9612b20facdf1f654b66b259dd40d0a0a93c7f59feb2d9ac8f04d",
+        "canonical_definition_sha256": "5b8dce0b8800e4094e3f41644d2a3fa76be82d83017f9111eed5ff5a11a3c099",
         "canonical_name": "lion rod",
         "wiki_observations": [
           {
@@ -141116,7 +141116,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "96ce6080a2ba1ad50fa65ac8f29f295c1606b7f4f4f6332c71f963a379f287d2",
+        "canonical_definition_sha256": "72050b9fdb78da00dcf5a4073bfc4da3251fe41efe75a76c36d558eacaf8ccc7",
         "canonical_name": "lion wand",
         "wiki_observations": [
           {
@@ -141217,7 +141217,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "3ca2581f69f1906ad4edc18356c8d497dfd5ab3811d9184ff2c0a11c241c6dad",
+        "canonical_definition_sha256": "9fe87478ca535a4e34fb1cf2af1246fbc6548f5942c5bd5939cb2666577f4263",
         "canonical_name": "lion spellbook",
         "wiki_observations": [
           {
@@ -141342,7 +141342,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "2394cd853414516c4129c925d09d4a8e70290429cb57be3d2955436c08eaee18",
+        "canonical_definition_sha256": "4aea3a121e993f829649b7130876e0d82f266cbd93e9030c4a6f3b187fa15b39",
         "canonical_name": "lion shield",
         "wiki_observations": [
           {
@@ -141610,7 +141610,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "54fe1a74fa7faa2a77ee3206bf8ad22ccf42c9042699fc081063723ed4af0a7e",
+        "canonical_definition_sha256": "98ebc150a3486f89dc87ac9ea6630d9245dccc36481f005969ff5a33ae046567",
         "canonical_name": "lion spangenhelm",
         "wiki_observations": [
           {
@@ -141762,7 +141762,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "ec62ee3684f63d59ba8b96d8973b0e1362839ac4eef702ac1234a7eabd25ee71",
+        "canonical_definition_sha256": "8faed54c4bef524aa25dc23b86989bdac18273a341f8ba21032afcc70473039b",
         "canonical_name": "lion plate",
         "wiki_observations": [
           {
@@ -142065,7 +142065,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "cc30ea369005016c95e19ddbdeca2ce5095fe905730dafab88cab03e1258eda1",
+        "canonical_definition_sha256": "f09496350af6eeb9d4fa98ff01d2eab9f34caab981d4f911dfd0aa21c9c14699",
         "canonical_name": "jungle flail",
         "wiki_observations": [
           {
@@ -142201,7 +142201,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "f2d8891670874fa6950176ba1f4a519aee426b6fc82932fe2067cc486acfc300",
+        "canonical_definition_sha256": "5b59163a4f89bfec74b16d8581447dd1397aa37ab4a7d3ead9e3c7cc12f7c3f0",
         "canonical_name": "throwing axe",
         "wiki_observations": [
           {
@@ -142322,7 +142322,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "acdde99bb3b6336e4b119a0e77e12e23966aa442964f5adc75c5af4a487e3fd7",
+        "canonical_definition_sha256": "d7c36f3bf7070d59b66b35f1363e0d754803219796f850317b6e71d1b8ca0e0b",
         "canonical_name": "jungle bow",
         "wiki_observations": [
           {
@@ -142443,7 +142443,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "b4599dd6048f0da97372e13a2b5d36751c6e49e46b377f3aec72cbb034c0d3e0",
+        "canonical_definition_sha256": "71fa05dda51c3860cfab15db4877ff14079360e5435b058b9a9c273bbb35ea6b",
         "canonical_name": "makeshift boots",
         "wiki_observations": [
           {
@@ -142529,7 +142529,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "928adb7eee26a324d7dcd40b663ee0d8714ee327d74a5999c4d2e7415a3afd7c",
+        "canonical_definition_sha256": "3c14e2669b9c6adbf8fa406b80012be248b94d6eb3f36774a819a8207a11a442",
         "canonical_name": "make-do boots",
         "wiki_observations": [
           {
@@ -142615,7 +142615,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "cde03d200509df81c5d20d53d84f129484dc330318f4912e7eca8b7988556989",
+        "canonical_definition_sha256": "d05d24b3fb973507dac37886671f79ee10c48d1e9b188599012ecb2032bbb574",
         "canonical_name": "jungle rod",
         "wiki_observations": [
           {
@@ -142719,7 +142719,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "67b237d0c0a9f1e3b2a4c0d37589e8aaab3c560cbc7e8eb77380d45d8447d303",
+        "canonical_definition_sha256": "6f5bf50c2ec207fdedfdfed989415110e6f6bbac58e2878548dc0c0147772492",
         "canonical_name": "jungle wand",
         "wiki_observations": [
           {
@@ -142917,7 +142917,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "4d7e445063339ac906a629d16c1345de2d0a2e3ac2d1c539c9fe9228b0093141",
+        "canonical_definition_sha256": "275d384f4587b4ad37549acb41e627bcf1e53957aa9021a5f232116e6f3eb678",
         "canonical_name": "eldritch shield",
         "wiki_observations": [
           {
@@ -143454,7 +143454,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "948048e61f5538be49550d18b3e4f2ae3705a7a75a77739df0ca59574eceb8cd",
+        "canonical_definition_sha256": "bd9aa94679a35c5661d9f19e33c0d8ad89e808df2854182dcb0ff0b78538fe5a",
         "canonical_name": "eldritch greataxe",
         "wiki_observations": [
           {
@@ -143578,7 +143578,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "6415c5028058d517f8d8658c8b7ef18e44710ae5e36f41f56b8a18da21554a61",
+        "canonical_definition_sha256": "09e8bc543f0623c097b3e1dec2e494665cb7c3004bdb32d1b41f3feaa8dcffe9",
         "canonical_name": "gilded eldritch greataxe",
         "wiki_observations": [
           {
@@ -143702,7 +143702,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "9651bc9d135260990050b1e26121eb0f8ba730dbe5cbcbd6629f99911c03c1b7",
+        "canonical_definition_sha256": "4000b11f7b87d49b1d73797a45848c8827fa76c7363fe9b04956aaf2738f4ca0",
         "canonical_name": "eldritch cuirass",
         "wiki_observations": [
           {
@@ -143813,7 +143813,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "921c5e087bf1288b51d1a5c2d7f559b43ef0cdc721ad08cd5bf0df338bc13fe7",
+        "canonical_definition_sha256": "ab5ce755ae3b241aa87782675e8b37faa1ff055b28a77d8329a3b12248ab4257",
         "canonical_name": "eldritch bow",
         "wiki_observations": [
           {
@@ -143934,7 +143934,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "e056019cc1be3b8816fa69d5d83b52c7270bff0da781e9d764b47e6e7da8b0d0",
+        "canonical_definition_sha256": "df3c828070cf0d97dd360a406cfe29cb3b52436ed3e3971625cc2f4e3698968b",
         "canonical_name": "gilded eldritch bow",
         "wiki_observations": [
           {
@@ -144055,7 +144055,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "d2ec2e26745b629b0e2bdff7ec447b4215345e20332beea2e6bb0c5c1070fa0d",
+        "canonical_definition_sha256": "2420e39bcacb24375398089381e2aef9f637071d300456018d73674957e89eae",
         "canonical_name": "eldritch wand",
         "wiki_observations": [
           {
@@ -144159,7 +144159,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "26c22e4f41ad77e9d163b6cdc2889d8e4ffd72dc4b82cf5d8bc3be27d0ce499c",
+        "canonical_definition_sha256": "244a5b3cb2db2fff2921989359a5f3fbb2fb6ba34db9172414ad5702ac76f204",
         "canonical_name": "gilded eldritch wand",
         "wiki_observations": [
           {
@@ -144263,7 +144263,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "f6709b825a93cdb6337f989b48cba9a16e5b238446ac2d446e558cf8f86b4945",
+        "canonical_definition_sha256": "e00ecfdb3261cb4d9040f537a56e74ab383506f3ad7ce74829e676b0c0afb3d2",
         "canonical_name": "eldritch cowl",
         "wiki_observations": [
           {
@@ -144400,7 +144400,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "71f82568290b872a73c908e9f09aa9bd274ffc675407d38e789b4d5f2ec0d437",
+        "canonical_definition_sha256": "cc69e1f0361c67584183422f8cff1c26e5ea318905d0e45e4e8b61e764c0f28f",
         "canonical_name": "eldritch hood",
         "wiki_observations": [
           {
@@ -144537,7 +144537,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "c6d42f07b7b0e6e58b4685555786854ba6adac33b949e0f918a1ce6d64c8990c",
+        "canonical_definition_sha256": "3d61318b9aca5ad458e46904725758b3355826805c298893db2df9c4be1f924d",
         "canonical_name": "eldritch folio",
         "wiki_observations": [
           {
@@ -144643,7 +144643,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "02a428e69135bcd887d7b0b165e52a62afb8bb7ccc3693a46ca88059c2e4b5aa",
+        "canonical_definition_sha256": "f83542529a8853a651a02675b043ea92e312530234bfadcff79c3889ea989433",
         "canonical_name": "eldritch tome",
         "wiki_observations": [
           {
@@ -144749,7 +144749,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "02c80356c87444bf5eed2e2678dfb726cc5db2dc53575f20794bf7f2b4e0396c",
+        "canonical_definition_sha256": "47118a4f7ec73087cdc2c4d997d743c7ea1bc8911bd883b2df1f9c29e35483c2",
         "canonical_name": "eldritch rod",
         "wiki_observations": [
           {
@@ -144864,7 +144864,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "4d56ec004222e95329942227b0bfc361c43f4895ef82ebc6b98c7baed849e8fe",
+        "canonical_definition_sha256": "6b7906d883603253418db3496307e9ed9cafacdb1db77d16a1dd47edeeb59e75",
         "canonical_name": "gilded eldritch rod",
         "wiki_observations": [
           {
@@ -145060,7 +145060,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-22500-22999.json",
-        "canonical_definition_sha256": "6d22d88d7feb66d429bf6fdf2c9bfbc251664b8d0608bd7f1983d7073365cf47",
+        "canonical_definition_sha256": "0bde1620c3f7fe34df7c97bffb87590617fe9a5a72f0fc2478fa7ae599d07966",
         "canonical_name": "green demon armor",
         "wiki_observations": [
           {
@@ -145171,7 +145171,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-22500-22999.json",
-        "canonical_definition_sha256": "44a1eb7b4813e3d767afd80a5876cb8202b768c7e39b15d2bcc737356ec91842",
+        "canonical_definition_sha256": "13146be045ce5f479a930e04703d7d435793ff0e80eac9ce455e7c7f125c59be",
         "canonical_name": "green demon helmet",
         "wiki_observations": [
           {
@@ -145396,7 +145396,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "d05260fc52c5830c78d441fc3aea5c62d1a3f359396923a445dacd41283e2994",
+        "canonical_definition_sha256": "f89de28d18346f586d176c9f6e32af4ba5fa226f75a656a3b5ce4162316305f1",
         "canonical_name": "spiritthorn armor",
         "wiki_observations": [
           {
@@ -145507,7 +145507,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "826058c6860d332c8b0e1177743c7f0dfd3211c4a70d9c8310bdd45240020041",
+        "canonical_definition_sha256": "afa904284858b9d671043b58e3b2f7855396613b1f98562a1f0a42a9786d3936",
         "canonical_name": "spiritthorn helmet",
         "wiki_observations": [
           {
@@ -145645,7 +145645,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "ecdb290d7cfad64bc50a4382ea257baf78d3881d82a3fa7f160e580faf5d8c12",
+        "canonical_definition_sha256": "3f7d49c00ef9cd92f4a70f4472e6603643ab339fc777db57afc53755137483b8",
         "canonical_name": "alicorn headguard",
         "wiki_observations": [
           {
@@ -145782,7 +145782,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "b18d729da717e37841eef251879352342887d904111e2b310c6fc4039f2bcf3d",
+        "canonical_definition_sha256": "d6e78cdd3b130b1436999ceab8e01f6b1d453327e6fc74717e33e541dc0ecd4a",
         "canonical_name": "arcanomancer regalia",
         "wiki_observations": [
           {
@@ -145919,7 +145919,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "d4663f95ff609d51709b76d352864b9734129fb151fa6377730d263316469ad4",
+        "canonical_definition_sha256": "b25ed41e5eab958072ec9714bbaa186b35ccdb47b66bfd157806775b17ef092d",
         "canonical_name": "arcanomancer folio",
         "wiki_observations": [
           {
@@ -146025,7 +146025,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "324e03d348a9f86575630198910796cfc97299082636d88260aded1a7d761e6c",
+        "canonical_definition_sha256": "a9543c751b3e4929b49401d01fbf63f8ef000d0c39f13868bc26f4d04e67b03b",
         "canonical_name": "arboreal crown",
         "wiki_observations": [
           {
@@ -146162,7 +146162,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "e659dcac1df86474d9ead4c20f257c9024d9152227a7cd735fc73f14bcb1d9b7",
+        "canonical_definition_sha256": "a3f067c223e05147a405db15f8ec4e46324c1ee71c73257bba450fe625c99d5f",
         "canonical_name": "arboreal tome",
         "wiki_observations": [
           {
@@ -146460,7 +146460,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "00dd6b7d28ba4ebd4dc2b2a13f630df7bc25b5e6c37c51b79e58dcd85972e49e",
+        "canonical_definition_sha256": "c0931a83526213406b1f1a47facf6a3bba7f95ae485376a0d5d70e1a148e7ac9",
         "canonical_name": "naga club",
         "wiki_observations": [
           {
@@ -146584,7 +146584,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "2ecf0c72de635d9cb6616efaecd0508eaafd27a16aa6911bdc6ee0b5b9053ad0",
+        "canonical_definition_sha256": "3911c2616ba68c6564d545f3ac068a94acd6be5ac7ce7d06bd2a61686651410d",
         "canonical_name": "frostflower boots",
         "wiki_observations": [
           {
@@ -146696,7 +146696,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "8e77a24ee495b5dfda2522de7d41e794a609c53df3bd2adba05cb58e0d8fdc28",
+        "canonical_definition_sha256": "fae5c55bc30c01e5c1faec00a919ce37b672314f162e46871917e1e608e08eda",
         "canonical_name": "naga crossbow",
         "wiki_observations": [
           {
@@ -146817,7 +146817,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "a603f38019e1a2da0f448388920f3cbf1e49efbe1db5b0816b64ca4d19c0c574",
+        "canonical_definition_sha256": "67f23cd8e8c145789e95d4809cd7dca00b9d84f4811105bab08153cab911524f",
         "canonical_name": "feverbloom boots",
         "wiki_observations": [
           {
@@ -146917,7 +146917,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "5bff4bac593fabeeace7e790491158ff094efaf9102c21b0c32fa7b36934d03e",
+        "canonical_definition_sha256": "643f3814c1fcf44472ee1e3e4dc8c5098a6b2e8e69676b4014f6ddcb3e977f33",
         "canonical_name": "naga wand",
         "wiki_observations": [
           {
@@ -147013,7 +147013,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "f1acae546fa259e5470aa1cbe6e35016021df7cf4875ff8e092901e21521db25",
+        "canonical_definition_sha256": "129e8c6661493e41a818471774d2508261cbc0d650be87e67679148cd19641cb",
         "canonical_name": "naga rod",
         "wiki_observations": [
           {
@@ -147109,7 +147109,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "01f0b3bc8788bbc5f9d1949a90b72d56b24cd4fd83f0283ca3132a451db8ae44",
+        "canonical_definition_sha256": "29fc0fd48f0fcd1f1bc5e143860c19c4aeb2bfc028d3ca6189749e99ba7c0cb3",
         "canonical_name": "dawnfire sherwani",
         "wiki_observations": [
           {
@@ -147219,7 +147219,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "022270c016e146463e754701fc04ee4e298c9214b4ebbebea891f6c20b5f7a6a",
+        "canonical_definition_sha256": "b910f406bac6a5e78b85081bdf66576e078a524a3fde530d361296a21e197c2e",
         "canonical_name": "midnight tunic",
         "wiki_observations": [
           {
@@ -160290,7 +160290,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "aff01ea2b859cd366fd2fc26464cf569b05e0cb35474fe59e53b53d5c635c012",
+        "canonical_definition_sha256": "7d580e93f6cdab7fbe691f05dfdad070762ab3431c889fbab5a978bbf7e903d9",
         "canonical_name": "ethereal coned hat",
         "wiki_observations": [
           {
@@ -161778,7 +161778,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "ec94fbe47fec07d1a181fb0ddc39d0d99643a8ca6e40aa4b3e1ed1aaa0dcd52b",
+        "canonical_definition_sha256": "0e1ce7d0c367606e0e61e04b33a906a869611cbed8de73353d6f5d18b72b127b",
         "canonical_name": "death oyoroi",
         "wiki_observations": [
           {

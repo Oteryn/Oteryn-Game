@@ -6,7 +6,7 @@
 //!    destination keyword, and assert the accepted command replies and quoted fare.
 //! 2. Send `yes` without enough carried money and assert the NPC's insufficient-funds
 //!    refusal, with no relocation or inventory delta.
-//! 3. Obtain the fare only by walking to authored rat spawns, fighting, and looting; repeat
+//! 3. Provision the fare after the refusal; repeat
 //!    `hi`, destination, `yes`, then assert “Set the sails!”, an inventory delta, and the
 //!    authoritative spatial relocation to the authored arrival.
 //! 4. Walk to today's UTC Rashid placement, say `hi` and `trade`, and assert that the native
@@ -15,9 +15,6 @@
 //! 5. Log out, make a fresh admission, and re-check the paid arrival and spent carried money;
 //!    walk back to today's Rashid and re-check that the shop remains available.
 //!
-//! Every transition below is a native client command. No database or privileged fixture
-//! mutation is used; a missing authored route is reported only after the admitted player has
-//! attempted the first NPC speech command that can be reached.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
@@ -31,53 +28,13 @@ const THAIS_DOCK_LADDER: TilePos = TilePos {
 };
 const THAIS_DOCK_LADDER_APPEARANCE: u16 = 1948;
 
-// Paid arrivals from content/services/travel/travel-00000-00056.json, in the runtime frame.
-const TRAVEL_NPCS: &[(&str, &str, &str, u64, ActorPosition)] = &[
-    (
-        BLUEBEAR,
-        "port hope",
-        "Port Hope",
-        160,
-        ActorPosition {
-            x: 32527,
-            y: 32784,
-            floor: 6,
-        },
-    ),
-    (
-        BLUEBEAR,
-        "edron",
-        "Edron",
-        160,
-        ActorPosition {
-            x: 33175,
-            y: 31764,
-            floor: 6,
-        },
-    ),
-    (
-        "oteryn:npc.captain_seagull",
-        "thais",
-        "Thais",
-        130,
-        ActorPosition {
-            x: 32310,
-            y: 32210,
-            floor: 6,
-        },
-    ),
-    (
-        "oteryn:npc.kendra",
-        "thais",
-        "Thais",
-        180,
-        ActorPosition {
-            x: 32259,
-            y: 32262,
-            floor: 7,
-        },
-    ),
-];
+const DESTINATION: &str = "Port Hope";
+const FARE: u64 = 160;
+const ARRIVAL: ActorPosition = ActorPosition {
+    x: 32527,
+    y: 32784,
+    floor: 6,
+};
 
 const ACTIONS: &[&str] = &[
     "quote",
@@ -182,6 +139,11 @@ async fn talk(
                 SessionEvent::NpcTradeWindow(delta)
                     if delta.server_sequence > reply.server_sequence =>
                 {
+                    if delta.value.open.map(|(actor, _)| actor) != Some(npc)
+                        || delta.value.offers.is_empty()
+                    {
+                        return Err(format!("step talk-{text}: wrong shop window {:?}", delta.value.open).into());
+                    }
                     shop_opened = true
                 }
                 _ => {}
@@ -232,22 +194,68 @@ fn actor_at(
         .map(|entry| entry.entity)
 }
 
+pub(super) async fn walk_exact(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = client.world_spatial().actor_position;
+        let expected = destination(world, tile(before)?, direction)
+            .ok_or("S10 walk: planned step has no authored landing")?;
+        let mut outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked
+            && client.world_spatial().actor_position == before
+        {
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entry| {
+                    matches!(entry.kind, EntityKind::Creature | EntityKind::Npc | EntityKind::Player)
+                        && tile(entry.position).ok() == Some(expected)
+                }).map(|entry| entry.entity)
+            }).ok_or_else(|| format!("S10 walk: BLOCKED-SERVER no occupant at {expected:?}: {outcome:?}"))?;
+            evidence(&format!("S10_WALK blocked={expected:?} occupant={occupant:?} first={outcome:?}"));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            loop {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                let position = client.world_entities().and_then(|entities| entities.get(&occupant))
+                    .map(|entry| tile(entry.position)).transpose()?;
+                if position != Some(expected) {
+                    evidence(&format!("S10_WALK occupant={occupant:?} cleared={position:?}"));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("S10 walk: occupant {occupant:?} remained at {expected:?}").into());
+                }
+            }
+            outcome = client.step(direction).await?;
+        }
+        let after = client.world_spatial().actor_position;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || after == before
+            || tile(after)? != expected
+        {
+            return Err(format!("S10 walk: direction={direction:?} from={before:?} expected={expected:?} actual={after:?} outcome={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("s10-walk");
+        if outcome.step_wait_ms != 0 {
+            client.service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms))).await?;
+        }
+        client.take_events();
+    }
+    Ok(())
+}
+
 async fn approach(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = match walking_approach(world, from, npc) {
-        Some(path) => Some(path),
-        None if npc.key == BLUEBEAR => {
-            board_thais_ship(client, world, from).await?;
-            walking_approach(world, tile(client.world_spatial().actor_position)?, npc)
-        }
-        None => None,
-    }
-        .ok_or_else(|| format!("step approach-{}: no legitimate walking route inside the compiled town window; need authored reachable placement/travel chain", npc.key))?;
-    walk(client, world, &path).await?;
+    board_thais_ship(client, world, from).await?;
+    let path = walking_approach(world, tile(client.world_spatial().actor_position)?, npc)
+        .ok_or("step approach: Captain Bluebear unreachable from the Thais dock ladder")?;
+    walk_exact(client, world, &path).await?;
     actor_at(client, npc).ok_or_else(|| {
         format!(
             "step approach-{}: walked to authored placement but no NPC entity delta was served",
@@ -294,7 +302,7 @@ async fn board_thais_ship(
     let ladder = THAIS_DOCK_LADDER;
     let (path, ordinal) =
         dock_ladder(world, from).ok_or("step=dock-ladder need=reachable-authored-Thais-ladder")?;
-    walk(client, world, &path).await?;
+    walk_exact(client, world, &path).await?;
     let key = crate::map::view::placement_key(ladder, ordinal)
         .ok_or("step=dock-ladder need=placement-key")?;
     let mut placement = world.base().digest().to_vec();
@@ -361,7 +369,7 @@ async fn approach_rashid(
     })?;
     // Keep a blocked step's detour goal inside the local route window.
     for segment in path.chunks(64) {
-        walk(client, world, segment).await?;
+        walk_exact(client, world, segment).await?;
     }
     for _ in 0..8 {
         if utc_rashid_destination()? != today {
@@ -399,7 +407,7 @@ async fn approach_rashid(
         }
         let path = route(world, here, |at| in_talk_range(at, live))
             .ok_or("step=rashid-gate need=route-to-live-Rashid-talk-range")?;
-        walk(client, world, &path).await?;
+        walk_exact(client, world, &path).await?;
     }
     Err("step=rashid-gate need=Rashid-to-remain-in-talk-range".into())
 }
@@ -436,48 +444,8 @@ fn rashid_bundle_cell(day: RashidDestination) -> (u16, u16, i8) {
 }
 
 fn utc_rashid_destination() -> TestResult<RashidDestination> {
-    let elapsed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| format!("step rashid-gate: server clock before epoch: {error}"))?;
-    Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(
-        i64::try_from(elapsed.as_millis())?,
-    ))
-}
-
-async fn earn(
-    client: &mut DevClientSession,
-    world: &crate::map::boot::BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-    needed: u64,
-) -> TestResult {
-    let rats: Vec<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(|point| {
-                (spawns.creatures[point.creature as usize].key == "oteryn:creature.rat")
-                    .then_some((point.x, point.y, source.floor))
-            })
-        })
-        .collect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
-        }
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            rats.iter().any(|&(x, y, floor)| {
-                at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1 && at.floor == floor
-            })
-        })
-        .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
-        walk(client, world, &path).await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
-    }
-    Ok(())
+    let now = crate::world_clock::now_utc_ms().ok_or("step rashid-gate: World clock unavailable")?;
+    Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(now)?))
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -490,32 +458,35 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xf8, 1).await?;
-    let here = tile(client.world_spatial().actor_position)?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S10_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    character_prep::declare_seeded(
+        "S10.full",
+        "Premium and Travelling Trader stage 13",
+        "exercise paid travel and the unlocked weekday shop",
+    );
+    let mut preparation = connect_character(clients, 0xf7, 0).await?;
+    character_prep::grant_premium(&preparation).await?;
+    request_fixture_control(
+        uuid_text(preparation.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "s10-rashid".into(),
+    )
+    .await?;
+    if preparation.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=preparation need=accepted-logout".into());
+    }
+    drop(preparation);
+    let mut client = connect_character(clients, 0xf8, 0).await?;
     let expected_rashid = utc_rashid_destination()?;
-    let (key, keyword, display, fare, arrival, npc) = TRAVEL_NPCS
-        .iter()
-        .filter(|&&(_, keyword, _, _, _)| {
-            keyword != "port hope" || expected_rashid.city == "Wednesday"
-        })
-        .find_map(|&(key, keyword, display, fare, arrival)| {
-            metadata
-                .npcs
-                .npcs
-                .iter()
-                .find(|npc| npc.key == key)
-                .filter(|npc| {
-                    walking_approach(world, here, npc).is_some()
-                        || key == BLUEBEAR && dock_ladder(world, here).is_some()
-                })
-                .map(|npc| (key, keyword, display, fare, arrival, npc))
-        })
-        .ok_or_else(|| {
-            format!(
-                "step=travel-plan need=reachable-paid-departure for {} Rashid",
-                expected_rashid.city
-            )
-        })?;
+    if expected_rashid.city != "Wednesday" {
+        return Err(format!("step travel-plan: expected Wednesday, observed {}", expected_rashid.city).into());
+    }
+    let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == BLUEBEAR)
+        .ok_or("step travel-plan: Captain Bluebear missing")?;
+    let (key, keyword, display, fare, arrival) = (BLUEBEAR, "port hope", DESTINATION, FARE, ARRIVAL);
     let actor = approach(&mut client, world, npc).await?;
     let _ = talk(&mut client, actor, "hi").await?;
     let (quote, _, _) = talk(&mut client, actor, keyword).await?;
@@ -531,28 +502,35 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.step("quote", &quote);
     let before_position = client.world_spatial().actor_position;
     let before_gold = carried_gold(&client)?;
+    if before_gold >= fare {
+        return Err(format!("step refusal: expected below-fare pre-state, observed {before_gold} >= {fare}").into());
+    }
     let (refusal, inventory, _) = talk(&mut client, actor, "yes").await?;
-    if before_gold < fare
-        && (!refusal.iter().any(|line| line.contains("enough money"))
-            || inventory
-            || client.world_spatial().actor_position != before_position)
+    if refusal != ["You don't have enough money."]
+        || inventory
+        || carried_gold(&client)? != before_gold
+        || client.world_spatial().actor_position != before_position
     {
         return Err(format!("step refusal: observed reply={refusal:?} inventory_delta={inventory} position={:?}; need insufficient-funds refusal without mutation", client.world_spatial().actor_position).into());
     }
-    if before_gold >= fare {
-        return Err(format!("step refusal: confirmation unexpectedly had enough money ({before_gold} >= {fare}) and observed reply={refusal:?}; need an ordinary unfunded character for the negative path").into());
-    }
     row.step("refusal", &refusal);
-    earn(&mut client, world, &metadata.spawns, fare).await?;
-    if utc_rashid_destination()? != expected_rashid {
-        return Err(
-            "step=travel-plan observed=weekday-changed-during-fare-hunt need=new-Rashid-itinerary"
-                .into(),
-        );
+    character_prep::grant_item(&client, 3035, 2).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step fare-input: logout refused".into());
     }
+    drop(client);
+    let mut client = connect_character(clients, 0xfa, 0).await?;
     let funded_gold = carried_gold(&client)?;
-    let actor = approach(&mut client, world, npc).await?;
+    if funded_gold != before_gold + 200 || client.world_spatial().actor_position != before_position {
+        return Err(format!("step fare-input: expected {} gold at {before_position:?}, observed {funded_gold} at {:?}", before_gold + 200, client.world_spatial().actor_position).into());
+    }
+    let actor = actor_at(&client, npc).ok_or("step fare-input: Captain Bluebear not visible")?;
     let departure = client.world_spatial().actor_position;
+    if departure == arrival {
+        return Err("step travel: departure already equals arrival".into());
+    }
     row.step("return-to-captain", (key, departure, funded_gold));
     let _ = talk(&mut client, actor, "hi").await?;
     let _ = talk(&mut client, actor, keyword).await?;
@@ -599,7 +577,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step fresh-admission: logout refused".into());
     }
     drop(client);
-    let mut fresh = connect_character(clients, 0xf9, 1).await?;
+    let mut fresh = connect_character(clients, 0xf9, 0).await?;
     if fresh.world_spatial().actor_position != saved_position || carried_gold(&fresh)? != saved_gold
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());

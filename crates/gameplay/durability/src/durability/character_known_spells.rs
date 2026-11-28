@@ -4,6 +4,7 @@
 //! later vocation transition never silently removes knowledge already earned. Definitions that
 //! still require an explicit learning owner are deliberately excluded by the dispatch planner.
 
+use crate::durability::db::commit_semantic_read;
 use std::collections::BTreeSet;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -65,7 +66,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let keys = read_known_spells_in_transaction(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(keys)
                 })
             })

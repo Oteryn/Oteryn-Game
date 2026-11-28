@@ -32,7 +32,7 @@ pub(super) fn world(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
     let mut crops = if name.ends_with("-complete") {
-        super::l6_paradox_story_fixtures::crops()?
+        super::l6_paradox_story_fixtures::crops(false)?
     } else {
         Vec::new()
     };

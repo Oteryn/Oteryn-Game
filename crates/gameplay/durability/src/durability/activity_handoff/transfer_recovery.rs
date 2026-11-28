@@ -2,6 +2,7 @@
 //! Discovery and retained placement are data, never authority to attach a controller.
 //! A real first command closes this path before its effect. Ordinary reconnect
 //! remains the owner of any session with an independently recorded control loss.
+use crate::durability::db::commit_semantic_read;
 use super::super::fresh_admission::{CurrentCapabilityCheck, has_owning_loss_receipt};
 use super::super::recovery_evidence_composition::{
     RecoveryEvidenceSubject, decide_with_registered_recovery,
@@ -91,7 +92,7 @@ impl ActivityHandoffOwner {
                     let mut tx = begin_semantic_transaction(pass, deadline).await?;
                     lock_admission_relations(&mut tx).await?;
                     let candidate = load(&mut tx, &root, session).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(candidate)
                 })
             })
