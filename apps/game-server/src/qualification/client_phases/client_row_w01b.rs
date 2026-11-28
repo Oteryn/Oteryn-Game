@@ -89,29 +89,31 @@ fn creature_at(client: &DevClientSession, at: TilePos) -> Option<WorldSpatialEnt
 // The two real admissions and the final saved position still come from Game.
 async fn seed_client_placement(
     clients: &SeamClients<'_>,
-    map_digest: &[u8; 32],
+    world: &BundleWorld,
     entry: TilePos,
 ) -> TestResult {
     use sqlx::Connection as _;
 
+    let frame_digest = world.frame_binding_digest(WorldId::decode(&clients.world)?);
+    let map_digest = world.map_revision_digest();
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let seeded = sqlx::query(
         "INSERT INTO game_character_last_positions (
              character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest,
              map_revision_digest, server_artifact_digest, character_lease_generation, write_sequence
          )
-         SELECT r.character_id, r.world_id, $4, $5, $6, a.frame_binding_digest, $7,
+         SELECT r.character_id, r.world_id, $4, $5, $6, $7, $8,
                 a.server_artifact_digest, 1, 1
          FROM game_character_roots r
          CROSS JOIN LATERAL (
-             SELECT frame_binding_digest, server_artifact_digest
+             SELECT server_artifact_digest
              FROM game_content_activations
              WHERE world_id = r.world_id AND channel_id = encode($3, 'hex')::uuid
              ORDER BY activation_sequence DESC LIMIT 1
          ) a
          WHERE r.character_id = encode($1, 'hex')::uuid
            AND r.world_id = encode($2, 'hex')::uuid
-           AND r.account_id = $8::uuid
+           AND r.account_id = $9::uuid
            AND NOT EXISTS (
                SELECT 1 FROM game_durability_reconnect_sessions previous
                WHERE previous.character_id = r.character_id
@@ -123,6 +125,7 @@ async fn seed_client_placement(
     .bind(i32::from(entry.x))
     .bind(i32::from(entry.y))
     .bind(-i16::from(entry.floor))
+    .bind(frame_digest.as_slice())
     .bind(map_digest.as_slice())
     .bind(&clients.accounts[0])
     .execute(&mut database)
@@ -169,7 +172,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             "W01b fixture entry is not a walkable authored ground cell outside Rat interest".into(),
         );
     }
-    seed_client_placement(clients, &metadata.digest, entry).await?;
+    seed_client_placement(clients, world, entry).await?;
     let mut client = character_prep::w01b_rat_hunter("W01b.client", clients, 0x0c).await?;
     let joined_position = client.world_spatial().actor_position;
     let initial_position = tile(joined_position)?;
