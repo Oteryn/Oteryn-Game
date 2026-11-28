@@ -158,9 +158,12 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P10 fresh capture directory required")?;
     let root = Path::new(&root);
     let _ = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P10_ACCOUNT").await?;
+    let scope = dedicated.clients(clients);
+    let clients = &scope;
     let world_id = uuid_text(&clients.world);
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let mut client = connect_world(clients, 0x2c).await?;
+    let mut client = connect_character(clients, 0x2c, 0).await?;
     character_prep::grant_premium(&client).await?;
     let setup_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
@@ -168,7 +171,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err(format!("P10 Premium setup logout refused: {logout:?}").into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0x2c).await?;
+    let mut client = connect_character(clients, 0x2c, 0).await?;
     if client.join_snapshot().game_session_id == setup_session {
         return Err("P10 Premium setup reused its session".into());
     }
@@ -221,7 +224,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err(format!("P10 logout refused: {logout:?}").into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0x2d).await?;
+    let mut client = connect_character(clients, 0x2d, 0).await?;
     if client.join_snapshot().game_session_id == previous
         || tile(client.world_spatial().actor_position)? != resting_tile
     {
