@@ -56,6 +56,12 @@ async fn capture_reply(
             &command.payload,
         )
         .await?;
+    if command.shared_setting().is_some() {
+        evidence(&format!(
+            "S01_SHARED_XP_RECEIPT session={session} command_id={} status={:?} server_sequence={} payload={:?}",
+            reply.command_id, reply.status, reply.server_sequence, reply.payload
+        ));
+    }
     let name = record_reply(&session, command, &reply)?;
     if reply.server_sequence <= before {
         return Err("S01 reply did not advance the sequence".into());
@@ -377,12 +383,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if receipt.disposition != ChatDisposition::Ok || receipt.wait_seconds != 0 {
         return Err(format!("S01 shared XP toggle refused: {receipt:?}").into());
     }
+    // Neither character has contributed in combat. Service both sessions while
+    // waiting for the pushed blinking shields before querying the new roster.
+    let leader_ref = own(&leader)?;
+    let peer_ref = own(&peer)?;
+    tokio::try_join!(
+        check_peer_shield(&mut leader, peer_ref, 7, leader_before_toggle, Vec::new()),
+        check_peer_shield(&mut peer, leader_ref, 8, peer_before_toggle, Vec::new()),
+    )?;
     let leader_shared = send(&mut leader, None).await?;
     check_state_with_xp(&leader_shared, &before_pass, None, true)?;
     check_state_with_xp(&send(&mut peer, None).await?, &before_pass, None, true)?;
-    // Neither fixture character has contributed in combat, so both shared-XP shields blink.
-    check_peer_shield(&mut leader, own(&peer)?, 7, leader_before_toggle, Vec::new()).await?;
-    check_peer_shield(&mut peer, own(&leader)?, 8, peer_before_toggle, Vec::new()).await?;
     let member = leader_shared
         .result
         .members
