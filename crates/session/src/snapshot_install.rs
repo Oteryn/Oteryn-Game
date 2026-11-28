@@ -47,6 +47,9 @@ impl SnapshotState {
         session.inventory = self.inventory;
         session.container_views = self.container_views;
         session.open_container = self.open_container;
+        if session.inventory_revision != self.inventory_revision {
+            session.inventory_npc_purchase_ids.clear();
+        }
         session.inventory_revision = self.inventory_revision;
         session.container_revision = self.container_revision;
         session.gated_snapshots = self.gated_snapshots;

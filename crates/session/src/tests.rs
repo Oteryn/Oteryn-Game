@@ -143,6 +143,8 @@ mod item_movement_tests;
 mod item_replay_i05_tests;
 #[path = "tests/npc_conversation_replay.rs"]
 mod npc_conversation_replay;
+#[path = "tests/npc_purchase_attribution.rs"]
+mod npc_purchase_attribution_tests;
 #[path = "tests/property_services.rs"]
 mod property_services_tests;
 #[path = "tests/pvp_expert.rs"]

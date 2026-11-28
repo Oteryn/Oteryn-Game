@@ -1105,6 +1105,70 @@ pub fn encode_state_delta(
     delta_type: u32,
     payload: &[u8],
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_state_delta_body(
+        connection_generation,
+        server_sequence,
+        StateDeltaView {
+            domain_id,
+            base_revision,
+            new_revision,
+            delta_type,
+            payload,
+            npc_purchase_attribution: None,
+        },
+    )
+}
+
+/// Bound the pending purchases and the number of command IDs in one inventory replacement.
+pub const MAX_NPC_PURCHASE_COMMAND_IDS: usize = 64;
+
+/// Encode an inventory replacement for a session that selected NPC purchase attribution.
+pub fn encode_npc_purchase_inventory_delta(
+    connection_generation: u64,
+    server_sequence: u64,
+    base_revision: u64,
+    new_revision: u64,
+    payload: &[u8],
+    command_ids: &[u64],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if command_ids.is_empty()
+        || command_ids.len() > MAX_NPC_PURCHASE_COMMAND_IDS
+        || command_ids[0] == 0
+        || command_ids.windows(2).any(|pair| pair[0] >= pair[1])
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut packed = Vec::new();
+    for &id in command_ids {
+        push_varint(&mut packed, id);
+    }
+    encode_state_delta_body(
+        connection_generation,
+        server_sequence,
+        StateDeltaView {
+            domain_id: item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
+            base_revision,
+            new_revision,
+            delta_type: item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+            payload,
+            npc_purchase_attribution: Some(NpcPurchaseAttribution(&packed)),
+        },
+    )
+}
+
+fn encode_state_delta_body(
+    connection_generation: u64,
+    server_sequence: u64,
+    delta: StateDeltaView<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    let StateDeltaView {
+        domain_id,
+        base_revision,
+        new_revision,
+        delta_type,
+        payload,
+        npc_purchase_attribution,
+    } = delta;
     if connection_generation == 0
         || server_sequence == 0
         || domain_id == 0
@@ -1122,6 +1186,9 @@ pub fn encode_state_delta(
     push_scalar(&mut body, 3, new_revision);
     push_scalar(&mut body, 4, u64::from(delta_type));
     push_bytes(&mut body, 5, payload);
+    if let Some(attribution) = npc_purchase_attribution {
+        push_bytes(&mut body, 16, attribution.0);
+    }
     Ok(server_frame(
         MessageType::StateDelta,
         connection_generation,
@@ -1515,6 +1582,34 @@ pub struct StateDeltaView<'a> {
     pub new_revision: u64,
     pub delta_type: u32,
     pub payload: &'a [u8],
+    pub npc_purchase_attribution: Option<NpcPurchaseAttribution<'a>>,
+}
+
+/// Ordered command IDs covered by one NPC-purchase inventory replacement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NpcPurchaseAttribution<'a>(&'a [u8]);
+
+impl NpcPurchaseAttribution<'_> {
+    pub fn command_ids(&self) -> impl Iterator<Item = u64> + '_ {
+        let mut cursor = 0;
+        std::iter::from_fn(move || read_varint(self.0, &mut cursor).ok())
+    }
+
+    fn decode(packed: &[u8]) -> Result<NpcPurchaseAttribution<'_>, FoundationProtocolError> {
+        let mut cursor = 0;
+        let mut previous = 0;
+        for _ in 0..MAX_NPC_PURCHASE_COMMAND_IDS {
+            let id = read_varint(packed, &mut cursor)?;
+            if id <= previous {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            if cursor == packed.len() {
+                return Ok(NpcPurchaseAttribution(packed));
+            }
+            previous = id;
+        }
+        Err(FoundationProtocolError::MalformedEnvelope)
+    }
 }
 
 /// Decodes one `StateDelta` message payload — a `WireEnvelopeView::payload()` whose
@@ -1526,6 +1621,7 @@ pub fn decode_state_delta(payload: &[u8]) -> Result<StateDeltaView<'_>, Foundati
     let mut cursor = 0usize;
     let (mut domain_id, mut base_revision, mut new_revision, mut delta_type, mut delta_payload) =
         (None, None, None, None, None);
+    let mut attribution = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1543,6 +1639,14 @@ pub fn decode_state_delta(payload: &[u8]) -> Result<StateDeltaView<'_>, Foundati
                 MAX_STATE_DELTA_PAYLOAD_BYTES,
                 FoundationProtocolError::PayloadLimitExceeded,
             )?,
+            16 => read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut attribution,
+                MAX_NPC_PURCHASE_COMMAND_IDS * 10,
+                FoundationProtocolError::PayloadLimitExceeded,
+            )?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
@@ -1553,6 +1657,15 @@ pub fn decode_state_delta(payload: &[u8]) -> Result<StateDeltaView<'_>, Foundati
         .and_then(|value| u32::try_from(value).ok())
         .filter(|value| *value != 0);
     let (base_revision, new_revision) = (base_revision.unwrap_or(0), new_revision.unwrap_or(0));
+    if attribution.is_some()
+        && (domain_id != Some(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
+            || delta_type != Some(item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1))
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let npc_purchase_attribution = attribution
+        .map(NpcPurchaseAttribution::decode)
+        .transpose()?;
     match (domain_id, delta_type) {
         (Some(domain_id), Some(delta_type)) if new_revision > base_revision => Ok(StateDeltaView {
             domain_id,
@@ -1560,6 +1673,7 @@ pub fn decode_state_delta(payload: &[u8]) -> Result<StateDeltaView<'_>, Foundati
             new_revision,
             delta_type,
             payload: delta_payload.unwrap_or(&[]),
+            npc_purchase_attribution,
         }),
         _ => Err(FoundationProtocolError::MalformedEnvelope),
     }
