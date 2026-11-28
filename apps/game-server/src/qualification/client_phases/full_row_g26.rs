@@ -46,9 +46,9 @@ async fn character_name(clients: &SeamClients<'_>, index: usize) -> TestResult<S
 
 use oteryn_protocol_oteryn::house_sale as sale;
 
-const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
+const HOUSE: &str = "oteryn:content.house.sunset_homes_flat_01";
 const PRICE: u64 = 200;
-const RENT: u64 = 400_000; // Authored rent for Admiral’s Avenue 1.
+const RENT: u64 = 100_000; // Authored rent for Sunset Homes Flat 01.
 
 async fn prepare_owned_house(seller: &SeamClients<'_>, buyer: &SeamClients<'_>) -> TestResult {
     let mut database = sqlx::PgConnection::connect(seller.url).await?;
