@@ -48,7 +48,7 @@ use oteryn_protocol_oteryn::house_sale as sale;
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const PRICE: u64 = 200;
-const RENT: u64 = 50;
+const RENT: u64 = 400_000; // Authored rent for Admiral’s Avenue 1.
 
 async fn prepare_owned_house(seller: &SeamClients<'_>, buyer: &SeamClients<'_>) -> TestResult {
     let mut database = sqlx::PgConnection::connect(seller.url).await?;
@@ -57,26 +57,36 @@ async fn prepare_owned_house(seller: &SeamClients<'_>, buyer: &SeamClients<'_>) 
         .execute(&mut *tx)
         .await?;
     let world = seller.world.as_slice();
-    let result = sqlx::query(include_str!(
-        "../../../tests/support/owned_house_fixture.sql"
-    ))
-    .bind(world)
-    .bind(HOUSE)
-    .bind(seller.characters[1].as_slice())
-    .execute(&mut *tx)
-    .await?;
-    if result.rows_affected() != 1 {
-        return Err("step=fixture observed=missing-seller".into());
-    }
-    sqlx::query(
-        "UPDATE game_house_properties SET rent_gold=$3, revision=revision+1
-                WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
+    let result = sqlx::query(
+        "WITH property AS (
+            UPDATE game_house_properties p
+            SET state=3, revision=p.revision+1, owner_character_id=r.character_id,
+                owner_account_id=r.account_id, acquisition_receipt_ref=game_character_uuid_v7(),
+                paid_until=statement_timestamp()+interval '30 days'
+            FROM game_character_roots r
+            WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 AND p.rent_gold=$4
+              AND p.state=1 AND p.owner_character_id IS NULL AND p.owner_account_id IS NULL
+              AND r.world_id=p.world_id AND r.character_id=encode($3,'hex')::uuid
+            RETURNING p.*
+        ), slot AS (
+            INSERT INTO game_account_housing_slots(account_id, world_id, house_key)
+            SELECT owner_account_id, world_id, house_key FROM property
+        )
+        UPDATE game_house_ownership o
+        SET owner_character_id=p.owner_character_id, ownership_revision=p.ownership_generation,
+            acquisition_receipt_ref=p.acquisition_receipt_ref
+        FROM property p WHERE o.world_id=p.world_id AND o.house_key=p.house_key
+          AND o.owner_character_id IS NULL",
     )
     .bind(world)
     .bind(HOUSE)
+    .bind(seller.characters[1].as_slice())
     .bind(i64::try_from(RENT)?)
     .execute(&mut *tx)
     .await?;
+    if result.rows_affected() != 1 {
+        return Err("step=fixture observed=missing-vacant-authored-house-or-seller".into());
+    }
     sqlx::query(
         "INSERT INTO game_house_bed_revisions(world_id,house_key,revision)
                  VALUES(encode($1,'hex')::uuid,$2,1)",
@@ -174,6 +184,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=fixture observed=buyer-gold:{buyer_gold}").into());
     }
     let mut seller = connect_world(clients, 0xd6).await?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_durability_reconnect_sessions s
+            JOIN game_house_properties p ON p.world_id=s.world_id AND p.owner_character_id=s.character_id
+            WHERE s.game_session_id=encode($1,'hex')::uuid AND p.house_key=$2
+              AND p.owner_account_id=s.account_id
+        )",
+    )
+    .bind(seller.join_snapshot().game_session_id.as_bytes().as_slice())
+    .bind(HOUSE)
+    .fetch_one(&mut database)
+    .await?;
+    if !is_owner {
+        return Err("step=initial-ownership observed=admitted-seller-is-not-owner".into());
+    }
+    evidence("row=G26.full fixture=authored-house owner=admitted-seller");
     let mut buyer = connect_character(&buyer_scope, 0xd7, 0).await?;
     for client in [&seller, &buyer] {
         if !client.selected_capabilities().contains(&sale::CAPABILITY) {
@@ -252,7 +279,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=escrow observed={escrow:?}").into());
     }
 
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let original_calendar: String = sqlx::query_scalar(
         "SELECT pg_get_functiondef('game_house_calendar_milliseconds(timestamptz)'::regprocedure)",
     )
