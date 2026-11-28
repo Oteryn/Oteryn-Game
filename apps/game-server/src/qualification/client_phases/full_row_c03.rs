@@ -470,10 +470,10 @@ async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, h
 }
 
 /// Equipment entries as (slot, definition) so they can be restored exactly.
-fn worn(client: &DevClientSession) -> Vec<(items::EquipmentSlot, std::num::NonZeroU32)> {
+fn worn_slots(client: &DevClientSession) -> Vec<items::EquipmentSlot> {
     client
         .inventory()
-        .map(|inv| inv.equipment.iter().map(|e| (e.slot, e.item.item_definition_ref)).collect())
+        .map(|inv| inv.equipment.iter().map(|e| e.slot).collect())
         .unwrap_or_default()
 }
 
@@ -489,42 +489,63 @@ async fn settle(client: &mut DevClientSession, what: &str, ready: impl Fn(&DevCl
     Ok(())
 }
 
-async fn move_to_backpack(client: &mut DevClientSession, slot: items::EquipmentSlot) -> TestResult {
-    let handle = client
-        .inventory()
-        .and_then(|inv| inv.equipment.iter().find(|e| e.slot == slot))
-        .map(|e| e.item.handle)
+async fn move_to_backpack(client: &mut DevClientSession, slot: items::EquipmentSlot) -> TestResult<items::ItemHandle> {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    let inventory = client.inventory().ok_or("inventory absent before unequip")?;
+    let handle = inventory.equipment.iter()
+        .find(|entry| entry.slot == slot)
+        .map(|entry| entry.item.handle)
         .ok_or("equipment slot already empty")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::MainBackpack }).await?;
+    if inventory.entries.iter().any(|entry| entry.handle == handle) {
+        return Err("equipped item already appears in the backpack".into());
+    }
+    let moved = client.session_mut().move_item_counted(MoveRequest {
+        source: handle,
+        destination: items::ItemMoveDestination::MainBackpack,
+        count: None,
+    }).await?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("unequip ITEM_MOVE reply={moved:?}").into());
     }
-    settle(client, "unequip", |c| !c.inventory().is_some_and(|inv| inv.equipment.iter().any(|e| e.slot == slot))).await
+    settle(client, "unequip", |c| c.inventory().is_some_and(|inv|
+        !inv.equipment.iter().any(|entry| entry.slot == slot)
+            && inv.entries.iter().any(|entry| entry.handle == handle)
+    )).await?;
+    Ok(handle)
 }
 
-async fn restore(client: &mut DevClientSession, slot: items::EquipmentSlot, definition: std::num::NonZeroU32) -> TestResult {
-    let handle = client
-        .inventory()
-        .and_then(|inv| inv.entries.iter().find(|e| e.item_definition_ref == definition))
-        .map(|e| e.handle)
-        .ok_or("stripped item not carried")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(slot) }).await?;
+async fn restore(client: &mut DevClientSession, slot: items::EquipmentSlot, handle: items::ItemHandle) -> TestResult {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    let inventory = client.inventory().ok_or("inventory absent before re-equip")?;
+    if inventory.equipment.iter().any(|entry| entry.slot == slot)
+        || !inventory.entries.iter().any(|entry| entry.handle == handle)
+    {
+        return Err("re-equip requires the stripped item in the backpack and its original slot empty".into());
+    }
+    let moved = client.session_mut().move_item_counted(MoveRequest {
+        source: handle,
+        destination: items::ItemMoveDestination::Equipment(slot),
+        count: None,
+    }).await?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("re-equip ITEM_MOVE reply={moved:?}").into());
     }
-    settle(client, "re-equip", |c| c.inventory().is_some_and(|inv| inv.equipment.iter().any(|e| e.slot == slot && e.item.item_definition_ref == definition))).await
+    settle(client, "re-equip", |c| c.inventory().is_some_and(|inv|
+        !inv.entries.iter().any(|entry| entry.handle == handle)
+            && inv.equipment.iter().any(|entry| entry.slot == slot && entry.item.handle == handle)
+    )).await
 }
 
 /// Strip worn items one at a time until every offence source projection reads zero; returns the
 /// stripped items and whether the clean state was reached (imbuements cannot be stripped).
-async fn strip(client: &mut DevClientSession) -> TestResult<(Vec<(items::EquipmentSlot, std::num::NonZeroU32)>, bool)> {
+async fn strip(client: &mut DevClientSession) -> TestResult<(Vec<(items::EquipmentSlot, items::ItemHandle)>, bool)> {
     let mut stripped = Vec::new();
-    for (slot, definition) in worn(client) {
+    for slot in worn_slots(client) {
         if Stats::read(client).await?.offence_sources() == 0 {
             break;
         }
-        move_to_backpack(client, slot).await?;
-        stripped.push((slot, definition));
+        let handle = move_to_backpack(client, slot).await?;
+        stripped.push((slot, handle));
     }
     let clean = Stats::read(client).await?.offence_sources() == 0;
     Ok((stripped, clean))
@@ -582,8 +603,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             break;
         }
     }
-    for (slot, definition) in &stripped {
-        restore(&mut client, *slot, *definition).await?;
+    for (slot, handle) in &stripped {
+        restore(&mut client, *slot, *handle).await?;
     }
     let after_restore = Stats::read(&mut client).await?;
     if !after_restore.same(&with) {
