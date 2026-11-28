@@ -18,7 +18,11 @@ pub(super) struct MoveContext {
 
 #[derive(Clone, Copy)]
 pub(super) enum MoveSource {
-    Corpse { id: [u8; 16], cell: [u8; 10] },
+    Corpse {
+        id: [u8; 16],
+        cell: [u8; 10],
+        stack_ordinal: i64,
+    },
     Carried([u8; 16]),
 }
 
@@ -50,6 +54,7 @@ pub(super) async fn assert_corpse_source(
     item: [u8; 16],
     corpse: [u8; 16],
     cell: [u8; 10],
+    stack_ordinal: i64,
 ) -> LoopResult<()> {
     let (world, channel) =
         scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
@@ -60,7 +65,7 @@ pub(super) async fn assert_corpse_source(
         JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id
         WHERE e.item_instance_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=encode($2,'hex')::uuid
           AND g.world_id=encode($3,'hex')::uuid AND g.channel_id=encode($4,'hex')::uuid
-          AND (g.runtime_scope_ownership_generation=$5::text::numeric OR (g.runtime_scope_ownership_generation<$5::text::numeric AND (game_ordinary_corpse_loop_ground(g.item_instance_id) OR game_ordinary_corpse_drag_source(g.item_instance_id)))) AND g.spatial_position=$6
+          AND (g.runtime_scope_ownership_generation=$5::text::numeric OR (g.runtime_scope_ownership_generation<$5::text::numeric AND (game_ordinary_corpse_loop_ground(g.item_instance_id) OR game_ordinary_corpse_drag_source(g.item_instance_id)))) AND g.spatial_position=$6 AND g.stack_ordinal=$8
           AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
           AND (floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000
             OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid
@@ -68,7 +73,7 @@ pub(super) async fn assert_corpse_source(
                 WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)))")
         .bind(item.as_slice()).bind(corpse.as_slice()).bind(world.as_bytes().as_slice())
         .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
-        .bind(cell.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        .bind(cell.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(stack_ordinal).fetch_one(&mut **tx).await?;
     if allowed {
         Ok(())
     } else {
@@ -318,12 +323,39 @@ impl DurabilityRoot {
                         }
                     }
                 }}
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND (g.spatial_position=ANY($3) OR g.spatial_position=ANY($8)) AND CASE WHEN g.map_revision=$9 AND game_ordinary_corpse_loop_ground(g.item_instance_id) THEN g.spatial_position=ANY($8) ELSE g.spatial_position=ANY($3) END AND (g.runtime_scope_ownership_generation=$4::text::numeric OR (g.runtime_scope_ownership_generation<$4::text::numeric AND (game_ordinary_corpse_loop_ground(g.item_instance_id) OR game_ordinary_corpse_drag_source(g.item_instance_id)))) AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
+                // The activation is locked by the equipment fence. A new Ground insertion
+                // gets a unique stack ordinal, so each transfer can recheck this exact placement.
+                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,g.stack_ordinal,
+                        (floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000
+                         OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid
+                         OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id)
+                                   WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed
+                    FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
+                    JOIN game_item_mint_receipts r USING(item_instance_id)
+                    CROSS JOIN (SELECT server_artifact_digest,frame_binding_digest FROM game_content_activations
+                                WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+                                ORDER BY activation_sequence DESC LIMIT 1) pin
+                    WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
+                      AND g.stack_ordinal IS NOT NULL AND (g.spatial_position=ANY($3) OR g.spatial_position=ANY($8))
+                      AND CASE WHEN $9::text IS NULL THEN g.runtime_scope_ownership_generation=$4::text::numeric
+                                  AND g.spatial_position=ANY($3) AND NOT game_ordinary_corpse_loop_ground(g.item_instance_id)
+                               ELSE g.content_revision='sha256:'||encode(pin.server_artifact_digest,'hex')
+                                  AND g.native_room_placement_context=pin.frame_binding_digest
+                                  AND ((g.map_revision=$9 AND g.spatial_position=ANY($8))
+                                    OR (g.map_revision='sha256:'||encode(sha256(convert_to($9,'UTF8')),'hex')
+                                        AND g.spatial_position=ANY($3))) END
+                      AND (g.runtime_scope_ownership_generation=$4::text::numeric
+                        OR (g.runtime_scope_ownership_generation<$4::text::numeric
+                          AND (game_ordinary_corpse_loop_ground(g.item_instance_id) OR game_ordinary_corpse_drag_source(g.item_instance_id))))
+                      AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
+                      AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid)
+                    ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
                     .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
                     .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).bind(loop_cells).bind(loop_map_revision).fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
+                    let stack_ordinal: i64 = corpse.try_get("stack_ordinal")?;
                     let corpse_cell: [u8;10]=corpse.try_get::<Vec<u8>,_>("spatial_position")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
                     let entries=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal LIMIT $2 FOR UPDATE OF i")
                         .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64).fetch_all(&mut *tx).await?;
@@ -333,11 +365,12 @@ impl DurabilityRoot {
                     let mode = if request.action == QuickLootAction::Click { ManualLootMode::Click } else { ManualLootMode::AllNearby };
                     let plan = plan_manual_loot(mode, selected_corpse, premium, &policy_settings, &[corpse]);
                     let base_ordinal = result.items.len();
-                    let mut move_context = (&mut tx, permit, &record, &node, &fence, command, content, &entries, &settings, corpse_id, corpse_cell, base_ordinal);
+                    let source = MoveSource::Corpse { id: corpse_id, cell: corpse_cell, stack_ordinal };
+                    let mut move_context = (&mut tx, permit, &record, &node, &fence, command, content, &entries, &settings, source, base_ordinal);
                     let execution = execute_bounded_plan(&plan, &mut move_context, |context, move_| Box::pin(async move {
-                        let (tx, permit, record, node, fence, command, content, entries, settings, corpse_id, corpse_cell, base_ordinal) = context;
+                        let (tx, permit, record, node, fence, command, content, entries, settings, source, base_ordinal) = context;
                         let (index,(_,definition)) = entries.iter().enumerate().find(|(_, (item,_))| *item == move_.item).ok_or(DurabilityError::InvalidStoredState)?;
-                        let context=MoveContext { source: MoveSource::Corpse { id: *corpse_id, cell: *corpse_cell }, ordinal:i16::try_from(*base_ordinal+index+1).map_err(|_| DurabilityError::InvalidStoredState)? };
+                        let context=MoveContext { source: *source, ordinal:i16::try_from(*base_ordinal+index+1).map_err(|_| DurabilityError::InvalidStoredState)? };
                         let accepted=attempt_move(tx, permit, record, node, fence, *command, *content, context, move_.item, definition, move_.recipient, settings.fallback_to_main).await?;
                         Ok::<_,LoopError>(if accepted { TransferCommit::Committed } else { TransferCommit::Refused })
                     })).await?;

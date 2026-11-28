@@ -1237,8 +1237,13 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
             return refuse(LoopMoveRefusal::Stale);
         }
     }
-    let source = if let Some(quick_loot::MoveSource::Corpse { id, cell }) = quick_source {
-        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
+    let source = if let Some(quick_loot::MoveSource::Corpse {
+        id,
+        cell,
+        stack_ordinal,
+    }) = quick_source
+    {
+        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell, stack_ordinal).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
         // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.
