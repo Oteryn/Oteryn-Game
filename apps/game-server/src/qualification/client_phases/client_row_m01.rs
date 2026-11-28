@@ -78,7 +78,7 @@ impl Capture {
         client: &mut oteryn_dev_client::DevClientSession,
         name: &str,
         intent: TargetMoveIntent,
-    ) -> TestResult {
+    ) -> TestResult<u64> {
         let payload = encode_target_move_intent(intent)
             .map_err(|error| format!("M01 {name} encode: {error:?}"))?;
         let result = client
@@ -103,7 +103,8 @@ impl Capture {
         )
         .into_bytes();
         bytes.extend(&result.payload);
-        self.write(name, &bytes)
+        self.write(name, &bytes)?;
+        Ok(result.server_sequence)
     }
 }
 
@@ -137,6 +138,22 @@ async fn step_once(
         )
         .into());
     }
+    let committed = client
+        .world_entities()
+        .and_then(|entities| {
+            entities
+                .iter()
+                .find(|entity| &entity.entity.identity == entities.own_identity())
+        })
+        .and_then(|actor| actor.motion)
+        .ok_or("M01 STEP motion absent")?;
+    if outcome.step_wait_ms == 0 || outcome.step_wait_ms != committed.step_duration_ms {
+        return Err(format!(
+            "M01 STEP pacing receipt={} motion={}",
+            outcome.step_wait_ms, committed.step_duration_ms
+        )
+        .into());
+    }
     Ok(Duration::from_millis(u64::from(outcome.step_wait_ms)))
 }
 
@@ -159,6 +176,7 @@ async fn expect_path(
     client: &mut Client,
     label: &str,
     start: ActorPosition,
+    receipt_sequence: u64,
     landings: &[ActorPosition],
 ) -> TestResult {
     use oteryn_dev_client::native_session::SessionEvent;
@@ -168,16 +186,20 @@ async fn expect_path(
     let mut remaining = landings;
     loop {
         for event in client.take_events() {
-            let at = match event {
-                SessionEvent::WorldSpatial(delta) => delta.value.actor_position,
-                SessionEvent::WorldSpatialEntities(delta) => delta.value.actor_position,
+            let (sequence, at) = match event {
+                SessionEvent::WorldSpatial(delta) => {
+                    (delta.server_sequence, delta.value.actor_position)
+                }
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    (delta.server_sequence, delta.value.actor_position)
+                }
                 SessionEvent::TutorialNotice(delta) if matches!(&delta.value, TutorialNotice::StatusText(text) if text == "There is no way.") =>
                 {
                     return Err(format!("M01 {label}: There is no way.").into());
                 }
                 _ => continue,
             };
-            if at == previous {
+            if sequence <= receipt_sequence || at == previous {
                 continue;
             }
             let Some((expected, rest)) = remaining.split_first() else {
@@ -204,6 +226,24 @@ async fn expect_path(
     }
 }
 
+fn assert_stationary(client: &mut Client, label: &str, expected: ActorPosition) -> TestResult {
+    use oteryn_dev_client::native_session::SessionEvent;
+    for event in client.take_events() {
+        let at = match event {
+            SessionEvent::WorldSpatial(delta) => delta.value.actor_position,
+            SessionEvent::WorldSpatialEntities(delta) => delta.value.actor_position,
+            _ => continue,
+        };
+        if at != expected {
+            return Err(format!("M01 {label} translated to {at:?}").into());
+        }
+    }
+    if position(client) != expected {
+        return Err(format!("M01 {label} translated to {:?}", position(client)).into());
+    }
+    Ok(())
+}
+
 fn own_facing(client: &Client) -> Option<StepDirection> {
     use oteryn_protocol_oteryn::world_spatial_entities::EntityDetail;
     let entities = client.world_entities()?;
@@ -228,19 +268,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     step_once(&mut client, StepDirection::North, temple(1)).await?;
     evidence("M01_CHECK step PASS landed=32369,32237,7");
     client.take_events();
-    capture
+    let receipt_sequence = capture
         .command(&mut client, "autowalk", TargetMoveIntent::Walk(temple(6)))
         .await?;
     expect_path(
         &mut client,
         "autowalk arrival",
         temple(1),
+        receipt_sequence,
         &[temple(2), temple(3), temple(4), temple(5), temple(6)],
     )
     .await?;
     evidence("M01_CHECK autowalk PASS landed=32369,32232,7");
 
-    capture
+    let receipt_sequence = capture
         .command(
             &mut client,
             "return-walk",
@@ -251,12 +292,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &mut client,
         "return walk arrival",
         temple(6),
+        receipt_sequence,
         &[temple(5), temple(4), temple(3)],
     )
     .await?;
     evidence("M01_CHECK return-walk PASS landed=32369,32235,7");
 
-    capture
+    let receipt_sequence = capture
         .command(
             &mut client,
             "interrupt-walk",
@@ -267,6 +309,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &mut client,
         "active route intermediate landing",
         temple(3),
+        receipt_sequence,
         &[temple(4)],
     )
     .await?;
@@ -277,11 +320,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + LANDING_DEADLINE;
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(10)).await?;
-        if position(&client) != stopped {
-            return Err(
-                format!("M01 stop moved from {stopped:?} to {:?}", position(&client)).into(),
-            );
-        }
+        assert_stationary(&mut client, "stop", stopped)?;
     }
     evidence("M01_CHECK stop PASS intermediate=32369,32234,7");
 
@@ -302,9 +341,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             own_facing(client) == Some(facing)
         })
         .await?;
-        if position(&client) != stopped {
-            return Err(format!("M01 {name} translated to {:?}", position(&client)).into());
-        }
+        assert_stationary(&mut client, name, stopped)?;
         evidence(&format!(
             "M01_CHECK {name} PASS facing={facing:?} position={stopped:?}"
         ));
@@ -331,30 +368,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .await?;
     client.take_events();
-    capture
+    let receipt_sequence = capture
         .command(&mut client, "follow", TargetMoveIntent::Follow(target))
         .await?;
     expect_path(
         &mut client,
         "initial pursuit",
         temple(4),
+        receipt_sequence,
         &[temple(3), temple(2)],
     )
     .await?;
     evidence("M01_CHECK initial-follow PASS landed=32369,32236,7");
 
+    let before_peer_step = client.last_server_sequence();
     step_once(&mut peer, StepDirection::South, temple(0)).await?;
     evidence("M01_CHECK peer-step-south PASS landed=32369,32238,7");
     expect_path(
         &mut client,
         "pursuit of moved peer",
         temple(2),
+        before_peer_step,
         &[temple(1)],
     )
     .await?;
     evidence("M01_CHECK continued-follow PASS landed=32369,32237,7");
 
-    let saved = position(&client);
+    let saved = temple(1);
+    if position(&client) != saved {
+        return Err(format!(
+            "M01 pre-logout expected {saved:?}, got {:?}",
+            position(&client)
+        )
+        .into());
+    }
     let client_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
