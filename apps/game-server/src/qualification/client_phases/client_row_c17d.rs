@@ -77,8 +77,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let answer = request_spawn(session, "oteryn:creature.rat".into()).await?;
     let rat = parse_spawned_entity(&answer)?;
     evidence(&format!("C17d.client FIXTURE rat={rat:?} victim_at={victim_at:?}"));
-    let hit = full_e2ef5::monster_hit(&mut victim, &mut caster, rat, 10).await?;
-    evidence(&format!("C17d.client FIXTURE rat-to-victim damage_frames={hit}"));
     let rat_at = full_e2ef5::with_observer_liveness(&mut caster, async {
         tokio::time::timeout(Duration::from_secs(3), async {
             loop {
@@ -89,6 +87,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             }
         }).await.map_err(|_| "fixture rat not visible to victim")?
     }).await?;
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    let selected = full_e2ef5::with_observer_liveness(&mut caster, async {
+        Ok(victim.session_mut().attack_target(Some(&rat)).await?)
+    }).await?;
+    evidence(&format!("C17d.client attack target={rat:?} command_id={} server_sequence={} status={:?} disposition={:?}",
+        selected.command_id, selected.result_server_sequence, selected.status, selected.disposition));
+    if selected.status != CommandStatus::Accepted
+        || selected.disposition != AttackIntentDisposition::Ok
+        || victim.session_mut().combat_state().is_none_or(|state| state.target != Some(rat))
+    {
+        return Err("Challenge victim could not engage the tracked rat".into());
+    }
+    let hit = full_e2ef5::monster_hit(&mut victim, &mut caster, rat, 10).await?;
+    evidence(&format!("C17d.client rat-to-victim damage_frames={hit}"));
+    let cleared = full_e2ef5::with_observer_liveness(&mut caster, async {
+        Ok(victim.session_mut().attack_target(None).await?)
+    }).await?;
+    evidence(&format!("C17d.client attack clear command_id={} server_sequence={} status={:?} disposition={:?}",
+        cleared.command_id, cleared.result_server_sequence, cleared.status, cleared.disposition));
+    if cleared.status != CommandStatus::Accepted
+        || cleared.disposition != AttackIntentDisposition::Ok
+        || victim.session_mut().combat_state().is_none_or(|state| state.target.is_some())
+    {
+        return Err("Challenge victim could not clear the attack target".into());
+    }
     let path = route_avoiding(world, caster_at, |at| {
         open(at) && at.floor == rat_at.floor
             && at.x.abs_diff(rat_at.x).max(at.y.abs_diff(rat_at.y)) == 1
