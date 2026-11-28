@@ -402,6 +402,14 @@ for account in accounts:
         row_accounts[account] = credentials
 (work / "row-accounts.json").write_text(json.dumps(row_accounts))
 PY_MP_SEED
+  local platform_db
+  platform_db="$(docker exec "$GP_PG_CONTAINER" psql -XqAt -U game_platform_admin -d postgres \
+    -c "SELECT datname FROM pg_database WHERE datname ~ '^portal_e2e_[0-9a-f]{12}$'")"
+  [[ "$platform_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "P10 disposable Platform database"
+  docker exec -i "$GP_PG_CONTAINER" psql -XqAt -v ON_ERROR_STOP=1 -U game_platform_admin \
+    -d "$platform_db" -v account="$Q_P10_ACCOUNT" \
+    < "$GAME_SOURCE/tools/qualification/node_boot/p10_premium.sql"
+  evidence "fixture=q_p10 input=premium producer=platform_ledger"
 }
 
 result=NODE_BOOT_FAIL

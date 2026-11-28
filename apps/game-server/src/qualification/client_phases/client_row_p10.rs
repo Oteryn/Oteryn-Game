@@ -164,17 +164,6 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     let world_id = uuid_text(&clients.world);
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let mut client = connect_character(clients, 0x2c, 0).await?;
-    character_prep::grant_premium(&client).await?;
-    let setup_session = client.join_snapshot().game_session_id;
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P10 Premium setup logout refused: {logout:?}").into());
-    }
-    drop(client);
-    let mut client = connect_character(clients, 0x2c, 0).await?;
-    if client.join_snapshot().game_session_id == setup_session {
-        return Err("P10 Premium setup reused its session".into());
-    }
     let start = tile(client.world_spatial().actor_position)?;
     let path = shrine_route(world, start)?;
     walk(&mut client, world, &path).await?;
@@ -233,6 +222,22 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     captures.push((7, capture_status(&mut client, root).await?));
     if wall(&mut client).await? != persisted {
         return Err("P10 daily wall did not survive relog".into());
+    }
+    let claims: Vec<(i64, i32, bool)> = sqlx::query_as(
+        "SELECT reset_epoch::bigint, streak_after, premium
+           FROM game_character_daily_reward_claims
+          WHERE world_id=$1::uuid AND character_id=encode($2,'hex')::uuid
+          ORDER BY reset_epoch LIMIT 8",
+    )
+    .bind(&world_id)
+    .bind(clients.characters[0].as_slice())
+    .fetch_all(&mut database)
+    .await?;
+    let expected: Vec<_> = (1..=7)
+        .map(|streak| (i64::from(streak), streak, true))
+        .collect();
+    if claims != expected {
+        return Err(format!("P10 durable claim epochs/streak/Premium: {claims:?}").into());
     }
     replay(&captures)?;
     Ok(
