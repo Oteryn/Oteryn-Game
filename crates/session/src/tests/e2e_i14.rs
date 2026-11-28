@@ -22,12 +22,12 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
         } else {
             let before = CharacterInventory {
                 main_backpack: Some(entry(70, 1988, 1)),
-                entries: vec![entry(71, 3577, 2)],
+                entries: vec![entry(71, 21425, 2)],
                 ..CharacterInventory::default()
             };
             let after = CharacterInventory {
                 main_backpack: Some(entry(70, 1988, 1)),
-                entries: vec![entry(71, 3577, 1)],
+                entries: vec![entry(71, 21425, 1)],
                 ..CharacterInventory::default()
             };
             (
@@ -35,14 +35,14 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
                     .map_err(|error| format!("before fixture: {error:?}"))?,
                 item_view::encode_character_inventory_with_equip_drop(&after, true)
                     .map_err(|error| format!("after fixture: {error:?}"))?,
-                "41 1 2 1\n".into(),
+                "41 1 2 1 21425\n".into(),
             )
         };
         let numbers = metadata
             .split_whitespace()
             .map(str::parse::<u64>)
             .collect::<Result<Vec<_>, _>>()?;
-        let &[sequence, base, new, expected_meat] = numbers.as_slice() else {
+        let &[sequence, base, new, expected_meat, meat_reference] = numbers.as_slice() else {
             return Err("invalid I14 capture metadata".into());
         };
         let selected: &'static [u32] = &[4, 6, 12];
@@ -76,7 +76,7 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
             .ok_or("inventory not stored")?
             .entries
             .iter()
-            .filter(|entry| entry.item_definition_ref.get() == 3577)
+            .filter(|entry| u64::from(entry.item_definition_ref.get()) == meat_reference)
             .map(|entry| u64::from(entry.count.get()))
             .sum::<u64>();
         assert_eq!(meat, expected_meat);
