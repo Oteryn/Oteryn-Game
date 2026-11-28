@@ -394,6 +394,22 @@ async fn verify(
     })
     .await??;
     check_reply(&step, &first_id, first.command_id).await?;
+    let moved_view = host.view()?;
+    assert_eq!(
+        moved_view.satellite_player(),
+        (destination.x, destination.y, destination.floor),
+        "N07d post-step actor position"
+    );
+    assert_eq!(moved_view.scene.minimap_origin, Some(destination), "N07d post-step map origin");
+    let projected_ground: BTreeSet<_> = moved_view.scene.minimap_memory.tiles.iter()
+        .filter(|&&(x, y, floor, speed)| {
+            speed > 0 && floor >= destination.floor
+                && in_window(destination, oteryn_session::ActorPosition { x, y, floor })
+        })
+        .map(|&(x, y, floor, _)| (floor, x, y))
+        .collect();
+    assert_eq!(projected_ground, moved_ground, "N07d exact post-step viewport ground");
+
     let retained: BTreeSet<_> = walkable
         .iter()
         .copied()
