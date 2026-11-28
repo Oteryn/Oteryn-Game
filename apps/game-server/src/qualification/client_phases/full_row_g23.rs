@@ -497,6 +497,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=promotion-relog purchase or paid balance changed".into());
     }
+    character_prep::grant_premium(&client).await?;
+    evidence("G23_FIXTURE premium=granted phase=atelier-initialization");
     let before = verdict::observe(async {
         let (wheel, gem, atelier) = presentations(&mut client).await?;
         let locked = lock_starter_gem(&mut client, atelier).await?;
@@ -510,6 +512,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let mut client = connect_character(clients, 0x88, 0).await?;
     let fresh_session = client.join_snapshot().game_session_id;
+    character_prep::grant_premium(&client).await?;
+    evidence("G23_FIXTURE premium=granted phase=atelier-relog");
     let after = verdict::observe(presentations(&mut client)).await;
     let close = verdict::observe(finish(&mut client)).await;
     let (wheel_after, gem_after, actual) = after?;
