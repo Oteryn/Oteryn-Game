@@ -1,15 +1,15 @@
-//! Crystal 201189f8 enchanting.lua: raw ruby -> fire shrine -> flame weapon.
+//! Global 11.40 removed shrine gem enchanting and legacy weapon enchanting.
 use super::*;
 use crate::map::view::MapFacts;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
-use oteryn_protocol_oteryn::timed_item as timed;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
 };
+use sqlx::Connection;
 use std::num::NonZeroU32;
 
 const RUBY: u32 = 3030;
@@ -135,109 +135,61 @@ fn shrine_target(world: &BundleWorld, reference: NonZeroU32) -> TestResult<MapUs
     }))
 }
 
-async fn walk_to_shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let world_for_route = world.clone();
-    let path = route_work(client, move || {
-        find_route(
-            from,
-            |at| at == APPROACH,
-            |at, direction| {
-                let next = destination(&world_for_route, at, direction)?;
-                (next.x.abs_diff(TOWN.x) <= 100
-                    && next.y.abs_diff(TOWN.y) <= 100
-                    && (-11..=-7).contains(&next.floor))
-                .then_some(next)
-            },
-        )
-        .map_err(|visited| format!("no walk route to fire shrine from {from:?}; visited={visited}"))
-    })
+// Placement is a logged fixture input. The test still sends the real use-with
+// command from the exact adjacent tile and observes the server disposition.
+async fn place_at_shrine(clients: &SeamClients<'_>) -> TestResult {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$1, tile_y=$2, tile_floor=$3, write_sequence=write_sequence+1
+         WHERE character_id=$4::uuid AND world_id=$5::uuid",
+    )
+    .bind(i32::from(APPROACH.x))
+    .bind(i32::from(APPROACH.y))
+    .bind(-i16::from(APPROACH.floor))
+    .bind(uuid_text(&clients.characters[0]))
+    .bind(uuid_text(&clients.world))
+    .execute(&mut db)
     .await?;
-    for direction in path {
-        let from = tile(client.world_spatial().actor_position)?;
-        let expected =
-            destination(world, from, direction).ok_or("fire shrine route lost its landing")?;
-        let reply = client.step(direction).await?;
-        let actual = tile(client.world_spatial().actor_position)?;
-        if reply.status != CommandStatus::Accepted
-            || reply.disposition != StepDisposition::Moved
-            || reply.world_spatial_delta.is_none()
-            || actual != expected
-        {
-            return Err(format!("fire shrine step {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={reply:?}").into());
-        }
-        verdict::Harness::global().progress("fire-shrine-step");
-        client.take_events();
-        // Pace the next new command using the receipt for the successful step.
-        tokio::time::sleep(Duration::from_millis(u64::from(reply.step_wait_ms))).await;
-    }
-    if tile(client.world_spatial().actor_position)? != APPROACH {
-        return Err("fire shrine approach was not reached".into());
+    if updated.rows_affected() != 1 {
+        return Err("offline shrine placement did not update one character".into());
     }
     Ok(())
 }
 
-async fn enchant(
+async fn require_refusal(
     client: &mut DevClientSession,
     source: ItemHandle,
     target: MapUseTarget,
-    refs: [NonZeroU32; 4],
-    expected_items: [u64; 4],
-    mana: u32,
-    soul: u32,
-) -> TestResult<u64> {
+    label: &str,
+) -> TestResult {
+    let items = client.inventory().cloned().ok_or("inventory absent")?;
     let before = vitals(client)?;
-    let expected_pools = (before.mana.checked_sub(mana), before.soul.checked_sub(soul));
-    client.take_events();
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(source),
         use_with: None,
         use_with_map_item: Some(target),
         use_with_position: None,
     })
-    .map_err(|error| format!("enchanting intent encode: {error:?}"))?;
+    .map_err(|error| format!("{label} intent encode: {error:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&reply.payload)
-        .map_err(|error| format!("enchanting result decode: {error:?}"))?;
-    if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+        .map_err(|error| format!("{label} result decode: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted
+        || disposition != UseDisposition::NothingToUse
+        || client.inventory() != Some(&items)
+        || vitals(client)? != before
+    {
         return Err(format!(
-            "enchanting intent status={:?} disposition={disposition:?}",
-            reply.status
-        )
-        .into());
+            "{label} status={:?} disposition={disposition:?} inventory_unchanged={} vitals_unchanged={}",
+            reply.status, client.inventory() == Some(&items), vitals(client)? == before
+        ).into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let mut inventory_delta = false;
-    let mut vitals_delta = mana == 0 && soul == 0;
-    loop {
-        for event in client.take_events() {
-            match event {
-                SessionEvent::Inventory(delta) if delta.server_sequence > reply.server_sequence => {
-                    inventory_delta = true;
-                }
-                SessionEvent::ActorVitals(delta)
-                    if delta.server_sequence > reply.server_sequence =>
-                {
-                    vitals_delta |=
-                        (Some(delta.value.mana), Some(delta.value.soul)) == expected_pools;
-                }
-                _ => {}
-            }
-        }
-        let current_items = inventory(client, refs)?;
-        let current = vitals(client)?;
-        if inventory_delta
-            && vitals_delta
-            && current_items == expected_items
-            && (Some(current.mana), Some(current.soul)) == expected_pools
-        {
-            return Ok(reply.command_id);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("enchanting deltas command={} inventory={current_items:?} expected={expected_items:?} pools={:?} expected_pools={expected_pools:?} inventory_delta={inventory_delta} vitals_delta={vitals_delta}", reply.command_id, (current.mana, current.soul)).into());
-        }
-        client.service_liveness(Duration::from_millis(20)).await?;
-    }
+    evidence(&format!(
+        "I19_CHECK {label} PASS command={} disposition=NothingToUse",
+        reply.command_id
+    ));
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -261,8 +213,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(&scoped, 0xdf, 0).await?;
     character_prep::declare_seeded(
         "I19.full",
-        "sorcerer-level-32,ruby-3030,weapon-3271",
-        "travel and both enchanting commands are under test",
+        "sorcerer-level-32,ruby-3030,enchanted-ruby-676,weapon-3271,offline-shrine-placement",
+        "legacy shrine and weapon use-with refusals are under test",
     );
     request_fixture_control(
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
@@ -272,12 +224,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .await?;
     character_prep::grant_item(&client, RUBY, 1).await?;
     character_prep::grant_item(&client, WEAPON, 1).await?;
-    client = relog(client, &scoped, 0xdf).await?;
+    character_prep::grant_item(&client, ENCHANTED_RUBY, 1).await?;
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    wait_character_released(&scoped, 0).await?;
+    place_at_shrine(&scoped).await?;
+    let mut client = connect_character(&scoped, 0xdf, 0).await?;
+    if client.join_snapshot().game_session_id == session
+        || tile(client.world_spatial().actor_position)? != APPROACH
+    {
+        return Err("shrine fixture did not admit a new session at the exact approach".into());
+    }
 
     let initial = vitals(&client)?;
     if (initial.max_health, initial.max_mana, initial.soul) != (305, 810, 100)
         || initial.mana < 300
-        || inventory(&client, refs)? != [1, 1, 0, 0]
+        || inventory(&client, refs)? != [1, 1, 1, 0]
     {
         return Err(format!(
             "enchanting fixture state vitals={initial:?} items={:?}",
@@ -299,73 +262,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     evidence("I19_CHECK no-altar PASS ruby-retained=1");
 
-    walk_to_shrine(&mut client, world).await?;
-    if inventory(&client, refs)? != [1, 1, 0, 0] {
-        return Err("enchanting inputs changed before reaching the shrine".into());
-    }
     let ruby = handle(&client, refs[0])?;
-    let shrine_command = enchant(&mut client, ruby, shrine, refs, [0, 1, 1, 0], 300, 2).await?;
-    evidence(&format!(
-        "I19_CHECK fire-shrine PASS command={shrine_command} mana-debit=300 soul-debit=2"
-    ));
+    require_refusal(&mut client, ruby, shrine, "legacy-shrine").await?;
     let ruby = handle(&client, refs[2])?;
     let weapon = handle(&client, refs[1])?;
-    let weapon_command = enchant(
+    require_refusal(
         &mut client,
         ruby,
         MapUseTarget::Item(weapon),
-        refs,
-        [0, 0, 0, 1],
-        0,
-        0,
+        "legacy-weapon",
     )
     .await?;
-    evidence(&format!(
-        "I19_CHECK fire-weapon PASS command={weapon_command} output=660"
-    ));
-    let paid = vitals(&client)?;
-    let mut fresh = relog(client, &scoped, 0xdf).await?;
-    let saved = vitals(&fresh)?;
-    if inventory(&fresh, refs)? != [0, 0, 0, 1]
-        || (saved.mana, saved.soul) != (paid.mana, paid.soul)
+
+    let fresh = relog(client, &scoped, 0xdf).await?;
+    if inventory(&fresh, refs)? != [1, 1, 1, 0]
+        || vitals(&fresh)? != initial
+        || tile(fresh.world_spatial().actor_position)? != APPROACH
     {
-        return Err(format!(
-            "enchanting relog state vitals={saved:?} expected_pools={:?} items={:?}",
-            (paid.mana, paid.soul),
-            inventory(&fresh, refs)?
-        )
-        .into());
+        return Err("legacy use changed durable inventory, vitals or position".into());
     }
-    let payload = timed::encode_timed_item_intent(timed::TimedItemIntent {
-        action: timed::TimedAction::Inspect,
-        target: handle(&fresh, refs[3])?,
-        expected_revision: 0,
-        npc: None,
-    })
-    .map_err(|error| format!("enchanted weapon inspect encode: {error:?}"))?;
-    let reply = fresh
-        .session_mut()
-        .gated_command(
-            timed::CAPABILITY_TIMED_ITEM_V1,
-            timed::COMMAND_TYPE_TIMED_ITEM_INTENT,
-            &payload,
-        )
-        .await?;
-    let inspected = timed::decode_timed_item_result(&reply.payload)
-        .map_err(|error| format!("enchanted weapon inspect decode: {error:?}"))?;
-    if reply.status != CommandStatus::Accepted
-        || inspected.disposition != timed::TimedDisposition::Ok
-        || inspected.charges != Some(1000)
-        || inspected.retired
-    {
-        return Err(format!(
-            "enchanted weapon after relog status={:?} inspect={inspected:?}",
-            reply.status
-        )
-        .into());
-    }
-    logout(&mut fresh).await?;
-    Ok(format!(
-        "ruby=3030->676 shrine=146 weapon=3271->660 mana-debit=300 soul-debit=2 shrine-command={shrine_command} weapon-command={weapon_command} durable-relog=verified weapon-charges=1000"
-    ))
+    Ok("global-11.40 legacy-shrine=NothingToUse legacy-weapon=NothingToUse durable-inputs=unchanged".into())
 }
