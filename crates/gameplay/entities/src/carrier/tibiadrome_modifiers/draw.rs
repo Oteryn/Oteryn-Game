@@ -1,5 +1,20 @@
 //! Registered drome_modifier/drome_wave streams, with unbiased bounded draws.
 use super::*;
+
+/// ARENA1 A4 draws each slot independently from the same five roles.
+pub fn drome_wave_opponent(run: [u8; 16], wave: u32, slot: u64) -> Option<DromeCreatureRole> {
+    let mut seed = [0; 32];
+    seed[..16].copy_from_slice(&run);
+    seed[16..20].copy_from_slice(&wave.to_be_bytes());
+    // Separate opponent slots from the modifier pulse streams, which leave this byte zero.
+    seed[28] = 1;
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(seed);
+    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(run);
+    let pool = DromeCreatureRole::ALL;
+    let index = bounded_draw(&root, occurrence, "drome_wave", slot, pool.len())?;
+    pool.get(index).copied()
+}
+
 /// Rotation-only seed: Worlds share the same two distinct modifiers.
 pub fn drome_rotation_modifiers(ordinal: u32) -> [DromeModifier; 2] {
     let mut seed = [0; 32];

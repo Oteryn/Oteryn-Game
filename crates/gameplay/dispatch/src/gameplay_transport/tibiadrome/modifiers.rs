@@ -11,6 +11,8 @@ use oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::{
     DromeModifier, DromeModifierEffect as Effect, DromeModifierState, DromeParticipant,
 };
 #[cfg(test)]
+pub(super) use test_context::mechanics_test_opponent;
+#[cfg(test)]
 pub(in crate::gameplay_transport) use test_context::select as select_test_modifier;
 pub(super) struct ModifierOwner {
     state: DromeModifierState,

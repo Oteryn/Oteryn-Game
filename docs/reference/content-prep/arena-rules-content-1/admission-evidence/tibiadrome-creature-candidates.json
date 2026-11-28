@@ -1,0 +1,117 @@
+[
+  {
+    "target": {"family": "Creature", "key": "oteryn:creature.domestikion", "revision": "definition-r1"},
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "health": 750,
+        "experience": 0,
+        "fields": [
+          {"field_path": "oteryn:creature.attacks.observed", "value": {"type": "Text", "value": "Support melee, physical, holy, energy, life drain and mana drain. Stacking damage buff."}},
+          {"field_path": "oteryn:creature.condition_immunities.paralysis", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.flags.illusionable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.loot.drops_items", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.source.corpse_item_id", "value": {"type": "SourceId", "value": 36914}},
+          {"field_path": "oteryn:creature.source.corpse_item_url", "value": {"type": "Text", "value": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L68862"}},
+          {"field_path": "oteryn:creature.source.fandom_url", "value": {"type": "Text", "value": "https://web.archive.org/web/20251108191005/https://tibia.fandom.com/wiki/Domestikion"}},
+          {"field_path": "oteryn:creature.summoning.convinceable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.summoning.summonable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.targeting.sense_invisible", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.walks_through.observed", "value": {"type": "Text", "value": "Energy, Fire, Poison"}}
+        ]
+      }
+    }
+  },
+  {
+    "target": {"family": "Creature", "key": "oteryn:creature.hoodinion", "revision": "definition-r1"},
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "health": 800,
+        "experience": 0,
+        "fields": [
+          {"field_path": "oteryn:creature.attacks.observed", "value": {"type": "Text", "value": "Ranged area attacks with damage spikes, fire and ice."}},
+          {"field_path": "oteryn:creature.condition_immunities.paralysis", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.flags.illusionable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.loot.drops_items", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.source.corpse_item_id", "value": {"type": "SourceId", "value": 36906}},
+          {"field_path": "oteryn:creature.source.corpse_item_url", "value": {"type": "Text", "value": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L68826"}},
+          {"field_path": "oteryn:creature.source.fandom_url", "value": {"type": "Text", "value": "https://web.archive.org/web/20241005030324/https://tibia.fandom.com/wiki/Hoodinion"}},
+          {"field_path": "oteryn:creature.summoning.convinceable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.summoning.summonable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.targeting.sense_invisible", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.walks_through.observed", "value": {"type": "Text", "value": "Energy, Fire, Poison"}}
+        ]
+      }
+    }
+  },
+  {
+    "target": {"family": "Creature", "key": "oteryn:creature.mearidion", "revision": "definition-r1"},
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "health": 850,
+        "experience": 0,
+        "fields": [
+          {"field_path": "oteryn:creature.attacks.observed", "value": {"type": "Text", "value": "Ranged single-target death damage."}},
+          {"field_path": "oteryn:creature.condition_immunities.paralysis", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.flags.illusionable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.loot.drops_items", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.source.corpse_item_id", "value": {"type": "SourceId", "value": 36910}},
+          {"field_path": "oteryn:creature.source.corpse_item_url", "value": {"type": "Text", "value": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L68844"}},
+          {"field_path": "oteryn:creature.source.fandom_url", "value": {"type": "Text", "value": "https://web.archive.org/web/20241005030400/https://tibia.fandom.com/wiki/Mearidion"}},
+          {"field_path": "oteryn:creature.summoning.convinceable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.summoning.summonable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.targeting.sense_invisible", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.walks_through.observed", "value": {"type": "Text", "value": "Energy, Fire, Poison"}}
+        ]
+      }
+    }
+  },
+  {
+    "target": {"family": "Creature", "key": "oteryn:creature.murmillion", "revision": "definition-r1"},
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "health": 1100,
+        "experience": 0,
+        "fields": [
+          {"field_path": "oteryn:creature.attacks.observed", "value": {"type": "Text", "value": "Tanky melee, physical damage and paralysis."}},
+          {"field_path": "oteryn:creature.condition_immunities.paralysis", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.flags.illusionable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.loot.drops_items", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.source.corpse_item_id", "value": {"type": "SourceId", "value": 36898}},
+          {"field_path": "oteryn:creature.source.corpse_item_url", "value": {"type": "Text", "value": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L68788"}},
+          {"field_path": "oteryn:creature.source.fandom_url", "value": {"type": "Text", "value": "https://web.archive.org/web/20241015042800/https://tibia.fandom.com/wiki/Murmillion"}},
+          {"field_path": "oteryn:creature.summoning.convinceable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.summoning.summonable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.targeting.sense_invisible", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.walks_through.observed", "value": {"type": "Text", "value": "Energy, Fire, Poison"}}
+        ]
+      }
+    }
+  },
+  {
+    "target": {"family": "Creature", "key": "oteryn:creature.scissorion", "revision": "definition-r1"},
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "health": 950,
+        "experience": 0,
+        "fields": [
+          {"field_path": "oteryn:creature.attacks.observed", "value": {"type": "Text", "value": "High single-target melee damage, physical and earth, and occasional invisibility."}},
+          {"field_path": "oteryn:creature.condition_immunities.paralysis", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.flags.illusionable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.loot.drops_items", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.source.corpse_item_id", "value": {"type": "SourceId", "value": 36902}},
+          {"field_path": "oteryn:creature.source.corpse_item_url", "value": {"type": "Text", "value": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L68806"}},
+          {"field_path": "oteryn:creature.source.fandom_url", "value": {"type": "Text", "value": "https://web.archive.org/web/20240409120337/https://tibia.fandom.com/wiki/Scissorion"}},
+          {"field_path": "oteryn:creature.summoning.convinceable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.summoning.summonable", "value": {"type": "Boolean", "value": false}},
+          {"field_path": "oteryn:creature.targeting.sense_invisible", "value": {"type": "Boolean", "value": true}},
+          {"field_path": "oteryn:creature.walks_through.observed", "value": {"type": "Text", "value": "Energy, Fire, Poison"}}
+        ]
+      }
+    }
+  }
+]

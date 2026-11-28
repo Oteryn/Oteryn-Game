@@ -44,6 +44,40 @@ fn srx3_drome_native_roles_preserve_all_five_accepted_base_stats() -> TestResult
     Ok(())
 }
 #[test]
+fn w17_drome_rejects_conflicting_creature_traits_before_scaling() -> TestResult {
+    let key = Role::Domestikion.key();
+    for (illusionable, summonable, convinceable, paralysis_immune) in [
+        (true, false, false, true),
+        (false, true, false, true),
+        (false, false, true, true),
+        (false, false, false, false),
+    ] {
+        let mut policy = fixture_policy(key, "Domestikion", 750);
+        policy.flags.illusionable = illusionable;
+        policy.summonable = summonable;
+        policy.convinceable = convinceable;
+        policy.mana_cost = (summonable || convinceable).then_some(1);
+        policy.condition_immunities = if paralysis_immune {
+            vec![ConditionType::Paralysis]
+        } else {
+            Vec::new()
+        };
+        let (mut runtime, _, _) = fixture_with_policies(12, vec![policy])?;
+        let actor = runtime
+            .spawn_arena_opponent(key, at(102, 100, 7), |_, _| Some(true))
+            .map_err(debug)?;
+        let before = runtime.companion_snapshot(actor).map_err(debug)?;
+        assert_eq!(
+            runtime.scale_tibiadrome_opponent(actor, 10),
+            Err(CarrierError::InvalidSpawnDefinition)
+        );
+        assert_eq!(runtime.companion_snapshot(actor).map_err(debug)?, before);
+        assert!(!runtime.is_tibiadrome(actor));
+    }
+    Ok(())
+}
+
+#[test]
 fn srx3_drome_native_domestikion_aura_changes_normal_damage_and_only_living_same_run_sources_count()
 -> TestResult {
     let (mut runtime, _, _) = fixture(12)?;
