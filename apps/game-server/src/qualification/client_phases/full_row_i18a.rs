@@ -462,6 +462,21 @@ fn verify_pickup_refresh(
     assert_empty_field(&refreshed)
 }
 
+fn map_changes_state(
+    baseline: &oteryn_protocol_oteryn::world_map::WorldMapViewSnapshot,
+    delta: &oteryn_protocol_oteryn::world_map::WorldMapViewDelta,
+) -> bool {
+    delta.header != baseline.header
+        || delta
+            .cleared
+            .iter()
+            .any(|position| baseline.tiles.iter().any(|tile| tile.position == *position))
+        || delta
+            .tiles
+            .iter()
+            .any(|tile| !baseline.tiles.contains(tile))
+}
+
 fn refusal_changed_state(event: &SessionEvent, distant: TilePos) -> bool {
     match event {
         SessionEvent::WorldSpatialEntities(update) => {
@@ -577,6 +592,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let other_floor = authored_wrong_floor(distant, |pos| {
         world.base().tile(pos.x, pos.y, pos.floor).is_some()
     })?;
+    let map_before_refusal = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("step=browse-precondition observed=no-map-snapshot")?;
     let inventory_before_refusal = client
         .inventory()
         .cloned()
@@ -600,14 +619,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // is sent while draining the refusal's frames.
     unopened_view_barrier(&mut client).await?;
     client.service_liveness(Duration::from_secs(1)).await?;
+    let events = client.take_events();
+    if let Some(event) = events.iter().find(|event| match event {
+        SessionEvent::WorldMap(delta) => map_changes_state(&map_before_refusal, &delta.value),
+        _ => refusal_changed_state(event, distant),
+    }) {
+        if let SessionEvent::WorldMap(delta) = event {
+            return Err(format!(
+                "step=browse-other-floor observed=map-change sequence={} before={:?} after={:?} cleared={} tiles={}",
+                delta.server_sequence, map_before_refusal.header.origin, delta.value.header.origin,
+                delta.value.cleared.len(), delta.value.tiles.len()
+            ).into());
+        }
+        return Err(format!(
+            "step=browse-other-floor observed=unexpected-event domain={}",
+            event.domain_id()
+        )
+        .into());
+    }
     if refused != tree::ContainerViewOutcome::TooFar
-        || client
-            .take_events()
-            .iter()
-            .any(|event| refusal_changed_state(event, distant))
         || tile(client.world_spatial().actor_position)? != distant
         || client.inventory() != Some(&inventory_before_refusal)
         || client.session_mut().container_views() != views_before_refusal.as_ref()
+        || client.session_mut().world_map_snapshot().as_ref() != Some(&map_before_refusal)
     {
         return Err(format!("step=browse-other-floor observed={refused:?};needed=TooFar-with-unchanged-position-inventory-views-and-map").into());
     }
@@ -952,5 +986,24 @@ fn browse_audit_rejects_position_opaque_refusal_frames() {
         },
     });
     assert!(refusal_changed_state(&map, actor));
+    if let SessionEvent::WorldMap(update) = map {
+        use oteryn_protocol_oteryn::world_map::{MapTile, WorldMapViewSnapshot};
+        let mut delta = update.value;
+        let baseline = WorldMapViewSnapshot {
+            header: delta.header,
+            tiles: vec![MapTile {
+                position: delta.cleared[0],
+                items: Vec::new(),
+                more: false,
+                ground_speed: 100,
+            }],
+        };
+        assert!(map_changes_state(&baseline, &delta));
+        delta.cleared.clear();
+        delta.tiles = baseline.tiles.clone();
+        assert!(!map_changes_state(&baseline, &delta));
+        delta.tiles[0].ground_speed += 1;
+        assert!(map_changes_state(&baseline, &delta));
+    }
     assert!(refusal_changed_state(&overlay, actor));
 }
