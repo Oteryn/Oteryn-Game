@@ -3,7 +3,9 @@
 use super::*;
 use oteryn_dev_client::native_session::{GatedSnapshot, replay_world_map_frames};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile, STATE_DOMAIN_WORLD_MAP_VIEW};
+use oteryn_protocol_oteryn::world_map::{
+    MapOrigin, MapTile, STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewDelta,
+};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::path::PathBuf;
 
@@ -17,7 +19,7 @@ struct Door {
 fn doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     let mut found = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
-        for tile in sector.tiles {
+        for tile in sector.tiles.into_iter().filter(|tile| tile.house == 0) {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 let appearance =
                     crate::map::palette_appearance(&manifest.palette[item.palette as usize].key);
@@ -26,22 +28,34 @@ fn doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
                     y: tile.y,
                     floor: sector.floor,
                 };
-                if appearance.is_some_and(|appearance| matches!(appearance, 1638 | 1629))
-                    && world.facts().doors().at(at)
-                {
-                    found.push(Door {
-                        at,
-                        ordinal: u8::try_from(ordinal).map_err(|_| {
-                            oteryn_world_bundle::Error::Limit("M05 client door ordinal".into())
-                        })?,
-                        appearance: appearance.unwrap_or_default(),
-                    });
+                if let Some(appearance @ (2177 | 1629)) = appearance {
+                    let ordinal = u8::try_from(ordinal).map_err(|_| {
+                        oteryn_world_bundle::Error::Limit("M05 client door ordinal".into())
+                    })?;
+                    if crate::map::view::placement_key(at, ordinal)
+                        .is_some_and(|key| world.facts().doors().contains(key))
+                    {
+                        found.push(Door {
+                            at,
+                            ordinal,
+                            appearance,
+                        });
+                    }
                 }
             }
         }
         Ok(())
     })?;
     Ok(found)
+}
+
+fn fixed_door(doors: &[Door], at: TilePos, appearance: u16) -> Option<Door> {
+    let mut matches = doors
+        .iter()
+        .copied()
+        .filter(|door| door.at == at && door.appearance == appearance);
+    let door = matches.next()?;
+    matches.next().is_none().then_some(door)
 }
 
 fn placement(world: &BundleWorld, door: Door) -> TestResult<Vec<u8>> {
@@ -53,11 +67,7 @@ fn placement(world: &BundleWorld, door: Door) -> TestResult<Vec<u8>> {
 }
 
 fn door_state(tiles: &[MapTile], door: Door) -> TestResult<(u16, u64)> {
-    let position = ActorPosition {
-        x: i32::from(door.at.x),
-        y: i32::from(door.at.y),
-        floor: -i16::from(door.at.floor),
-    };
+    let position = door_position(door);
     tiles
         .iter()
         .find(|tile| tile.position == position)
@@ -73,11 +83,32 @@ fn door_state(tiles: &[MapTile], door: Door) -> TestResult<(u16, u64)> {
         .ok_or_else(|| format!("M05 missing exact door at {position:?}").into())
 }
 
+fn door_position(door: Door) -> ActorPosition {
+    ActorPosition {
+        x: i32::from(door.at.x),
+        y: i32::from(door.at.y),
+        floor: -i16::from(door.at.floor),
+    }
+}
+fn door_update(delta: &WorldMapViewDelta, door: Door) -> TestResult<Option<(u16, u64)>> {
+    let at = door_position(door);
+    if delta.cleared.contains(&at)
+        || !oteryn_protocol_oteryn::world_map::in_window(delta.header.origin, at)
+    {
+        return Err(format!("M05 map cleared exact door tile {at:?}").into());
+    }
+    if delta.tiles.iter().any(|tile| tile.position == at) {
+        return door_state(&delta.tiles, door).map(Some);
+    }
+    Ok(None)
+}
+
 struct Capture {
     snapshot: GatedSnapshot,
     generation: u64,
     sequence: u64,
     observed_sequence: u64,
+    before: (u16, u64),
     files: Vec<PathBuf>,
     door: Door,
     expected: (u16, u64),
@@ -120,20 +151,34 @@ async fn toggle(
         return Err(format!("M05 {label} observed {:?}", result.disposition).into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut changed = None;
     let observed_sequence = loop {
-        let mut changed = None;
         for event in client.take_events() {
-            if let SessionEvent::WorldMap(delta) = event
-                && delta.server_sequence > result.result_server_sequence
-                && let Ok(observed) = door_state(&delta.value.tiles, door)
-                && observed != before
-            {
-                if observed != expected {
-                    return Err(
-                        format!("M05 {label} observed {observed:?}, want {expected:?}").into(),
-                    );
+            match event {
+                SessionEvent::WorldMap(delta) => {
+                    if let Some(state) = door_update(&delta.value, door)? {
+                        let may_change = delta.server_sequence > result.result_server_sequence;
+                        let valid = if changed.is_some() {
+                            state == expected
+                        } else {
+                            state == before || (may_change && state == expected)
+                        };
+                        if !valid {
+                            return Err(format!(
+                                "M05 {label} unexpected state {state:?} at sequence {}",
+                                delta.server_sequence
+                            )
+                            .into());
+                        }
+                        if state == expected {
+                            changed.get_or_insert(delta.server_sequence);
+                        }
+                    }
                 }
-                changed = Some(delta.server_sequence);
+                SessionEvent::WorldMapSnapshot(_) => {
+                    return Err("M05 unexpected map replacement during toggle".into());
+                }
+                _ => {}
             }
         }
         if let Some(changed) = changed {
@@ -160,6 +205,7 @@ async fn toggle(
         generation,
         sequence,
         observed_sequence,
+        before,
         files,
         door,
         expected,
@@ -176,18 +222,26 @@ fn replay(captures: Vec<Capture>) -> TestResult {
             .iter()
             .map(std::fs::read)
             .collect::<Result<Vec<_>, _>>()?;
-        if !frames.iter().any(|frame| {
-            oteryn_protocol_oteryn::decode_wire_envelope(frame)
-                .is_ok_and(|envelope| envelope.server_sequence() == capture.observed_sequence)
-        }) {
-            return Err("M05 replay missed the live transition sequence".into());
-        }
+        let mut witnessed = false;
         let result = replay_world_map_frames(
             capture.snapshot,
             capture.generation,
             capture.sequence,
             &frames,
+            |sequence, delta| match door_update(delta, capture.door) {
+                Ok(Some(state)) if sequence == capture.observed_sequence => {
+                    witnessed = state == capture.expected;
+                    witnessed
+                }
+                Ok(Some(state)) if sequence < capture.observed_sequence => state == capture.before,
+                Ok(Some(state)) => state == capture.expected,
+                Ok(None) => sequence != capture.observed_sequence,
+                Err(_) => false,
+            },
         )?;
+        if !witnessed {
+            return Err("M05 replay missed the live transition sequence".into());
+        }
         let observed = door_state(&result.tiles, capture.door)?;
         if observed != capture.expected {
             return Err(format!(
@@ -198,6 +252,39 @@ fn replay(captures: Vec<Capture>) -> TestResult {
         }
     }
     evidence("M05_REPLAY status=PASS transitions=4");
+    Ok(())
+}
+
+fn require_empty_door(client: &DevClientSession, door: Door) -> TestResult {
+    let entities = client.world_entities().ok_or("M05 entity view missing")?;
+    if let Some(entity) = entities.iter().find(|entity| {
+        entity.position == door_position(door)
+            && matches!(
+                entity.kind,
+                oteryn_dev_client::EntityKind::Player
+                    | oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+            )
+    }) {
+        return Err(format!(
+            "M05 door collision cannot be isolated: occupant {:?} at {:?}",
+            entity.entity, entity.position
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn check_step(
+    from: TilePos,
+    expected: TilePos,
+    disposition: StepDisposition,
+    actual: TilePos,
+    observed: StepDisposition,
+) -> TestResult {
+    if observed != disposition || actual != expected {
+        return Err(format!("M05 collision from={from:?} expected={disposition:?}/{expected:?} observed={observed:?}/{actual:?}").into());
+    }
     Ok(())
 }
 
@@ -213,20 +300,44 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
     let mut captured = Vec::new();
-    for (appearance, opened, family) in [(1638, 1639, "basic"), (1629, 1630, "key")] {
+    for (appearance, opened, family, target, approach) in [
+        (
+            2177,
+            2178,
+            "basic",
+            TilePos {
+                x: 32402,
+                y: 32235,
+                floor: -7,
+            },
+            TilePos {
+                x: 32401,
+                y: 32235,
+                floor: -7,
+            },
+        ),
+        (
+            1629,
+            1630,
+            "key",
+            TilePos {
+                x: 32379,
+                y: 32198,
+                floor: -7,
+            },
+            TilePos {
+                x: 32378,
+                y: 32198,
+                floor: -7,
+            },
+        ),
+    ] {
+        let enter = StepDirection::East;
         let from = tile(client.world_spatial().actor_position)?;
-        let candidates = doors
-            .iter()
-            .copied()
-            .filter(|door| door.appearance == appearance);
-        let approach = |at: TilePos, door: Door| {
-            at.floor == door.at.floor
-                && u32::from(at.x.abs_diff(door.at.x)) + u32::from(at.y.abs_diff(door.at.y)) == 1
-        };
-        let path = route(world, from, |at| {
-            candidates.clone().any(|door| approach(at, door))
-        })
-        .ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
+        let door = fixed_door(&doors, target, appearance)
+            .ok_or_else(|| format!("M05 authored {family} door missing at {target:?}"))?;
+        let path = route(world, from, |at| at == approach)
+            .ok_or_else(|| format!("M05 no route to fixed {family} approach {approach:?}"))?;
         for direction in path {
             let before = tile(client.world_spatial().actor_position)?;
             let landing =
@@ -239,10 +350,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             client.take_events();
         }
         let at = tile(client.world_spatial().actor_position)?;
-        let door = candidates
-            .clone()
-            .find(|door| approach(at, *door))
-            .ok_or("M05 route missed door")?;
+        if at != approach {
+            return Err("M05 route missed fixed approach".into());
+        }
+        require_empty_door(&client, door)?;
+        let blocked_before = client.step(enter).await?;
+        check_step(
+            at,
+            at,
+            StepDisposition::Blocked,
+            tile(client.world_spatial().actor_position)?,
+            blocked_before.disposition,
+        )?;
         let id = *client.join_snapshot().game_session_id.as_bytes();
         let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
             .map(PathBuf::from)
@@ -259,6 +378,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "open",
         )
         .await?;
+        require_empty_door(&client, door)?;
+        let crossing = client.step(enter).await?;
+        check_step(
+            at,
+            target,
+            StepDisposition::Moved,
+            tile(client.world_spatial().actor_position)?,
+            crossing.disposition,
+        )?;
+        let leaving = client.step(StepDirection::West).await?;
+        check_step(
+            target,
+            at,
+            StepDisposition::Moved,
+            tile(client.world_spatial().actor_position)?,
+            leaving.disposition,
+        )?;
         client.service_liveness(Duration::from_millis(250)).await?;
         let close = toggle(
             &mut client,
@@ -270,6 +406,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "close",
         )
         .await?;
+        require_empty_door(&client, door)?;
+        let blocked_after = client.step(enter).await?;
+        check_step(
+            at,
+            at,
+            StepDisposition::Blocked,
+            tile(client.world_spatial().actor_position)?,
+            blocked_after.disposition,
+        )?;
+        evidence(&format!(
+            "M05_COLLISION family={family} before=Blocked open=Moved exit=Moved closed=Blocked"
+        ));
         let logout = client.session_mut().logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("M05 {family} logout observed {:?}", logout.result).into());
@@ -309,4 +457,63 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .map(|error| format!(" evidence={}", error.to_string().replace(' ', "-")))
             .unwrap_or_default()
     ));
+}
+
+#[test]
+fn m05_detects_missing_door_and_false_collision() {
+    use oteryn_protocol_oteryn::world_map::MapViewHeader;
+    let at = TilePos {
+        x: 20,
+        y: 20,
+        floor: -7,
+    };
+    let door = Door {
+        at,
+        ordinal: 1,
+        appearance: 2177,
+    };
+    let position = door_position(door);
+    let mut delta = WorldMapViewDelta {
+        header: MapViewHeader {
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 0,
+            origin: position,
+            first_visible_floor: 0,
+        },
+        tiles: Vec::new(),
+        cleared: vec![position],
+    };
+    assert!(door_update(&delta, door).is_err());
+    delta.cleared.clear();
+    delta.tiles.push(MapTile {
+        position,
+        items: Vec::new(),
+        more: false,
+        ground_speed: 150,
+    });
+    assert!(door_update(&delta, door).is_err());
+    let approach = TilePos { x: 19, ..at };
+    assert!(fixed_door(&[door], approach, door.appearance).is_none());
+    assert!(fixed_door(&[door, door], at, door.appearance).is_none());
+    assert!(
+        check_step(
+            approach,
+            approach,
+            StepDisposition::Blocked,
+            at,
+            StepDisposition::Moved
+        )
+        .is_err()
+    );
+    assert!(
+        check_step(
+            approach,
+            at,
+            StepDisposition::Moved,
+            approach,
+            StepDisposition::Blocked
+        )
+        .is_err()
+    );
 }

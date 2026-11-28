@@ -100,6 +100,7 @@ pub fn replay_world_map_frames(
     generation: u64,
     mut sequence: u64,
     frames: &[Vec<u8>],
+    mut verify: impl FnMut(u64, &WorldMapViewDelta) -> bool,
 ) -> Result<WorldMapViewSnapshot, SessionError> {
     let malformed = || SessionError::Protocol(FoundationProtocolError::MalformedEnvelope);
     if snapshot.domain_id != STATE_DOMAIN_WORLD_MAP_VIEW || frames.is_empty() {
@@ -127,8 +128,11 @@ pub fn replay_world_map_frames(
             DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
             snapshot.revision,
         )?;
-        header =
-            apply_map_payload(&mut snapshot, header, delta.payload, delta.new_revision)?.header;
+        let applied = apply_map_payload(&mut snapshot, header, delta.payload, delta.new_revision)?;
+        if !verify(current, &applied) {
+            return Err(malformed());
+        }
+        header = applied.header;
         sequence = current;
     }
     decode_world_map_snapshot(&snapshot.payload).map_err(|_| malformed())
@@ -237,11 +241,12 @@ mod tests {
         )?;
         let frames = [frame];
         assert_eq!(
-            replay_world_map_frames(baseline.clone(), 2, 10, &frames)?.header,
+            replay_world_map_frames(baseline.clone(), 2, 10, &frames, |_, _| true)?.header,
             moved
         );
-        assert!(replay_world_map_frames(baseline.clone(), 2, 11, &frames).is_err());
-        assert!(replay_world_map_frames(baseline, 3, 10, &frames).is_err());
+        assert!(replay_world_map_frames(baseline.clone(), 2, 11, &frames, |_, _| true).is_err());
+        assert!(replay_world_map_frames(baseline.clone(), 2, 10, &frames, |_, _| false).is_err());
+        assert!(replay_world_map_frames(baseline, 3, 10, &frames, |_, _| true).is_err());
         Ok(())
     }
 }

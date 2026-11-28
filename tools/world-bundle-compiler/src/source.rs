@@ -206,48 +206,6 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
     Ok(project)
 }
 
-/// Supply the closed public M05 door in the disposable qualification town.
-pub fn place_m05_basic_door(project: &mut Project) -> Result<(), Error> {
-    const X: u16 = 32372;
-    const Y: u16 = 32236;
-    let error = |what| Error::Format(format!("M05 qualification basic door: {what}"));
-    let palette = project.index["palette"]
-        .as_array()
-        .and_then(|entries| {
-            entries
-                .iter()
-                .position(|entry| entry["key"] == "oteryn:item.tibia.i1638")
-        })
-        .and_then(|index| u32::try_from(index).ok())
-        .ok_or_else(|| error("missing closed door palette entry"))?;
-    let [rx_lo, rx_hi] = (X / 256).to_le_bytes();
-    let [ry_lo, ry_hi] = (Y / 256).to_le_bytes();
-    let header = [7, rx_lo, rx_hi, ry_lo, ry_hi];
-    let bytes = project
-        .regions
-        .iter_mut()
-        .find(|bytes| bytes.get(5..10) == Some(header.as_slice()))
-        .ok_or_else(|| error("missing town region"))?;
-    let mut budget = bundle::BUNDLE_BUDGET;
-    let mut region = b3::decode_region(bytes, bundle::TILE_LIMITS, &mut budget)?;
-    let tile = region
-        .sectors
-        .iter_mut()
-        .flat_map(|(_, _, tiles)| tiles)
-        .find(|tile| (tile.x, tile.y) == (X, Y))
-        .ok_or_else(|| error("missing placement tile"))?;
-    if tile.house != 0 || tile.items.len() != 1 {
-        return Err(error("expected a ground-only public tile"));
-    }
-    tile.items.push(sector::Item {
-        palette,
-        depth: 0,
-        attrs: sector::Attrs::default(),
-    });
-    *bytes = crate::authored_props::encode(&region)?;
-    Ok(())
-}
-
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {
     let mut index = json(
         &read(&root.join("content/world/placements/index.json"))?,

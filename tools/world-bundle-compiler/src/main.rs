@@ -125,12 +125,7 @@ fn run_compile(
     }
     let project = match regions {
         Some(regions) if town_qualification => {
-            let mut project =
-                oteryn_world_bundle_compiler::source::project_town_qualification(root, regions)?;
-            if std::env::var("OTERYN_E2E_ROW_BATCH").as_deref() == Ok("132:1") {
-                oteryn_world_bundle_compiler::source::place_m05_basic_door(&mut project)?;
-            }
-            project
+            oteryn_world_bundle_compiler::source::project_town_qualification(root, regions)?
         }
         Some(regions) => oteryn_world_bundle_compiler::source::project_regions(root, regions)?,
         None => project(root)?,
