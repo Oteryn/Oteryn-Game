@@ -1040,9 +1040,8 @@ const TOKEN_EXCHANGE_PREDECESSORS: &[GameplayPredecessors] = &[(
 pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
     retain(catalogue, DAILY_PREDECESSORS);
 
-    // On e2750951, NPC lowering admitted these pre-NPC definitions with their
-    // historical absent-track values. The only newly declared track is Bigfoot's
-    // crystal package counter, which was absent from those saves.
+    // Preserve each pre-NPC catalogue's absent-track values. The listed tracks
+    // first appeared after the saved definition (origin/main, e2750951 or 6ed77c6).
     for (quest, active, current_npc, previous, added_tracks) in [
         (
             BIGFOOT,
@@ -1157,7 +1156,7 @@ mod tests {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        // Active production definitions captured on e2750951.
+        // Active production definitions captured on e2750951 and 6ed77c6.
         let saved = [
             (
                 "oteryn:quest.bigfoot_s_burden_quest",

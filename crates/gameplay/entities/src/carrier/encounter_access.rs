@@ -16,7 +16,7 @@ pub struct StagedQuestEncounter<'owner, T> {
 }
 
 /// A dropped command releases its actor fences immediately. Recycle its detached
-/// free-list prefix on the next allocation or reservation, preserving burned IDs.
+/// free-list prefix at an owner boundary, preserving burned IDs.
 #[derive(Debug, Clone)]
 pub(super) struct ReservedEncounterSlots {
     owner: std::sync::Weak<()>,
@@ -74,6 +74,12 @@ pub struct ReservedQuestEncounter {
     owner: std::sync::Arc<()>,
 }
 
+impl ChannelRuntimeV1 {
+    pub fn reclaim_abandoned_quest_encounter(&mut self) {
+        self.carrier.reclaim_abandoned_encounter_slots();
+    }
+}
+
 impl ReservedQuestEncounter {
     /// Repeat the native room checks against the live world with the exact reserved
     /// spawn identities at the free head. Roll back the generation claims on refusal.
@@ -129,7 +135,6 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         let binding = self.runtime.binding();
         let activation = self.runtime.content_pin().activation_sequence();
         let live = &mut self.runtime.carrier;
-        live.reclaim_abandoned_encounter_slots();
         if live.encounter_reservation.is_some() {
             return Err(CarrierError::PlanConflict);
         }

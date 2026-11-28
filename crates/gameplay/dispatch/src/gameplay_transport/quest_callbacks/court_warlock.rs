@@ -260,7 +260,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .quest_callbacks
                 .source_boss
                 .lock()
-                .ok()?
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .as_ref()
                 .filter(|p| {
                     session.is_none_or(|session| {

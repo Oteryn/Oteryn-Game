@@ -34,8 +34,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut notified = pin!(wake.notified());
             notified.as_mut().enable();
             let delay_us = {
-                let runtime = self.runtime.lock().await;
-                let states = self.states.spell_states.lock().await;
+                let (mut runtime, states) = self.quest_turn_with(&self.states.spell_states).await;
+                runtime.reclaim_abandoned_quest_encounter();
                 if runtime.owner_fence().is_err() {
                     return;
                 }

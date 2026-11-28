@@ -1731,6 +1731,7 @@ impl ChannelRuntimeV1 {
         &mut self,
         game_session_id: GameSessionId,
     ) -> Result<PlayerActorReservation, CarrierError> {
+        self.reclaim_abandoned_quest_encounter();
         self.carrier
             .reserve_player(&self.continuity, game_session_id)
     }
@@ -1910,7 +1911,6 @@ impl ChannelActorCarrier {
         // Current outer authority must be proven before slot selection or any
         // mutation, including terminal generation-exhaustion bookkeeping.
         self.validate_current_continuity(continuity)?;
-        self.reclaim_abandoned_encounter_slots();
         let Some(free_head) = self.free_head else {
             return Err(CarrierError::CapacityExceeded);
         };

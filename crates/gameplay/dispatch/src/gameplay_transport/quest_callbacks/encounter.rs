@@ -342,12 +342,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.publish_staged_encounter(staged, &mut states, map, coffin, Some(reservation));
                 true
             });
+            drop(held);
+            runtime.reclaim_abandoned_quest_encounter();
             if published {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Rejected
             }
         } else {
+            drop(held);
+            self.runtime
+                .lock()
+                .await
+                .reclaim_abandoned_quest_encounter();
             // The payment is durable. A fresh use may recover it after an
             // abandoned delivery, including when its identity write committed.
             if matches!(
