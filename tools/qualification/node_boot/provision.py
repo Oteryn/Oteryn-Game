@@ -77,14 +77,6 @@ def spawn(socket_path, session, creature_key):
     return answer.decode("ascii").rstrip("\n")
 
 
-def provision_i07(socket_path, session):
-    try:
-        provision(socket_path, session, "i07-loot")
-    except ProvisioningBusy:
-        print("FIXTURE_RETRY profile=i07-loot reason=holder_busy attempt=2", flush=True)
-        provision(socket_path, session, "i07-loot")
-
-
 def inspect_damage(socket_path, session, target):
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or not re.fullmatch(r"[0-9a-f]{32} [1-9][0-9]{0,19}", target):
@@ -108,7 +100,5 @@ if __name__ == "__main__":
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
-    elif args.profile == "i07-loot":
-        provision_i07(args.socket, args.session)
     else:
         provision(args.socket, args.session, args.profile)

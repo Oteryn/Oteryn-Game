@@ -310,6 +310,7 @@ struct Capture<'a> {
     directory: &'a Path,
     full: bool,
     visible_top: Option<[u8; 16]>,
+    diagonal_corpse: [u8; 16],
     previous: (u64, u64),
 }
 
@@ -356,6 +357,16 @@ impl Capture<'_> {
             return Err(
                 format!("I07 probe {key} expected the exact corpse tiles and stack").into(),
             );
+        }
+        let southeast = (
+            actor.x.checked_add(1).ok_or("I07 corpse tile overflow")?,
+            actor.y.checked_add(1).ok_or("I07 corpse tile overflow")?,
+        );
+        if !nearby
+            .iter()
+            .any(|(x, y, identity, _)| (*x, *y) == southeast && *identity == self.diagonal_corpse)
+        {
+            return Err(format!("I07 probe {key} live diagonal corpse is not southeast").into());
         }
         let anchor = clicked.last().ok_or("I07 missing selected corpse")?.2;
         if east_stack && Some(anchor) != self.visible_top {
@@ -879,6 +890,7 @@ pub(super) async fn journey(
         directory: capture_dir,
         full,
         visible_top: None,
+        diagonal_corpse: diagonal_corpse.as_slice().try_into()?,
         previous: inbox_identity,
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
@@ -1182,7 +1194,7 @@ pub(super) async fn journey(
     );
 
     // Manual click bypasses the active Accept filter and targets only this corpse.
-    let (corpse_entity, corpse_handle, selected, sibling, opened) =
+    let (corpse_entity, corpse_handle, selected, sibling, opened, primary_use_sequence) =
         open_primary_corpse(&mut fresh, skip_reference).await?;
     let click = QuickLootRequest {
         corpse: Some(corpse_entity.entity.identity),
@@ -1277,9 +1289,7 @@ pub(super) async fn journey(
     .await?;
     capture.visible_top = Some(visible_top);
     if full {
-        capture
-            .probe(&mut fresh, 21, unassigned_pouch, &[])
-            .await?;
+        capture.probe(&mut fresh, 21, unassigned_pouch, &[]).await?;
         require_unassigned_pouch(&mut database, character, &pouch).await?;
         capture
             .loot_all(&mut fresh, 22, true, &east_outcomes(false))
@@ -1601,7 +1611,8 @@ pub(super) async fn journey(
     require_filters(&mut database, character, false, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
     require_retired_donor(&mut database, &other.item).await?;
-    evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
+    require_retired_donor(&mut database, &donor_coin.item).await?;
+    evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true donors=food,gold");
     capture_restore(&mut readback, capture_dir, "restore").await?;
     let inventory = readback
         .inventory()
@@ -1665,6 +1676,7 @@ pub(super) async fn journey(
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
                 "corpse_definition": provisioning::item_reference(&index, 5973)?.get(),
+                "primary_use_sequence": primary_use_sequence, "diagonal_corpse": capture.diagonal_corpse,
                 "opened": captured_container(opened)?, "after_click": captured_container(after_click)?,
                 "coin": coin.item, "diagonal_coin": diagonal_coin.item, "top_food": top_food.item, "bottom_food": bottom_food.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,
@@ -2015,6 +2027,7 @@ async fn open_primary_corpse(
     oteryn_dev_client::ItemHandle,
     oteryn_dev_client::ItemHandle,
     CorpseDelta,
+    u64,
 )> {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityDetail;
@@ -2074,6 +2087,13 @@ async fn open_primary_corpse(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
         if let Some(delta) = matching_corpse_delta(client, *corpse)? {
+            if delta.server_sequence <= reply.result_server_sequence {
+                return Err(format!(
+                    "I07 primary USE delta sequence {} did not follow its reply {}",
+                    delta.server_sequence, reply.result_server_sequence
+                )
+                .into());
+            }
             let [selected, sibling] = delta.value.entries.as_slice() else {
                 return Err("I07 opened corpse must contain the selected item and sibling".into());
             };
@@ -2086,7 +2106,14 @@ async fn open_primary_corpse(
                 );
             }
             evidence("I07_CORPSE_OPEN status=committed view_entries=2");
-            return Ok((*entity, *corpse, selected.handle, sibling.handle, delta));
+            return Ok((
+                *entity,
+                *corpse,
+                selected.handle,
+                sibling.handle,
+                delta,
+                reply.result_server_sequence,
+            ));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("I07 committed corpse open omitted its container delta".into());
