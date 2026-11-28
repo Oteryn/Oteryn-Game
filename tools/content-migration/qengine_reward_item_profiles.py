@@ -84,7 +84,7 @@ IDS = {
     28793,
 }
 # Lower Spike parcels must be portable and stackable for the four outpost deliveries.
-IDS.update({19205, 19206, 19219})
+IDS.update({19203, 19205, 19206, 19219})
 # Knightwatch leader confirmations grant these two shields alongside the documents.
 IDS |= {6390, 6432}
 # Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.

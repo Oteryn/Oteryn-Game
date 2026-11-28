@@ -8,6 +8,15 @@ pub fn stage_quest_disguise(
     look_type: Option<u32>,
     now_ms: u64,
 ) -> Result<Option<PlayerSpellState>, SpellCastDisposition> {
+    stage_quest_disguise_for(state, look_type, None, now_ms)
+}
+
+pub fn stage_quest_disguise_for(
+    state: &PlayerSpellState,
+    look_type: Option<u32>,
+    duration_ms: Option<u32>,
+    now_ms: u64,
+) -> Result<Option<PlayerSpellState>, SpellCastDisposition> {
     use oteryn_gameplay_domain::domain::condition::ConflictKey;
     const KEY: &str = "quest.disguise";
     if state.health == 0 {
@@ -26,8 +35,17 @@ pub fn stage_quest_disguise(
     let mut next = state.clone();
     next.conditions.remove_type(ConditionType::Outfit);
     if let Some(look_type) = look_type {
-        let definition = ConditionDefinition::new_permanent_outfit(KEY, 1, look_type)
-            .ok_or(SpellCastDisposition::Rejected)?;
+        let definition = match duration_ms {
+            Some(duration_ms) => definition(
+                KEY,
+                ConditionValues::Outfit {
+                    look_type,
+                    duration_ms,
+                },
+            )?,
+            None => ConditionDefinition::new_permanent_outfit(KEY, 1, look_type)
+                .ok_or(SpellCastDisposition::Rejected)?,
+        };
         apply_definition(&mut next, definition, now_ms, 0)?;
     }
     next.advance_batch_revision()?;
@@ -120,6 +138,11 @@ mod tests {
                 .expect("same")
                 .is_none()
         );
+        let bat = stage_quest_disguise_for(&original, Some(307), Some(120_000), 1)
+            .unwrap()
+            .unwrap();
+        assert_eq!(bat.conditions.outfit_at(120_000_999), Some(307));
+        assert_eq!(bat.conditions.outfit_at(120_001_000), None);
         let clear = stage_quest_disguise(&disguised, None, 2)
             .expect("clear")
             .expect("changed");

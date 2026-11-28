@@ -79,6 +79,72 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/spike/nests/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/nests/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/nests/transformed_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/digs",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/spike/temperature/progress",
       "quest": "oteryn:quest.spike_task",
       "initial": 0,
@@ -739,6 +805,107 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l12-spike-nests-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-nests-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "nests"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/nests/transformed_at",
+          "minimum": 0,
+          "maximum": 9223372036854775807,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l12-spike-parcel-32171-32644-13",
       "quest": "oteryn:quest.spike_task",
       "npc": "oteryn:npc.gnome_trooper",
@@ -1077,6 +1244,113 @@
       "state_ops": [
         {
           "track": "oteryn:quest-progress/spike/lower/parcel/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-release-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/release/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-release-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "release",
+        "releasing"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/release/reported_at",
           "from": {
             "kind": "any"
           },

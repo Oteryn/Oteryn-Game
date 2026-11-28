@@ -2990,6 +2990,28 @@
     },
     {
       "npc": "oteryn:npc.gnombold",
+      "topic": 0,
+      "keywords": [
+        "nests"
+      ],
+      "next_topic": 31,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you use the gnomish transformer and destroy eight monster nests?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
       "keywords": [
         "report"
       ],
@@ -3025,6 +3047,28 @@
       ],
       "reply": [
         "Will you take on the local hunting task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "topic": 0,
+      "keywords": [
+        "release"
+      ],
+      "next_topic": 31,
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you release an angry spirit from an ominous mound?"
       ]
     },
     {

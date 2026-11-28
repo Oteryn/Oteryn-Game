@@ -35,7 +35,7 @@ pub const MAX_BOUND_QUESTS: usize = 128;
 pub const MAX_BOUND_STAGES: usize = 2048;
 // The base loader caps its registry separately, and each authored world callback uses one stage.
 const MAX_COMPOSED_WORLD_CALLBACKS: usize =
-    super::world_callbacks::MAX_RUNTIME_CALLBACKS + MAX_BOUND_STAGES;
+    super::world_callbacks::MAX_EMBEDDED_CALLBACKS + MAX_BOUND_STAGES;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

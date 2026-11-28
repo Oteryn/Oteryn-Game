@@ -332,7 +332,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     index += 1;
                     continue;
                 };
-                for actor in census {
+                let mound = oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(&memo.callback).is_some();
+                if mound {
+                    super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                }
+                for actor in census.into_iter().filter(|_| !mound) {
                     let in_room = runtime
                         .read_actor_position(actor)
                         .ok()

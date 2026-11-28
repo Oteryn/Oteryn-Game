@@ -4122,6 +4122,9 @@ def build():
         )
     from spike_parcel import append as append_parcels, append_surveys
 
+    import spike_world
+
+    spike_world.dialogue(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     append_surveys(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     append_parcels(ROOT, add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     engoutfit_m36.append(
@@ -4517,6 +4520,7 @@ def build():
             "callbacks": sorted(m39_callbacks, key=lambda callback: callback["key"]),
         }
     )
+    generated[spike_world.WORLD] = encoded(spike_world.world(ROOT))
     generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
     from hot_cuisine_books import build as cookbook_sources
 

@@ -15,13 +15,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|entry| entry.copy.as_ref())
                 .and_then(|copy| copy.read_tracks(self.quest_catalogue.as_deref()?))
                 .and_then(|tracks| {
+                    let remaining = tracks
+                        .get("oteryn:quest-progress/spike/nests/transformed_at")
+                        .and_then(|at| super::unix_seconds()?.checked_sub(*at))
+                        .filter(|elapsed| (0..120).contains(elapsed));
+                    if let Some(elapsed) = remaining {
+                        return Some((
+                            "oteryn:creature.mutated_bat".to_owned(),
+                            Some((120 - elapsed as u32) * 1000),
+                        ));
+                    }
                     oteryn_gameplay_quests::quest::world_callbacks::active_disguise(&tracks)
                         .ok()
                         .flatten()
-                        .map(|rule| rule.creature.clone())
+                        .map(|rule| (rule.creature.clone(), None))
                 })
         });
-        let look = creature.as_ref().and_then(|key| {
+        let look = creature.as_ref().and_then(|(key, _)| {
             native
                 .policies()
                 .policies()
@@ -43,7 +53,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime.player_control_facts(actor, session).is_err() {
             return false;
         }
-        let mut states = self.states.spell_states.lock().await;
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return true;
+        };
         if states.is_dead(actor) {
             return false;
         }
@@ -53,9 +65,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(current) = states.get(&runtime, actor, session) else {
             return true;
         };
-        match crate::spell::actor_conditions::stage_quest_disguise(
+        match crate::spell::actor_conditions::stage_quest_disguise_for(
             current,
             look,
+            creature.and_then(|(_, duration)| duration),
             self.owner_now().get() / 1000,
         ) {
             Ok(Some(next)) => {

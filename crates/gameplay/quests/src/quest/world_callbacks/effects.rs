@@ -956,6 +956,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && super::spike_mound::chances(callback).is_none()
                 && !super::court_warlock::exact(callback)
                 && !exact_arbaziloth
                 && !callback.starts_merchant_wave()
@@ -1026,7 +1027,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
-                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave())
+                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave() && super::spike_mound::chances(callback).is_none())
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
