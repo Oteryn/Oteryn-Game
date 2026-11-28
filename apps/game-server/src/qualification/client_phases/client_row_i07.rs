@@ -403,6 +403,7 @@ struct Capture<'a> {
     directory: &'a Path,
     full: bool,
     visible_top: Option<[u8; 16]>,
+    gameplay_deadline: tokio::sync::watch::Receiver<tokio::time::Instant>,
     previous: (u64, u64),
 }
 
@@ -426,7 +427,7 @@ impl Capture<'_> {
             (false, _) => 4,
         };
         // The control socket can finish before the gameplay socket publishes the last fixture corpses.
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        let deadline = *self.gameplay_deadline.borrow();
         let nearby = loop {
             let observed: Vec<_> = client
                 .world_entities()
@@ -1101,6 +1102,7 @@ async fn run_journey(
         directory: capture_dir,
         full,
         visible_top: None,
+        gameplay_deadline: budget.deadline.subscribe(),
         previous: inbox_identity,
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
