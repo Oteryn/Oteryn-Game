@@ -437,19 +437,34 @@ async fn player_commands(
         chase: ChaseMode::Stand,
         secure: true,
     };
-    let modes_reply = client.session_mut().set_fight_modes(&modes).await?;
+    let (modes_reply, result) = client
+        .session_mut()
+        .set_fight_modes_with_result(&modes)
+        .await?;
+    evidence(&format!(
+        "S15B_COMMAND command=SET_FIGHT_MODES result={result:?}"
+    ));
     if modes_reply.disposition != AttackIntentDisposition::Ok {
         return Err(
             format!("step=3 command=SET_FIGHT_MODES observed={modes_reply:?} need=Ok").into(),
         );
     }
-    let attack = client.session_mut().attack_target(Some(&monster)).await?;
+    let (attack, result) = client
+        .session_mut()
+        .attack_target_with_result(Some(&monster))
+        .await?;
+    evidence(&format!(
+        "S15B_COMMAND command=ATTACK_TARGET result={result:?}"
+    ));
     if attack.disposition != expected {
         return Err(format!("step=attack-target observed={attack:?} need={expected:?}").into());
     }
     let target = (expected == AttackIntentDisposition::Ok).then_some(monster);
     wait_combat_state(client, target, &modes, "step=attack-target").await?;
-    let clear = client.session_mut().attack_target(None).await?;
+    let (clear, result) = client.session_mut().attack_target_with_result(None).await?;
+    evidence(&format!(
+        "S15B_COMMAND command=CLEAR_ATTACK_TARGET result={result:?}"
+    ));
     if clear.disposition != AttackIntentDisposition::Ok {
         return Err(format!(
             "step=3 command=ATTACK_TARGET(None) observed={clear:?} need=Ok plus cleared delta"
@@ -566,7 +581,9 @@ async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
     }
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout observed={reply:?} need=Accepted after combat expiry").into());
+        return Err(
+            format!("step=logout observed={reply:?} need=Accepted after combat expiry").into(),
+        );
     }
     Ok(())
 }

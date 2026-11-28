@@ -214,6 +214,16 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         target: Option<&EntityRef>,
     ) -> Result<AttackOutcome, SessionError> {
+        self.attack_target_with_result(target)
+            .await
+            .map(|(outcome, _)| outcome)
+    }
+
+    /// Returns the typed outcome and its original command result.
+    pub async fn attack_target_with_result(
+        &mut self,
+        target: Option<&EntityRef>,
+    ) -> Result<(AttackOutcome, GatedCommandResult), SessionError> {
         self.ensure_usable()?;
         self.ensure_attack()?;
         let payload = attack::encode_attack_target_intent(target).map_err(SessionError::Attack)?;
@@ -229,6 +239,16 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         modes: &FightModes,
     ) -> Result<AttackOutcome, SessionError> {
+        self.set_fight_modes_with_result(modes)
+            .await
+            .map(|(outcome, _)| outcome)
+    }
+
+    /// Returns the typed outcome and its original command result.
+    pub async fn set_fight_modes_with_result(
+        &mut self,
+        modes: &FightModes,
+    ) -> Result<(AttackOutcome, GatedCommandResult), SessionError> {
         self.ensure_usable()?;
         self.ensure_attack()?;
         let payload = attack::encode_fight_modes_intent(modes);
@@ -248,11 +268,11 @@ impl<S: SessionStream> Session<S> {
         }
     }
 
-    pub(super) async fn exchange_attack(
+    async fn exchange_attack(
         &mut self,
         command_type: u32,
         payload: &[u8],
-    ) -> Result<AttackOutcome, SessionError> {
+    ) -> Result<(AttackOutcome, GatedCommandResult), SessionError> {
         let result = self.send_and_read_result(command_type, payload).await?;
         // The server's rate limit answers `Rejected` with an empty payload: a normal refusal.
         let disposition = if result.status == CommandStatus::Rejected && result.payload.is_empty() {
@@ -265,12 +285,21 @@ impl<S: SessionStream> Session<S> {
             result.status,
             disposition == AttackIntentDisposition::Rejected,
         )?;
-        Ok(AttackOutcome {
+        let outcome = AttackOutcome {
             command_id: result.command_id,
             status: result.status,
             disposition,
             result_server_sequence: result.server_sequence,
-        })
+        };
+        Ok((
+            outcome,
+            GatedCommandResult {
+                command_id: result.command_id,
+                status: result.status,
+                server_sequence: result.server_sequence,
+                payload: result.payload,
+            },
+        ))
     }
 
     /// Sends the FND-02 `ClientCommand` type 23 `LOGOUT_INTENT` (capability 21) and decodes its
