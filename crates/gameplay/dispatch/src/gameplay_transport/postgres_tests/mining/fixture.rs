@@ -1,7 +1,7 @@
 //! Shared owner assembly for MINING-1 real-wire PostgreSQL cases.
 use super::*;
 
-pub(super) async fn scenario(admin: String) -> TestResult {
+pub(super) async fn scenario(admin: String, retry_projection: bool) -> TestResult {
     let harness = Harness::create(admin, "mining_wire", true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -36,7 +36,7 @@ pub(super) async fn scenario(admin: String) -> TestResult {
         (80, bag_key, 1),
         (90, bag_key, 1),
         (100, food_key, 1),
-        (110, potion_key, 2),
+        (110, potion_key, if retry_projection { 1 } else { 2 }),
     ] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,$5,1,encode($6,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(index.revision(key).expect("production revision"))
@@ -47,6 +47,11 @@ pub(super) async fn scenario(admin: String) -> TestResult {
     sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
         .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(82).as_slice()).execute(&mut *tx).await?;
     for (seed, parent, ordinal) in [(90, 80, 1_i64), (100, 90, 1), (110, 90, 2)] {
+        if retry_projection && matches!(seed, 100 | 110) {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+                .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(ordinal + 1).bind(id(seed + 2).as_slice()).execute(&mut *tx).await?;
+            continue;
+        }
         sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(parent).as_slice()).bind(ordinal).bind(id(seed + 2).as_slice()).execute(&mut *tx).await?;
     }
@@ -157,7 +162,11 @@ pub(super) async fn scenario(admin: String) -> TestResult {
         );
     }
     super::restart::runtime_role(&harness.root).await?;
-    run(&owner, &harness, actor, session, index).await?;
+    if retry_projection {
+        wire::projection_retry(&owner, &harness, actor, session, index).await?;
+    } else {
+        run(&owner, &harness, actor, session, index).await?;
+    }
     drop(owner);
     drop(authority);
     drop(seal);

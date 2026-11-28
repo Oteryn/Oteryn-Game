@@ -981,38 +981,38 @@ impl SessionItemView {
             .chain(inventory.equipment.iter().map(|(_, item)| item))
             .map(|item| item.key)
             .collect();
-        let previous = self.table.keys_of(View::Inventory);
-        self.table.replace(View::Inventory, &keys)?;
-        let entry = |item: &ViewItem| self.entry(item);
-        let view = CharacterInventory {
-            main_backpack: inventory.main_backpack.as_ref().map(entry).transpose()?,
-            entries: inventory
-                .entries
-                .iter()
-                .map(entry)
-                .collect::<Result<_, _>>()?,
-            equipment: inventory
-                .equipment
-                .iter()
-                .map(|(slot, item)| {
-                    Ok(EquippedItem {
-                        slot: *slot,
-                        item: entry(item)?,
+        let undo = self.table.replace_undoable(View::Inventory, &keys)?;
+        let encode = || {
+            let entry = |item: &ViewItem| self.entry(item);
+            let view = CharacterInventory {
+                main_backpack: inventory.main_backpack.as_ref().map(entry).transpose()?,
+                entries: inventory
+                    .entries
+                    .iter()
+                    .map(entry)
+                    .collect::<Result<_, _>>()?,
+                equipment: inventory
+                    .equipment
+                    .iter()
+                    .map(|(slot, item)| {
+                        Ok(EquippedItem {
+                            slot: *slot,
+                            item: entry(item)?,
+                        })
                     })
-                })
-                .collect::<Result<_, _>>()?,
+                    .collect::<Result<_, _>>()?,
+            };
+            encode_character_inventory_with_appearances(&view, self.equip_drop, self.appearances)
+                .map_err(|_| ItemViewError::Encode)
         };
-        // Without capability 12 a view with equipment does not encode and is never shown.
-        match encode_character_inventory_with_appearances(&view, self.equip_drop, self.appearances)
-        {
+        match encode() {
             Ok(payload) => {
                 self.inventory = inventory;
                 Ok(payload)
             }
-            Err(_) => {
-                // An unencodable view is never shown: the previous one stays.
-                let _ = self.table.replace(View::Inventory, &previous);
-                Err(ItemViewError::Encode)
+            Err(error) => {
+                self.table.rollback(undo);
+                Err(error)
             }
         }
     }

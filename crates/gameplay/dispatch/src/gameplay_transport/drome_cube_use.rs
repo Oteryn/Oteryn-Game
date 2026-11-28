@@ -75,9 +75,9 @@ where
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// A freshly dispatched plain USE can be refused when the shared item lane
-    /// is fenced. A retained Cube or Aid write still owns its original result.
-    async fn drome_lane_unavailable(
+    /// A freshly dispatched plain USE can be refused during preflight. A retained
+    /// Cube or Aid write still owns its original result.
+    async fn drome_preflight_unavailable(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -127,7 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
         let Some(_permit) = self.spell_lane_permit().await else {
-            return self.drome_lane_unavailable(actor, command).await;
+            return self.drome_preflight_unavailable(actor, command).await;
         };
         let budget = AdmissionRetryBudget::for_command(self.root);
         match retry_cube_read(&budget, "drome_cube_receipt", || async {
@@ -147,6 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Committed)));
             }
             Ok(None) => {}
+            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)) => {
+                return self.drome_preflight_unavailable(actor, command).await;
+            }
             Err(ItemUseError::Unavailable(_)) => return Err(()),
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         }

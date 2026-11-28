@@ -39,6 +39,7 @@ use tokio::io::{AsyncWriteExt as _, DuplexStream};
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const PRIMAL_BAG: &str = "oteryn:item.tibia.i39546";
+const ULTIMATE_MANA_POTION: &str = "oteryn:item.tibia.i23373";
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -50,6 +51,7 @@ enum Case {
     CoinCommitted,
     CoinNotApplied,
     UseLaneFenced,
+    RefillHolderBusy,
 }
 
 #[test]
@@ -58,6 +60,14 @@ fn fresh_use_with_fenced_spell_lane_returns_typed_refusal() -> TestResult {
         return Ok(());
     };
     run(admin, Case::UseLaneFenced)
+}
+
+#[test]
+fn c16d_refill_use_returns_typed_refusal_while_aid_receipt_holder_is_busy_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::RefillHolderBusy)
 }
 
 #[test]
@@ -77,7 +87,7 @@ fn s7c_cube_use_survives_a_short_holder_checkout() -> TestResult {
 }
 
 #[test]
-fn s7c_cube_use_closes_and_logs_when_holder_stays_busy() -> TestResult {
+fn s7c_fresh_cube_use_refuses_and_logs_when_holder_stays_busy() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -85,7 +95,7 @@ fn s7c_cube_use_closes_and_logs_when_holder_stays_busy() -> TestResult {
 }
 
 #[test]
-fn s7c_kooldown_aid_probe_exhaustion_keeps_cube_use_pending() -> TestResult {
+fn s7c_kooldown_aid_probe_exhaustion_refuses_fresh_cube_use() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -136,7 +146,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 ),
                 (
                     "stage=kooldown_aid_receipt",
-                    matches!(case, Case::AidProbeExhausted),
+                    matches!(case, Case::AidProbeExhausted | Case::RefillHolderBusy),
                 ),
             ] {
                 let exhausted = lines.iter().any(|line| {
@@ -163,6 +173,7 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         Case::CoinCommitted => ("s7c_coin_committed", &[(GOLD, 100)]),
         Case::CoinNotApplied => ("s7c_coin_not_applied", &[(GOLD, 100)]),
         Case::UseLaneFenced => ("s7c_use_lane_fenced", &[(PRIMAL_BAG, 1)]),
+        Case::RefillHolderBusy => ("c16d_refill_holder_busy", &[(ULTIMATE_MANA_POTION, 1)]),
     };
     let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
     let result = exercise(&h, case, entries).await;
@@ -174,7 +185,15 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 }
 
 async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResult {
-    let recovery = if matches!(case, Case::Gold | Case::CubeShort | Case::UseLaneFenced) {
+    let recovery = if matches!(
+        case,
+        Case::Gold
+            | Case::CubeShort
+            | Case::CubeExhausted
+            | Case::AidProbeExhausted
+            | Case::UseLaneFenced
+            | Case::RefillHolderBusy
+    ) {
         prepare_current_session(h).await?;
         None
     } else {
@@ -359,6 +378,37 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 client.shutdown().await?;
                 Ok(None)
             }
+            Case::RefillHolderBusy => {
+                let potion = definition(ULTIMATE_MANA_POTION)?;
+                let item = inventory
+                    .iter()
+                    .find(|item| item.item_definition_ref == potion)
+                    .ok_or("carried refill potion")?;
+                for command_id in 1..=2 {
+                    send_use(&mut client, 1, command_id, UseTarget::Item(item.handle)).await?;
+                    assert_eq!(
+                        read_use(&mut client, command_id).await?,
+                        (CommandStatus::Rejected, UseDisposition::Rejected)
+                    );
+                }
+                client.shutdown().await?;
+                Ok(None)
+            }
+            Case::CubeExhausted | Case::AidProbeExhausted => {
+                send_use(
+                    &mut client,
+                    1,
+                    1,
+                    UseTarget::ItemByDefinition(definition(DROME_CUBE_KEY)?),
+                )
+                .await?;
+                assert_eq!(
+                    read_use(&mut client, 1).await?,
+                    (CommandStatus::Rejected, UseDisposition::Rejected)
+                );
+                client.shutdown().await?;
+                Ok(None)
+            }
             _ => {
                 let target = if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
                     let gold = definition(GOLD)?;
@@ -412,6 +462,7 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             );
         }
         Case::CubeExhausted | Case::AidProbeExhausted => {
+            assert_eq!(retained.continuity.next_command_id, 2);
             assert_eq!(
                 count(h, "SELECT count(*) FROM game_drome_cube_uses").await?,
                 0
@@ -446,6 +497,22 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 .ok_or("durable backpack")?;
             assert!(bag.entries.iter().any(|entry| {
                 entry.item.definition.production_key == PRIMAL_BAG && entry.item.quantity == 1
+            }));
+        }
+        Case::RefillHolderBusy => {
+            assert_eq!(retained.continuity.next_command_id, 3);
+            assert_eq!(
+                count(h, "SELECT count(*) FROM game_item_use_records").await?,
+                0
+            );
+            let backpack = h
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await?
+                .ok_or("durable backpack")?;
+            assert!(backpack.entries.iter().any(|entry| {
+                entry.item.definition.production_key == ULTIMATE_MANA_POTION
+                    && entry.item.quantity == 1
             }));
         }
     }
@@ -651,7 +718,10 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
                     .use_drome_cube(actor, command, intent, source)
                     .await
             };
-            if matches!(self.case, Case::CubeExhausted | Case::AidProbeExhausted) {
+            if matches!(
+                self.case,
+                Case::CubeExhausted | Case::AidProbeExhausted | Case::RefillHolderBusy
+            ) {
                 assert!(started.elapsed() >= COMMAND_HOLDER_WINDOW / 2);
             }
             result
@@ -669,7 +739,7 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
             }
             Case::Gold | Case::CoinCommitted | Case::CoinNotApplied => return using.await,
             Case::CubeShort => Duration::from_millis(100),
-            Case::CubeExhausted | Case::AidProbeExhausted => {
+            Case::CubeExhausted | Case::AidProbeExhausted | Case::RefillHolderBusy => {
                 COMMAND_HOLDER_WINDOW + Duration::from_millis(200)
             }
         };

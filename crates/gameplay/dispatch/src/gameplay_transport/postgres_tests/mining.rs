@@ -12,6 +12,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
 use postgres_fixture::{Harness, TestResult, configured_admin, debug, id, item_fence};
+use std::cell::Cell;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
@@ -26,6 +27,15 @@ mod wire;
 
 #[test]
 fn mining_pick_refining_commits_and_replays_through_real_wire_on_postgres() -> TestResult {
+    run_postgres(false)
+}
+
+#[test]
+fn i12_pick_refine_retries_inventory_after_committed_reply_postgres() -> TestResult {
+    run_postgres(true)
+}
+
+fn run_postgres(retry_projection: bool) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -34,7 +44,7 @@ fn mining_pick_refining_commits_and_replays_through_real_wire_on_postgres() -> T
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|e| e.to_string())?
-                .block_on(fixture::scenario(admin))
+                .block_on(fixture::scenario(admin, retry_projection))
                 .map_err(|e| e.to_string())
         })?
         .join()
@@ -42,13 +52,30 @@ fn mining_pick_refining_commits_and_replays_through_real_wire_on_postgres() -> T
         .map_err(Into::into)
 }
 
-struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
+struct WireOwner<'a, 'b, 'f, 's> {
+    owner: &'a ComposedFreshAdmission<'b, 'f, 's>,
+    fault_after_commit: bool,
+    reject_next_projection: Cell<bool>,
+    rejected_projections: Cell<usize>,
+}
+
+impl<'a, 'b, 'f, 's> WireOwner<'a, 'b, 'f, 's> {
+    fn new(owner: &'a ComposedFreshAdmission<'b, 'f, 's>, fault_after_commit: bool) -> Self {
+        Self {
+            owner,
+            fault_after_commit,
+            reject_next_projection: Cell::new(false),
+            rejected_projections: Cell::new(0),
+        }
+    }
+}
+
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     async fn observe(
         &self,
         actor: ExactActorRef,
     ) -> Option<crate::gameplay_transport::world_spatial::WorldSpatialObservation> {
-        self.0.observe(actor).await
+        self.owner.observe(actor).await
     }
     async fn admit(
         &self,
@@ -62,19 +89,27 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         _: GameSessionId,
     ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
         let bag = self
-            .0
+            .owner
             .root
-            .read_character_backpack(self.0.character, item_fence().ok()?.character_id)
+            .read_character_backpack(self.owner.character, item_fence().ok()?.character_id)
             .await
             .ok()?;
-        let runtime = self.0.runtime.lock().await;
+        let runtime = self.owner.runtime.lock().await;
         let index = crate::gameplay_transport::item_ref_admission::pinned_index(
             &runtime,
-            self.0.active_generation,
+            self.owner.active_generation,
         )?;
-        crate::gameplay_transport::item_view::inventory_from_backpack(bag.as_ref(), |d| {
-            crate::gameplay_transport::item_ref_admission::definition_ref(index, d)
-        })
+        let mut observed =
+            crate::gameplay_transport::item_view::inventory_from_backpack(bag.as_ref(), |d| {
+                crate::gameplay_transport::item_ref_admission::definition_ref(index, d)
+            })?;
+        if self.reject_next_projection.replace(false) {
+            // The first post-commit observation cannot be encoded by domain 9.
+            observed.entries.extend_from_within(..);
+            self.rejected_projections
+                .set(self.rejected_projections.get() + 1);
+        }
+        Some(observed)
     }
     async fn observe_container(
         &self,
@@ -82,7 +117,7 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
         target: ItemKey,
     ) -> Option<crate::gameplay_transport::container_view::ContainerObservation> {
-        self.0.observe_container(actor, fence, target).await
+        self.owner.observe_container(actor, fence, target).await
     }
     async fn use_pick(
         &self,
@@ -92,9 +127,14 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
-        self.0
+        let outcome = self
+            .owner
             .use_pick(actor, command, intent, source, target)
-            .await
+            .await?;
+        if self.fault_after_commit && outcome.disposition == UseDisposition::Committed {
+            self.reject_next_projection.set(true);
+        }
+        Some(outcome)
     }
 }
 

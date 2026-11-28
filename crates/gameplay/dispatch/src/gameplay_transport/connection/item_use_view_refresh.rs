@@ -1,6 +1,7 @@
 //! Send the inventory and open-container changes of one committed USE in the same turn.
 
 use super::*;
+use crate::gameplay_transport::item_view::ItemViewError;
 
 pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
@@ -19,9 +20,15 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         // read later; every subsequent item write still revalidates its own authority.
         return Some(());
     };
-    let changed = view.inventory_committed(inventory);
+    let changed = match view.inventory_committed(inventory) {
+        Ok(changed) => changed,
+        // A rejected projection leaves its previous handles and revision live.
+        // Retry from a fresh read after the already delivered command result.
+        Err(ItemViewError::Encode | ItemViewError::LimitExceeded) => return Some(()),
+        Err(ItemViewError::Exhausted) => return None,
+    };
     admitted.continuity.item_view = view.continuity();
-    let mut deltas: Vec<_> = changed.ok()?.into_iter().collect();
+    let mut deltas: Vec<_> = changed.into_iter().collect();
     view.inventory_refresh_pending = false;
     if let Some(views) = views {
         let refreshed = super::super::container_view::refresh::refresh(
