@@ -13,8 +13,6 @@ use sqlx::Connection;
 // Keep the expected wire ID independent of the production eligibility evaluator.
 pub(super) const ROW_INDEX: usize = 278;
 const EXPECTED_BADGES: [u8; 1] = [9];
-const SEEDED_LEVEL: i64 = 501;
-const SEEDED_EXPERIENCE: i64 = 2_070_900_000;
 
 /// The reply is `count:u8` followed by `count` strictly ascending known badge ids.
 fn decode_badges(payload: &[u8]) -> Result<Vec<u8>, String> {
@@ -63,8 +61,59 @@ async fn stored_badges(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, i64)>>
     .await?)
 }
 
+async fn seed_level(
+    clients: &SeamClients<'_>,
+    client: &DevClientSession,
+    profile: &str,
+    expected: (i64, i64),
+) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let vocation: String = sqlx::query_scalar(
+        "SELECT vocation FROM game_character_build_state
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    expect(vocation == "knight", "bootstrap-vocation", &vocation)?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        profile.into(),
+    )
+    .await?;
+    let progression: (i64, i64) = sqlx::query_as(
+        "SELECT level, total_experience FROM game_character_progression_state
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    expect(progression == expected, "seeded-progression", (expected, progression))
+}
+
+async fn expect_account_levels(clients: &SeamClients<'_>, expected: &[i64]) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let levels: Vec<i64> = sqlx::query_scalar(
+        "SELECT COALESCE(p.level, 1)
+         FROM game_character_roots r
+         LEFT JOIN game_character_progression_state p USING (character_id)
+         WHERE r.account_id=$1::uuid ORDER BY 1 LIMIT 3",
+    )
+    .bind(&clients.accounts[0])
+    .fetch_all(&mut database)
+    .await?;
+    expect(levels == expected, "account-levels", (expected, &levels))
+}
+
 async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
-    let fixture = character_prep::dedicated_character(scope, "NODE_BOOT_P12B_ACCOUNT").await?;
+    let fixture = character_prep::dedicated_named_character(
+        scope, "NODE_BOOT_P12B_ACCOUNT", Some("Badge Knight"),
+    ).await?;
+    let peer = character_prep::dedicated_named_character(
+        scope, "NODE_BOOT_P12B_ACCOUNT", Some("Badge Peer"),
+    ).await?;
+    let peer_clients = &peer.clients(scope);
     let clients = &fixture.clients(scope);
     let account = crate::node::uuid_bytes(&clients.accounts[0]).ok_or("invalid q_p12b account")?;
     let mut timestamp = [0; 8];
@@ -99,41 +148,22 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         &unqualified_stored,
     )?;
 
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let vocation: String = sqlx::query_scalar(
-        "SELECT vocation FROM game_character_build_state
-         WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .fetch_one(&mut database)
-    .await?;
-    expect(vocation == "knight", "bootstrap-vocation", &vocation)?;
-
     character_prep::declare_seeded(
-        "P12b.full",
-        "knight-level-501",
-        "Cyclopedia level-sum badge",
+        "P12b.full", "knight-level-499,knight-peer-level-2", "Cyclopedia level-sum badge",
     );
+    seed_level(clients, &client, "p12b-knight", (499, 2_046_099_400)).await?;
+    expect_account_levels(clients, &[1, 499]).await?;
+    let boundary = reply_badges(&mut client).await?;
+    expect(boundary.is_empty(), "level-sum-500-reply", &boundary)?;
+    let boundary_rows = stored_badges(clients).await?;
+    expect(boundary_rows.is_empty(), "level-sum-500-storage", &boundary_rows)?;
+    logout(clients, &mut client).await?;
+
+    let mut client = connect_character(peer_clients, 0xc3, 0).await?;
     let session = client.join_snapshot().game_session_id;
-    request_fixture_control(
-        uuid_text(session.as_bytes()),
-        "--profile",
-        "p12b-knight".into(),
-    )
-    .await?;
-    let progression: (i64, i64) = sqlx::query_as(
-        "SELECT level, total_experience FROM game_character_progression_state
-         WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .fetch_one(&mut database)
-    .await?;
-    database.close().await?;
-    expect(
-        progression == (SEEDED_LEVEL, SEEDED_EXPERIENCE),
-        "seeded-progression",
-        progression,
-    )?;
+    seed_level(peer_clients, &client, "p12b-peer", (2, 100)).await?;
+    expect_account_levels(peer_clients, &[2, 499]).await?;
+    let clients = peer_clients;
     let before_award = stored_badges(clients).await?;
     expect(before_award.is_empty(), "badge-pre-request", &before_award)?;
 
@@ -189,7 +219,7 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     Ok((
         "PASS",
-        format!("badges={reply:?};seeded-level=501;pre-state-empty;original-awards-survive-relog"),
+        format!("badges={reply:?};account-levels=499+2;level-sum-500-empty;pre-state-empty;original-awards-survive-relog"),
     ))
 }
 
