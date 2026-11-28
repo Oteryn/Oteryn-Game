@@ -1,5 +1,6 @@
 """Fixed token recipes from Crystal Server 201189f8 (OTS_HYPOTHESIS_ONLY)."""
 
+import argparse
 import hashlib
 import json
 import re
@@ -38,6 +39,13 @@ CLEDWYN = (
     ("arcanomancer sigil", 39185, 5, 39183),
     ("arboreal ring", 39188, 5, 39187),
     ("turtle amulet", 39235, 2, 39233),
+    ("merudri brooch", 50156, 2, 50154),
+    ("ethereal ring", 50149, 5, 50147),
+    ("flamingo amulet of valor", 54510, 5, 53197),
+    ("flamingo amulet of precision", 54511, 5, 53199),
+    ("flamingo amulet of destruction", 54512, 5, 53201),
+    ("flamingo amulet of nature", 54513, 5, 53203),
+    ("swan amulet of balance", 54514, 5, 53205),
 )
 
 GNOMALLY = (
@@ -96,6 +104,8 @@ JORGE = (
     ("shield of endless search", 19083, 20, 37060),
     ("the mexcalibur", 19083, 20, 19154),
     ("tibiora's box", 19083, 20, 43510),
+    ("love elixir", 19083, 20, 49272),
+    ("chaos critical dice", 19083, 20, 49273),
 )
 
 RUPRECHT = (
@@ -121,6 +131,10 @@ RUPRECHT = (
     ("raccoon santa", 6526, 250, 35692),
     ("santa fox", 6526, 250, 27591),
     ("santa leech", 6526, 250, 32746),
+    ("santa ahau", 6526, 250, 42175),
+    ("draccoon santa", 6526, 250, 44755),
+    ("arbaziloth santa", 6526, 250, 50124),
+    ("ancient bonelord santa", 6526, 250, 52725),
 )
 
 
@@ -282,22 +296,31 @@ def append(add, callbacks, offers):
     quest_line = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line"
     tracks = json.loads((root / BIGFOOT_RULES).read_text())["tracks"]
     declaration = next(row for row in tracks if row["key"] == quest_line)
-    for minimum, maximum, reply, preserve in (
-        (declaration["min"], 24, replies[133], True),
-        (25, declaration["max"], ["Renown exchanges are unavailable."], False),
-    ):
-        offer(
-            "gnomally",
-            "relations",
-            0,
-            0,
-            reply,
-            msg_contains=True,
-            any_topic=True,
-            preserve_topic=preserve,
-            reward_order="before",
-            requires=[{"track": quest_line, "minimum": minimum, "maximum": maximum}],
-        )
+    offer(
+        "gnomally",
+        "relations",
+        0,
+        0,
+        replies[133],
+        msg_contains=True,
+        any_topic=True,
+        preserve_topic=True,
+        reward_order="before",
+        requires=[{"track": quest_line, "minimum": declaration["min"], "maximum": 24}],
+    )
+    offer(
+        "gnomally",
+        "relations",
+        0,
+        0,
+        [],
+        msg_contains=True,
+        any_topic=True,
+        preserve_topic=False,
+        reward_order="before",
+        source_dialogue=True,
+        requires=[{"track": quest_line, "minimum": 25, "maximum": declaration["max"]}],
+    )
     offer(
         "gnomally",
         "items",
@@ -360,7 +383,10 @@ def append(add, callbacks, offers):
     # The existing Abacus commission owns a distinct conversation and state.
     catalogue = [JORGE[start : start + 9] for start in range(0, len(JORGE), 9)]
     for row in offers:
-        if row["npc"] == "oteryn:npc.jorge" and row["keywords"] == ["replica rewards", "souvenir"]:
+        if row["npc"] == "oteryn:npc.jorge" and row["keywords"] == [
+            "replica rewards",
+            "souvenir",
+        ]:
             row["keywords"] = ["replica rewards"]
     offer(
         "jorge",
@@ -469,3 +495,73 @@ def vampire_offers(root):
             }
         )
     return {"schema": 1, "offers": offers}
+
+
+RENOWN_RULES = "content/dialogues/quest-rules-supplemental/gnomally-renown.json"
+
+
+def renown_rules(root):
+    original = json.loads((root / BIGFOOT_RULES).read_text())
+    source = SOURCES["gnomally"].split(":sha256:")[0].rsplit(":", 1)[0]
+    prefix = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/"
+    npc = "oteryn:npc.gnomally"
+    rules = []
+    for name, keywords, topics, line in [
+        ("relations", ["relations"], None, 126),
+        ("ask", ["yes"], [121], 169),
+        ("quote", [], [122], 135),
+        ("confirm", ["yes"], None, 174),
+        ("cancel", ["no"], None, 186),
+    ]:
+        rules.append(
+            {
+                "key": "oteryn:quest-npc/gnomally-renown/" + name,
+                "quest": original["quest"],
+                "npc": npc,
+                "trigger": "say",
+                "keyword_mode": "msg_contains",
+                "keywords": keywords,
+                "any_message": not keywords,
+                "topics": topics,
+                "guards": [
+                    {
+                        "kind": "storage",
+                        "track": prefix + "quest_line",
+                        "op": "ge",
+                        "value": 25,
+                    }
+                ],
+                "effects": [{"kind": "gnomally_renown", "action": name}],
+                "sources": [f"{source}:{line}"],
+            }
+        )
+    return {
+        "schema": 1,
+        "program_key": "oteryn:quest-npc-program.gnomally-renown",
+        "quest": original["quest"],
+        "tracks": [
+            r
+            for r in original["tracks"]
+            if r["key"] in (prefix + "rank", prefix + "quest_line")
+        ],
+        "rules": rules,
+        "source_files": [
+            r
+            for r in original["source_files"]
+            if r["path"].endswith(("gnomally.lua", "storages.lua"))
+        ],
+    }
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Capture Gnomally's renown programme")
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[3]
+    path = root / RENOWN_RULES
+    capture = json.dumps(renown_rules(root), ensure_ascii=False, indent=2) + "\n"
+    if args.check:
+        if path.read_text() != capture:
+            raise SystemExit("Gnomally renown rules are stale")
+    else:
+        path.write_text(capture)

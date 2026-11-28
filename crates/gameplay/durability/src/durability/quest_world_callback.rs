@@ -1245,7 +1245,12 @@ pub(super) async fn consume_npc_inputs(
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
-            if *total > 100 && !all_postman_bones {
+            let renown_tokens = plan.selected_rule_keys.as_slice()
+                == ["oteryn:quest-npc/gnomally-renown/confirm"]
+                && item == "oteryn:item.tibia.i16128"
+                && subtype.is_none()
+                && *total <= 50_000;
+            if *total > 100 && !all_postman_bones && !renown_tokens {
                 return Ok(false);
             }
         }

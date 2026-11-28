@@ -1805,7 +1805,7 @@
       "next_topic": 1,
       "storage": [],
       "reply": [
-        "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
+        "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}, {merudri brooch}, {ethereal ring}, {flamingo amulet of valor}, {flamingo amulet of precision}, {flamingo amulet of destruction}, {flamingo amulet of nature}, {swan amulet of balance}. Which item?"
       ],
       "any_topic": true,
       "reward_order": "before",
@@ -1874,6 +1874,78 @@
     {
       "npc": "oteryn:npc.cledwyn",
       "keywords": [
+        "ethereal ring"
+      ],
+      "topic": 1,
+      "next_topic": 112,
+      "storage": [],
+      "reply": [
+        "Should I enchant the ethereal ring for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "flamingo amulet of destruction"
+      ],
+      "topic": 1,
+      "next_topic": 115,
+      "storage": [],
+      "reply": [
+        "Should I enchant the flamingo amulet of destruction for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "flamingo amulet of nature"
+      ],
+      "topic": 1,
+      "next_topic": 116,
+      "storage": [],
+      "reply": [
+        "Should I enchant the flamingo amulet of nature for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "flamingo amulet of precision"
+      ],
+      "topic": 1,
+      "next_topic": 114,
+      "storage": [],
+      "reply": [
+        "Should I enchant the flamingo amulet of precision for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "flamingo amulet of valor"
+      ],
+      "topic": 1,
+      "next_topic": 113,
+      "storage": [],
+      "reply": [
+        "Should I enchant the flamingo amulet of valor for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "merudri brooch"
+      ],
+      "topic": 1,
+      "next_topic": 111,
+      "storage": [],
+      "reply": [
+        "Should I enchant the merudri brooch for 2 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
         "pendulet"
       ],
       "topic": 1,
@@ -1917,6 +1989,18 @@
       "storage": [],
       "reply": [
         "Should I enchant the spiritthorn ring for 5 silver tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "swan amulet of balance"
+      ],
+      "topic": 1,
+      "next_topic": 117,
+      "storage": [],
+      "reply": [
+        "Should I enchant the swan amulet of balance for 5 silver tokens?"
       ]
     },
     {
@@ -2066,6 +2150,97 @@
         "no"
       ],
       "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 111,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 112,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 113,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 114,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 115,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 116,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 117,
       "next_topic": 0,
       "storage": [],
       "reply": [
@@ -3124,12 +3299,11 @@
       "topic": 0,
       "next_topic": 0,
       "storage": [],
-      "reply": [
-        "Renown exchanges are unavailable."
-      ],
+      "reply": [],
       "any_topic": true,
       "preserve_topic": false,
       "reward_order": "before",
+      "source_dialogue": true,
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
@@ -4706,7 +4880,7 @@
         "{draken doll}, {emblem}, {encyclopedia}, {friendship amulet}, {frozen heart}, {golden falcon}, {golden newspaper}, {goromaphone}, {hand puppets}",
         "{imortus}, {jade amulet}, {key of numerous locks}, {little adventurer doll}, {loremaster doll}, {lucky clover amulet}, {mathmaster shield}, {medusa skull}, {music box}",
         "{noble sword}, {norseman doll}, {old radio}, {orc's jaw shredder}, {phoenix statue}, {pigeon trophy}, {shield of destiny}, {shield of endless search}, {the mexcalibur}",
-        "{tibiora's box}"
+        "{tibiora's box}, {love elixir}, {chaos critical dice}"
       ],
       "any_topic": true,
       "reward_order": "before",
@@ -6768,6 +6942,30 @@
     {
       "npc": "oteryn:npc.ruprecht",
       "keywords": [
+        "ancient bonelord santa"
+      ],
+      "topic": 0,
+      "next_topic": 126,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for ancient bonelord santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "arbaziloth santa"
+      ],
+      "topic": 0,
+      "next_topic": 125,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for arbaziloth santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
         "christmas cookie tray"
       ],
       "topic": 0,
@@ -6775,6 +6973,18 @@
       "storage": [],
       "reply": [
         "Would you exchange 1 Christmas token for christmas cookie tray?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "draccoon santa"
+      ],
+      "topic": 0,
+      "next_topic": 124,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for draccoon santa?"
       ]
     },
     {
@@ -6885,7 +7095,8 @@
         "I have these offers:",
         "{gingerbreadman}, {christmas cookie tray}, {gingerbread recipe}, {jewel case}, {santa hat}, {santa backpack}, {snow flake tapestry}, {santa doll}",
         "{snowman doll}, {snow globe}, {frazzlemaw santa}, {leaf golem santa}, {santa music box}, {santa teddy}, {maxxen santa}, {present bag}",
-        "{ferumbras' teddy santa}, {nightmare beast santa}, {orclops santa}, {raccoon santa}, {santa fox}, {santa leech}"
+        "{ferumbras' teddy santa}, {nightmare beast santa}, {orclops santa}, {raccoon santa}, {santa fox}, {santa leech}, {santa ahau}, {draccoon santa}",
+        "{arbaziloth santa}, {ancient bonelord santa}"
       ],
       "any_topic": true,
       "preserve_topic": true,
@@ -6926,6 +7137,18 @@
       "storage": [],
       "reply": [
         "Would you exchange 250 Christmas tokens for raccoon santa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "santa ahau"
+      ],
+      "topic": 0,
+      "next_topic": 123,
+      "storage": [],
+      "reply": [
+        "Would you exchange 250 Christmas tokens for santa ahau?"
       ]
     },
     {

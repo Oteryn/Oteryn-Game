@@ -57,6 +57,52 @@ fn i05_crystal_timed_equipment_budgets_match() {
     }
 }
 
+#[test]
+fn cledwyn_exchange_rewards_equip_and_expire_to_the_discharged_item() {
+    let controller = native();
+    let native = native_state(&controller);
+    let callbacks =
+        oteryn_gameplay_quests::quest::reward_callbacks::load().expect("exchange recipes");
+    for (dormant, worn, seconds, discharged) in [
+        (30344, 30345, 7200, 29429),
+        (30342, 30343, 3600, 29428),
+        (31557, 31616, 3600, 31621),
+        (30403, 30402, 7200, 30401),
+        (32621, 32635, 7200, 32636),
+        (39177, 39178, 10800, 39179),
+        (39180, 39181, 10800, 39182),
+        (39183, 39184, 10800, 39185),
+        (39233, 39234, 7200, 39235),
+        (50147, 50148, 10800, 50149),
+        (50154, 50155, 7200, 50156),
+    ] {
+        let recipe = callbacks
+            .iter()
+            .find(|r| r.key == format!("oteryn:quest-reward/cledwyn-exchange-{dormant}"))
+            .expect("paid recipe");
+        assert!(recipe.take.iter().any(|r| r.item == key(discharged)));
+        assert_eq!(
+            recipe.give.as_ref().expect("enchanted reward").item,
+            key(dormant)
+        );
+        let definition = typed_of(native, dormant).expect("carried definition");
+        let equipped = equipped_definition(native, &definition).expect("worn definition");
+        assert_eq!(equipped.production_key, key(worn));
+        let (budget, target) = facts(native, &definition).expect("worn item clock");
+        assert_eq!(budget.full.remaining_ms(), Some(seconds * 1000));
+        assert_eq!(
+            target.expect("expiry target").definition.production_key,
+            key(discharged)
+        );
+        assert_eq!(
+            transform(native, &equipped, ReferenceTransformKind::Deequip)
+                .expect("unequip")
+                .production_key,
+            definition.production_key
+        );
+    }
+}
+
 /// Stone skin amulet 3081: Crystal `charges` 5, no duration, removed when spent.
 #[test]
 fn i05_crystal_charged_amulet_matches() {

@@ -41,3 +41,21 @@ END $migration$;
 
 REVOKE ALL ON FUNCTION game_quest_npc_reward_claim_key(JSONB,TEXT,UUID,UUID,NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_quest_npc_reward_claim_key(JSONB,TEXT,UUID,UUID,NUMERIC) TO oteryn_game_runtime;
+
+-- A confirmed renown exchange may consume several locked minor-token stacks.
+DO $migration$
+DECLARE
+    body TEXT := pg_get_functiondef('game_quest_npc_typed_item_complete()'::regprocedure);
+    old_case CONSTANT TEXT := $cap$CASE WHEN NEW.transition_key='oteryn:quest-npc/postman/kevin/bones_complete'$cap$;
+    renown_case CONSTANT TEXT := $cap$CASE WHEN NEW.transition_key='oteryn:quest-npc/gnomally-renown/confirm'
+                         AND NEW.plan->>'quest'='oteryn:quest.bigfoot_s_burden_quest'
+                         AND NEW.plan->>'npc'='oteryn:npc.gnomally'
+                         AND e->>'item'='oteryn:item.tibia.i16128'
+                         AND e->>'subtype' IS NULL THEN 50000
+                    WHEN NEW.transition_key='oteryn:quest-npc/postman/kevin/bones_complete'$cap$;
+BEGIN
+    IF length(body)-length(replace(body,old_case,'')) <> length(old_case) THEN
+        RAISE EXCEPTION 'unexpected NPC typed-input proof for renown';
+    END IF;
+    EXECUTE replace(body,old_case,renown_case);
+END $migration$;

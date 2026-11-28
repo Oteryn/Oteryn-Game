@@ -486,6 +486,13 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 8192).await?, 50);
     assert_eq!(quantity(h, 8191).await?, 1);
     assert_eq!(experience(h).await?, xp);
+    let achievements: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/razing'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        achievements, 1,
+        "the final rank and its replay grant Razing! once"
+    );
     // Keep the verified rewards while making room for the next dialogue cases.
     stow_completed_exchanges(owner, admitted).await?;
     for (index, (npc, key, words, inputs, output, expected)) in [
@@ -624,6 +631,34 @@ pub(super) async fn exercise(
         }
     }
     assert!(regressions.is_empty(), "{regressions:#?}");
+    // An existing Bigfoot recruit can trade a quoted quantity across a rank boundary.
+    const LINE: &str = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line";
+    const RENOWN: &str = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank";
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (key, value) in [(LINE, 25_i64), (RENOWN, 22)] {
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.bigfoot_s_burden_quest',$3,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+            .bind(id(41).as_slice()).bind(key).bind(value).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    owner.admit_quest_session(admitted).await;
+    mint(owner, admitted, 16128, 2, 998_000).await?;
+    let before = quantity(h, 16128).await?;
+    for (i, word) in ["bye", "hi", "relations", "yes", "2", "yes"]
+        .iter()
+        .enumerate()
+    {
+        super::qengine_rewards_fixtures::talk(owner, admitted, gnomally, 998_001 + i as u64, word)
+            .await?;
+    }
+    assert_eq!(track(h, RENOWN).await?, Some(32));
+    assert_eq!(track(h, LINE).await?, Some(26));
+    assert_eq!(quantity(h, 16128).await?, before - 2);
+    super::qengine_rewards_fixtures::talk(owner, admitted, gnomally, 998_006, "yes").await?;
+    assert_eq!(quantity(h, 16128).await?, before - 2);
+    assert_eq!(track(h, RENOWN).await?, Some(32));
 
     Ok(())
 }

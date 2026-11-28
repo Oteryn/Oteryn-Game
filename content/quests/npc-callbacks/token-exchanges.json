@@ -393,6 +393,279 @@
       "clear_topic_on_refusal": true
     },
     {
+      "key": "oteryn:quest-reward/cledwyn-exchange-50147",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 112,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i50149",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i50147",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your ethereal ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted ethereal ring and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-50154",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 111,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i50156",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i50154",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your merudri brooch."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted merudri brooch and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-53197",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 113,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54510",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i53197",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your flamingo amulet of valor."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted flamingo amulet of valor and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-53199",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 114,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54511",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i53199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your flamingo amulet of precision."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted flamingo amulet of precision and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-53201",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 115,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54512",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i53201",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your flamingo amulet of destruction."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted flamingo amulet of destruction and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-53203",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 116,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54513",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i53203",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your flamingo amulet of nature."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted flamingo amulet of nature and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-53205",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 117,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54514",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i53205",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your swan amulet of balance."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted swan amulet of balance and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
       "key": "oteryn:quest-reward/gnomally-exchange-16094",
       "quest": "oteryn:quest.bigfoot_s_burden_quest",
       "npc": "oteryn:npc.gnomally",
@@ -2213,6 +2486,76 @@
       "clear_topic_on_refusal": true
     },
     {
+      "key": "oteryn:quest-reward/jorge-exchange-49272",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "love elixir"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i49272",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 love elixir."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-49273",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "chaos critical dice"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i49273",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 chaos critical dice."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
       "key": "oteryn:quest-reward/ruprecht-exchange-10338",
       "quest": "oteryn:quest.present_quest",
       "npc": "oteryn:npc.ruprecht",
@@ -2797,6 +3140,146 @@
       "achievement": null,
       "reply": [
         "Thank you, here is your raccoon santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-42175",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 123,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i42175",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa ahau."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-44755",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 124,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i44755",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your draccoon santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-50124",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 125,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i50124",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your arbaziloth santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-52725",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 126,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i52725",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your ancient bonelord santa."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"

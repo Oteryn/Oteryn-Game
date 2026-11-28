@@ -913,7 +913,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         include_str!("../../../../../content/quests/world-callbacks/wrath-city.json"),
         true,
     )?);
-    callbacks.extend(parse(include_str!("../../../../../content/quests/world-callbacks/hunting-tasks.json"))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/hunting-tasks.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/tibia-tales.json"
     ))?);

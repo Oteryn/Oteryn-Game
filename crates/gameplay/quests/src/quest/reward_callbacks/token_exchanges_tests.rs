@@ -49,6 +49,13 @@ fn cledwyn_exchange_recipes() -> Result<(), String> {
             ("arcanomancer sigil", 39185, 5, 39183),
             ("arboreal ring", 39188, 5, 39187),
             ("turtle amulet", 39235, 2, 39233),
+            ("merudri brooch", 50156, 2, 50154),
+            ("ethereal ring", 50149, 5, 50147),
+            ("flamingo amulet of valor", 54510, 5, 53197),
+            ("flamingo amulet of precision", 54511, 5, 53199),
+            ("flamingo amulet of destruction", 54512, 5, 53201),
+            ("flamingo amulet of nature", 54513, 5, 53203),
+            ("swan amulet of balance", 54514, 5, 53205),
         ],
     )
 }
@@ -119,6 +126,8 @@ fn jorge_exchange_recipes() -> Result<(), String> {
             ("shield of endless search", 19083, 20, 37060),
             ("the mexcalibur", 19083, 20, 19154),
             ("tibiora's box", 19083, 20, 43510),
+            ("love elixir", 19083, 20, 49272),
+            ("chaos critical dice", 19083, 20, 49273),
         ],
     )
 }
@@ -150,6 +159,10 @@ fn ruprecht_exchange_recipes() -> Result<(), String> {
             ("raccoon santa", 6526, 250, 35692),
             ("santa fox", 6526, 250, 27591),
             ("santa leech", 6526, 250, 32746),
+            ("santa ahau", 6526, 250, 42175),
+            ("draccoon santa", 6526, 250, 44755),
+            ("arbaziloth santa", 6526, 250, 50124),
+            ("ancient bonelord santa", 6526, 250, 52725),
         ],
     )
 }
@@ -243,5 +256,97 @@ fn jorge_matches_a_souvenir_inside_the_live_request() -> Result<(), String> {
         .ok_or("music box souvenir")?;
     assert!(music_box.matches_keyword("I'd like a music box"));
     assert!(!music_box.matches_keyword("I'd like an xmusic box"));
+    Ok(())
+}
+
+#[test]
+fn gnomally_confirms_the_quoted_quantity_and_recalculates_rank() -> Result<(), String> {
+    use crate::quest::npc_rules::{
+        NpcInventorySnapshot, NpcItemKey, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    use std::collections::BTreeMap;
+    let loaded = crate::quest::loader::load_embedded_quest_state("gnomally-renown")
+        .map_err(|e| format!("{e:?}"))?;
+    let npc = "oteryn:npc.gnomally";
+    let source = NpcRuleCatalog::runtime()
+        .map_err(|e| e.to_string())?
+        .admitted_for_npc(npc, loaded.catalogue())
+        .map_err(|e| e.to_string())?
+        .ok_or("Gnomally")?;
+    let line = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line";
+    let rank = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank";
+    let token = NpcItemKey {
+        item: "oteryn:item.tibia.i16128".into(),
+        subtype: None,
+    };
+    let mut inventory = NpcInventorySnapshot::default();
+    inventory.items.insert(token.clone(), 2);
+    let tracks = BTreeMap::from([(line.to_owned(), 25), (rank.to_owned(), 22)]);
+    let input = NpcRuleInput {
+        npc,
+        trigger: NpcRuleTrigger::Say,
+        message: "relations",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &inventory,
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 1,
+        premium_current: false,
+        level: 1,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &Default::default(),
+    };
+    let mut topic = 0;
+    for (message, expected) in [("relations", 121), ("yes", 122), ("2", 1002)] {
+        let plan = source
+            .plan_item_exchange(&NpcRuleInput {
+                message,
+                topic,
+                ..input
+            })
+            .map_err(|e| e.to_string())?
+            .ok_or(message)?;
+        topic = plan.next_topic;
+        assert_eq!(topic, expected);
+        assert!(plan.track_changes.is_empty());
+        assert_eq!(plan.inventory_after.items.get(&token), Some(&2));
+    }
+    let confirm = NpcRuleInput {
+        message: "yes",
+        topic,
+        ..input
+    };
+    let settled = source
+        .plan_item_exchange(&confirm)
+        .map_err(|e| e.to_string())?
+        .ok_or("settlement")?;
+    assert_eq!(
+        settled
+            .inventory_after
+            .items
+            .get(&token)
+            .copied()
+            .unwrap_or(0),
+        0
+    );
+    for (key, value) in [(rank, 32), (line, 26)] {
+        assert!(
+            settled
+                .track_changes
+                .iter()
+                .any(|c| c.key == key && c.after == value)
+        );
+    }
+    let short = source
+        .plan_item_exchange(&NpcRuleInput {
+            inventory: &Default::default(),
+            ..confirm
+        })
+        .map_err(|e| e.to_string())?
+        .ok_or("short payment")?;
+    assert_eq!(short.next_topic, 0);
+    assert!(short.track_changes.is_empty());
     Ok(())
 }

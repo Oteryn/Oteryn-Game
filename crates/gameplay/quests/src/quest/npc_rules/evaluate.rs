@@ -6,6 +6,9 @@ use super::{
     NpcRuleProgram, NpcTrackChange, NpcTrackDefinition, keyword,
 };
 
+#[path = "renown.rs"]
+mod renown;
+
 struct Staged<'a> {
     definitions: BTreeMap<&'a str, &'a NpcTrackDefinition>,
     original: &'a BTreeMap<String, i64>,
@@ -152,7 +155,8 @@ impl<'a> Staged<'a> {
     /// `false` means an optional source removeItem failed and made no change.
     fn effect(&mut self, effect: &NpcRuleEffect, now: i64) -> Result<bool, NpcRuleError> {
         match effect {
-            NpcRuleEffect::BigfootMatchmakerTarget
+            NpcRuleEffect::GnomallyRenown { .. }
+            | NpcRuleEffect::BigfootMatchmakerTarget
             | NpcRuleEffect::BigfootSoulMelody
             | NpcRuleEffect::TakeAllItems { .. } => {
                 return Err(NpcRuleError::MissingNativeResolution(
@@ -395,7 +399,19 @@ fn plan_with_teleport(
             if !eligible {
                 continue;
             }
-            for effect in &rule.effects {
+            let renown;
+            let (rule_effects, rule_reply) =
+                if let [NpcRuleEffect::GnomallyRenown { action }] = rule.effects.as_slice() {
+                    let Some(resolved) = renown::resolve(*action, input, &mut state, storage_only)?
+                    else {
+                        continue;
+                    };
+                    renown = resolved;
+                    (renown.0.as_slice(), renown.1.as_slice())
+                } else {
+                    (rule.effects.as_slice(), rule.reply.as_slice())
+                };
+            for effect in rule_effects {
                 if storage_only
                     && !(allow_teleport
                         && matches!(
@@ -449,7 +465,7 @@ fn plan_with_teleport(
             }
             completes |= rule.completes;
             selected_rule_keys.push(rule.key.clone());
-            reply.extend_from_slice(&rule.reply);
+            reply.extend_from_slice(rule_reply);
             if reply.len() > 32 {
                 return Err(NpcRuleError::LimitExceeded);
             }

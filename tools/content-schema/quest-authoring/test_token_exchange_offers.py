@@ -201,6 +201,13 @@ class TokenExchangeOffers(unittest.TestCase):
                 ]
                 self.assertEqual(len(matching), 1)
                 self.assertEqual(matching[0].get("preserve_topic"), value < 25)
+                self.assertEqual(matching[0].get("source_dialogue", False), value >= 25)
+        programme = json.loads((q.ROOT / q.token_exchanges.RENOWN_RULES).read_text())
+        self.assertEqual(programme, q.token_exchanges.renown_rules(q.ROOT))
+        self.assertEqual(
+            [r["effects"][0]["action"] for r in programme["rules"]],
+            ["relations", "ask", "quote", "confirm", "cancel"],
+        )
 
     def test_committed_gnomally_items_has_shop_confirmation(self):
         offers = json.loads(
