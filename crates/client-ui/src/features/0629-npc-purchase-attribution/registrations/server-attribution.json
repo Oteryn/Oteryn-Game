@@ -1,0 +1,16 @@
+{
+  "mechanic": "0629-npc-purchase-attribution",
+  "kind": "handlers",
+  "id": "0629-npc-purchase-attribution-server",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "Session applies command attribution and exposes it to the client. The NPC shop panel does not show per-command attribution.",
+  "not_applicable": {
+    "state": "The Session owns attribution on the inventory view.",
+    "protocol": "The Session decodes attributed inventory replacements.",
+    "view": "The existing shop panel shows the resulting inventory.",
+    "input": "Attribution adds no client input.",
+    "settings": "Attribution is negotiated with the session."
+  }
+}
