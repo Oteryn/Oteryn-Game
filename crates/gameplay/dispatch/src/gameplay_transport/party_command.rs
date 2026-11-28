@@ -382,7 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && let Some(party) = view.source.party_id.filter(|id| receipt.party_id == Some(*id))
                 {
                     **step = "party_icon_recipients";
-                    Some(world_party::ingress::notify_leadership_icons_in_transaction(&mut tx, &authority, party)
+                    Some(world_party::ingress::notify_party_icons_in_transaction(&mut tx, &authority, party)
                         .await.map_err(|_| DurabilityError::Unavailable)?)
                 } else {
                     None

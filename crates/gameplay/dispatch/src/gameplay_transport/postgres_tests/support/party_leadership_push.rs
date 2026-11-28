@@ -12,7 +12,9 @@ use crate::gameplay_transport::{
     tcp_tls::{read_frame, write_frame},
 };
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
+    ClientCommandValue, CommandStatus,
+    chat::{self, ChatDisposition, ChatIntent, ChatSpeechMode},
+    decode_command_result, encode_client_command,
     party::*,
     party_skull::CAPABILITY_PARTY_SKULL_V1,
     world_spatial_entities::{
@@ -46,11 +48,9 @@ pub(super) async fn leadership_refreshes_invitee_and_remote_successor(
         .ok_or("remote successor subscription")?;
     let mut listener = sqlx::postgres::PgListener::connect_with(&harness.pool).await?;
     listener
-        .listen(
-            &crate::durability::world_party::ingress::leadership_icon_topic(
-                *old.world_id.as_bytes(),
-            ),
-        )
+        .listen(&crate::durability::world_party::ingress::party_icon_topic(
+            *old.world_id.as_bytes(),
+        ))
         .await?;
 
     let mut observing = *invitee;
@@ -118,8 +118,18 @@ pub(super) async fn check(
         session.continuity.selected_capabilities = selected;
         session
     };
-    let [old_session, new_session, other_session] =
+    let [old_session, mut new_session, other_session] =
         [observing(*old), observing(*new), observing(*other)];
+    let chat_capabilities = [
+        6,
+        chat::CAPABILITY_CHAT_V1,
+        CAPABILITY_PARTY_V1,
+        CAPABILITY_PARTY_SKULL_V1,
+    ];
+    new_session.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &chat_capabilities)
+            .filter(|selected| selected.as_slice() == chat_capabilities)
+            .ok_or("party shield and chat offer")?;
     let (old_server, mut old_client) = tokio::io::duplex(64 << 10);
     let (new_server, mut new_client) = tokio::io::duplex(64 << 10);
     let (other_server, mut other_client) = tokio::io::duplex(64 << 10);
@@ -173,10 +183,36 @@ pub(super) async fn check(
                 wait_shields(&mut new_client, generation(new_session), targets, transferred),
                 wait_shields(&mut other_client, generation(other_session), targets, transferred),
             )?;
+            for (offset, text, shields) in [
+                (0, "/sharedxp on", [7, 8, 7]),
+                (1, "/sharedxp off", transferred),
+            ] {
+                let payload = chat::encode_chat_intent(&ChatIntent::Say {
+                    mode: ChatSpeechMode::Say,
+                    text: text.into(),
+                })
+                .map_err(debug)?;
+                let receipt = send_live_command(
+                    &mut new_client,
+                    generation(new_session),
+                    new_session.continuity.next_command_id + offset,
+                    chat::COMMAND_TYPE_CHAT_INTENT,
+                    &payload,
+                    |payload| chat::decode_chat_intent_result(payload).map_err(|error| debug(error).into()),
+                )
+                .await?;
+                assert_eq!(receipt.disposition, ChatDisposition::Ok);
+                assert_eq!(receipt.wait_seconds, 0);
+                tokio::try_join!(
+                    wait_shields(&mut old_client, old_generation, targets, shields),
+                    wait_shields(&mut new_client, generation(new_session), targets, shields),
+                    wait_shields(&mut other_client, generation(other_session), targets, shields),
+                )?;
+            }
             Ok::<(), Box<dyn std::error::Error>>(())
         })
         .await
-        .map_err(|_| "all three members must receive the committed shield update before a background turn")??;
+        .map_err(|_| "all three members must receive the committed leadership and shared-XP shields before a background turn")??;
 
         // Read a probe before taking the lane, then keep it held across another
         // visibility tick and probe. A stalled read prevents the second probe.
@@ -232,12 +268,31 @@ async fn send_party(
         ),
         None => (COMMAND_TYPE_PARTY_QUERY, Vec::new()),
     };
+    send_live_command(
+        client,
+        generation,
+        command_id,
+        command_type,
+        &payload,
+        |payload| decode_party_result(payload).map_err(|error| debug(error).into()),
+    )
+    .await
+}
+
+async fn send_live_command<T>(
+    client: &mut DuplexStream,
+    generation: u64,
+    command_id: u64,
+    command_type: u32,
+    payload: &[u8],
+    decode: impl FnOnce(&[u8]) -> TestResult<T>,
+) -> TestResult<T> {
     let frame = encode_client_command(
         generation,
         &ClientCommandValue {
             command_id,
             command_type,
-            payload: &payload,
+            payload,
         },
     )
     .map_err(debug)?;
@@ -249,7 +304,7 @@ async fn send_party(
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, command_id);
             assert_eq!(result.status, CommandStatus::Accepted);
-            return decode_party_result(result.payload).map_err(|error| debug(error).into());
+            return decode(result.payload);
         }
     }
 }

@@ -143,14 +143,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let source = world_party::read_world_party_in_transaction(&mut tx, &authority)
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
+                    let icon_recipients = if receipt.disposition == "APPLIED"
+                        && !receipt.replayed
+                        && let Some(party) =
+                            source.party_id.filter(|id| receipt.party_id == Some(*id))
+                    {
+                        Some(
+                            world_party::ingress::notify_party_icons_in_transaction(
+                                &mut tx, &authority, party,
+                            )
+                            .await
+                            .map_err(|_| DurabilityError::Unavailable)?,
+                        )
+                    } else {
+                        None
+                    };
                     crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline)
                         .await?;
-                    Ok((receipt.disposition, source))
+                    Ok((receipt.disposition, source, icon_recipients))
                 })
             })
             .await;
         match applied {
-            Ok((disposition, source)) => {
+            Ok((disposition, source, icon_recipients)) => {
+                if let Some(tokens) = &icon_recipients {
+                    self.states.party_icon_updates.publish(tokens);
+                }
                 if runtime.project_world_party(actor, session, source).is_err() {
                     return Ok(result(ChatDisposition::ChatUnavailable));
                 }

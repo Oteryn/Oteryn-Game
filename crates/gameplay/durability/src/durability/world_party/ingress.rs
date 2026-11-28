@@ -55,15 +55,15 @@ pub async fn read_in_transaction(
     })
 }
 
-pub fn leadership_icon_topic(world: [u8; 16]) -> String {
+pub fn party_icon_topic(world: [u8; 16]) -> String {
     let world: String = world.iter().map(|byte| format!("{byte:02x}")).collect();
     format!("oteryn_party_icons_{world}")
 }
 
-/// Publish a presentation hint as part of the transfer transaction. PostgreSQL
+/// Publish a presentation hint as part of the party command transaction. PostgreSQL
 /// releases the hint at commit. Its payload contains opaque recipient tokens,
 /// and receivers must re-read the existing scoped party projection.
-pub async fn notify_leadership_icons_in_transaction(
+pub async fn notify_party_icons_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     party: [u8; 16],
@@ -87,7 +87,7 @@ pub async fn notify_leadership_icons_in_transaction(
     .fetch_one(&mut **tx)
     .await?;
     sqlx::query("SELECT pg_notify($1, $2)")
-        .bind(leadership_icon_topic(world))
+        .bind(party_icon_topic(world))
         .bind(&recipients)
         .execute(&mut **tx)
         .await?;

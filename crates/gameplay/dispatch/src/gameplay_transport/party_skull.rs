@@ -51,7 +51,7 @@ impl PartyIconUpdates {
             .max_lifetime(None)
             .idle_timeout(None)
             .connect_lazy_with(options);
-        let topic = world_party::ingress::leadership_icon_topic(world);
+        let topic = world_party::ingress::party_icon_topic(world);
         loop {
             let subscription = tokio::time::timeout(Duration::from_secs(2), async {
                 let mut listener = PgListener::connect_with(&pool).await?;
