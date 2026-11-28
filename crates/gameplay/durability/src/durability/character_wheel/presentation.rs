@@ -1,6 +1,6 @@
 //! Advisory coherent read. The exact point-budget reader is shared with the unchanged writer.
-use crate::durability::db::commit_semantic_read;
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_gameplay_progression::atelier::AtelierState;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -10,13 +10,13 @@ pub struct WheelPointBudget {
 }
 fn compose_budget(
     level: u32,
-    task: u32,
+    earned: u32,
     pilgrimage: bool,
     pilgrimage_points: u32,
     grade_iv: u32,
 ) -> std::result::Result<WheelPointBudget, DurabilityError> {
     let unlock_points = available_points(level)
-        .checked_add(task)
+        .checked_add(earned)
         .and_then(|v| v.checked_add(if pilgrimage { pilgrimage_points } else { 0 }))
         .ok_or(DurabilityError::InvalidStoredState)?;
     let available = unlock_points
@@ -45,7 +45,11 @@ pub(super) async fn read_budget(
     let pilgrimage:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1)").bind(character.as_bytes().as_slice()).bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK).fetch_one(&mut **tx).await?;
     let task =
         super::super::task_board::read_promotion_points_in_transaction(tx, character).await?;
-    compose_budget(level, task, pilgrimage, pilgrimage_points, grade_iv)
+    let scrolls = super::super::item_use::promotion_scroll::read_points(tx, character).await?;
+    let earned = task
+        .checked_add(scrolls)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    compose_budget(level, earned, pilgrimage, pilgrimage_points, grade_iv)
 }
 #[derive(Clone, Debug)]
 pub struct WheelPresentationRead {
