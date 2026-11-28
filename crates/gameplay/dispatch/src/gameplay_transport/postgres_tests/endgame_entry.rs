@@ -120,6 +120,9 @@ fn run_world_lever(
         );
         assert!(activation.is_some());
         assert_eq!(admitted.item_fence.ok_or("Instance fence")?.runtime_scope, instance);
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await?;
         Ok(())
     })

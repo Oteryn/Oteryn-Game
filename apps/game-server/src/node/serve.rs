@@ -5734,7 +5734,7 @@ assignment_epoch = 1
 
     #[test]
     fn serving_configuration_is_validated_before_readiness() {
-        // Guard the composition boundary: either fallible environment loader must
+        // Guard the composition boundary: each fallible environment loader must
         // finish before publishing a ready node, including on early boot errors.
         let source = include_str!("serve.rs");
         let boot = source
@@ -5742,10 +5742,12 @@ assignment_epoch = 1
             .expect("boot entry")
             .1;
         let boot = boot.split_once("#[cfg(test)]").expect("test boundary").0;
-        let publication = boot
-            .find("readiness.publish(true,")
-            .expect("ready publication");
-        for loader in ["CastRuntimeConfig::from_env(", "CoinClient::configured()"] {
+        let publication = boot.find("readiness.publish()").expect("ready publication");
+        for loader in [
+            "CastRuntimeConfig::from_env(",
+            "CoinClient::configured()",
+            "OTERYN_ACTIVITY_INSTANCE_ID",
+        ] {
             assert!(
                 boot.find(loader).expect("serving configuration loader") < publication,
                 "{loader} can reject boot after ready=true was committed"

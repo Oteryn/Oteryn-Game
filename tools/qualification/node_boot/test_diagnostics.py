@@ -822,6 +822,7 @@ sleep() { :; }
 set -Eeuo pipefail
 GAME_SOURCE=$1; node_log=$2
 NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_UNPRIVILEGED=0
+WORLD_REGIONS=126,125
 NODE_BOOT_E2E_ONLY=rows; OTERYN_E2E_ROW_BATCH=12:1
 BASE=$GAME_SOURCE; SERVICE_UID=123; WORLD_ID=world; CHANNEL_ID=channel
 WORLD_DIGEST=digest; MAP_REVISION=revision; NODE_ACTIVATION_WAIT_SECONDS=1
@@ -855,6 +856,7 @@ sleep() { :; }
                 "node_boot_row_selection",
                 "w19a_rows",
                 "await_log",
+                "soulpit_instance_enabled",
                 "node_complete_assignment",
             )
         )
