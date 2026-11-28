@@ -56,6 +56,9 @@ const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
 const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000025";
 
 #[cfg(feature = "qualification-spawn")]
+const I17C_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000026";
+
+#[cfg(feature = "qualification-spawn")]
 fn lane_spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -1158,6 +1161,45 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
+        // I17c needs an empty carried quiver. The weighted owner admits the
+        // container against the same content generation and character fence.
+        #[cfg(feature = "qualification-spawn")]
+        if named == Some((35848, 1)) {
+            let record = root
+                .read_current_character(authority, fence.character_id)
+                .await
+                .map_err(qualification_build::debug)?;
+            if uuid_text(record.account_id.as_bytes()) == I17C_ACCOUNT {
+                let weights = FixtureItemContent(native);
+                let request = RewardClaimMintRequest {
+                    content_revision: format!(
+                        "sha256:{}",
+                        native
+                            .source_digest()
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    ),
+                    ..request
+                };
+                let mut candidate = root
+                    .freeze_reward_claim_mint_weighted(authority, proof, fence, request, &weights)
+                    .await
+                    .map_err(|error| format!("I17c quiver reserve: {error:?}"))?;
+                let (outcome, _) = root
+                    .commit_reward_claim_mint_weighted_noticed(
+                        authority,
+                        proof,
+                        fence,
+                        &mut candidate,
+                        None,
+                        &weights,
+                    )
+                    .await
+                    .map_err(|error| format!("I17c quiver commit: {error:?}"))?;
+                return fixture_item_committed(outcome, quantity);
+            }
+        }
         // Reservation replay retains the same CommandRef and frozen semantic intent.
         let mut candidate = qualification_build::retry_holder(
             Some(root),
