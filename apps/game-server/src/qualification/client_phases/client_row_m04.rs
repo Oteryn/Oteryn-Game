@@ -4,9 +4,13 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::creature_push::*;
+use oteryn_protocol_oteryn::logout::LogoutResult;
+use oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
 use oteryn_protocol_oteryn::world_spatial_entities::{
-    DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, decode_world_spatial_entities_delta,
+    DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, EntityFields, SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+    decode_world_spatial_entities_delta_with_fields,
 };
+use std::io::Write as _;
 
 const DIRECTIONS: [StepDirection; 4] = [
     StepDirection::North,
@@ -67,7 +71,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut pusher = connect_world(clients, 0x94).await?;
+    let capture = oteryn_dev_client::InboundCapture::default();
+    let mut pusher = capture.connect(connect_world(clients, 0x94)).await?;
+    let baseline = pusher
+        .session_mut()
+        .admission_snapshot(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY)
+        .filter(|snapshot| snapshot.snapshot_type == SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2)
+        .ok_or("M04 admission world entity snapshot missing")?
+        .revision;
     let mut target =
         provisioning::with_peer_liveness(&mut pusher, connect_character(clients, 0x95, 0)).await?;
     let pusher_at = tile(pusher.world_spatial().actor_position)?;
@@ -140,6 +151,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if blocked.status != CommandStatus::Accepted || blocked.payload != [8, 5] {
         return Err(format!("M04 occupied destination reply: {blocked:?}").into());
     }
+    target.service_liveness(Duration::from_millis(25)).await?;
+    if target.world_spatial().actor_position != position(before) {
+        return Err("M04 occupied push moved the target session".into());
+    }
     if pusher
         .world_entities()
         .and_then(|entities| entities.get(&reference))
@@ -152,11 +167,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .filter_map(|direction| destination(world, before, direction))
         .find(|at| at.floor == before.floor && *at != pusher_at && distance(*at, pusher_at) == 1)
         .ok_or("M04 no free push landing")?;
+    if landing == before {
+        return Err("M04 push landing equals the target's original position".into());
+    }
     let intent = encode_creature_push_intent(&CreaturePushIntent {
         target: reference,
         destination: position(landing),
     })
     .map_err(|error| format!("M04 push encode: {error:?}"))?;
+    let before_push = pusher.last_server_sequence();
     let reply = pusher
         .session_mut()
         .gated_command(
@@ -168,14 +187,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if reply.status != CommandStatus::Accepted || reply.payload != [8, 1] {
         return Err(format!("M04 push reply: {reply:?}").into());
     }
-    let delta = pusher
-        .session_mut()
-        .read_gated_delta(
-            oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-        )
-        .await?;
-    let decoded = decode_world_spatial_entities_delta(&delta.payload)
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let delta = loop {
+        if let Some(delta) = pusher
+            .session_mut()
+            .raw_world_entity_deltas()
+            .iter()
+            .find(|delta| delta.server_sequence > before_push)
+        {
+            break delta.clone();
+        }
+        let remaining = deadline
+            .checked_duration_since(tokio::time::Instant::now())
+            .ok_or("M04 push did not publish a spatial delta")?;
+        pusher.wait_for_events(remaining).await?;
+    };
+    if delta.delta_type != DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2 || delta.base_revision < baseline {
+        return Err("M04 unexpected spatial delta type or revision".into());
+    }
+    let fields = EntityFields::selected(pusher.session_mut().selected_capabilities());
+    let (decoded, _) = decode_world_spatial_entities_delta_with_fields(&delta.payload, fields)
         .map_err(|error| format!("M04 spatial payload: {error:?}"))?;
     let moved = decoded
         .update
@@ -185,33 +216,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if moved.position != position(landing) {
         return Err("M04 pushed player delta has wrong landing".into());
     }
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let directory = Path::new(&directory);
-        let expected = format!(
-            "{} {} {} {} {} {} {} {}\n",
-            delta.base_revision,
-            delta.new_revision,
-            delta.server_sequence,
-            reference
-                .identity
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
-            reference.generation,
-            moved.position.x,
-            moved.position.y,
-            moved.position.floor
-        );
-        for (name, contents) in [
-            ("m04-spatial.bin", delta.payload.as_slice()),
-            ("m04-expected.txt", expected.as_bytes()),
-        ] {
-            if let Err(error) = std::fs::write(directory.join(name), contents) {
-                evidence(&format!(
-                    "M04_CAPTURE_WRITE_ERROR file={name} error={error}"
-                ));
-            }
+    provisioning::with_peer_liveness(&mut pusher, async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while target.world_spatial().actor_position == position(before) {
+            let remaining = deadline
+                .checked_duration_since(tokio::time::Instant::now())
+                .ok_or("M04 target did not receive the push movement")?;
+            target.wait_for_events(remaining).await?;
         }
+        if target.world_spatial().actor_position != position(landing) {
+            return Err("M04 target session received the wrong landing".into());
+        }
+        let logout = target.session_mut().logout().await?;
+        if logout.result != Some(LogoutResult::Accepted) {
+            return Err(format!("M04 target logout refused: {logout:?}").into());
+        }
+        Ok(())
+    })
+    .await?;
+    drop(target);
+    let mut target =
+        provisioning::with_peer_liveness(&mut pusher, connect_character(clients, 0x95, 0)).await?;
+    if target.world_spatial().actor_position != position(landing) {
+        return Err("M04 relog did not restore the pushed landing".into());
     }
+    let logout = target.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("M04 target cleanup logout refused: {logout:?}").into());
+    }
+    let logout = pusher.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("M04 pusher cleanup logout refused: {logout:?}").into());
+    }
+    let directory = required("E2E_ALL_CAPTURE_DIR")?;
+    let path = Path::new(&directory).join("m04-inbound.bin");
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?;
+    file.write_all(&capture.bytes()?)?;
+    drop(file);
+
+    oteryn_dev_client::replay_player_push(
+        &std::fs::read(&path)?,
+        crate::foundation::CharacterId::decode(&clients.characters[1])?,
+        reference,
+        position(before),
+        position(landing),
+        delta.server_sequence,
+    )
+    .await?;
+    evidence(&format!("M04_REPLAY_PASS server_sequence={}", delta.server_sequence));
     Ok(())
 }

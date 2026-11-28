@@ -457,7 +457,9 @@ pub use entities::WorldEntities;
 pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
+mod push_replay;
 pub use outcomes::*;
+pub use push_replay::replay_player_push;
 
 /// Optional server-executed Gem modifier presentation.
 pub use oteryn_protocol_oteryn::gem_presentation;
