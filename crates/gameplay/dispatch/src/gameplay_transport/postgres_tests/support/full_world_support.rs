@@ -318,7 +318,8 @@ pub(super) async fn relogin_into(
             }
         }
     }
-    let next = if character == id(41) && channel.is_none() {
+    // The appearance observer fixture fixes its session identity at 110.
+    let next = if character == id(41) && successor == id(110) && channel.is_none() {
         source.appearance_observer_request(
             &crate::gameplay_transport::canonical_uuid(&character),
             now,
