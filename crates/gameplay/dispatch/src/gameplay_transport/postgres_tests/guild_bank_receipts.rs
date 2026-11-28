@@ -2,7 +2,7 @@ use super::fixture::{Harness, debug, id};
 use super::guild_bank_fixtures::{bank_seed, guild, transport::exchange};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::guild_bank::{self as wire, GuildBankAction, GuildBankIntent};
 use oteryn_protocol_oteryn::{CommandStatus, guild as guild_wire};
 
