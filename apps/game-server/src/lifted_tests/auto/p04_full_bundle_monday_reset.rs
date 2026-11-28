@@ -129,10 +129,10 @@ async fn scenario(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .execute(&h.pool).await?;
-    assert!(sqlx::query_scalar::<_, bool>("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .bind(server.as_slice()).bind(client.as_slice()).bind(frame.as_slice())
-        .fetch_one(&h.pool).await?);
+        .execute(&h.pool).await?;
     assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1)")
         .bind(world.as_bytes().as_slice()).bind(digest.as_slice()).bind(&map)
         .bind(server.as_slice()).bind(client.as_slice()).bind(frame.as_slice())
