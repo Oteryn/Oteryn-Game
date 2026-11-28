@@ -9,7 +9,10 @@ use std::num::NonZeroU64;
 async fn look(
     client: &mut DevClientSession,
     target: Target,
-) -> TestResult<(oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse, wire::ItemLookResult)> {
+) -> TestResult<(
+    oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse,
+    wire::ItemLookResult,
+)> {
     let selection = wire::ItemLookSelection { extended: true };
     let request = look_payload(&target)?;
     let reply = client
@@ -47,7 +50,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let directory = std::fs::canonicalize(required("E2E_ALL_CAPTURE_DIR")?)?;
     let mut client = connect_world(clients, 0x03).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let entities = client.world_entities().ok_or("I03.client own actor view missing")?;
+    let entities = client
+        .world_entities()
+        .ok_or("I03.client own actor view missing")?;
     let own = entities
         .iter()
         .find(|entry| entry.entity.identity == *entities.own_identity())
@@ -58,21 +63,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .and_then(|inventory| inventory.main_backpack)
         .ok_or("I03.client starter backpack missing")?;
 
-    let own_reply = look(&mut client, Target::Creature(own)).await?;
-    let item_reply = look(
-        &mut client,
-        Target::Item(backpack.handle),
-    )
-    .await?;
     let absent = NonZeroU64::new(u64::MAX).ok_or("I03.client invalid absent handle")?;
     let inventory_before = client.inventory().ok_or("missing I03 inventory")?.clone();
     let position_before = client.world_spatial().actor_position;
-    if inventory_before.main_backpack.iter().chain(&inventory_before.entries)
+    if inventory_before
+        .main_backpack
+        .iter()
+        .chain(&inventory_before.entries)
         .any(|entry| entry.handle == absent)
-        || inventory_before.equipment.iter().any(|entry| entry.item.handle == absent)
+        || inventory_before
+            .equipment
+            .iter()
+            .any(|entry| entry.item.handle == absent)
     {
         return Err("I03 negative handle is already present".into());
     }
+    let assert_unchanged = |client: &DevClientSession, step: &str| -> TestResult {
+        if client.inventory() != Some(&inventory_before)
+            || client.world_spatial().actor_position != position_before
+        {
+            return Err(format!("I03.client {step} changed inventory or position").into());
+        }
+        Ok(())
+    };
+    let own_reply = look(&mut client, Target::Creature(own)).await?;
+    assert_unchanged(&client, "self LOOK")?;
+    let item_reply = look(&mut client, Target::Item(backpack.handle)).await?;
+    assert_unchanged(&client, "backpack LOOK")?;
     let refusal_reply = look(&mut client, Target::Item(absent)).await?;
     if own_reply.0.status != CommandStatus::Accepted
         || item_reply.0.status != CommandStatus::Accepted
@@ -85,25 +102,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     else {
         return Err("I03.client positive LOOK did not return text".into());
     };
-    if refusal_reply.1
-        != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable)
-    {
+    if refusal_reply.1 != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable) {
         return Err("I03.client absent item did not return NotAvailable".into());
     }
 
-    if client.inventory() != Some(&inventory_before)
-        || client.world_spatial().actor_position != position_before
-    {
-        return Err("I03 absent-item LOOK changed inventory or position".into());
-    }
+    assert_unchanged(&client, "absent-item LOOK")?;
     let expected_own = "You see yourself (Level 1, sorcerer).";
     let expected_item = "You see backpack (Vol:20).\nImbuement slots: 1.\nIt weighs 18.00 oz.";
     if own_text != expected_own || item_text != expected_item {
-        return Err(format!("I03.client unexpected LOOK text: self={own_text:?} item={item_text:?}").into());
+        return Err(format!(
+            "I03.client unexpected LOOK text: self={own_text:?} item={item_text:?}"
+        )
+        .into());
     }
     let (logout, detail, _, _) = logout_once(&mut client).await?;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("I03.client logout refused: {detail}").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0x03).await?;
+    if uuid_text(fresh.join_snapshot().game_session_id.as_bytes()) == session {
+        return Err("I03.client relog reused the LOOK session".into());
+    }
+    assert_unchanged(&fresh, "post-relog LOOK state")?;
+    let (logout, detail, _, _) = logout_once(&mut fresh).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("I03.client post-relog logout refused: {detail}").into());
     }
     capture(&directory, "i03-self.json", &session, &own_reply.0)?;
     capture(&directory, "i03-item.json", &session, &item_reply.0)?;
@@ -123,7 +147,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("e2e_capture scenario=I03.client status=CAPTURED"),
         Ok(Err(error)) => evidence(&format!(
