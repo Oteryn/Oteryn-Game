@@ -303,7 +303,7 @@ impl FreshAdmissionStore {
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
                     let current = store.current_session_locked(&mut tx, session).await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(current)
                 })
             })
@@ -336,7 +336,7 @@ impl FreshAdmissionStore {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok((current, now))
                 })
             })
@@ -368,7 +368,7 @@ impl FreshAdmissionStore {
                     for session in sessions {
                         current.push(store.current_session_locked(&mut tx, session).await.ok());
                     }
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(current)
                 })
             })
@@ -390,7 +390,7 @@ impl FreshAdmissionStore {
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
                     let result = lifecycle_replay(&mut tx, &evidence, &encoded).await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

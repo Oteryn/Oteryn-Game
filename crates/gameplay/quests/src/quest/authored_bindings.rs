@@ -448,8 +448,6 @@ impl Bindings {
             }
             digest.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
             *before = digest.finalize().into();
-            // Paradox keeps its published source NPC program and its native
-            // absent-value adapter. Other replacements require their new witness.
             if matches!(
                 quest.quest.as_str(),
                 "oteryn:quest.the_new_frontier_quest" | "oteryn:quest.the_shattered_isles_quest"
@@ -485,7 +483,12 @@ impl Bindings {
                 catalogue.predecessors.insert(quest.quest.clone(), accepted);
                 continue;
             }
-            if quest.quest != "oteryn:quest.the_paradox_tower_quest" {
+            // Ape City and Paradox retain their source NPC programs and their
+            // exact absent-value adapters alongside the authored world routes.
+            if !matches!(
+                quest.quest.as_str(),
+                "oteryn:quest.the_ape_city_quest" | "oteryn:quest.the_paradox_tower_quest"
+            ) {
                 catalogue.npc_legacy.remove(&quest.quest);
             }
             catalogue.predecessors.remove(&quest.quest);
@@ -619,6 +622,9 @@ mod composition_tests;
 mod encounter_source_tests;
 #[cfg(test)]
 mod occurrence_tests;
+
+#[cfg(test)]
+mod qbind_budget_tests;
 
 impl Trigger {
     fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {

@@ -14,12 +14,12 @@ use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc,Mutex as SyncMutex};
 
 fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),price:25,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:crate::gameplay_transport::store::active_catalogue_revision().into(),price:25,currency:"TIBIA_COIN".into()};
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,wire::encode_purchase_request(&request).map_err(debug)?))
 }
 
 #[derive(Debug,Clone,Copy)]
-enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal}
+enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal,RetryLockOrder}
 #[path="hireling_store/modal.rs"]
 mod modal;
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
@@ -46,6 +46,12 @@ fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {i
 
 #[test]
 fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e_fixtures::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
+
+#[test]
+fn hireling_retry_leaves_buyer_unlocked_while_answer_writer_holds_purchase()->TestResult {
+    if !enabled(){return Ok(())}
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hireling-store-lock-order",||scenario(Case::RetryLockOrder))
+}
 
 fn scenario(case:Case)->TestResult {
     run(async |admin| {
@@ -91,6 +97,18 @@ fn scenario(case:Case)->TestResult {
         let customize=|name:Option<&str>|wire::StoreHirelingCustomization{hireling_id:Some(hireling),name:name.map(str::to_owned),sex:None};
         match case {
             Case::Modal=>modal::scenario(&harness,&owner,&mut admitted,&ledger).await?,
+            Case::RetryLockOrder => {
+                let command = command(52, 25440, 150, Some(new_hire("Taylor Moon")))?;
+                ledger.lock().expect("ledger").lose_next_answer = true;
+                assert_eq!(serve(&owner, &mut admitted, command.clone()).await?.0, CommandStatus::Rejected);
+                let buyer = *admitted.item_fence.ok_or("item fence")?.character_id.as_bytes();
+                let result = super::store_fixtures::assert_store_retry_lock_order(
+                    &harness.pool, id(52), buyer, purchase(&owner, &mut admitted, command),
+                ).await??;
+                assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+                assert_eq!(ledger.lock().expect("ledger").debits, 2);
+                assert_eq!(count(&harness, "SELECT count(*) FROM game_house_hirelings").await?, 2);
+            }
             Case::Hire=>{
                 let replay=purchase(&owner,&mut admitted,command(51,25440,150,Some(new_hire("Alex Moon")))?).await?;assert_eq!(replay,hired);
                 assert_eq!(ledger.lock().expect("ledger").debits,1);
@@ -198,9 +216,29 @@ fn scenario(case:Case)->TestResult {
                 let request=command(90,25440,150,Some(new_hire("River")))?;
                 assert_eq!(serve(&owner,&mut admitted,request.clone()).await?.0,CommandStatus::Rejected);
                 assert_eq!(ledger.lock().expect("ledger").debits,20);
-                // A separate native Store item can occupy the last slot while the answer is lost.
-                let last_sword=purchase(&owner,&mut admitted,exercise_sword(89)?).await?;
-                assert_eq!(last_sword.code,wire::StorePurchaseCode::Accepted);
+                let refused = purchase(&owner, &mut admitted, exercise_sword(89)?).await?;
+                assert_eq!(refused.code, wire::StorePurchaseCode::OfferUnavailable);
+                assert_eq!(ledger.lock().expect("ledger").debits, 20);
+
+                // Simulate a non-Store deposit using the physical slot while the
+                // lamp debit is outstanding. Keep its ordinal outside the native
+                // mint allocator so the retry reaches the source capacity guard.
+                let ordinary = uuid(&id(244));
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica")
+                    .execute(&mut *tx).await?;
+                sqlx::query(
+                    "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,
+                     definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                     VALUES($1::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i28552','definition-r1',1,1,uuidv7())",
+                ).bind(&ordinary).bind(admitted.world_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+                sqlx::query(
+                    "INSERT INTO game_item_character_inbox_locations(item_instance_id,world_id,character_id,ordinal)
+                     VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1000)",
+                ).bind(&ordinary).bind(admitted.world_id.as_bytes().as_slice())
+                    .bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice())
+                    .execute(&mut *tx).await?;
+                tx.commit().await?;
                 let failed_command=admitted.continuity.next_command_id;
                 assert_eq!(serve(&owner,&mut admitted,request.clone()).await?.0,CommandStatus::Rejected);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_item_character_inbox_locations").await?,20);
@@ -218,10 +256,6 @@ fn scenario(case:Case)->TestResult {
                 // history and the prepared Hireling attempt remain available for replay checks.
                 let mut tx=harness.pool.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
-                let ordinary:String=sqlx::query_scalar("SELECT i.item_instance_id::text FROM store_delivery_receipts r JOIN game_item_instances i USING(item_instance_id,world_id) JOIN game_item_character_inbox_locations l USING(item_instance_id,world_id) WHERE r.operation_id=encode($1,'hex')::uuid AND l.character_id=encode($2,'hex')::uuid AND l.world_id=encode($3,'hex')::uuid AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i28552' AND i.definition_revision_ref='definition-r1' AND i.quantity=1 AND i.lifecycle=1")
-                    .bind(last_sword.operation_id.ok_or("ordinary operation")?.as_slice())
-                    .bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice())
-                    .bind(admitted.world_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                 assert_eq!(sqlx::query("DELETE FROM game_item_character_inbox_locations WHERE item_instance_id=$1::uuid").bind(&ordinary).execute(&mut *tx).await?.rows_affected(),1);
                 assert_eq!(sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,state_revision=state_revision+1,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=$1::uuid").bind(&ordinary).bind(id(245).as_slice()).execute(&mut *tx).await?.rows_affected(),1);
                 tx.commit().await?;
@@ -230,7 +264,7 @@ fn scenario(case:Case)->TestResult {
                 assert_eq!(recovered.code,wire::StorePurchaseCode::Accepted);
                 assert_eq!(recovered.operation_id.map(|id|uuid(&id)).as_deref(),Some(operation.as_str()));
                 assert_eq!(purchase(&owner,&mut admitted,request).await?,recovered);
-                assert_eq!(ledger.lock().expect("ledger").debits,21);
+                assert_eq!(ledger.lock().expect("ledger").debits,20);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_item_character_inbox_locations").await?,20);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_house_hirelings").await?,2);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,0);

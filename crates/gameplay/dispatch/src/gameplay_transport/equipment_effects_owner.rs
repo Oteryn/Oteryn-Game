@@ -440,13 +440,16 @@ fn equipped_wheel_hands(
             }
             _ => return None,
         };
-        let (
-            ReferenceItemField::Known(kind),
-            ReferenceItemField::Known(defense),
-            ReferenceItemField::Known(extra_defense),
-        ) = (&weapon.weapon_type, &weapon.defense, &weapon.extra_defense)
+        let (ReferenceItemField::Known(kind), ReferenceItemField::Known(defense)) =
+            (&weapon.weapon_type, &weapon.defense)
         else {
             return None;
+        };
+        // Crystal's ItemType initializes extraDefense to zero (items.hpp:305).
+        let extra_defense = match weapon.extra_defense {
+            ReferenceItemField::Known(points) => points.0,
+            ReferenceItemField::Unknown | ReferenceItemField::NotApplicable => 0,
+            ReferenceItemField::Conflict => return None,
         };
         let two_handed = match &semantics.equipment {
             ReferenceItemField::Known(equipment) => match &equipment.patterns {
@@ -481,7 +484,7 @@ fn equipped_wheel_hands(
         };
         Some(Some(WheelHand {
             defense: defense.0,
-            extra_defense: extra_defense.0,
+            extra_defense,
             real_shield: *kind == ReferenceWeaponType::Shield,
             secondary_shield: quiver || *kind == ReferenceWeaponType::Spellbook,
             two_handed,

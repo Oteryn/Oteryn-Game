@@ -188,20 +188,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 kind: h.kind.database(),
             })
             .collect();
-        match self
-            .root
-            .read_house_management(
-                self.character,
-                self.holder,
-                fence,
-                crate::durability::house_management::HouseManagementPage {
-                    houses,
-                    cursor: query.cursor,
-                    auction_order,
-                },
-                content_digest,
-            )
-            .await
+        let page = crate::durability::house_management::HouseManagementPage {
+            houses,
+            cursor: query.cursor,
+            auction_order,
+        };
+        match super::house_intent::retry_management(self.root, async || {
+            self.root
+                .read_house_management(
+                    self.character,
+                    self.holder,
+                    fence,
+                    page.clone(),
+                    content_digest,
+                )
+                .await
+        })
+        .await
         {
             Ok(mut rows) => {
                 let more = rows.len() > wire::PAGE_SIZE;

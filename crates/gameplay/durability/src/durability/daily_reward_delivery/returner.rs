@@ -32,7 +32,10 @@ impl DurabilityRoot {
                 assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
                 super::super::character_inbox::lock_reward_claim_cause(&mut tx,command).await?;
                 if !current(&mut tx,&node,fence,command).await? {return Ok(Err(DailyRewardClaimError::AuthorityRejected));}
-                let existing:Option<bool>=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM public.game_returner_reward_claims c WHERE c.offer_id=e.offer_id) FROM public.game_returner_reward_entitlements e WHERE e.offer_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND e.world_id=encode($3,'hex')::uuid FOR UPDATE OF e")
+                // The exclusive admission relation fence serializes claims,
+                // including different command IDs for the same offer. Entitlements
+                // are immutable and the runtime role only has SELECT and INSERT.
+                let existing:Option<bool>=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM public.game_returner_reward_claims c WHERE c.offer_id=e.offer_id) FROM public.game_returner_reward_entitlements e WHERE e.offer_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND e.world_id=encode($3,'hex')::uuid")
                     .bind(offer.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
                 let disposition=match existing {None=>3,Some(true)=>2,Some(false)=>1};
                 if disposition!=1 {return Ok(Ok(ReturnerOutcome::Claim(DailyRewardResult{disposition,transaction_id:None})));}

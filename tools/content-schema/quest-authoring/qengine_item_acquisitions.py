@@ -40,6 +40,13 @@ def build(source_packet, outfits, outfit_source, source_packet_sha256):
     grants = {r['key']: r for r in packet['grants']}
     decisions = []
     for rule in packet['rules']:
+        if rule['item_id'] == 50064:
+            # TibiaWiki curid=107446, oldid=1091408: opening the green box
+            # awards Fiend Rider with the Primal Demonosaur.
+            choice, = rule['choices']
+            if rule['mode'] != 'direct' or choice['grants'] != ['oteryn:item-grant.mount.232']:
+                raise ValueError('green box Primal Demonosaur source drift')
+            choice['achievements'].append('oteryn:achievement/fiend_rider')
         if rule['mode'] != 'random_outfit':
             continue
         for choice in rule['choices']:

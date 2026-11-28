@@ -56,6 +56,14 @@ pub(super) fn qualified_global_records(
     Ok(profiles)
 }
 
+/// Exact pre-correction profiles used by previously issued artifacts.
+pub(super) fn legacy_robes() -> Result<Vec<ItemProfileRecord>, ContentError> {
+    serde_json::from_slice(include_bytes!(
+        "../../../../../../tools/content-schema/native-gameplay/galthen-boss-loot-legacy-robes.json"
+    ))
+    .map_err(|_| invalid("M25 historical robe policy"))
+}
+
 fn qualify(raw: &[u8]) -> Result<Vec<ItemProfileRecord>, ContentError> {
     if hex(sha256(raw)) != pin::CAPTURE_SHA256 {
         return Err(invalid("M25 carried loot complete source hash"));

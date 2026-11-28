@@ -9,7 +9,16 @@
         "position": null,
         "unique": null,
         "action": 101,
-        "appearance": 3221
+        "appearance": 3221,
+        "native": {
+          "position": {
+            "x": 31948,
+            "y": 31711,
+            "floor": -6
+          },
+          "ordinal": 2,
+          "appearance": 3221
+        }
       },
       "lever": null,
       "reversible": false,
@@ -28,13 +37,15 @@
         "item": "oteryn:item.tibia.i3217",
         "count": 1,
         "replacement": "oteryn:item.tibia.i2859",
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_postman_missions_quest/actions_package.lua:1-14"
-      ]
+      ],
+      "requires_world_admission": true
     }
   ]
 }

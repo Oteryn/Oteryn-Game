@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "goblins",
+        "goblin",
+        "muglex",
+        "quest",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+          "minimum": 0,
+          "maximum": 19
+        }
+      ],
+      "reply": [
+        "Keep hunting the Muglex Clan, then come back when you have defeated twenty."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "goblins",
+        "goblin",
+        "muglex",
+        "quest",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Thank you again for protecting the village."
+      ]
+    }
+  ]
+}

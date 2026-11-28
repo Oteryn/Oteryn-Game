@@ -1,0 +1,17 @@
+{
+  "id": 618,
+  "name": "ACTOR_COOLDOWN_DELTAS_V1",
+  "constant": "presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1",
+  "requires": [
+    23
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

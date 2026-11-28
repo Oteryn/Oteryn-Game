@@ -84,11 +84,12 @@ Note the failure and its root cause in the report; the wave retro
 (`oteryn-waves`, *Close the wave*) decides whether it becomes a check or a
 skill line.
 
-## 6. Red main: targeted fix
+## 6. Red main: revert first, then the fix
 
 A red post-merge run blocks every merge, so the loop above must run in
-minutes, not CI cycles. The owner's default (2026-11-02) is a targeted fix,
-not a revert. MAINRED13 was red for about 37 hours because three rounds
+minutes, not CI cycles. The owner's default is a revert (2026-11-25; it
+replaces the targeted-fix default of 2026-11-02, see the end of this
+section); the root-cause loop below then finds the fix for the reverted PR. MAINRED13 was red for about 37 hours because three rounds
 searched the whole code base and used CI (about 30 minutes per try) as the
 loop; the CI history named the culprit commit in minutes.
 
@@ -124,11 +125,12 @@ loop; the CI history named the culprit commit in minutes.
    fails for this defect merges `origin/main` once, on its otherwise-ready
    head, and names the fix SHA (`oteryn-dev` `references/ci-merge.md`,
    *Reading a red check*, step 3).
-6. **Revert is the fallback, not the default.** Offer the owner a revert of
-   the culprit when step 3 cannot reproduce the failure within about an
-   hour, or when the culprit is too large to fix in place. Name its cost:
-   later commits may conflict, and the feature leaves `main` until it comes
-   back with the fix.
+6. **Revert first on a red `main`** (owner decision 2026-11-25; `oteryn-dev`
+   `references/ci-merge.md`, *Red `main`*). Revert the culprit at once; a
+   forward fix only under the exceptions named there. A fix that meets the
+   hotfix conditions there skips the seam and node-boot wait of step 5 and
+   merges before its CI finishes; the post-merge run verifies it. The feature comes
+   back with its fix in a new PR.
 
 ## 7. Node boot and server diagnostics
 

@@ -1,18 +1,11 @@
-//! C19b: starting items, per-vocation equipment and backpack contents.
-//! Admits the provisioned character (vocation `none`) and requires the Crystal vocationless kit
-//! in the backpack (rope 3003, shovel 3457) with nothing worn, and the same after a fresh admission.
-//! The sorcerer/druid/paladin/knight/monk kits are granted only by a Dawnport vocation door
-//! (`starting_loadout::departure`), which no player route from the town start reaches, so the
-//! row ends FAIL `needed:vocation-change-route...` after the proven leg.
+//! C19b: exact Newhaven first-entry inventory and equipment across fresh admission.
 use super::*;
-use oteryn_dev_client::DevClientSession;
-use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
-        Ok(Ok(detail)) => ("PASS", token(&detail)),
+        Ok(Ok(())) => ("PASS", "newhaven-kit-proven;dawnport-vocation-door=excluded;reason=owner-excluded-dawnport".into()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
@@ -26,70 +19,38 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
-    let mut values = BTreeMap::new();
-    for item in &client
-        .inventory()
-        .ok_or("inventory snapshot absent")?
-        .entries
-    {
-        *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_C19B_ACCOUNT").await?;
+    let scoped = fixture.clients(clients);
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let vocation = if profile == "explorer" { "knight" } else { &profile };
+    let index = provisioning::item_index()?;
+    // CrystalServer donor: data-global/lib/others/newhaven.lua:3-95,126-129,
+    // transcribed in crates/gameplay/items/src/starter_grant.rs:103-149.
+    let expected = starter_inventory::newhaven_loadout(vocation, |id| {
+        provisioning::item_reference(&index, id)
+    })?;
+    let mut client = connect_character(&scoped, 0xc9, 0).await?;
+    let prior = client.join_snapshot().game_session_id;
+    starter_inventory::check_starter(
+        client.inventory().ok_or("C19b initial inventory snapshot absent")?, &expected,
+    )?;
+    release(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(&scoped, 0xc9, 0).await?;
+    if fresh.join_snapshot().game_session_id == prior {
+        return Err("C19b reused the first admission".into());
     }
-    Ok(values)
+    starter_inventory::check_starter(
+        fresh.inventory().ok_or("C19b fresh inventory snapshot absent")?, &expected,
+    )?;
+    release(&mut fresh).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout refused".into());
+async fn release(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C19b logout refused: {detail}").into());
     }
     Ok(())
-}
-
-const NONE_KIT: [u32; 2] = [3003, 3457];
-
-fn kit_report(client: &DevClientSession) -> TestResult<(Vec<u32>, usize)> {
-    let inventory = client
-        .inventory()
-        .ok_or("step=inventory observed=snapshot-absent")?;
-    let held = quantities(client)?;
-    let index = provisioning::item_index()?;
-    let mut missing = Vec::new();
-    for id in NONE_KIT {
-        // Held quantities are keyed by the generation's definition reference, not the native id.
-        let reference = provisioning::item_reference(&index, id)?;
-        if held.get(&reference.get()).copied().unwrap_or(0) == 0 {
-            missing.push(id);
-        }
-    }
-    Ok((missing, inventory.equipment.len()))
-}
-
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xc9).await?;
-    let (missing, worn) = kit_report(&client)?;
-    if !missing.is_empty() || worn != 0 {
-        return Err(format!("step=none-kit observed=missing:{missing:?};worn={worn};needed=rope3003-shovel3457-and-no-equipment").into());
-    }
-    let held = quantities(&client)?;
-    let mut client = {
-        logout(&mut client).await?;
-        connect_world(clients, 0xc9).await?
-    };
-    if quantities(&client)? != held {
-        return Err("step=fresh-admission observed=starter-kit-changed".into());
-    }
-    logout(&mut client).await?;
-    Err("vocationless-kit-proven;needed:vocation-change-route-for-sorcerer-druid-paladin-knight-monk-kits(dawnport_departure_unreachable_from_town)".into())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn none_kit_is_rope_and_shovel() {
-        assert_eq!(NONE_KIT, [3003, 3457]);
-    }
 }

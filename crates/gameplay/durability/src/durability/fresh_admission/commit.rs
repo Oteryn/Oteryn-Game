@@ -173,6 +173,7 @@ impl FreshAdmissionStore {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
+            explicit_logout: false,
             journal_catalogue: None,
             channel_switch: false,
             final_position: None,

@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "bindings": [
+    {
+      "position": [
+        31973,
+        32905,
+        10
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2022-2031:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        31973,
+        32905,
+        11
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2022-2031:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        31974,
+        32907,
+        8
+      ],
+      "item": 4285,
+      "attribute": "action",
+      "value": 40001,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:74-81:sha256:75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        9
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2022-2031:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        10
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2022-2031:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32017,
+        32917,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:878-884:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+    },
+    {
+      "position": [
+        32017,
+        32918,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "value": 25018,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:878-884:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+    },
+    {
+      "position": [
+        32022,
+        32918,
+        10
+      ],
+      "item": 21572,
+      "attribute": "action",
+      "value": 40002,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2350-2353:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32031,
+        32914,
+        8
+      ],
+      "item": 4285,
+      "attribute": "action",
+      "value": 40001,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:75-76,92-93:sha256:75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+    },
+    {
+      "position": [
+        33094,
+        32524,
+        1
+      ],
+      "item": 3263,
+      "attribute": "unique",
+      "value": 2285,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4205-4208:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        33109,
+        32530,
+        3
+      ],
+      "item": 1928,
+      "attribute": "action",
+      "value": 12105,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1718-1723:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32592,
+        31645,
+        2
+      ],
+      "item": 132,
+      "attribute": "action",
+      "value": 4001,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:396-400:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32657,
+        31927,
+        1
+      ],
+      "item": 2008,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32658,
+        31927,
+        1
+      ],
+      "item": 2009,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32657,
+        31928,
+        1
+      ],
+      "item": 2010,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32658,
+        31928,
+        1
+      ],
+      "item": 2011,
+      "attribute": "action",
+      "value": 2000,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32779,
+        31980,
+        9
+      ],
+      "item": 1989,
+      "attribute": "action",
+      "value": 2002,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
+      "position": [
+        32779,
+        31979,
+        9
+      ],
+      "item": 7875,
+      "attribute": "action",
+      "value": 2002,
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    }
+  ]
+}

@@ -49,6 +49,7 @@ pub(super) async fn resume(
         PurchaseRequestState::Sent => {
             // The first answer may have been lost after Platform debited the purchase.
             // Reconcile its original request id and immutable quote, never create a new id.
+            let unit_kind = platform_unit_kind(&request.catalog_revision, OFFER_KEY)?;
             let answer = purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
                 purchase_request_id: uuid_text(&request.purchase_request_id),
                 account_id: uuid_text(&account),
@@ -59,7 +60,7 @@ pub(super) async fn resume(
                 world_id: uuid_text(admitted.world_id.as_bytes()),
                 quantity: 1,
                 currency: "COINS".into(),
-            }, "ITEM").await)?;
+            }, unit_kind).await)?;
             let answer = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
             owner.root.record_store_answer(journal.clone(), answer).await.ok()?
         }
@@ -97,6 +98,9 @@ async fn deliver(
     operation: &str,
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
+    if owner.root.has_store_restore_conflict(operation_id).await.ok()? {
+        return None;
+    }
     let intent = platform.lock().await.read_intent(crate::native_admission_source::store::OperationKind::Deliver, operation).await.ok()?;
     let account_id = *binding.account_id.as_bytes();
     let world_id = *admitted.world_id.as_bytes();
@@ -114,11 +118,7 @@ async fn deliver(
     let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
         operation_id, account_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone(),
     }).await?;
-    let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
-    if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
-        let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
-    }
-    Some(())
+    publish(owner, platform, operation_id, &intent, &receipt).await
 }
 
 #[cfg(test)]

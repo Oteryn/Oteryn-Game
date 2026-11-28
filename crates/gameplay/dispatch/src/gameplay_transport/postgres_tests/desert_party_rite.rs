@@ -1,10 +1,10 @@
-//! Literal source rite with four genuine Fresh Characters, owned builds and altar custody.
+//! Literal source rite with five genuine Fresh Characters, owned builds and altar custody.
 use super::desert_party_rite_fixtures::{scenario};
 
 use super::TestResult;
 
 #[test]
-fn desert_dungeon_four_station_rite_uses_real_fenced_players() -> TestResult {
+fn desert_dungeon_five_station_rite_uses_real_fenced_players() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

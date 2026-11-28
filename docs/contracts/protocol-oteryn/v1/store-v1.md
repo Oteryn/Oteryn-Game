@@ -36,15 +36,15 @@ With selected `HIRELING_MANAGEMENT_V1` (250), optional length-delimited field 6 
 
 Names follow Crystal `201189f` `data/modules/scripts/gamestore/init.lua:1475-1528,1888-1890`: letters/spaces, no leading space, at most one whitespace group, donor blocked words after removing spaces, and title casing. The normalized customization joins the immutable Game purchase binding. Platform continues to receive its existing unmodified purchase contract; it remains the only debit authority.
 
-Hireling categories `houses.hirelings` and `houses.hireling-dresses` use revision `store-hireling-crystal-201189f-v1`, independently of the preserved exercise-item catalogue revision. All sixteen offers are generated from the pinned donor catalogue. Hireling purchases reserve the ten-slot character limit, character-wide entitlement or inactive target before requesting the debit. Uncertain results keep the reservation for a retry of the same request; terminal refusals release it. Accepted native lamp mint, Hireling identity or entitlement/change, immutable Store receipt and receipt outbox commit together. Replays never debit, mint, grant, rename or toggle twice.
+Hireling categories `houses.hirelings` and `houses.hireling-dresses` share the Store revision with the item and coin cosmetic sections. Before deployment, export the current Platform S-5 catalogue and run `python3 tools/content-schema/store-authoring/build_runtime_catalogue.py --platform-base <current-s5.json>` in the Game build checkout. The generator retains the Platform Premium Time offers in `rulesets/economy/store/platform-catalogue.json`. Build Game from those combined bytes and import and activate those same bytes on Platform. Game quotes use the digest of the combined catalogue. All sixteen Hireling offers are generated from the pinned donor catalogue. Hireling purchases reserve the ten-slot character limit, character-wide entitlement or inactive target before requesting the debit. Uncertain results keep the reservation for a retry of the same request; terminal refusals release it. Accepted native lamp mint, Hireling identity or entitlement/change, immutable Store receipt and receipt outbox commit together. Replays never debit, mint, grant, rename or toggle twice.
 
 Production Store producer activation remains outside E12 under PR #2783 ANSWER 6547428201 Q6; no new endpoint or balance authority is introduced.
 
-For a new Hireling, the pre-debit reservation also checks the source lamp weight against the
-existing derived carrying capacity and the20-slot StoreInbox limit. Pending lamp reservations
-count toward that limit. The native delivery transaction checks the resulting Inbox count
-again; a conflicting later inventory change leaves an accepted Platform operation pending
-for idempotent delivery retry. Game never performs a speculative coin refund or a second debit.
+For a new Hireling lamp or ordinary item, the pre-debit reservation checks the source item weight
+against the existing derived carrying capacity and the 20-slot StoreInbox limit. Pending Store
+item reservations count toward that limit. Ordinary item purchases start in a Channel.
+The native delivery transaction checks the resulting Inbox count again. A later inventory change
+can leave an accepted Platform operation pending for idempotent delivery retry. Game never performs a speculative coin refund or a second debit.
 
 The Platform operation, Hireling UUID and lamp item UUID stay stable across delivery retries.
 A native Inbox preparation is immutable and bounded by its actual session/command reference.
@@ -53,8 +53,8 @@ derived from the stable operation and the complete new CommandRef. It does not r
 attempt's work budget. A committed Store receipt records its winning `native_transaction_id`;
 the native mint, same-transaction audit and Hireling effect prove that one delivery. Exact-command
 retries retain their native attempt, and an already committed operation returns its existing
-Store receipt before preparing any more native work. Ordinary item Store operations keep their
-existing native transaction identity.
+Store receipt before preparing any more native work. Ordinary item deliveries also use a native
+attempt ID per command and preserve the original Platform operation across retries.
 
 ## StorePurchaseResultV1
 
@@ -64,9 +64,26 @@ Command 185 has exactly six results: `ACCEPTED`, `STALE_QUOTE`, `OFFER_UNAVAILAB
 
 Command 186 request: one pending Store fulfilment-unit key. It neither represents nor reconstructs a purchase.
 
+A request containing only varint field 2 with value 1 queries the admitted buyer's
+Store Inbox. It projects the buyer's retained item deliveries still held in the
+current Character's Inbox. Game resolves the Account, Character and World from
+the session. The query does not submit a claim. The paged query uses value 2 in
+field 2 and optionally sends the 16-byte continuation from the last page in
+length-delimited field 3. Omit the continuation to start at the first page.
+
 ## StoreInboxClaimReceiptV1
 
 Command 186 response: immutable Platform operation UUIDv7, fulfilment-unit key, closed result (`COMMITTED`, `REVOKED`, `NOT_CLAIMABLE`, or `REJECTED`), positive recovery generation, and decision time. A repeated operation republishes its stored receipt.
+
+For a query request, the reply is a repeated length-delimited field 1 with up to 20
+entries. Each entry has a 16-byte fulfilment-unit UUIDv7 in field 1 and a nonzero
+item client ID (uint16) in field 2. The legacy query returns an empty result payload for an empty Inbox.
+For the paged query, optional length-delimited field 2 carries the next page's
+16-byte cursor. Optional length-delimited field 3 carries a four-byte big-endian
+item definition reference for the native Hireling lamp USE action. Optional
+varint field 4 with value 1 indicates that ordinary claims require returning to
+the Channel. The client formats an ordinary entry's UUID as the key for a
+separate claim request. Claims and receipt replies retain their existing wire form.
 
 Display names follow Crystal `schema.sql:697–713` and `gamestore/init.lua:1475–1528`: they are validated text, not unique identities. Two purchases, including overlapping uncertain requests, may use the same canonical display name and receive distinct durable Hireling/lamp UUIDs.
 

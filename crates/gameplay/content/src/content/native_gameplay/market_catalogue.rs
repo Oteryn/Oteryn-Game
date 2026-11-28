@@ -12,7 +12,7 @@ const SOURCE: &[u8] = include_bytes!(
     "../../../../../../docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
 );
 pub(super) const SOURCE_SHA256: &str =
-    "0ea1fbee37110cdf3fa81a8db8e1ff75167653055926cfc1b3b4ec4ff5b1114d";
+    "81e551114333cecd53b1b7088d7e0f6f14949011bb2a645174361429e82b99e7";
 const SOURCE_COUNT: usize = 5_095;
 
 #[derive(Debug, Clone)]
