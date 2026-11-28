@@ -5,7 +5,7 @@ use crate::durability::character_authority::{
     ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use crate::durability::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, bound_periodic_lock_wait, commit_semantic_transaction, lock_admission_relations,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::RuntimeScopeRefV1;
@@ -54,9 +54,10 @@ impl DurabilityRoot {
             "rent": property.rent,
             "tiles": property.tiles,
         });
-        self.try_issue_semantic_pass()?
+        self.try_issue_background_semantic_pass()?
             .run(move |holder, deadline| Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                bound_periodic_lock_wait(&mut tx).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
                 let fact = node.fact();

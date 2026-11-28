@@ -4254,7 +4254,6 @@ async fn boot_and_serve(
                 root,
                 authority,
                 node: proof,
-                gate: &premium_reads,
                 catalogue: crate::durability::house_ownership::HouseAuctionCatalogue {
                     scope,
                     generation,

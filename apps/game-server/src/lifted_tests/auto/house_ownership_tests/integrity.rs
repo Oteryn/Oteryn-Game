@@ -75,7 +75,7 @@ fn house_ownership_acl_revision_and_null_owner_successor() -> TestResult {
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
-        root.house_settlement(&authority, &h.node, &gate(&root), settlement_request()?)
+        root.house_settlement(&authority, &h.node, settlement_request()?)
             .await
             .map_err(debug)?;
         let before: String = sqlx::query_scalar(
@@ -133,10 +133,9 @@ fn house_ownership_settlement_excludes_not_current_premium_and_refunds_once() ->
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
-        let unknown =
-            SpellPremiumCoordinator::new(Arc::new(PremiumConsumer::default()), None, None, None);
+        root.latch_premium_activation("house-expired-fixture", 1, 2).await?;
         assert_eq!(
-            root.house_settlement(&authority, &h.node, &unknown, settlement_request()?)
+            root.house_settlement(&authority, &h.node, settlement_request()?)
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Applied
@@ -144,7 +143,7 @@ fn house_ownership_settlement_excludes_not_current_premium_and_refunds_once() ->
         assert_eq!(amounts(&h).await?, (600, 0, 1));
         assert_eq!(h.count("game_account_housing_slots").await?, 0);
         assert_eq!(
-            root.house_settlement(&authority, &h.node, &unknown, settlement_request()?)
+            root.house_settlement(&authority, &h.node, settlement_request()?)
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Replayed

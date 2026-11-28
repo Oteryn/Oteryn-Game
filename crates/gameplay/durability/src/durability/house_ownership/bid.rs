@@ -101,7 +101,16 @@ pub(super) async fn bid_in_transaction(
             .bind(fact.registration_revision().to_string())
             .bind(node.sql_possession_secret())
             .fetch_one(&mut **tx)
-            .await?;
+            .await
+            .map_err(|error| {
+                if matches!(&error, sqlx::Error::Database(database)
+                    if database.code().as_deref() == Some("55P03"))
+                {
+                    HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable)
+                } else {
+                    error.into()
+                }
+            })?;
         if !opened {
             return Err(HouseOwnershipError::CatalogueUnavailable);
         }
@@ -158,12 +167,16 @@ pub(super) async fn bid_in_transaction(
     let [balance] = super::super::bank::lock_balances(tx, world, &[account]).await?[..] else {
         return Err(HouseOwnershipError::InvalidInput);
     };
+    // Keep the bid custody limit even when the bank already holds a hard-cap credit.
+    if request.maximum.checked_add(first_rent).is_none_or(|wanted| wanted > super::super::bank_audit::BANK_BALANCE_MAX) {
+        return Err(HouseOwnershipError::InvalidInput);
+    }
     let plan = plan_bid_value(
         balance.balance,
         escrow,
         request.maximum,
         first_rent,
-        super::super::bank_audit::BANK_BALANCE_MAX,
+        oteryn_gameplay_economy::guild_bank::ACCOUNT_HARD_MAX,
     )?;
     let reached = match old {
         Some(old) if gold(old, "maximum")? == request.maximum => gold(old, "reached_order")?,

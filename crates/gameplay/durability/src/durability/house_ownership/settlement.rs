@@ -8,7 +8,6 @@ use crate::foundation::WorldId;
 use oteryn_gameplay_housing::house_auction::value::{plan_release_value, plan_winner_value};
 use oteryn_gameplay_housing::house_auction::{Bid, FIRST_RENT_US, quote};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Clone)]
 pub struct HouseSettlementRequest {
@@ -21,15 +20,45 @@ pub struct HouseSettlementRequest {
 }
 
 impl super::super::DurabilityRoot {
+    /// One bounded, idempotent election or refund. Premium is read from the
+    /// durable account fence, independent of the bidder's session or Channel.
+    pub async fn house_settlement(
+        &self,
+        authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: HouseSettlementRequest,
+    ) -> Result<HouseOwnershipOutcome> {
+        use crate::durability::{character_authority::assert_recovery_fence, db::*};
+        let recovery = authority.record_for(self)
+            .map_err(|_| HouseOwnershipError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_background_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            bound_periodic_lock_wait(&mut tx).await?;
+            // Take the shared latch before the admission/house locks, as in the bid gate.
+            let bypass = crate::durability::premium_activation_latch::with_purchase_latch(
+                &mut tx, |_, witness| witness.is_some(),
+            ).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            let result = settle_in_transaction(&mut tx, &node, &request, bypass).await;
+            if result.is_ok() {
+                commit_semantic_transaction(tx, deadline).await?;
+            }
+            Ok(result)
+        })).await?
+    }
+
     /// Find the next bounded batch of ended ordinary auctions or unfinished refunds.
     pub async fn due_house_auctions(
         &self,
         world: WorldId,
         after: Option<[u8; 16]>,
     ) -> Result<Vec<HouseSettlementRequest>> {
-        self.try_issue_semantic_pass()?
+        self.try_issue_background_semantic_pass()?
             .run(move |holder, deadline| Box::pin(async move {
                 let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                super::super::db::bound_periodic_lock_wait(&mut tx).await?;
                 let rows = sqlx::query(
                     "SELECT uuid_send(a.auction_id) AS auction, a.house_key,
                       coalesce((SELECT step+1 FROM game_house_settlement_steps s
@@ -75,8 +104,7 @@ pub(super) async fn settle_in_transaction(
     tx: &mut Tx<'_>,
     node: &NodeIncarnationProof,
     request: &HouseSettlementRequest,
-    accounts: &[[u8; 16]],
-    premium: &BTreeSet<[u8; 16]>,
+    bypass_premium: bool,
 ) -> Result<HouseOwnershipOutcome> {
     if request.step > 256 || request.house_key.len() > 512 {
         return Err(HouseOwnershipError::InvalidInput);
@@ -100,6 +128,7 @@ pub(super) async fn settle_in_transaction(
     if replay {
         return Ok(HouseOwnershipOutcome::Replayed);
     }
+    let accounts = candidates(tx, &request.auction).await?;
     if request.step == 0 {
         // Only settlement's first step takes Character roots. Later refund
         // steps return captured value even if its nominated Character is inactive.
@@ -116,11 +145,10 @@ pub(super) async fn settle_in_transaction(
     if now < auction.try_get("end_us")? {
         return Ok(HouseOwnershipOutcome::NotDue);
     }
-    let actual = candidates(tx, &request.auction).await?;
-    if accounts != actual {
+    if accounts != candidates(tx, &request.auction).await? {
         return Err(HouseOwnershipError::ConcurrentChange);
     }
-    for account in accounts {
+    for account in &accounts {
         account_lock(tx, account, request.world.as_bytes()).await?;
     }
     let rows = held(tx, &request.auction).await?;
@@ -145,6 +173,9 @@ pub(super) async fn settle_in_transaction(
         }
         for row in &rows {
             let account = uuid(row, "account")?;
+            let premium = bypass_premium || crate::durability::premium_fence::settlement_premium_current(
+                tx, account, now,
+            ).await?;
             let candidate = eligibility::read(
                 tx,
                 &uuid(row, "character")?,
@@ -154,7 +185,7 @@ pub(super) async fn settle_in_transaction(
                     maximum: gold(row, "maximum")?,
                     maximum_reached_order: gold(row, "reached_order")?,
                 },
-                premium.contains(&account),
+                premium,
             )
             .await?;
             if candidate.facts.refusal() == 0 {
@@ -177,7 +208,7 @@ pub(super) async fn settle_in_transaction(
         let maximum = gold(row, "maximum")?;
         let rent = gold(row, "first_rent")?;
         let escrow = gold(row, "escrow_gold")?;
-        let cap = super::super::bank_audit::BANK_BALANCE_MAX;
+        let cap = oteryn_gameplay_economy::guild_bank::ACCOUNT_HARD_MAX;
         let plan = if let Some(q) = won {
             plan_winner_value(balance.balance, escrow, maximum, q.price, rent, cap)?
         } else {

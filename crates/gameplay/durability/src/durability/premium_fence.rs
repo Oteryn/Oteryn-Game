@@ -283,6 +283,26 @@ impl DurabilityRoot {
     }
 }
 
+/// Read the current durable entitlement while preventing a concurrent fence advance.
+pub(super) async fn settlement_premium_current(
+    tx: &mut Tx<'_>,
+    account: [u8; 16],
+    now_us: i64,
+) -> Result<bool, DurabilityError> {
+    lock_account(tx, account).await?;
+    let Some((revision, false)) = account_fence(tx, account, false).await? else {
+        return Ok(false);
+    };
+    let evidence = view(tx, account, revision, false).await?.latest;
+    Ok(evidence.state == EntitlementState::Active
+        && now_us >= evidence.effective_from_us
+        && now_us >= evidence.authority_issued_at_us
+        && now_us < evidence.effective_until_us
+        && now_us < evidence.authority_valid_until_us
+        && now_us < evidence.refresh_after_us
+        && profile_b_hint(tx, account).await? <= evidence.lifecycle_revision)
+}
+
 /// Serialize every Premium write of one account, whether or not it has a fence row yet.
 async fn profile_b_hint(tx:&mut Tx<'_>,account:[u8;16])->Result<u64,DurabilityError>{
     // Non-native fixture/compatibility identities cannot occur in the UUIDv7-only B2 feed.

@@ -7,28 +7,116 @@ use crate::foundation::{ChannelId, CharacterId, CharacterLease, RuntimeScopeRefV
 use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use sqlx::ConnectOptions;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AuctionCase {
+    Opening,
+    OfflinePremium,
+    HardCeiling,
+    HardCeilingRefund,
+    VacuumLock,
+    BusyTile,
+    ForegroundPreference,
+    ReapplyMigration,
+}
+
 #[test]
 fn house_auction_postgres_first_bid_opens_and_due_winner_owns() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run_case(admin, AuctionCase::Opening)
+}
+
+#[test]
+fn house_auction_offline_premium_bidder_wins() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::OfflinePremium)
+}
+
+#[test]
+fn house_auction_bid_and_award_above_soft_ceiling() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::HardCeiling)
+}
+
+#[test]
+fn house_auction_refunds_above_soft_ceiling() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::HardCeilingRefund)
+}
+
+#[test]
+fn house_auction_opens_during_ground_maintenance() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::VacuumLock)
+}
+
+#[test]
+fn house_auction_busy_tile_keeps_connection_open() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::BusyTile)
+}
+
+#[test]
+fn house_auction_background_work_yields_to_foreground() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::ForegroundPreference)
+}
+
+#[test]
+fn house_auction_migration_reapplies() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::ReapplyMigration)
+}
+
+fn run_case(admin: String, case: AuctionCase) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(admin).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin, case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "house auction opening PG thread panicked")??;
     Ok(())
 }
 
-fn scenario(admin: String) -> TestResult {
+fn scenario(admin: String, case: AuctionCase) -> TestResult {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
     runtime.block_on(Box::pin(async move {
         reset();
+        let tag = match case {
+            AuctionCase::Opening => "house_auction_opening",
+            AuctionCase::OfflinePremium => "house_auction_offline",
+            AuctionCase::HardCeiling => "house_auction_hard_cap",
+            AuctionCase::HardCeilingRefund => "house_auction_hard_refund",
+            AuctionCase::VacuumLock => "house_auction_vacuum",
+            AuctionCase::BusyTile => "house_auction_busy_tile",
+            AuctionCase::ForegroundPreference => "house_auction_foreground",
+            AuctionCase::ReapplyMigration => "house_auction_reapply",
+        };
         let mut h =
-            Harness::create_with_admission_seed(admin, "house_auction_opening", true, false)
+            Harness::create_with_admission_seed(admin, tag, true, false)
                 .await?;
+        if case == AuctionCase::ReapplyMigration {
+            sqlx::raw_sql(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server/migrations/3356_house_auction_opening.sql"
+            ))).execute(&h.pool).await?;
+            return h.cleanup().await;
+        }
         prepare_current_session(&h).await?;
         let runtime_options = h
             .pool
@@ -101,7 +189,8 @@ fn scenario(admin: String) -> TestResult {
             .execute(&h.pool)
             .await?;
         let rent = i64::try_from(crate::gameplay_transport::house_query::source_house_rent(HOUSE).ok_or("catalogue rent")?)?;
-        let funding = rent + 900;
+        let excess = if matches!(case, AuctionCase::HardCeiling | AuctionCase::HardCeilingRefund) { 1_000_000_000_000 } else { 0 };
+        let funding = rent + 900 + excess;
         sqlx::query("INSERT INTO game_public_house_catalogue VALUES(encode($1,'hex')::uuid,$2,'Admiral''s Avenue 1','private_house','liberty_bay',1,0,$3,$4)")
             .bind(id(42).as_slice()).bind(HOUSE).bind(rent).bind(digest.as_slice()).execute(&h.pool).await?;
 
@@ -123,6 +212,24 @@ fn scenario(admin: String) -> TestResult {
             rent: rent as u64,
             tiles: &tiles,
         };
+        if case == AuctionCase::ForegroundPreference {
+            use crate::durability::{DurabilityError, house_ownership::HouseOwnershipError};
+            let demand = h.root.foreground_demand()?;
+            let deferred = h.root.qualify_house_auction(&authority, &h.node, &catalogue, property()).await;
+            assert!(matches!(deferred, Err(HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable))));
+            assert!(matches!(h.root.due_house_auctions(world, None).await,
+                Err(HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable))));
+            let request = crate::durability::house_ownership::HouseSettlementRequest {
+                world, house_key: HOUSE.into(), auction: id(76), step: 0,
+            };
+            assert!(matches!(h.root.house_settlement(&authority, &h.node, request).await,
+                Err(HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable))));
+            drop(demand);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let stale = HouseAuctionCatalogue {
             generation: generation + 1,
             ..catalogue
@@ -202,7 +309,28 @@ fn scenario(admin: String) -> TestResult {
         let mut amount = Vec::new();
         scalar(&mut amount, 1, 200);
         let bid = intent(1, &amount);
+        if case == AuctionCase::BusyTile {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended(
+                encode($1,'hex')::uuid::text||':'||encode($2,'hex'),3356))")
+                .bind(world.as_bytes().as_slice()).bind(&tile_bytes).execute(&mut *tx).await?;
+            assert_eq!(
+                send(&owner, &mut admitted, 56, &bid).await?,
+                (CommandStatus::Accepted, wire::encode_house_result(wire::HouseDisposition::Rejected, 0)),
+                "a proven pre-commit lock failure keeps the session usable after exhausting the retry budget"
+            );
+            tx.rollback().await?;
+            assert_eq!(public_status(&h).await?, "VACANT");
+        }
         let command = admitted.continuity.next_command_id;
+        let mut maintenance = if case == AuctionCase::VacuumLock {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_item_ground_locations IN SHARE UPDATE EXCLUSIVE MODE")
+                .execute(&mut *tx).await?;
+            Some(tx)
+        } else {
+            None
+        };
         let earliest = clock(&h).await?;
         let ok = wire::encode_house_result(wire::HouseDisposition::Ok, 0);
         assert_eq!(
@@ -210,6 +338,9 @@ fn scenario(admin: String) -> TestResult {
             (CommandStatus::Accepted, ok.clone()),
             "the first funded bid opens a qualified vacant house"
         );
+        if let Some(tx) = maintenance.take() {
+            tx.rollback().await?;
+        }
         assert_eq!(
             resend(&owner, &mut admitted, command, 56, &bid).await?,
             (CommandStatus::DuplicateReplay, ok)
@@ -254,7 +385,7 @@ fn scenario(admin: String) -> TestResult {
              JOIN game_house_audit_outbox o ON o.operation_id=a.auction_id
              JOIN game_account_bank_balances v ON (v.world_id,v.account_id)=(b.world_id,b.account_id)"
         ).fetch_one(&h.pool).await?;
-        assert_eq!((opened.0, opened.1, opened.2), (rent, rent + 200, 700));
+        assert_eq!((opened.0, opened.1, opened.2), (rent, rent + 200, 700 + excess));
         let duration = oteryn_gameplay_housing::house_auction::OPENING_US;
         assert!((earliest + duration..=latest + duration).contains(&opened.3));
         assert_eq!(public_status(&h).await?, "AUCTION");
@@ -288,6 +419,31 @@ fn scenario(admin: String) -> TestResult {
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
+        if case == AuctionCase::OfflinePremium {
+            use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+            let now = clock(&h).await?;
+            h.root.latch_premium_activation("house-auction-offline", now - 2, now - 1).await?;
+            h.root.accept_premium_evidence(&PremiumEvidence {
+                account_id: id(40),
+                producer_revision: "r1".into(),
+                producer_profile: "native-v1".into(),
+                product_id: "oteryn.premium_time".into(),
+                product_version: 1,
+                entitlement_id: Some("house-auction-premium".into()),
+                state: EntitlementState::Active,
+                lifecycle_revision: 1,
+                authority_revision: 1,
+                effective_from_us: now - 1_000_000,
+                effective_until_us: now + 3_600_000_000,
+                authority_issued_at_us: now - 1_000_000,
+                authority_valid_until_us: now + 3_600_000_000,
+                refresh_after_us: now + 1_800_000_000,
+            }).await?;
+            // The dispatch coordinator has no in-memory entitlement for this bidder.
+        }
+        if case == AuctionCase::HardCeilingRefund {
+            h.root.latch_premium_activation("house-auction-no-premium", 1, 2).await?;
+        }
         let mut due = h
             .root
             .due_house_auctions(world, None)
@@ -297,18 +453,30 @@ fn scenario(admin: String) -> TestResult {
         let winner = due.pop().ok_or("due auction")?;
         assert_eq!(
             h.root
-                .house_settlement(&authority, &h.node, &gate, winner.clone())
+                .house_settlement(&authority, &h.node, winner.clone())
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Applied
         );
         assert_eq!(
             h.root
-                .house_settlement(&authority, &h.node, &gate, winner)
+                .house_settlement(&authority, &h.node, winner)
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Replayed
         );
+        if case == AuctionCase::HardCeilingRefund {
+            let refunded: (i16, i64, i64) = sqlx::query_as(
+                "SELECT b.state,b.escrow_gold,v.balance FROM game_house_bids b
+                 JOIN game_account_bank_balances v USING(world_id,account_id)"
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(refunded, (3, 0, funding));
+            assert_eq!(public_status(&h).await?, "VACANT");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let owned: (Vec<u8>,i64,i16,i64,i64) = sqlx::query_as(
             "SELECT uuid_send(game_house_effective_owner(p.world_id,p.house_key)),p.ownership_generation::bigint,b.state,b.escrow_gold,v.balance
              FROM game_house_properties p JOIN game_house_auctions a USING(world_id,house_key)
@@ -316,7 +484,7 @@ fn scenario(admin: String) -> TestResult {
              JOIN game_account_bank_balances v ON (v.world_id,v.account_id)=(b.world_id,b.account_id)
              JOIN game_account_housing_slots s ON (s.world_id,s.house_key,s.account_id)=(p.world_id,p.house_key,p.owner_account_id)"
         ).fetch_one(&h.pool).await?;
-        assert_eq!(owned, (id(41).to_vec(), 2, 2, 0, 900));
+        assert_eq!(owned, (id(41).to_vec(), 2, 2, 0, 900 + excess));
         assert!(
             h.root
                 .due_house_auctions(world, None)

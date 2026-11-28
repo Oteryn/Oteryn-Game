@@ -111,8 +111,10 @@ pub fn mutation(
 ) -> Result<FeatureCommand> {
     id(&world)?;
     text(house.as_bytes())?;
-    let positive = !matches!(action, Action::Bid(0) | Action::Notice(0));
-    require(positive, "Enter a positive amount or time")?;
+    require(
+        !matches!(action, Action::Notice(0)),
+        "Enter a positive amount or time",
+    )?;
     let binding = [bytes(1, &world), bytes(2, house.as_bytes())].concat();
     let (tag, mut body) = match action {
         Action::Bid(n) => (1, number(1, *n)),
@@ -292,4 +294,16 @@ pub fn acl_query(world: [u8; 16], town: &str, read: &HouseAclRead) -> Result<Fea
         kind: 57,
         payload,
     })
+}
+
+#[cfg(test)]
+#[test]
+fn house_client_encodes_zero_maximum() -> Result<()> {
+    let mut world = [1; 16];
+    world[6] = 0x70;
+    world[8] = 0x80;
+    let command = mutation(world, "oteryn:content.house.test", 1, &Action::Bid(0))?;
+    assert!(command.payload.ends_with(&[10, 2, 8, 0]));
+    assert!(mutation(world, "oteryn:content.house.test", 1, &Action::Notice(0)).is_err());
+    Ok(())
 }

@@ -1,6 +1,6 @@
 -- A current checked map qualifies ordinary houses for acquisition independently
 -- of public projection configuration. Existing custody addresses are immutable.
-CREATE TABLE game_house_auction_catalogue (
+CREATE TABLE IF NOT EXISTS game_house_auction_catalogue (
  world_id UUID NOT NULL,
  house_key TEXT NOT NULL,
  reset_epoch NUMERIC(20,0) NOT NULL,
@@ -12,13 +12,21 @@ CREATE TABLE game_house_auction_catalogue (
  CHECK(game_house_scope_key_valid(house_key)),
  FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_epochs
 );
-CREATE INDEX game_house_auction_catalogue_epoch ON game_house_auction_catalogue(world_id,reset_epoch);
-ALTER TABLE game_house_auctions ADD COLUMN requires_opening_bid BOOLEAN NOT NULL DEFAULT FALSE;
-CREATE INDEX game_house_auction_world_order ON game_house_auctions(world_id,auction_id);
-CREATE INDEX game_house_tiles_by_house ON game_house_tiles(world_id,house_key,spatial_position);
+CREATE INDEX IF NOT EXISTS game_house_auction_catalogue_epoch ON game_house_auction_catalogue(world_id,reset_epoch);
+ALTER TABLE game_house_auctions ADD COLUMN IF NOT EXISTS requires_opening_bid BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS game_house_auction_world_order ON game_house_auctions(world_id,auction_id);
+CREATE INDEX IF NOT EXISTS game_house_tiles_by_house ON game_house_tiles(world_id,house_key,spatial_position);
+-- Bank balances can already receive privileged credits up to the hard ceiling.
+-- Preserve the separate soft limit on the amount held in bid custody.
+ALTER TABLE game_house_operations
+ DROP CONSTRAINT IF EXISTS game_house_operations_balance_before_check,
+ DROP CONSTRAINT IF EXISTS game_house_operations_balance_after_check,
+ ADD CONSTRAINT game_house_operations_balance_before_check CHECK(balance_before BETWEEN 0 AND 9000000000000000),
+ ADD CONSTRAINT game_house_operations_balance_after_check CHECK(balance_after BETWEEN 0 AND 9000000000000000);
+
 REVOKE ALL ON game_house_auction_catalogue FROM PUBLIC,oteryn_game_runtime;
 
-CREATE FUNCTION game_house_qualify_auction(p JSONB,n UUID,nr NUMERIC,secret BYTEA)
+CREATE OR REPLACE FUNCTION game_house_qualify_auction(p JSONB,n UUID,nr NUMERIC,secret BYTEA)
 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE w UUID:=(p->>'world')::uuid; ch UUID:=(p->>'channel')::uuid;
  epoch NUMERIC:=(p->>'epoch')::numeric; digest BYTEA:=decode(p->>'digest','hex');
@@ -62,7 +70,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 
-CREATE VIEW game_house_current_auction_catalogue AS
+CREATE OR REPLACE VIEW game_house_current_auction_catalogue AS
  SELECT c.world_id,c.house_key,c.kind,c.rent_gold,c.content_digest
  FROM game_house_auction_catalogue c JOIN game_world_reset_active a USING(world_id,reset_epoch);
 REVOKE ALL ON game_house_current_auction_catalogue FROM PUBLIC;
@@ -71,15 +79,30 @@ GRANT SELECT ON game_house_current_auction_catalogue TO oteryn_game_runtime;
 -- Preserve the existing read model, with a vacant listing for qualified unmaterialized properties.
 DO $$ DECLARE definition TEXT; BEGIN
  SELECT pg_get_functiondef('game_public_v2_house(uuid,text)'::regprocedure) INTO STRICT definition;
+ IF strpos(definition,'IF p.state=1 OR (p.world_id IS NULL AND EXISTS(SELECT 1 FROM game_house_current_auction_catalogue')<>0
+ THEN RETURN; END IF;
  IF strpos(definition,'IF p.state=1 THEN')=0 THEN RAISE EXCEPTION 'House projection vacancy branch missing'; END IF;
  EXECUTE replace(definition,'IF p.state=1 THEN',
   'IF p.state=1 OR (p.world_id IS NULL AND EXISTS(SELECT 1 FROM game_house_current_auction_catalogue q
    WHERE (q.world_id,q.house_key,q.kind)=(w,h,c.kind))) THEN');
 END $$;
 
-CREATE FUNCTION game_house_open_auction(w UUID,h TEXT,digest BYTEA,op UUID,duration_us BIGINT,
+-- The existing Ground guard and catalogue activation serialize only the affected
+-- tile. Autovacuum can retain its relation-level maintenance lock.
+CREATE OR REPLACE FUNCTION game_house_ground_tile_guard() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ PERFORM pg_advisory_xact_lock_shared(hashtextextended(
+  NEW.world_id::text||':'||encode(NEW.spatial_position,'hex'),3356));
+ IF EXISTS(SELECT 1 FROM game_house_tiles WHERE world_id=NEW.world_id AND spatial_position=NEW.spatial_position) THEN
+  RAISE EXCEPTION 'Ground location is a World-global House tile' USING ERRCODE='23514';
+ END IF;
+ RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION game_house_open_auction(w UUID,h TEXT,digest BYTEA,op UUID,duration_us BIGINT,
  n UUID,nr NUMERIC,secret BYTEA) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE prop game_house_properties; q game_house_auction_catalogue;
+DECLARE prop game_house_properties; q game_house_auction_catalogue; tile BYTEA;
 BEGIN
  IF duration_us IS NULL OR duration_us<=0 OR NOT coalesce(game_character_is_uuid_v7(op),false)
   OR game_node_prove_current_incarnation(n,nr,secret) IS DISTINCT FROM TRUE OR NOT EXISTS(
@@ -91,8 +114,10 @@ BEGIN
     AND game_world_reset_map_epoch_current(w,a.reset_epoch);
  IF NOT FOUND THEN RETURN FALSE; END IF;
 
- PERFORM pg_advisory_xact_lock(hashtextextended(w::text||':'||h,3356));
- SELECT * INTO prop FROM game_house_properties WHERE world_id=w AND house_key=h FOR UPDATE;
+ IF NOT pg_try_advisory_xact_lock(hashtextextended(w::text||':'||h,3356)) THEN
+  RAISE EXCEPTION 'HOUSE_AUCTION_BUSY' USING ERRCODE='55P03';
+ END IF;
+ SELECT * INTO prop FROM game_house_properties WHERE world_id=w AND house_key=h FOR UPDATE NOWAIT;
  IF FOUND AND (prop.kind<>q.kind OR prop.content_fence_operation IS NOT NULL
               OR prop.state NOT IN (1,2)) THEN RETURN FALSE; END IF;
  -- Another first bid may have committed while we waited for the property.
@@ -105,8 +130,13 @@ BEGIN
  IF EXISTS(SELECT 1 FROM unnest(q.tiles) f(t) WHERE NOT EXISTS(
   SELECT 1 FROM game_house_tiles WHERE world_id=w AND house_key=h AND spatial_position=t
  )) THEN
-  -- Exclude concurrent Ground writes between the custody check and tile registration.
-  LOCK TABLE game_item_ground_locations IN SHARE ROW EXCLUSIVE MODE NOWAIT;
+  -- Lock the complete tile set before a fresh Ground read. A competing writer
+  -- either commits before this read or retries after the House is registered.
+  FOR tile IN SELECT t FROM unnest(q.tiles) f(t) ORDER BY t LOOP
+   IF NOT pg_try_advisory_xact_lock(hashtextextended(w::text||':'||encode(tile,'hex'),3356)) THEN
+    RAISE EXCEPTION 'HOUSE_AUCTION_TILE_BUSY' USING ERRCODE='55P03';
+   END IF;
+  END LOOP;
   IF EXISTS(SELECT 1 FROM game_item_ground_locations WHERE world_id=w AND spatial_position=ANY(q.tiles)) THEN
    RETURN FALSE;
   END IF;
@@ -131,7 +161,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 
-CREATE FUNCTION game_house_opening_bid_proven() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE OR REPLACE FUNCTION game_house_opening_bid_proven() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM game_house_operations o
    WHERE o.operation_id=NEW.auction_id AND o.auction_id=NEW.auction_id
@@ -140,11 +170,13 @@ BEGIN
  END IF;
  RETURN NULL;
 END $$;
+DROP TRIGGER IF EXISTS game_house_opening_bid_proven ON game_house_auctions;
 CREATE CONSTRAINT TRIGGER game_house_opening_bid_proven AFTER INSERT ON game_house_auctions
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.requires_opening_bid)
  EXECUTE FUNCTION game_house_opening_bid_proven();
 
 DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_ground_tile_guard() SET search_path=pg_catalog,%I,pg_temp',current_schema());
  EXECUTE format('ALTER FUNCTION game_house_opening_bid_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
  EXECUTE format('ALTER FUNCTION game_house_qualify_auction(JSONB,UUID,NUMERIC,BYTEA) SET search_path=pg_catalog,%I,pg_temp',current_schema());
  EXECUTE format('ALTER FUNCTION game_house_open_auction(UUID,TEXT,BYTEA,UUID,BIGINT,UUID,NUMERIC,BYTEA) SET search_path=pg_catalog,%I,pg_temp',current_schema());
