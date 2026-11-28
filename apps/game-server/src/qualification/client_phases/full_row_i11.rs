@@ -645,7 +645,8 @@ mod tests {
         };
         use oteryn_protocol_oteryn::world_object::encode_use_result;
 
-        let mut refusal = encode_use_result(UseDisposition::Rejected)?;
+        let mut refusal = encode_use_result(UseDisposition::Rejected)
+            .map_err(|error| format!("test USE encode: {error:?}"))?;
         append_refusal_detail(
             &mut refusal,
             &[CAPABILITY_REFUSAL_DETAIL_V1],
@@ -655,7 +656,8 @@ mod tests {
             decode_use_reply("bake", 54, 169, CommandStatus::Rejected, &refusal)?,
             UseDisposition::Rejected,
         );
-        let committed = encode_use_result(UseDisposition::Committed)?;
+        let committed = encode_use_result(UseDisposition::Committed)
+            .map_err(|error| format!("test USE encode: {error:?}"))?;
         assert_eq!(
             decode_use_reply("bake", 54, 170, CommandStatus::Accepted, &committed)?,
             UseDisposition::Committed,
