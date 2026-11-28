@@ -27,6 +27,8 @@ pub(super) struct ReplayRetention {
     pub(super) world_deltas: VecDeque<RawReplayDelta>,
     pub(super) appearance_sequence: Option<u64>,
     pub(super) appearance_deltas: VecDeque<RawReplayDelta>,
+    pub(super) capture_inventory: bool,
+    pub(super) inventory_frame: Option<Vec<u8>>,
 }
 
 pub(super) fn retain_delta(
@@ -47,6 +49,65 @@ pub(super) fn retain_delta(
 }
 
 impl<S> Session<S> {
+    /// Retain the latest original inventory delta envelope on this admission.
+    pub fn enable_inventory_replay_capture(&mut self) {
+        self.replay.capture_inventory = true;
+        self.replay.inventory_frame = None;
+    }
+
+    /// Take the most recently received inventory envelope for replay.
+    pub fn take_inventory_replay_frame(&mut self) -> Option<Vec<u8>> {
+        self.replay.inventory_frame.take()
+    }
+
+    pub(super) fn retain_inventory_frame(
+        &mut self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+        frame: &[u8],
+    ) {
+        if self.replay.capture_inventory
+            && envelope.message_type() == MessageType::StateDelta
+            && decode_state_delta(envelope.payload()).is_ok_and(|delta| {
+                delta.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                    && delta.delta_type == item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1
+            })
+        {
+            self.replay.inventory_frame = Some(frame.to_vec());
+        }
+    }
+
+    /// Decode an original inventory envelope against this admission's negotiated options.
+    pub fn replay_inventory_frame(
+        &self,
+        frame: &[u8],
+        server_sequence: u64,
+    ) -> Result<(u64, u64, CharacterInventory), SessionError>
+    where
+        S: SessionStream,
+    {
+        let envelope = decode_wire_envelope(frame)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        self.check_generation(&envelope)?;
+        if envelope.message_type() != MessageType::StateDelta
+            || envelope.server_sequence() != server_sequence
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
+        let delta = decode_state_delta(envelope.payload())?;
+        if delta.domain_id != item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+            || delta.delta_type != item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
+        let inventory = item_view::decode_character_inventory_with_appearances(
+            delta.payload,
+            self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+            self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+        )
+        .map_err(SessionError::ItemView)?;
+        Ok((delta.base_revision, delta.new_revision, inventory))
+    }
+
     /// Most recent applied world entity deltas, oldest first, since the latest world snapshot.
     /// The oldest entries are evicted at [`REPLAY_DELTA_LIMIT`].
     pub fn raw_world_entity_deltas(&self) -> &VecDeque<RawReplayDelta> {

@@ -9,9 +9,9 @@
 //!    ATTACK again and require the Ok intent reply but no damage presentation, mana debit, or
 //!    inventory change during a complete attack interval (the server's no-ammunition refusal).
 //! 3. Equip the Wand of Vortex, send ATTACK against a live rat, and require the Ok reply, an exact
-//!    one-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
+//!    two-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
 //! 4. Buy a Snakebite Rod on a separate Druid, equip it, and send ATTACK. Require an exact
-//!    two-mana debit, attributed earth-coloured damage without inventory consumption, and kill XP.
+//!    one-mana debit, attributed earth-coloured damage without inventory consumption, and kill XP.
 //! 5. Check each Character on fresh admission for new session identity and durable custody,
 //!    ammunition, mana, and kill XP.
 
@@ -29,8 +29,8 @@ const BOW: u32 = 3350;
 const ARROW: u32 = 3447;
 const WAND: u32 = 3074;
 const ROD: u32 = 3066;
-const WAND_MANA: u32 = 1;
-const ROD_MANA: u32 = 2;
+const WAND_MANA: u32 = 2;
+const ROD_MANA: u32 = 1;
 
 // These packet callers use the local signer in world::connect_character.
 // Gameplay checks can still run, but no packet can attest to the Platform issuer.
@@ -149,37 +149,38 @@ async fn wait_count(
     }
 }
 
+fn coin_references() -> TestResult<[(NonZeroU32, u64); 3]> {
+    let index = provisioning::item_index()?;
+    Ok([
+        (provisioning::item_reference(&index, 3031)?, 1),
+        (provisioning::item_reference(&index, 3035)?, 100),
+        (provisioning::item_reference(&index, 3043)?, 10_000),
+    ])
+}
+
+fn carried_gold(client: &DevClientSession, coins: &[(NonZeroU32, u64); 3]) -> TestResult<u64> {
+    Ok(client.inventory().ok_or("gold-inventory-absent")?.entries.iter()
+        .map(|entry| {
+            coins.iter().find(|(key, _)| *key == entry.item_definition_ref)
+                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
+}
+
 pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
-    let gold = [
-        (reference(3031)?, 1),
-        (reference(3035)?, 100),
-        (reference(3043)?, 10_000),
-    ];
-    let value = |client: &DevClientSession| -> TestResult<u64> {
-        Ok(client
-            .inventory()
-            .ok_or("gold-inventory-absent")?
-            .entries
-            .iter()
-            .map(|e| {
-                gold.iter()
-                    .find(|(k, _)| *k == e.item_definition_ref)
-                    .map_or(0, |(_, v)| u64::from(e.count.get()) * v)
-            })
-            .sum())
-    };
+    let coins = coin_references()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while value(client)? < needed {
+    while carried_gold(client, &coins)? < needed {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
                 "gold-combat-budget:observed={}:needed={needed}",
-                value(client)?
+                carried_gold(client, &coins)?
             )
             .into());
         }
@@ -197,7 +198,36 @@ async fn walk_ranged_route(
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction);
-        let step = client.step(direction).await?;
+        let mut step = client.step(direction).await?;
+        if step.disposition == StepDisposition::Blocked {
+            let occupied = expected.ok_or("C02 blocked step has no compiled destination")?;
+            let entities = client.world_entities().ok_or("C02 occupancy view absent")?;
+            let occupant = entities.iter()
+                .find(|entity| tile(entity.position).ok() == Some(occupied))
+                .ok_or_else(|| format!(
+                    "BLOCKER-SERVER C02 blocked tile has no occupant: from={from:?} tile={occupied:?} reply={step:?}"
+                ))?;
+            if occupant.kind != EntityKind::Creature {
+                return Err(format!("C02 blocked by non-creature occupant: {:?}", occupant.entity).into());
+            }
+            let occupant = occupant.entity;
+            evidence(&format!("C02_STEP_BLOCKED creature={occupant:?} tile={occupied:?} reply={step:?}"));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+            verdict::Harness::global().bounded_wait(deadline, "C02 blocked creature");
+            loop {
+                client.service_liveness(Duration::from_millis(25)).await?;
+                let view = client.world_entities().ok_or("C02 occupancy view absent")?;
+                if view.get(&occupant).is_none_or(|entity| tile(entity.position).ok() != Some(occupied)) {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("C02 creature {occupant:?} still occupies {occupied:?}").into());
+                }
+                client.take_events();
+            }
+            evidence(&format!("C02_STEP_CLEAR creature={occupant:?} tile={occupied:?}"));
+            step = client.step(direction).await?;
+        }
         let arrived = tile(client.world_spatial().actor_position)?;
         if step.disposition != StepDisposition::Moved
             || step.world_spatial_delta.is_none()
@@ -284,7 +314,7 @@ async fn buy(
         .iter()
         .filter(|n| sellers.contains(&n.key))
         .filter_map(|n| {
-            let approach = npc::TALK_RANGE_TILES - if n.key == "oteryn:npc.xodet" { 2 } else { 0 };
+            let approach = npc::TALK_RANGE_TILES - if roaming_seller_name(&n.key).is_some() { 2 } else { 0 };
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
                     p.floor == at.floor
@@ -311,10 +341,11 @@ async fn buy(
                             floor: -i16::from(p.floor),
                         };
                         seller_position_matches(&seller.key, home, entity.position)
-                            && (seller.key != "oteryn:npc.xodet"
-                                || entity.display_name.is_none_or(|name| {
-                                    name.as_str().is_ok_and(|name| name == "Xodet")
-                                }))
+                            && roaming_seller_name(&seller.key).is_none_or(|expected| {
+                                entity.display_name.is_some_and(|name| {
+                                    name.as_str().is_ok_and(|name| name == expected)
+                                })
+                            })
                     })
             });
             let candidate = candidates.next()?;
@@ -343,8 +374,11 @@ async fn buy(
         .session_mut()
         .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window =
-        npc::decode_npc_trade_window(&delta.payload).map_err(|e| format!("trade-window:{e:?}"))?;
+    let details = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = npc::decode_npc_trade_window_for(&delta.payload, details)
+        .map_err(|e| format!("trade-window:{e:?}"))?;
     let (index, offer) = window
         .offers
         .iter()
@@ -352,11 +386,17 @@ async fn buy(
         .find(|(_, o)| o.side == npc::NpcTradeSide::Buy && o.item_definition_ref == key.get())
         .ok_or("live-offer-absent")?;
     let before = count(client, key)?;
+    let coins = coin_references()?;
+    let gold_before = carried_gold(client, &coins)?;
+    let (seller_actor, catalogue_revision) = window.open.ok_or("trade-window-closed")?;
+    if seller_actor != actor {
+        return Err("C02 trade window belongs to a different seller".into());
+    }
     let reply = npc_shop::buy(
         client.session_mut(),
         &npc::NpcTradeIntent {
             npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade-window-closed")?.1,
+            catalogue_revision,
             offer_index: u32::try_from(index)?,
             side: offer.side,
             quantity,
@@ -367,21 +407,37 @@ async fn buy(
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!("trade-buy:item={id}:reply={reply:?}").into());
     }
-    wait_count(
+    let sequence = wait_count(
         client,
         key,
         before + u64::from(offer.count) * u64::from(quantity),
     )
-    .await
+    .await?;
+    let paid = u64::from(offer.unit_price) * u64::from(quantity);
+    let gold_after = carried_gold(client, &coins)?;
+    if gold_before.checked_sub(paid) != Some(gold_after) {
+        return Err(format!(
+            "C02 trade debit mismatch: item={id} gold={gold_before}->{gold_after} expected_debit={paid}"
+        ).into());
+    }
+    Ok(sequence)
 }
 
 fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
     a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
 }
 
+fn roaming_seller_name(key: &str) -> Option<&'static str> {
+    match key {
+        "oteryn:npc.galuna" => Some("Galuna"),
+        "oteryn:npc.xodet" => Some("Xodet"),
+        _ => None,
+    }
+}
+
 fn seller_position_matches(key: &str, home: ActorPosition, position: ActorPosition) -> bool {
     position.floor == home.floor
-        && (position == home || (key == "oteryn:npc.xodet" && distance(home, position) <= 2))
+        && (position == home || (roaming_seller_name(key).is_some() && distance(home, position) <= 2))
 }
 
 pub(super) fn frame_follows_result(frame: u64, result: u64) -> bool {
@@ -627,11 +683,30 @@ async fn consume_one_arrow(client: &mut DevClientSession, arrows: NonZeroU32) ->
     stop(client).await
 }
 pub(super) async fn stop(client: &mut DevClientSession) -> TestResult {
-    let r = client.session_mut().attack_target(None).await?;
-    if r.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("stop-reply={r:?}").into());
+    let target = client.session_mut().combat_state().ok_or("C02 combat state absent")?.target;
+    let Some(target) = target else {
+        return Ok(());
+    };
+    let reply = client.session_mut().attack_target(None).await?;
+    if reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("stop-reply={reply:?}").into());
     }
-    Ok(())
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::ActorCombatState(delta) = event
+                && delta.server_sequence > reply.result_server_sequence
+                && delta.value.target.is_none()
+            {
+                evidence(&format!("C02_ATTACK_CLEARED target={target:?} sequence={}", delta.server_sequence));
+                return Ok(());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C02 attack target {target:?} did not clear").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 async fn prepare_ranged_character(
@@ -771,6 +846,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let wand_xp = finish_kill(&mut client, wand_xp_before, "wand").await?;
     row.pass(3, (wand_hit, wand_xp));
+    retreat_from_combat(&mut client, world).await?;
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
@@ -818,6 +894,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let rod_xp = finish_kill(&mut client, rod_xp_before, "rod").await?;
     row.pass(4, (rod_hit, rod_xp));
+    retreat_from_combat(&mut client, world).await?;
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     let expected_mana = client
@@ -913,23 +990,32 @@ async fn finish_kill(client: &mut DevClientSession, before: u64, weapon: &str) -
     }
 }
 
+pub(super) async fn retreat_from_combat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let here = tile(client.world_spatial().actor_position)?;
+    let path = route(world, here, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone())
+    }).ok_or("C02 no reachable protection zone for logout")?;
+    walk_ranged_route(client, world, &path).await
+}
+
 pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
-    use oteryn_protocol_oteryn::logout::LogoutResult;
-    let first = client.session_mut().logout().await?;
-    match first.result {
-        Some(LogoutResult::Accepted) => return Ok(()),
-        Some(LogoutResult::InFight { retry_after_ms }) => {
-            let duration = Duration::from_millis(u64::from(retry_after_ms));
-            evidence(&format!("C02_LOGOUT in_fight_ms={retry_after_ms}"));
-            verdict::Harness::global()
-                .bounded_wait(tokio::time::Instant::now() + duration, "combat-logout-lock");
-            client.service_liveness(duration).await?;
+    use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
+    let duration = Duration::from_millis(u64::from(MAX_LOGOUT_RETRY_AFTER_MS));
+    let deadline = tokio::time::Instant::now() + duration;
+    while client.session_mut().combat_state().ok_or("C02 combat state absent before logout")?.in_fight {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C02 combat lock did not clear before the logout deadline".into());
         }
-        observed => return Err(format!("logout-reply={observed:?}").into()),
+        verdict::Harness::global().bounded_wait(deadline, "combat-logout-lock");
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
     }
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(LogoutResult::Accepted) {
-        return Err(format!("logout-after-combat-lock={:?}", reply.result).into());
+        return Err(format!("logout-reply={reply:?}").into());
     }
     Ok(())
 }
@@ -954,11 +1040,11 @@ mod tests {
 
 #[test]
 fn c02_wand_and_rod_use_their_own_mana_costs() {
-    assert_eq!((WAND_MANA, ROD_MANA), (1, 2));
+    assert_eq!((WAND_MANA, ROD_MANA), (2, 1));
 }
 
 #[test]
-fn c02_xodet_may_wander_on_his_authored_floor() {
+fn c02_roaming_sellers_stay_on_their_authored_floor() {
     let home = ActorPosition {
         x: 33196,
         y: 32817,
@@ -969,6 +1055,7 @@ fn c02_xodet_may_wander_on_his_authored_floor() {
         ..home
     };
     assert!(seller_position_matches("oteryn:npc.xodet", home, moved));
+    assert!(seller_position_matches("oteryn:npc.galuna", home, moved));
     assert!(!seller_position_matches("oteryn:npc.other", home, moved));
     assert!(!seller_position_matches(
         "oteryn:npc.xodet",

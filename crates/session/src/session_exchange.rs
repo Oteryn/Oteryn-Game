@@ -364,6 +364,7 @@ impl<S: SessionStream> Session<S> {
                 continue;
             }
             if envelope.message_type() != MessageType::LivenessProbe {
+                self.retain_inventory_frame(&envelope, &frame);
                 return Ok(frame);
             }
             self.answer_probe(envelope.payload()).await?;

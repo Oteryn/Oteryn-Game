@@ -1,4 +1,4 @@
-//! C02 replay coverage for the native session inventory reducer.
+//! Unit coverage for the native session inventory reducer and original-frame retention.
 //!
 //! The owning client code is `Session::dispatch_delta` in
 //! `crates/session/src/domain_dispatch.rs` (the `STATE_DOMAIN_CHARACTER_INVENTORY` arm), which
@@ -38,24 +38,23 @@ fn c02_replays_server_ammunition_payload_and_rejects_invalid_delta() -> Result<(
                     }],
                     ..CharacterInventory::default()
                 };
-                let (payload, expected) =
-                    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                        let root = std::path::Path::new(&root);
-                        (
-                            std::fs::read(root.join("c02-inventory.bin"))?,
-                            std::fs::read_to_string(root.join("c02-expected.txt"))?,
-                        )
-                    } else {
-                        (
-                            item_view::encode_character_inventory_with_equip_drop(&inline, true)
-                                .map_err(|error| format!("{error:?}"))?,
-                            "3447 1\n".into(),
-                        )
-                    };
+                let payload = item_view::encode_character_inventory_with_equip_drop(&inline, true)
+                    .map_err(|error| format!("{error:?}"))?;
+                let expected = "3447 1\n";
                 let (client, mut server) = tokio::io::duplex(256 * 1024);
                 let initial_payload =
                     item_view::encode_character_inventory_with_equip_drop(&initial, true)
                         .map_err(|error| format!("{error:?}"))?;
+                let expected_wire = encode_state_delta(
+                    1,
+                    41,
+                    item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
+                    4,
+                    5,
+                    item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+                    &payload,
+                )?;
+                let wire = expected_wire.clone();
                 let peer = tokio::spawn(async move {
                     join_peer_with(
                         &mut server,
@@ -66,19 +65,7 @@ fn c02_replays_server_ammunition_payload_and_rejects_invalid_delta() -> Result<(
                         &[(9, 4, 1, initial_payload)],
                     )
                     .await?;
-                    write_frame(
-                        &mut server,
-                        &encode_state_delta(
-                            1,
-                            41,
-                            item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
-                            4,
-                            5,
-                            item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
-                            &payload,
-                        )?,
-                    )
-                    .await?;
+                    write_frame(&mut server, &wire).await?;
                     read_frame(&mut server).await?;
                     write_frame(
                         &mut server,
@@ -96,7 +83,16 @@ fn c02_replays_server_ammunition_payload_and_rejects_invalid_delta() -> Result<(
                     Ok::<(), BoxError>(())
                 });
                 let mut session = Session::admit(client, admission_with(&[4, 6, 12])?).await?;
+                session.enable_inventory_replay_capture();
                 session.wait_for_events(DEADLINE).await?;
+                let frame = session
+                    .take_inventory_replay_frame()
+                    .ok_or("wire frame absent")?;
+                assert_eq!(frame, expected_wire);
+                assert!(session.replay_inventory_frame(&frame, 42).is_err());
+                let (base, revision, replayed) = session.replay_inventory_frame(&frame, 41)?;
+                assert_eq!((base, revision), (4, 5));
+                assert_eq!(Some(&replayed), session.inventory());
                 let visible = session
                     .inventory()
                     .into_iter()

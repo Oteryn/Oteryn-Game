@@ -27,7 +27,7 @@ class RangedItemProfilesTest(unittest.TestCase):
                 self.assertEqual((profiles[item_id]['kind'], profiles[item_id]['attack'], profiles[item_id]['range_cells']), (kind, attack, distance))
         for item_id, ammo, attack in [(3447, 'ARROW', 25), (3446, 'BOLT', 30)]:
             self.assertEqual((profiles[item_id]['ammunition'], profiles[item_id]['attack'], profiles[item_id]['element']), (ammo, attack, 'PHYSICAL'))
-        for item_id, kind, element, mana in [(3074, 'WAND', 'ENERGY', 1), (3066, 'ROD', 'EARTH', 2)]:
+        for item_id, kind, element, mana in [(3074, 'WAND', 'ENERGY', 2), (3066, 'ROD', 'EARTH', 1)]:
             self.assertEqual(profiles[item_id], dict(kind=kind, element=element, damage_min=8, damage_max=18, mana_per_shot=mana, range_cells=3))
 
     def test_defaults_are_compiled_once_and_ranges_expand(self):

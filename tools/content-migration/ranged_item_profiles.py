@@ -25,6 +25,10 @@ PROFILES = "content/items/definitions/spell-native-profiles.json"
 RANGED_PROFILES = "content/items/ranged-profiles.json"
 MANIFEST = "content/spells.manifest.json"
 REPORT = "tools/content-migration/samples/ranged-content-source.json"
+GLOBAL_MANA = {
+    3066: (1, "https://tibia.fandom.com/wiki/Snakebite_Rod", "2025-12-08T14:25:51Z"),
+    3074: (2, "https://tibia.fandom.com/wiki/Wand_of_Vortex", "2026-05-23T09:28:16Z"),
+}
 ELEMENTS = {"PHYSICAL", "DEATH", "EARTH", "ENERGY", "FIRE", "ICE"}
 
 
@@ -179,7 +183,10 @@ def source_profiles(root):
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError("RANGED_SOURCE_DIGEST")
-    return build(raw)
+    profiles, held, counts = build(raw)
+    for item_id, (mana, _, _) in GLOBAL_MANA.items():
+        profiles[item_id]["mana_per_shot"] = mana
+    return profiles, held, counts
 
 
 def item_rows(root):
@@ -301,6 +308,10 @@ def outputs(root=ROOT):
                 "revision": REVISION,
                 "path": "data/items/items.xml",
                 "sha256": SOURCE_SHA256,
+            },
+            "global_mana": {
+                str(item_id): {"mana_per_shot": mana, "url": url, "revision_timestamp": revision}
+                for item_id, (mana, url, revision) in GLOBAL_MANA.items()
             },
             "counts": counts,
             "held": held,
