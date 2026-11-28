@@ -59,9 +59,20 @@ fn rope_units(
         .sum())
 }
 
-async fn require_safe_position(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+async fn require_safe_position(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clear_approach: bool,
+) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
+        let in_fight = client
+            .session_mut()
+            .combat_state()
+            .ok_or("M07 combat status unavailable")?
+            .in_fight;
+        if !clear_approach && !in_fight {
+            return Ok(());
+        }
         let at = tile(client.world_spatial().actor_position)?;
         let entities = client
             .world_entities()
@@ -79,11 +90,7 @@ async fn require_safe_position(client: &mut oteryn_dev_client::DevClientSession)
             )
             .into());
         }
-        let combat = client
-            .session_mut()
-            .combat_state()
-            .ok_or("M07 combat status unavailable")?;
-        if !combat.in_fight {
+        if !in_fight {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
@@ -328,7 +335,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         verdict::Harness::global().progress("M07 approach");
         client.take_events();
     }
-    require_safe_position(&mut client).await?;
+    require_safe_position(&mut client, true).await?;
     let before = client.world_spatial().actor_position;
     evidence(&format!(
         "M07_FIXTURE placement={before:?} spot={spot:?} nearby_creatures=0 in_fight=false"
@@ -440,7 +447,17 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         result.server_sequence,
         delta.server_sequence,
     ));
-    require_safe_position(&mut client).await?;
+    use std::io::Write as _;
+    std::fs::File::create_new(&capture_path)?.write_all(&recording)?;
+    checkpoint.verify_move(
+        &std::fs::read(&capture_path)?,
+        expected,
+        result.command_id,
+        result.server_sequence,
+        delta.server_sequence,
+    )?;
+    evidence("M07_REPLAY status=PASS evidence=original-server-frames");
+    require_safe_position(&mut client, false).await?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -458,22 +475,12 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         "M07_CHECK relog landing={expected:?} rope_count={}",
         before_rope_units
     ));
-    require_safe_position(&mut relog).await?;
+    require_safe_position(&mut relog, false).await?;
     if relog.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("M07 relog logout refused".into());
     }
 
-    use std::io::Write as _;
-    std::fs::File::create_new(&capture_path)?.write_all(&recording)?;
-    checkpoint.verify_move(
-        &std::fs::read(&capture_path)?,
-        expected,
-        result.command_id,
-        result.server_sequence,
-        delta.server_sequence,
-    )?;
-    evidence("M07_REPLAY status=PASS evidence=original-server-frames");
     Ok(())
 }
