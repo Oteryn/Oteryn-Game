@@ -57,6 +57,11 @@ pub(super) async fn dispatch(
         .vip_command(admitted, command_id, kind, payload)
         .await
 }
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static STALL_WRITE_COMMIT: std::cell::Cell<bool>;
+}
+
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -85,9 +90,10 @@ pub(super) async fn execute(
         return refused();
     }
     let is_query = request.operation.is_query();
-    let presence_selected = admitted.continuity.selected_capabilities.contains(
-        oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1,
-    );
+    let presence_selected = admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1);
     let growth = matches!(
         request.operation,
         Operation::Add | Operation::GroupAdd | Operation::GroupRename
@@ -108,10 +114,17 @@ pub(super) async fn execute(
         VipPrepared::Replayed(result) => result,
         // Immutable replay above remains available while the relay is down. A new write
         // cannot grant visibility until this node can observe the World relay again.
-        VipPrepared::Fresh(write) if !is_query && presence_selected
-            && !owner.states.chat.relay().is_some_and(super::chat_relay::ChatRelay::is_ready) => {
-                write.refuse_unavailable().await.ok()?
-            }
+        VipPrepared::Fresh(write)
+            if !is_query
+                && presence_selected
+                && !owner
+                    .states
+                    .chat
+                    .relay()
+                    .is_some_and(super::chat_relay::ChatRelay::is_ready) =>
+        {
+            write.refuse_unavailable().await.ok()?
+        }
         VipPrepared::Fresh(write) if growth => owner
             .with_premium_gate(write.account, move |status, tx| {
                 Box::pin(async move { write.commit(status, tx).await })
@@ -119,7 +132,21 @@ pub(super) async fn execute(
             .await
             .ok()?
             .ok()?,
-        VipPrepared::Fresh(write) => write.commit(PremiumStatus::NotCurrent, None).await.ok()?,
+        VipPrepared::Fresh(write) => {
+            let commit = write.commit(PremiumStatus::NotCurrent, None);
+            #[cfg(test)]
+            let commit = async {
+                if STALL_WRITE_COMMIT.try_with(|_| ()).is_ok() {
+                    let (result, stalled) =
+                        crate::durability::with_stalled_commit_response(commit).await;
+                    STALL_WRITE_COMMIT.with(|reached| reached.set(stalled));
+                    result
+                } else {
+                    commit.await
+                }
+            };
+            commit.await.ok()?
+        }
     };
     if !is_query && result.get("code").and_then(serde_json::Value::as_u64) == Some(1) {
         owner.states.chat.vip.invalidate();

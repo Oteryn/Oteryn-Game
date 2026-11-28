@@ -91,10 +91,17 @@ impl DurabilityRoot {
                          WHERE game_session_id=k.session_id AND command_id=k.ordinal
                          AND character_id=k.actor_id",
                     ReplyReceipt::Vip =>
-                        "SELECT false, convert_to(v.result::text,'UTF8')
-                         FROM game_vip_command_receipts v JOIN game_character_roots r USING (account_id, world_id), receipt_key k
-                         WHERE v.game_session_id=k.session_id AND v.command_id=k.ordinal
-                         AND r.character_id=k.actor_id AND v.character_id=k.actor_id AND v.world_id=k.world",
+                        "SELECT false, convert_to(result::text,'UTF8') FROM (
+                            SELECT COALESCE(
+                                (SELECT a.result FROM game_account_friend_receipts a
+                                 WHERE a.game_session_id=k.session_id AND a.command_id=k.ordinal
+                                 AND a.character_id=k.actor_id),
+                                (SELECT v.result FROM game_vip_command_receipts v
+                                 JOIN game_character_roots r USING (account_id, world_id)
+                                 WHERE v.game_session_id=k.session_id AND v.command_id=k.ordinal
+                                 AND r.character_id=k.actor_id AND v.character_id=k.actor_id AND v.world_id=k.world)
+                            ) AS result FROM receipt_key k
+                         ) receipts WHERE result IS NOT NULL",
                     ReplyReceipt::WorldEvent =>
                         "SELECT false, result FROM game_world_event_query_receipts, receipt_key k
                          WHERE game_session_id=k.session_id AND command_id=k.ordinal
