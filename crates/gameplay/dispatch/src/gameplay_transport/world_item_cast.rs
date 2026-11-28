@@ -946,8 +946,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     None=>return Err(DurabilityError::Unavailable),
                 };
                 let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
+                // Read access and prepare the cast on the same owner clock. SQL latency
+                // must not move a request that was still cooling across its deadline.
+                let now=owner.owner_now();
                 let owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
-                    command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                    command,runtime,actor,state,active,*access,now.get()).await.map_err(|_|DurabilityError::Unavailable)?;
                 if pending.is_none(){
                     let decision=oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(nonce(
                         b"oteryn:world-item-draw:v1",actor,session,command_id,&[]));
@@ -963,7 +966,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         }
                     };
                     let prepared=match prepare_item_grant(&mut tx,&authority,runtime,states,room,objects,content,owned.clone(),
-                        spell,intent,fence,command,owner.owner_now(),&mut draw).await{
+                        spell,intent,fence,command,now,&mut draw).await{
                         Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None})),
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
