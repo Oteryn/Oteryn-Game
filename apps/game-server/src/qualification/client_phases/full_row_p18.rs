@@ -1098,10 +1098,12 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     }
     client.service_liveness(Duration::from_millis(490)).await?;
     let result = command(&mut client, case.operation, occurrence(session, 1), pair, 0).await?;
-    let (expected_dust, expected_cap) = (
-        funded.0 - u64::try_from(case.dust)?,
-        funded.1 + u64::from(case.operation == Operation::DustLimit),
-    );
+    let expected_dust = funded.0 - u64::try_from(case.dust)?;
+    let expected_cap = if case.operation == Operation::DustLimit {
+        super::client_row_p18::GLOBAL_FIRST_DUST_CAP
+    } else {
+        funded.1
+    };
     let (expected_slivers, expected_cores) = match case.operation {
         Operation::DustToSlivers => (slivers + 3, cores),
         Operation::SliversToCores => (
@@ -1162,8 +1164,10 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     let actual_counts = counts(&fresh);
     let inventory_same = fresh.join_snapshot().game_session_id != session
         && fresh.inventory().cloned().map(durable_inventory) == Some(durable_inventory(retained));
+    // The exact tier-one result is checked inside the new chest and compared after relog.
+    // Both original operands must be absent from loose custody.
     let tiers_ok = if let (Some(target), Some(donor)) = (target_ref, donor_ref) {
-        dagger_tiers(&mut fresh, target).await? == [1]
+        dagger_tiers(&mut fresh, target).await?.is_empty()
             && dagger_tiers(&mut fresh, donor).await?.is_empty()
     } else {
         true
