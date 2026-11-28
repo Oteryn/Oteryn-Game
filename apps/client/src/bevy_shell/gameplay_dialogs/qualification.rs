@@ -7,13 +7,14 @@ use oteryn_session::{
     world_map::{MapOrigin, WorldMapViewDelta},
 };
 use std::{cell::RefCell, time::Duration};
+use tokio::time::Instant;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Default)]
 struct Trace {
     commands: Vec<Exchange>,
-    map_events: Vec<SessionEvent>,
+    map_events: Vec<(Instant, SessionEvent)>,
 }
 
 struct Exchange {
@@ -22,6 +23,7 @@ struct Exchange {
     next_id: u64,
     before_sequence: u64,
     reply_sequence: u64,
+    reply_at: Instant,
     predecessor: Option<GatedSnapshot>,
 }
 
@@ -41,12 +43,14 @@ pub(crate) fn record_world_context(
             next_id,
             before_sequence,
             reply_sequence,
+            reply_at: Instant::now(),
             predecessor,
         });
     });
 }
 
 pub(crate) fn record_map_events(events: &[SessionEvent]) {
+    let received_at = Instant::now();
     let _ = TRACE.try_with(|trace| {
         trace.borrow_mut().map_events.extend(
             events
@@ -57,7 +61,8 @@ pub(crate) fn record_map_events(events: &[SessionEvent]) {
                         SessionEvent::WorldMap(_) | SessionEvent::WorldMapSnapshot(_)
                     )
                 })
-                .cloned(),
+                .cloned()
+                .map(|event| (received_at, event)),
         );
     });
 }
@@ -107,7 +112,7 @@ pub async fn rotate_live_chair<S: SessionStream + Send>(
     let mut deltas = trace
         .map_events
         .into_iter()
-        .filter_map(|event| match event {
+        .filter_map(|(received_at, event)| match event {
             SessionEvent::WorldMapSnapshot(snapshot) => Some(Err(format!(
                 "I09 native map replaced at sequence {}",
                 snapshot.server_sequence
@@ -117,13 +122,14 @@ pub async fn rotate_live_chair<S: SessionStream + Send>(
                     && (delta.value.cleared.contains(&target)
                         || delta.value.tiles.iter().any(|tile| tile.position == target)) =>
             {
-                Some(Ok(delta))
+                Some(Ok((received_at, delta)))
             }
             _ => None,
         });
-    let delta = deltas
+    let (received_at, delta) = deltas
         .next()
         .ok_or("I09 native session saw no chair update")??;
+    require_map_window(exchange.reply_at, received_at)?;
     if deltas.next().is_some() {
         return Err("I09 native session saw a second chair update or replacement".into());
     }
@@ -149,27 +155,25 @@ async fn observe_rotation(
     textures: ChairTextures,
 ) -> Result {
     let tile = TileCoord::new(target.x, target.y);
-    // The row deadline bounds native startup and dispatch. Preserve the existing
-    // five-second map observation window from the terminal USE feedback.
-    let mut map_deadline = None;
+    // The row deadline also bounds the native renderer. The map deadline is
+    // checked separately against the exchange and its received map event.
+    let mut feedback_seen = false;
     let mut clicked = false;
     loop {
         app.update();
         let ready_to_click = {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
             let play = owner.play.as_mut().ok_or("I09 native play missing")?;
+            let feedback = play.link.world_context_feedback();
+            if clicked {
+                observe_rotate_feedback(&mut feedback_seen, feedback.as_deref())?;
+            }
             play.view
                 .tick(&play.link)
                 .map_err(|error| format!("I09 native play ended: {error:?}"))?;
-            let feedback = play.link.world_context_feedback();
             let orientation = displayed_chair(&play.view, tile, ordinal);
             if clicked {
-                if rotate_presented(
-                    &mut map_deadline,
-                    tokio::time::Instant::now(),
-                    feedback.as_deref(),
-                    orientation,
-                )? {
+                if rotate_presented(feedback_seen, orientation) {
                     return textures.check(&play.view, target, true);
                 }
                 false
@@ -194,83 +198,53 @@ async fn observe_rotation(
     }
 }
 
-fn rotate_presented(
-    map_deadline: &mut Option<tokio::time::Instant>,
-    now: tokio::time::Instant,
-    feedback: Option<&str>,
-    orientation: Option<(u16, u64)>,
-) -> Result<bool> {
-    if map_deadline.is_some_and(|deadline| now >= deadline) {
-        return Err(format!(
-            "I09 native Rotate committed without the expected displayed orientation: {orientation:?}"
-        ).into());
-    }
+fn observe_rotate_feedback(seen: &mut bool, feedback: Option<&str>) -> Result {
     match feedback {
-        Some("Use: completed") => {
-            map_deadline.get_or_insert(now + Duration::from_secs(5));
-            Ok(orientation == Some((2359, 1)))
-        }
-        None | Some("Waiting for server") => Ok(false),
-        Some(feedback) => Err(format!("I09 native Rotate feedback: {feedback}").into()),
+        Some("Use: completed") => *seen = true,
+        None | Some("Waiting for server") => (),
+        Some(feedback) => return Err(format!("I09 native Rotate feedback: {feedback}").into()),
     }
+    Ok(())
+}
+
+fn rotate_presented(feedback_seen: bool, orientation: Option<(u16, u64)>) -> bool {
+    feedback_seen && orientation == Some((2359, 1))
+}
+
+fn require_map_window(reply: Instant, map_event: Instant) -> Result {
+    let elapsed = map_event.saturating_duration_since(reply);
+    if elapsed >= Duration::from_secs(5) {
+        return Err(format!(
+            "I09 native map event arrived {} ms after the USE reply",
+            elapsed.as_millis()
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 #[test]
 fn i09_native_requires_both_feedback_and_projected_orientation() -> Result {
-    let mut deadline = None;
-    let opened = tokio::time::Instant::now();
-    let received = opened + Duration::from_secs(6);
-    let completed = Some("Use: completed");
-    assert!(!rotate_presented(
-        &mut deadline,
-        opened,
-        None,
-        Some((2359, 1))
-    )?);
-    assert!(!rotate_presented(
-        &mut deadline,
-        received,
-        Some("Waiting for server"),
-        Some((2359, 1)),
-    )?);
-    assert!(deadline.is_none());
-    assert!(!rotate_presented(
-        &mut deadline,
-        received,
-        completed,
-        Some((2358, 0))
-    )?);
-    assert!(!rotate_presented(
-        &mut deadline,
-        received,
-        completed,
-        Some((2359, 0))
-    )?);
-    assert!(
-        rotate_presented(
-            &mut deadline,
-            received,
-            Some("Target changed"),
-            Some((2359, 1)),
-        )
-        .is_err()
-    );
-    assert!(rotate_presented(
-        &mut deadline,
-        received + Duration::from_secs(4),
-        completed,
-        Some((2359, 1)),
-    )?);
-    assert!(
-        rotate_presented(
-            &mut deadline,
-            received + Duration::from_secs(5),
-            completed,
-            Some((2359, 1)),
-        )
-        .is_err()
-    );
+    let mut feedback_seen = false;
+    observe_rotate_feedback(&mut feedback_seen, None)?;
+    assert!(!rotate_presented(feedback_seen, Some((2359, 1))));
+    observe_rotate_feedback(&mut feedback_seen, Some("Waiting for server"))?;
+    assert!(!rotate_presented(feedback_seen, Some((2359, 1))));
+    assert!(observe_rotate_feedback(&mut feedback_seen, Some("Target changed")).is_err());
+    observe_rotate_feedback(&mut feedback_seen, Some("Use: completed"))?;
+    assert!(!rotate_presented(feedback_seen, Some((2358, 0))));
+    assert!(!rotate_presented(feedback_seen, Some((2359, 0))));
+    assert!(rotate_presented(feedback_seen, Some((2359, 1))));
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn i09_map_deadline_is_based_on_received_event() -> Result {
+    let reply = Instant::now();
+    require_map_window(reply, reply + Duration::from_millis(4999))?;
+    assert!(require_map_window(reply, reply + Duration::from_secs(5)).is_err());
     Ok(())
 }
 
