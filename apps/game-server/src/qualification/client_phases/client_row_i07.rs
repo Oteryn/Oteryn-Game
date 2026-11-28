@@ -401,25 +401,41 @@ impl Capture<'_> {
             .x
             .checked_add(i32::from(east_stack))
             .ok_or("I07 corpse tile overflow")?;
-        let nearby: Vec<_> = client
-            .world_entities()
-            .ok_or("I07 live corpse view missing")?
-            .others()
-            .filter(|entity| {
-                entity.kind == EntityKind::Corpse
-                    && entity.position.x.abs_diff(actor.x) <= 1
-                    && entity.position.y.abs_diff(actor.y) <= 1
-                    && entity.position.floor == actor.floor
-            })
-            .map(|entity| {
-                (
-                    entity.position.x,
-                    entity.position.y,
-                    entity.entity.identity,
-                    entity.entity.generation,
-                )
-            })
-            .collect();
+        let expected_corpse_count = match (self.full, key) {
+            (true, 26) => 41,
+            (true, _) => 10,
+            (false, _) => 4,
+        };
+        // The control socket can finish before the gameplay socket publishes the last fixture corpses.
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        let nearby = loop {
+            let observed: Vec<_> = client
+                .world_entities()
+                .ok_or("I07 live corpse view missing")?
+                .others()
+                .filter(|entity| {
+                    entity.kind == EntityKind::Corpse
+                        && entity.position.x.abs_diff(actor.x) <= 1
+                        && entity.position.y.abs_diff(actor.y) <= 1
+                        && entity.position.floor == actor.floor
+                })
+                .map(|entity| {
+                    (
+                        entity.position.x,
+                        entity.position.y,
+                        entity.entity.identity,
+                        entity.entity.generation,
+                    )
+                })
+                .collect();
+            if key != 26
+                || observed.len() >= expected_corpse_count
+                || tokio::time::Instant::now() >= deadline
+            {
+                break observed;
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        };
         let clicked: Vec<_> = nearby
             .iter()
             .filter(|(tile_x, tile_y, _, _)| *tile_x == x && *tile_y == actor.y)
@@ -438,7 +454,14 @@ impl Capture<'_> {
             }
         }
         if nearby.len() != expected_tiles.iter().map(|(_, count)| count).sum::<usize>() {
-            return Err(format!("I07 probe {key} unexpected nearby corpse count").into());
+            return Err(format!(
+                "I07 probe {key} expected {expected_corpse_count} nearby corpses, saw {:?}",
+                nearby
+                    .iter()
+                    .map(|(x, y, _, _)| (*x, *y))
+                    .collect::<Vec<_>>()
+            )
+            .into());
         }
         for (position, count) in expected_tiles {
             if nearby
