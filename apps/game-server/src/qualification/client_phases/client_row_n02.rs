@@ -251,7 +251,7 @@ async fn journey(
         &mut client,
         king,
         "Hail King",
-        "Greetings, I am King Tibianus.",
+        "I greet thee, my loyal subject.",
     )
     .await?;
     talk(
