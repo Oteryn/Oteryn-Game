@@ -125,7 +125,7 @@ async fn ranking_facts(
     ))
 }
 
-async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<(u64, i64)> {
+async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<(u64, i64, u64)> {
     use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
     let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
     root.await_ready().await?;
@@ -145,7 +145,15 @@ async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<(u64, i64)> {
         .iter()
         .find(|snapshot| snapshot.category == 1)
         .ok_or("S11 publication lacks the Experience cut")?;
-    Ok((snapshot.snapshot_id, snapshot.computed_at_ms))
+    let loyalty = snapshots
+        .iter()
+        .find(|snapshot| snapshot.category == 13)
+        .ok_or("S11 publication lacks the Loyalty cut")?;
+    Ok((
+        snapshot.snapshot_id,
+        snapshot.computed_at_ms,
+        loyalty.snapshot_id,
+    ))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -164,6 +172,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     require_mechanic_acceptance(status, "highscore-before-query")?;
     let before = wire::decode_highscores_result(&before)
         .map_err(|error| format!("step=before-decode observed={error:?}"))?;
+    if before.category != query.category
+        || before.page != query.page
+        || before.world != Some(wire::WorldId::decode(&clients.world)?)
+    {
+        return Err(format!("step=before-metadata observed={before:?}").into());
+    }
     if before.rows == expected_rows && before.own_row.as_ref() == Some(&expected_own) {
         return Err("S11 expected ranking already present before publication".into());
     }
@@ -186,7 +200,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if loyalty_rows.len() < 2 || loyalty_own.value != 73 {
         return Err("S11 Loyalty fixture lacks discriminating standings".into());
     }
-    let (published, computed_at) = publish_ranking(clients).await?;
+    let (published, computed_at, loyalty_snapshot) = publish_ranking(clients).await?;
     if published <= before.snapshot_id {
         return Err("S11 publication did not advance the Experience cut".into());
     }
@@ -240,7 +254,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if loyalty.category != 13
         || loyalty.world != page.world
         || loyalty.page != 1
-        || loyalty.snapshot_id == 0
+        || loyalty.snapshot_id != loyalty_snapshot
         || loyalty.computed_at != computed_at
         || loyalty.rows != loyalty_rows
         || loyalty.own_row.as_ref() != Some(&loyalty_own)
@@ -271,7 +285,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         refused
     ));
     expected.push_str(&format!(
-        "loyalty_rows={}\nloyalty_own={}\nloyalty_own_page={}\nloyalty_has_more={}\n",
+        "loyalty_snapshot={loyalty_snapshot}\nloyalty_rows={}\nloyalty_own={}\nloyalty_own_page={}\nloyalty_has_more={}\n",
         loyalty_rows.len(),
         row_text(&loyalty_own),
         loyalty_own_page,
@@ -296,6 +310,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map_err(|error| format!("step=relog-decode observed={error:?}"))?;
     if after != page {
         return Err("S11 persisted ranking changed after relog".into());
+    }
+    let (status, _, after_loyalty) = exchange(
+        &mut rejoined,
+        "relog-loyalty",
+        wire::HighscoresQuery {
+            category: 13,
+            ..query
+        },
+    )
+    .await?;
+    require_mechanic_acceptance(status, "highscore-relog-loyalty-query")?;
+    if wire::decode_highscores_result(&after_loyalty)
+        .map_err(|error| format!("step=relog-loyalty-decode observed={error:?}"))?
+        != loyalty
+    {
+        return Err("S11 persisted Loyalty ranking changed after relog".into());
     }
     let (logout, observed, _, _) = logout_once(&mut rejoined).await?;
     if logout != Some(LogoutResult::Accepted) {

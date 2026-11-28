@@ -693,18 +693,18 @@ class S11ClientReplayTests(unittest.TestCase):
             self.assertNotIn('S11.client', replay.selected_rows(f'{adjacent}:1')[0])
         (package, test, files), = replay.replay_targets()['e2e_s11']
         self.assertEqual(package, 'oteryn-client-ui')
-        self.assertEqual(len(files), 11)
+        self.assertEqual(len(files), 13)
         with tempfile.TemporaryDirectory() as temporary:
             capture = Path(temporary)
             log = capture / 'rows.log'
             server = [('e2e_capture', 'CAPTURED')]
             with patch.object(replay.subprocess, 'run') as run:
-                for name in files - {'s11-relog.json'}:
+                for name in files - {'s11-relog-loyalty.json'}:
                     (capture / name).write_text('current')
                 self.assertEqual(replay.replay_cause('S11', package, test, files, capture, server, log),
                                  'capture-missing')
                 run.assert_not_called()
-                (capture / 's11-relog.json').write_text('current')
+                (capture / 's11-relog-loyalty.json').write_text('current')
                 for count, want in ((0, 'replay-not-run'), (2, 'replay-failed'), (1, None)):
                     run.reset_mock()
                     run.return_value = subprocess.CompletedProcess([], 0,

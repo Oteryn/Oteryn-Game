@@ -152,6 +152,10 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     apply_result(&mut panel, &response);
     let page = panel.reply.clone().ok_or("s11 page not stored")?;
     assert!(!panel.pending && panel.feedback.is_none());
+    assert_eq!(
+        (before_page.category, before_page.world, before_page.page),
+        (page.category, page.world, page.page)
+    );
     assert!(before_page.snapshot_id < page.snapshot_id);
     assert!(before_page.rows != page.rows || before_page.own_row != page.own_row);
     let world = page.world.ok_or("S11 response lacks World details")?;
@@ -258,7 +262,10 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert_eq!(loyalty_page.category, 13);
     assert_eq!(loyalty_page.world, page.world);
     assert_eq!(loyalty_page.page, 1);
-    assert_ne!(loyalty_page.snapshot_id, 0);
+    assert_eq!(
+        loyalty_page.snapshot_id,
+        value(expected, "loyalty_snapshot")?.parse::<u64>()?
+    );
     let loyalty_count: usize = value(expected, "loyalty_rows")?.parse()?;
     assert!(loyalty_count >= 2);
     let loyalty_rows = (0..loyalty_count)
@@ -292,6 +299,25 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     apply_result(&mut relog_panel, &relog);
     assert!(!relog_panel.pending && relog_panel.feedback.is_none());
     assert_eq!(relog_panel.reply, Some(page));
+    relog_panel.loyalty_selected = true;
+    let relog_loyalty_query =
+        request(&mut relog_panel, loyalty_filter).ok_or("missing relog Loyalty query")?;
+    let (_, relog_loyalty) = live_reply(
+        root,
+        "relog-loyalty",
+        relog_session,
+        &relog_loyalty_query,
+        0,
+    )?;
+    assert_eq!(
+        relog.command_id.checked_add(1),
+        Some(relog_loyalty.command_id)
+    );
+    assert!(relog.server_sequence < relog_loyalty.server_sequence);
+    assert_eq!(relog_loyalty.status, CommandStatus::Accepted);
+    apply_result(&mut relog_panel, &relog_loyalty);
+    assert!(!relog_panel.pending && relog_panel.feedback.is_none());
+    assert_eq!(relog_panel.reply, Some(loyalty_page));
     assert_malformed_reply_keeps_the_visible_page()
 }
 

@@ -129,7 +129,7 @@ def replay_targets():
         "oteryn-client-ui", "e2e_s11_ranking_page_replays_into_the_highscores_panel",
         {"s11-expected.txt"} | {
             f"s11-{label}{suffix}.json"
-            for label in ("before", "experience", "refused", "loyalty", "relog")
+            for label in ("before", "experience", "refused", "loyalty", "relog", "relog-loyalty")
             for suffix in ("", "-wire")
         },
     )]
