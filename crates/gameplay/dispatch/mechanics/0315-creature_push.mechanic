@@ -1,5 +1,5 @@
 name=creature_push
-commands=98
+commands=15,98
 transport=creature_push
 composed=creature_push
 authority=creature_push

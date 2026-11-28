@@ -16,10 +16,19 @@ use crate::gameplay_transport::connection::{
 use crate::map::boot::{BootPins, boot};
 use crate::map::overlay::TilePos;
 
-use oteryn_protocol_oteryn::creature_push::{CreaturePushIntent, encode_creature_push_intent};
+use oteryn_protocol_oteryn::creature_push::{
+    CAPABILITY_CREATURE_PUSH_V1, CreaturePushIntent, encode_creature_push_intent,
+};
+use oteryn_protocol_oteryn::world_interaction::{
+    CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_PUSH_INTENT, PushIntent, decode_push_result,
+    encode_push_intent,
+};
+use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, UseDisposition};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use oteryn_protocol_oteryn::{MessageType, decode_command_result, decode_wire_envelope};
+use oteryn_protocol_oteryn::{
+    CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
+};
 use std::time::Duration;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -232,6 +241,25 @@ pub(super) fn scenario(
     unpushable: bool,
     trap: Option<u16>,
 ) -> Result<(), String> {
+    run_scenario(seed, unpushable, trap, None)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum LegacyPushCase {
+    Selected,
+    Unselected,
+}
+
+pub(super) fn legacy_push_scenario(case: LegacyPushCase) -> Result<(), String> {
+    run_scenario("creature_push", false, None, Some(case))
+}
+
+fn run_scenario(
+    seed: &'static str,
+    unpushable: bool,
+    trap: Option<u16>,
+    legacy_push: Option<LegacyPushCase>,
+) -> Result<(), String> {
     run(async |admin| {
         let handyman = seed == "rottin_handyman";
         let repair = seed == "rottin_repairs" || handyman;
@@ -418,13 +446,22 @@ pub(super) fn scenario(
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        let selected: &[u32] = if matches!(legacy_push, Some(LegacyPushCase::Selected)) {
+            &[
+                4,
+                6,
+                CAPABILITY_WORLD_INTERACTION_V1,
+                13,
+                CAPABILITY_ITEM_USE_V1,
+                oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+                CAPABILITY_CREATURE_PUSH_V1,
+            ]
+        } else {
+            &[4, 6, 13, CAPABILITY_CREATURE_PUSH_V1]
+        };
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 13, 82])
-                .ok_or("selection")?;
-        assert_eq!(
-            admitted.continuity.selected_capabilities.as_slice(),
-            &[4, 6, 13, 82]
-        );
+            SelectedCapabilities::select(owner.offered_capabilities(), selected).ok_or("selection")?;
+        assert_eq!(admitted.continuity.selected_capabilities.as_slice(), selected);
         if rottin {
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
@@ -475,7 +512,9 @@ pub(super) fn scenario(
         }
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if trap == Some(12187) {
+            let result = if let Some(case) = legacy_push {
+                legacy_client_scenario(&mut client, &owner, case).await
+            } else if trap == Some(12187) {
                 super::rottin_bushwhacking_fixtures::exercise(Some(&mut client), &owner, admitted, None)
                     .await
             } else if let Some(trap) = trap {
@@ -674,6 +713,88 @@ async fn client_scenario(
     assert_eq!(push(client, 13, target_ref, at(8, 6)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(8, 6));
     Ok(())
+}
+
+async fn legacy_client_scenario(
+    client: &mut DuplexStream,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    case: LegacyPushCase,
+) -> TestResult {
+    prepare(client, owner).await?;
+    let origin = at(3, 2);
+    let destination = at(4, 2);
+    let troll = spawn(owner, "oteryn:creature.troll", origin).await?;
+    let target = reference(owner, troll).await?;
+    // Flat PushIntentV1 bytes: identity, generation and zig-zag (4, 2), with no floor.
+    let mut payload = vec![0x0a, 0x10];
+    payload.extend_from_slice(&target.identity);
+    payload.push(0x10);
+    let mut generation = target.generation;
+    while generation >= 0x80 {
+        payload.push((generation as u8 & 0x7f) | 0x80);
+        generation >>= 7;
+    }
+    payload.extend_from_slice(&[u8::try_from(generation)?, 0x18, 8, 0x20, 4]);
+
+    match case {
+        LegacyPushCase::Selected => {
+            let out_of_reach = encode_push_intent(&PushIntent {
+                target,
+                to_x: i32::MIN,
+                to_y: destination.y,
+            })
+            .map_err(debug)?;
+            let refused = legacy_push_result(client, 1, &out_of_reach).await?;
+            assert_eq!(refused.0, CommandStatus::Accepted);
+            assert_eq!(
+                decode_push_result(&refused.1).map_err(debug)?,
+                (UseDisposition::TooFar, None)
+            );
+            assert_eq!(position(owner, troll).await?, origin);
+
+            let result = legacy_push_result(client, 2, &payload).await?;
+            assert_eq!(result.0, CommandStatus::Accepted);
+            assert_eq!(
+                decode_push_result(&result.1).map_err(debug)?,
+                (UseDisposition::Committed, None)
+            );
+            // Command 98 shares the cooldown armed by command 15.
+            assert_eq!(push(client, 3, target, at(4, 3)).await?, EXHAUSTED);
+            assert_eq!(position(owner, troll).await?, destination);
+            let malformed = legacy_push_result(client, 4, &payload[..payload.len() - 2]).await?;
+            assert_eq!(malformed.0, CommandStatus::Rejected);
+            assert_eq!(
+                decode_push_result(&malformed.1).map_err(debug)?,
+                (UseDisposition::Rejected, None)
+            );
+            assert_eq!(position(owner, troll).await?, destination);
+        }
+        LegacyPushCase::Unselected => {
+            let result = legacy_push_result(client, 1, &payload).await?;
+            assert_eq!(result, (CommandStatus::Rejected, Vec::new()));
+            assert_eq!(position(owner, troll).await?, origin);
+            assert_eq!(push(client, 2, target, destination).await?, MOVED);
+            assert_eq!(position(owner, troll).await?, destination);
+        }
+    }
+    Ok(())
+}
+
+async fn legacy_push_result(
+    client: &mut DuplexStream,
+    id: u64,
+    payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    send(client, id, COMMAND_TYPE_PUSH_INTENT, payload).await?;
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
 }
 
 async fn relocation_tiles_scenario(

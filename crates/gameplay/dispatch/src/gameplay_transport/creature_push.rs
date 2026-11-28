@@ -6,6 +6,7 @@ use crate::content::ProjectV2AuthoringProfileData;
 use crate::foundation::MovementLocalPosition;
 use crate::foundation::MovementPositionSnapshot;
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 enum Target {
     Creature(MovementLocalPosition),
@@ -19,6 +20,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         intent: CreaturePushIntent,
     ) -> CreaturePushDisposition {
+        let ActorPosition { x, y, floor } = intent.destination;
+        self.push_now(actor, session, intent.target, x, y, Some(floor))
+            .await
+    }
+
+    pub(super) async fn push_now(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        target_ref: EntityRef,
+        to_x: i32,
+        to_y: i32,
+        wire_floor: Option<i16>,
+    ) -> CreaturePushDisposition {
         use CreaturePushDisposition::{
             DestinationOutOfReach, Moved, NotEnoughRoom, NotMovable, NotPossible, Rejected,
         };
@@ -30,11 +45,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Rejected;
         };
         let mut runtime = self.runtime.lock().await;
-        let Some(destination) = self
-            .wire_position_frame(&runtime)
-            .and_then(|frame| frame.unproject(intent.destination))
-        else {
+        let Some(frame) = self.wire_position_frame(&runtime) else {
             return Rejected;
+        };
+        let explicit_destination = if let Some(floor) = wire_floor {
+            let Some(position) = frame.unproject(ActorPosition {
+                x: to_x,
+                y: to_y,
+                floor,
+            }) else {
+                return Rejected;
+            };
+            Some(position)
+        } else {
+            None
         };
         let states = self.states.spell_states.lock().await;
         let context = runtime.pinned_movement_context();
@@ -52,8 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let entities = runtime.visible_entities();
         let matches = |entry: ExactActorRef, generation: u64| {
-            entry.placement_identity() == intent.target.identity
-                && generation == intent.target.generation
+            entry.placement_identity() == target_ref.identity && generation == target_ref.generation
         };
         // Canary game.cpp:1878: an NPC is never pushed into a free cell by a player here.
         if entities
@@ -106,12 +129,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Target::Creature(position) => position,
             Target::Player(_, snapshot) => snapshot.position(),
         };
+        // Command 15 omits the floor. Resolve it from the exact target under this lock.
+        let destination = explicit_destination.unwrap_or(MovementLocalPosition {
+            x: to_x,
+            y: to_y,
+            floor: from.floor,
+        });
         let here = pusher.position();
         // Canary game.cpp:1851: the destination is a neighbour of the pushed creature.
         if destination.floor != from.floor
             || destination == from
-            || (destination.x - from.x).abs() > 1
-            || (destination.y - from.y).abs() > 1
+            || destination.x.abs_diff(from.x) > 1
+            || destination.y.abs_diff(from.y) > 1
         {
             return DestinationOutOfReach;
         }
@@ -315,6 +344,17 @@ macro_rules! authority_methods {
         > {
             async { oteryn_protocol_oteryn::creature_push::CreaturePushDisposition::Rejected }
         }
+
+        fn push_creature_on_target_floor(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _session: $crate::foundation::GameSessionId,
+            _intent: oteryn_protocol_oteryn::world_interaction::PushIntent,
+        ) -> impl std::future::Future<
+            Output = oteryn_protocol_oteryn::creature_push::CreaturePushDisposition,
+        > {
+            async { oteryn_protocol_oteryn::creature_push::CreaturePushDisposition::Rejected }
+        }
     };
 }
 pub(super) use authority_methods;
@@ -327,6 +367,16 @@ macro_rules! composed_methods {
             intent: oteryn_protocol_oteryn::creature_push::CreaturePushIntent,
         ) -> oteryn_protocol_oteryn::creature_push::CreaturePushDisposition {
             self.push_creature_now(actor, session, intent).await
+        }
+
+        async fn push_creature_on_target_floor(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            session: $crate::foundation::GameSessionId,
+            intent: oteryn_protocol_oteryn::world_interaction::PushIntent,
+        ) -> oteryn_protocol_oteryn::creature_push::CreaturePushDisposition {
+            self.push_now(actor, session, intent.target, intent.to_x, intent.to_y, None)
+                .await
         }
     };
 }
