@@ -1,5 +1,5 @@
 //! Actual target-owned Exiva preferences. No caller boolean grants permission and
-//! neither absent preferences nor absent staff roles mean public/ordinary access.
+//! unsaved preferences use the settings default without supplying staff or relationship facts.
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Row, Transaction};
@@ -229,11 +229,11 @@ async fn read_exiva_decision_with_roles_in_transaction(
     }
     let row=sqlx::query("SELECT preferences FROM game_character_spell_privacy WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(target.as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else {
-        return Ok(ExivaDecision::UnknownPreferences);
+    let preferences: ExivaPreferences = match row {
+        Some(row) => serde_json::from_value(row.try_get("preferences")?)
+            .map_err(|_| SpellItemError::Rejected("stored Exiva preference shape"))?,
+        None => ExivaPreferences::source_initial_preferences(),
     };
-    let preferences: ExivaPreferences = serde_json::from_value(row.try_get("preferences")?)
-        .map_err(|_| SpellItemError::Rejected("stored Exiva preference shape"))?;
     preferences.validate()?;
     let basic = decision(&preferences, source, caster_staff, target_staff);
     if matches!(
