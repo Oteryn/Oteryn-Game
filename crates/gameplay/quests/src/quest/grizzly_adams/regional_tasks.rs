@@ -143,27 +143,47 @@ pub(super) fn journal(name: &str, source_track: &str) -> Option<QuestLogMission>
     let task = TASKS
         .iter()
         .find(|task| task.source_track == source_track)?;
+    let completion = JournalText::Text(format!("You reported this hunt to {}.", task.report_to));
+    let end_value = if task.phase == LUGRI_PHASE { 3 } else { 2 };
+    let mut stages = BTreeMap::from([(1, hunt_text(task)), (end_value, completion)]);
+    if task.phase == LUGRI_PHASE {
+        let repeat = TASKS.iter().find(|task| task.phase == LUGRI_REPEAT_PHASE)?;
+        stages.insert(2, hunt_text(repeat));
+    }
     Some(QuestLogMission {
         name: name.into(),
         track: task.phase.into(),
         start_value: 1,
-        end_value: 2,
-        journal: QuestJournal::PerStage(BTreeMap::from([
-            (
-                1,
-                JournalText::Template(vec![
-                    JournalPiece::Text("Hunted ".into()),
-                    JournalPiece::Track(task.count.into()),
-                    JournalPiece::Text(format!(
-                        "/{}. Report to {} after the hunt.",
-                        task.quota, task.report_to
-                    )),
-                ]),
-            ),
-            (
-                2,
-                JournalText::Text(format!("You reported this hunt to {}.", task.report_to)),
-            ),
-        ])),
+        end_value,
+        journal: QuestJournal::PerStage(stages),
     })
+}
+
+const LUGRI_PHASE: &str = "oteryn:quest-progress/hunting-tasks/necromancers/phase";
+const LUGRI_REPEAT_PHASE: &str = "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase";
+const BUDRIK_PHASE: &str = "oteryn:quest-progress/hunting-tasks/minotaurs/phase";
+
+fn hunt_text(task: &Task) -> JournalText {
+    JournalText::Template(vec![
+        JournalPiece::Text("Hunted ".into()),
+        JournalPiece::Track(task.count.into()),
+        JournalPiece::Text(format!(
+            "/{}. Report to {} after the hunt.",
+            task.quota, task.report_to
+        )),
+    ])
+}
+
+/// The source journal has one stable slot for each NPC across boss entry and repeat hunts.
+pub(crate) fn journal_value(
+    phase: &str,
+    value: i64,
+    facts: &(impl crate::quest::log::QuestLogFacts + ?Sized),
+) -> i64 {
+    match (phase, value) {
+        (LUGRI_PHASE, 3) if facts.track_value(LUGRI_REPEAT_PHASE) == Some(1) => 2,
+        (LUGRI_PHASE, 2) => 3,
+        (BUDRIK_PHASE, 3) => 2,
+        _ => value,
+    }
 }

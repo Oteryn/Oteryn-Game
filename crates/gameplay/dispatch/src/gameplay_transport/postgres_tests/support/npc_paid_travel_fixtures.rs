@@ -1079,8 +1079,33 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                 }
                 assert_eq!(gold(&h).await?, before);
             }
+            if *captain == "harlow" {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u8_4/blood_brothers/vengoth_access','oteryn:quest.blood_brothers_quest',1,4)").bind(id(41).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                let position = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?;
+                for (harlow_step, (word, expected)) in [
+                    ("vengoth", Some("dangerous island")),
+                    ("yes", Some("100 gold")),
+                    ("no", None),
+                    ("yes", None),
+                    ("transportation", Some("100 gold")),
+                    ("no", None),
+                    ("vengoth", Some("dangerous island")),
+                ].into_iter().enumerate() {
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    let reply = talk(&owner, &dependencies, npc, 4_000 + u64::try_from(harlow_step)?, word).await?;
+                    if let Some(expected) = expected {
+                        assert!(line(&reply).contains(expected));
+                    }
+                    assert!(!reply.inventory_changed);
+                    assert_eq!(gold(&h).await?, before);
+                    assert_eq!(dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?, position);
+                }
+            }
             assert!(
-                line(&talk(&owner, &dependencies, npc, command_id + 2, request).await?)
+                line(&talk(&owner, &dependencies, npc, command_id + 2, if *captain == "harlow" { "yes" } else { request }).await?)
                     .contains(&format!("{fare} gold"))
             );
             // Crystal's travel children reset the topic, or ungreet for Eremo.
@@ -1221,6 +1246,13 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(after, receipts + 1);
+            if *captain == "harlow" {
+                sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+                let npc = at_start(captain).await?;
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                talk(&owner, &dependencies, npc, 4_010, "hi").await?;
+                assert!(line(&talk(&owner, &dependencies, npc, 4_011, "vengoth").await?).contains("100 gold"));
+            }
             if !reward_fixture && *captain == "eremo" {
                 assert_eq!(mission().await?, 1, "Eremo is outside the Postman tour");
             }
@@ -1499,6 +1531,7 @@ const S10T_CAPTAINS: &[&str] = &[
     "ferryman_kamil",
     "ferryman_kamil_meluna",
     "harlow_vengoth",
+    "harlow",
     "hawkhurst",
     "hawkhurst_ingol",
     "gurbasch",
@@ -1535,6 +1568,7 @@ const S10T_PASSAGES: &[Passage] = &[
     ("kendra", "thais", 180, (32259, 32262, 7)),
     ("tonar", "passage", 0, (33070, 32916, 7)),
     ("gurbasch", "kazordoon", 160, (32660, 31957, 15)),
+    ("harlow", "vengoth", 100, (32858, 31549, 7)),
 ];
 
 const POSTMAN_TOUR: &[Passage] = &[

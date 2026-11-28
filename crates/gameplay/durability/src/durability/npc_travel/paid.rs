@@ -188,6 +188,20 @@ impl DurabilityRoot {
         route: TravelRoute,
         gate: &G,
     ) -> Result<Result<u64, TravelRefusal>, CharacterProgressionError> {
+        Ok(self
+            .quote_npc_passage(authority, node, fence, route, gate)
+            .await?
+            .map(|(fare, _)| fare))
+    }
+
+    pub async fn quote_npc_passage<G: NpcTravelGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        route: TravelRoute,
+        gate: &G,
+    ) -> Result<Result<(u64, bool), TravelRefusal>, CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -207,8 +221,19 @@ impl DurabilityRoot {
                         return Ok(Ok(Err(TravelRefusal::PremiumRequired)));
                     }
                     let result = quote(&mut tx, fence, &route).await?;
+                    let introduction = if result.is_ok()
+                        && route.service == "oteryn:service.travel.harlow"
+                        && route.route.key == "vengoth"
+                    {
+                        sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND route=$2 AND arrived_at IS NOT NULL)")
+                            .bind(fence.character_id.as_bytes().as_slice())
+                            .bind("oteryn:service.travel.harlow/vengoth")
+                            .fetch_one(&mut **tx).await?
+                    } else {
+                        false
+                    };
                     tx.commit(deadline).await?;
-                    Ok(Ok(result))
+                    Ok(Ok(result.map(|fare| (fare, introduction))))
                 })
             })
             .await?
