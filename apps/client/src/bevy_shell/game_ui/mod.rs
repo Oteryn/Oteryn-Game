@@ -29,6 +29,8 @@ pub(in crate::bevy_shell) mod hud_panes;
 mod imbuement_tracker;
 mod imbuing;
 mod install;
+#[cfg(test)]
+pub(crate) use install::DepotSearchReplayUi;
 pub(super) use install::install;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;

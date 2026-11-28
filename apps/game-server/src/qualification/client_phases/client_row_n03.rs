@@ -136,15 +136,79 @@ fn n03_box_rejects_wrong_town_and_custody() -> TestResult {
 }
 
 fn carried_count(client: &DevClientSession, definition: NonZeroU32) -> TestResult<u64> {
-    let inventory = client.inventory().ok_or("N03 inventory snapshot missing")?;
-    Ok(inventory
+    backpack_count(
+        client.inventory().ok_or("N03 inventory snapshot missing")?,
+        definition,
+    )
+}
+
+fn backpack_count(
+    inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    definition: NonZeroU32,
+) -> TestResult<u64> {
+    if inventory
         .main_backpack
         .iter()
-        .chain(&inventory.entries)
         .chain(inventory.equipment.iter().map(|entry| &entry.item))
+        .any(|item| item.item_definition_ref == definition)
+    {
+        return Err("N03 fixture item appeared outside the backpack entries".into());
+    }
+    Ok(inventory
+        .entries
+        .iter()
         .filter(|entry| entry.item_definition_ref == definition)
         .map(|entry| u64::from(entry.count.get()))
         .sum())
+}
+
+#[test]
+fn n03_backpack_rejects_equipped_fixture_item() -> TestResult {
+    use oteryn_protocol_oteryn::item_view::{
+        CharacterInventory, EquipmentSlot, EquippedItem, ItemEntry, ItemHandle,
+    };
+    let item = ItemEntry {
+        appearance_id: 0,
+        handle: ItemHandle::new(1).ok_or("test item handle")?,
+        item_definition_ref: NonZeroU32::MIN,
+        count: NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let mut inventory = CharacterInventory {
+        entries: vec![item],
+        ..Default::default()
+    };
+    assert_eq!(backpack_count(&inventory, item.item_definition_ref)?, 1);
+    inventory.entries.clear();
+    inventory.equipment.push(EquippedItem {
+        slot: EquipmentSlot::Head,
+        item,
+    });
+    assert!(backpack_count(&inventory, item.item_definition_ref).is_err());
+    Ok(())
+}
+
+fn verify_approach(position: TilePos) -> TestResult {
+    if position != DEPOT_APPROACH {
+        return Err(format!(
+            "N03 expected pinned depot approach {DEPOT_APPROACH:?}, got {position:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn n03_approach_rejects_another_tile_in_locker_range() -> TestResult {
+    verify_approach(DEPOT_APPROACH)?;
+    assert!(
+        verify_approach(TilePos {
+            x: DEPOT_APPROACH.x + 1,
+            ..DEPOT_APPROACH
+        })
+        .is_err()
+    );
+    Ok(())
 }
 
 async fn wait_carried(
@@ -185,49 +249,104 @@ fn verify_holdings(reply: &wire::Reply, expected: u32) -> TestResult {
     Ok(())
 }
 
-fn verify_listed(reply: &wire::Reply) -> TestResult<&wire::SearchResult> {
-    if let [row] = reply.results.as_slice()
-        && reply.outcome == wire::Outcome::Listed
-        && reply.retrieved == 0
-        && (row.client_id, row.depot, row.stash, row.inbox) == (ITEM_ID, DEPOSIT_UNITS, 0, 0)
-        && row.tiers
-            == [wire::TierCount {
-                tier: 0,
-                count: DEPOSIT_UNITS,
-            }]
-    {
-        return Ok(row);
+fn verify_page(
+    reply: &wire::Reply,
+    outcome: wire::Outcome,
+    expected: &[wire::SearchResult],
+) -> TestResult {
+    if reply.outcome != outcome || reply.retrieved != 0 || reply.results != expected {
+        return Err(format!("N03 unexpected holdings page: {reply:?}").into());
     }
-    Err(format!("N03 unexpected complete holdings list: {reply:?}").into())
+    Ok(())
+}
+
+fn depot_row(client_id: u32, count: u32) -> wire::SearchResult {
+    wire::SearchResult {
+        client_id,
+        depot: count,
+        stash: 0,
+        inbox: 0,
+        tiers: vec![wire::TierCount { tier: 0, count }],
+    }
 }
 
 #[test]
-fn n03_list_rejects_extra_rows_and_continuation() -> TestResult {
-    let row = wire::SearchResult {
-        client_id: ITEM_ID,
-        depot: DEPOSIT_UNITS,
-        stash: 0,
-        inbox: 0,
-        tiers: vec![wire::TierCount {
-            tier: 0,
-            count: DEPOSIT_UNITS,
-        }],
-    };
+fn n03_pages_reject_extra_rows_overlap_and_wrong_terminal_status() -> TestResult {
+    let target = depot_row(ITEM_ID, DEPOSIT_UNITS);
     let mut reply = wire::Reply {
         outcome: wire::Outcome::Listed,
         retrieved: 0,
-        results: vec![row.clone()],
+        results: vec![target.clone()],
     };
-    verify_listed(&reply)?;
-    reply.results.push(wire::SearchResult {
-        client_id: ITEM_ID + 1,
-        ..row
-    });
-    assert!(verify_listed(&reply).is_err());
-    reply.results.pop();
+    verify_page(&reply, wire::Outcome::Listed, std::slice::from_ref(&target))?;
+    reply.results.insert(0, depot_row(ITEM_ID - 1, 1));
+    assert!(verify_page(&reply, wire::Outcome::Listed, std::slice::from_ref(&target)).is_err());
+    reply.results.remove(0);
     reply.outcome = wire::Outcome::More;
-    assert!(verify_listed(&reply).is_err());
+    assert!(verify_page(&reply, wire::Outcome::Listed, &[target]).is_err());
     Ok(())
+}
+
+async fn seed_pagination_inputs(
+    db: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult<Vec<wire::SearchResult>> {
+    let definitions: Vec<_> = (100..ITEM_ID)
+        .filter_map(|id| {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let revision = index.revision(&key)?.to_owned();
+            Some((id, key, revision))
+        })
+        .take(wire::MAX_RESULTS)
+        .collect();
+    if definitions.len() != wire::MAX_RESULTS {
+        return Err("N03 requires a full page of distinct lower item IDs".into());
+    }
+
+    // Match the depot storage fixture: seed native identities, then place them
+    // with the ordinary depot location guards and counter triggers enabled.
+    let mut tx = db.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let keys: Vec<_> = definitions.iter().map(|(_, key, _)| key.as_str()).collect();
+    let revisions: Vec<_> = definitions
+        .iter()
+        .map(|(_, _, revision)| revision.as_str())
+        .collect();
+    let items: Vec<String> = sqlx::query_scalar(
+        "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+         definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+         SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',key,revision,1,1,
+                game_character_uuid_v7() FROM unnest($2::text[],$3::text[]) AS input(key,revision)
+         RETURNING item_instance_id::text",
+    )
+    .bind(clients.world.as_slice())
+    .bind(keys)
+    .bind(revisions)
+    .fetch_all(&mut *tx)
+    .await?;
+    sqlx::query("SET LOCAL session_replication_role = origin")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_item_character_depot_locations
+         (item_instance_id,world_id,character_id,town_id,box_number)
+         SELECT id::uuid,encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,2
+         FROM unnest($4::text[]) AS input(id)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.characters[1].as_slice())
+    .bind(i32::from(DEPOT_TOWN))
+    .bind(items)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(definitions
+        .into_iter()
+        .map(|(id, _, _)| depot_row(id, 1))
+        .collect())
 }
 
 async fn assert_holdings(client: &mut DevClientSession, expected: u32) -> TestResult {
@@ -406,7 +525,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         characters: &characters,
         ..*clients
     };
-    let definition = provisioning::item_index()?
+    let item_index = provisioning::item_index()?;
+    let definition = item_index
         .definition_ref("Item", ITEM_KEY, "definition-r1")
         .ok_or("N03 fixture item definition missing")?;
     let mut client = connect_character(clients, 0xac, 1).await?;
@@ -438,11 +558,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     })
     .ok_or("N03 authored depot approach is unreachable")?;
     walk_to_depot(&mut client, world, &path).await?;
-    if tile(client.world_spatial().actor_position)? != DEPOT_APPROACH {
-        return Err(
-            format!("N03 did not reach the pinned depot approach {DEPOT_APPROACH:?}").into(),
-        );
-    }
+    verify_approach(tile(client.world_spatial().actor_position)?)?;
     assert_holdings(&mut client, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let original = item_custody(&mut db, clients).await?;
@@ -506,10 +622,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ));
 
     let client_id = ITEM_ID;
-    // Exactly one definition was deposited into this otherwise empty account.
-    let (listed, list_envelope) =
+    let page_rows = seed_pagination_inputs(&mut db, clients, &item_index).await?;
+    evidence(&format!(
+        "FIXTURE row=N03.client depot_page_input_definitions={} box=2",
+        page_rows.len()
+    ));
+    let (first_page, first_envelope) =
         search_command(&mut client, wire::Request::Open { after: 0 }).await?;
-    let row = verify_listed(&listed)?;
+    verify_page(&first_page, wire::Outcome::More, &page_rows)?;
+    let after = page_rows
+        .last()
+        .ok_or("N03 missing fixture page cursor")?
+        .client_id;
+    let (listed, list_envelope) =
+        search_command(&mut client, wire::Request::Open { after }).await?;
+    let row = depot_row(client_id, DEPOSIT_UNITS);
+    verify_page(&listed, wire::Outcome::Listed, std::slice::from_ref(&row))?;
     let (retrieved, retrieved_envelope) = search_command(
         &mut client,
         wire::Request::Retrieve {
@@ -529,22 +657,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .join(",");
     let original_session = client.join_snapshot().game_session_id;
     let capture_id = uuid_text(original_session.as_bytes());
+    let depot_search_selected = client.selected_capabilities().contains(&153);
+    if !depot_search_selected {
+        return Err("N03 live session did not negotiate depot search".into());
+    }
     let expected = format!(
-        "session={capture_id}\nitem={client_id}\npages={}\nlisted={:?}\nrow={}|{}|{}|{tiers}\nretrieve={:?}|{}\n",
-        1, listed.outcome, row.depot, row.stash, row.inbox, retrieved.outcome, retrieved.retrieved
+        "session={capture_id}\ndepot_search_selected={depot_search_selected}\nitem={client_id}\npages={}\nlisted={:?}\nrow={}|{}|{}|{tiers}\nretrieve={:?}|{}\n",
+        2, listed.outcome, row.depot, row.stash, row.inbox, retrieved.outcome, retrieved.retrieved
     );
     wait_carried(&mut client, definition, 1).await?;
     assert_holdings(&mut client, 1).await?;
     // The retrieval owner selects the first depot candidate in UUID order.
     let expected_custody = [(false, first.clone()), (true, second.clone())];
     verify_custody(&item_custody(&mut db, clients).await?, &expected_custody)?;
-    let locker_position = client.world_spatial().actor_position;
+    verify_approach(tile(client.world_spatial().actor_position)?)?;
     logout(&mut client).await?;
     drop(client);
 
     let mut fresh = connect_character(clients, 0xad, 1).await?;
+    verify_approach(tile(fresh.world_spatial().actor_position)?)?;
     if fresh.join_snapshot().game_session_id == original_session
-        || fresh.world_spatial().actor_position != locker_position
         || carried_count(&fresh, definition)? != 1
     {
         return Err(
@@ -558,12 +690,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "N03_DURABILITY carried_before=2 carried_after_deposit=0 depot_after_deposit=2 carried_after_retrieve=1 relog_carried=1 relog_depot=1 fresh_session=true retrieved_uuid={first} retained_uuid={second}"
     ));
 
-    capture(capture_root, "n03-list-0.json", &list_envelope)?;
+    capture(capture_root, "n03-list-0.json", &first_envelope)?;
+    capture(capture_root, "n03-list-1.json", &list_envelope)?;
     capture(capture_root, "n03-retrieve.json", &retrieved_envelope)?;
     capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "session={capture_id} item={client_id} pages={} depot={} retrieved={}",
-        1, row.depot, retrieved.retrieved
+        2, row.depot, retrieved.retrieved
     ))
 }
 

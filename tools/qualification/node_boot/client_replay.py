@@ -142,10 +142,12 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    cargo = [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package]
+    if row == "N03":
+        cargo.extend(["--features", "bevy-shell"])
     try:
         result = subprocess.run(
-            [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+            [*cargo, "--lib", test, "--", "--nocapture"],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:

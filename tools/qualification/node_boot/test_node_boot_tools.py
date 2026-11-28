@@ -975,11 +975,13 @@ class CloudRunSummaryTests(unittest.TestCase):
                               'test result: ok. 1 passed; 0 failed; 0 ignored\n'
                               + ''.join(f'N03_NATIVE_REPLAY session={s}\n' for s in markers))
                     result = subprocess.CompletedProcess([], 0, stdout)
-                    with patch.object(replay.subprocess, 'run', return_value=result):
+                    with patch.object(replay.subprocess, 'run', return_value=result) as run:
                         self.assertEqual(replay.replay_cause(
                             'N03', 'oteryn-client', test, names, root,
                             replay.read_verdicts(log)['N03.client'], log,
                         ), expected)
+                        command = run.call_args.args[0]
+                        self.assertEqual(command[command.index('--features') + 1], 'bevy-shell')
 
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:

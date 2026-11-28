@@ -402,3 +402,53 @@ fn depot_search_find_item_sends_the_search_and_shows_where_it_is_stored()
     );
     Ok(())
 }
+
+/// Headless host for the audit replay. It projects the shipped panel and dispatches the
+/// same Bevy Activate events as the on-screen controls.
+pub(crate) struct DepotSearchReplayUi(App);
+
+impl DepotSearchReplayUi {
+    pub(crate) fn new(link: crate::play::PlayLink) -> Result<Self, Box<dyn std::error::Error>> {
+        use crate::bevy_shell::owner::{ActivePlay, Phase};
+        let mut owner = HostOwner::new(None)?;
+        link.use_shared_frontend();
+        let mut view =
+            crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        owner.play = Some(ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        assert!(owner.request_container_tool(ContainerTool::Search, None, None));
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .insert_non_send(owner)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install_container_tools(&mut app);
+        Ok(Self(app))
+    }
+
+    pub(crate) fn press(&mut self, label: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.0.update();
+        let button = self
+            .0
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(self.0.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or_else(|| format!("missing depot search control {label}"))?;
+        self.0
+            .world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: button });
+        Ok(())
+    }
+
+    pub(crate) fn shows_line(&mut self, line: &str) -> bool {
+        self.0.update();
+        self.0
+            .world_mut()
+            .query::<&Text>()
+            .iter(self.0.world())
+            .any(|text| text.0.lines().any(|rendered| rendered == line))
+    }
+}
