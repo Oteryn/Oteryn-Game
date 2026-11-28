@@ -684,18 +684,53 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
         };
         let weapon = ItemKey::Instance(id(72));
         let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
-        let (wh, dh) = items
-            .map_view(&[weapon, dummy], |table| {
-                Ok((
-                    table.handle(&weapon).ok_or(
-                        crate::gameplay_transport::item_view::ItemViewError::LimitExceeded,
-                    )?,
-                    table.handle(&dummy).ok_or(
-                        crate::gameplay_transport::item_view::ItemViewError::LimitExceeded,
-                    )?,
-                ))
-            })
+        let inventory = owner
+            .observe_character_inventory(deps.actor, admitted.game_session_id)
+            .await
+            .ok_or("carried inventory")?;
+        items.snapshot(inventory, None).map_err(debug)?;
+        // The inventory fixture supplies the weapon. The map projection must issue
+        // the dummy handle for the immovable entry before START can name it.
+        let source = crate::gameplay_transport::world_map::MapViewSource {
+            overlay: world.overlay(),
+            facts: world.facts(),
+            content_generation: active.identity().client_artifact_digest(),
+            reset_epoch: 0,
+        };
+        let wh = items.table().handle(&weapon).ok_or("carried weapon handle")?;
+        let snapshot = crate::gameplay_transport::world_map::SessionMapView::default()
+            .snapshot(
+                &mut items,
+                &source,
+                crate::gameplay_transport::world_spatial::ActorPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                },
+            )
             .map_err(debug)?;
+        use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin, decode_world_map_snapshot};
+        let map = decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+        let definition = index
+            .definition_ref("Item", "oteryn:item.tibia.i28558", "definition-r1")
+            .ok_or("exercise dummy definition")?;
+        let origin = map
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .find(|item| item.definition == MapDefinition::Item(definition))
+            .ok_or("authored exercise dummy missing from domain 17")?
+            .origin;
+        let handle = match origin {
+            MapOrigin::Handle(handle) => Some(handle),
+            _ => None,
+        };
+        assert_eq!(
+            handle.and_then(|handle| items.resolve(handle)),
+            Some(dummy),
+            "authored exercise dummy must have a training handle",
+        );
+        let dh = handle.ok_or("dummy handle")?;
         let mut start = vec![8, 1];
         field(&mut start, 16, wh.get());
         field(&mut start, 24, dh.get());

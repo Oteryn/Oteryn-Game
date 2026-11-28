@@ -136,6 +136,8 @@ mod monster_profile_cycle;
 )]
 mod monster_quest_death;
 mod mount_taming;
+#[cfg(feature = "qualification-taming")]
+pub use mount_taming::arm_qualification_taming_draw;
 mod native_activity;
 mod native_activity_return;
 mod native_claim_reward;

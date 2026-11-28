@@ -118,14 +118,18 @@ fn visible_dummy(client: &mut DevClientSession) -> TestResult<ItemHandle> {
     let refs: std::collections::BTreeSet<_> = (28558..=28565)
         .map(|id| provisioning::item_reference(&index, id))
         .collect::<TestResult<_>>()?;
-    let snapshot = client
+    let at = tile(client.world_spatial().actor_position)?;
+    let map = client
         .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        .world_map_snapshot()
         .ok_or("world-map snapshot missing")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("world-map snapshot: {error:?}"))?;
     map.tiles
         .iter()
+        .filter(|entry| {
+            tile(entry.position).is_ok_and(|pos| {
+                pos.floor == at.floor && pos.x.abs_diff(at.x).max(pos.y.abs_diff(at.y)) <= 1
+            })
+        })
         .flat_map(|tile| &tile.items)
         .find_map(|item| match (item.definition, item.origin) {
             (

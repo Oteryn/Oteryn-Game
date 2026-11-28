@@ -17,7 +17,10 @@ use oteryn_protocol_oteryn::loop_training::{
     CAPABILITY_OFFLINE_TRAINING_CHOICE_V1, CAPABILITY_TRAINING_V1, OfflineTrainingSkills,
     TrainingResult,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{BTreeSet, HashMap},
+    sync::{Arc, LazyLock},
+};
 use tokio::sync::Mutex;
 
 pub(in crate::gameplay_transport) struct TrainingRuntime {
@@ -37,16 +40,31 @@ impl TrainingRuntime {
         self.sessions.lock().await.remove(&session);
     }
 }
+static TRAINING_RATES: LazyLock<Option<Arc<TrainingRates>>> = LazyLock::new(|| {
+    TrainingRates::from_json(include_bytes!(
+        "../../../../../../rulesets/training/crystal-201189f-v1.json"
+    ))
+    .ok()
+    .filter(|rates| rates.enabled)
+    .map(Arc::new)
+});
+
+pub(super) fn is_exercise_dummy_appearance(appearance: u16) -> bool {
+    static DUMMIES: LazyLock<BTreeSet<u16>> = LazyLock::new(|| {
+        TRAINING_RATES
+            .iter()
+            .flat_map(|rates| rates.dummies.keys())
+            .map(|key| crate::map::view::appearance_id(key, None))
+            .filter(|appearance| *appearance != 0)
+            .collect()
+    });
+    DUMMIES.contains(&appearance)
+}
+
 impl Default for TrainingRuntime {
     fn default() -> Self {
-        let config = TrainingRates::from_json(include_bytes!(
-            "../../../../../../rulesets/training/crystal-201189f-v1.json"
-        ))
-        .ok()
-        .filter(|rates| rates.enabled)
-        .map(Arc::new);
         Self {
-            config,
+            config: TRAINING_RATES.clone(),
             sessions: Mutex::new(HashMap::new()),
         }
     }
@@ -326,18 +344,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
         let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
-        let ItemKey::MapBase {
-            bundle_digest,
+        let source = super::world_map::MapViewSource {
+            overlay: &at.map.overlay,
+            facts: &at.map.facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let super::world_map::MapHandleTarget::Base {
+            pos,
+            ordinal,
             placement_key,
-            reset_epoch,
-        } = key
+        } = super::world_map::resolve_map_handle(&source, key).ok()?
         else {
             return None;
         };
-        if bundle_digest != at.map.overlay.base().digest() || reset_epoch != self.reset_epoch {
-            return None;
-        }
-        let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
+        let bundle_digest = at.map.overlay.base().digest();
+        let reset_epoch = self.reset_epoch;
         let player = crate::map::overlay::TilePos {
             x: u16::try_from(at.at.x).ok()?,
             y: u16::try_from(at.at.y).ok()?,
