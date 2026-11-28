@@ -39,3 +39,8 @@ fn questpc7_reward_requirements_current_premium_and_low_level() -> TestResult {
 fn questpc7_reward_requirements_high_level_and_readonly_parent() -> TestResult {
     run_case("questpc7-eligibility-high")
 }
+
+#[test]
+fn questpc7_wayland_outfit_repeats_full_menu_with_one_intro_receipt() -> TestResult {
+    run_case("questpc7-eligibility-outfit-high")
+}

@@ -181,6 +181,15 @@ mod tests {
         let sealed = reply(native, &definition(2834), "Sealed".into()).ok_or("read-only")?;
         assert!(!sealed.writable);
         assert_eq!(sealed.text, "Sealed");
+        for (id, max_length, writable) in [(401, 1023, true), (8748, 511, false)] {
+            let length = usize::try_from(max_length)?;
+            let inscription = reply(native, &definition(id), "x".repeat(length))
+                .ok_or("Crystal inscription")?;
+            assert_eq!(inscription.max_length, max_length);
+            assert_eq!(inscription.writable, writable);
+            assert_eq!(inscription.text.len(), length);
+            assert!(inscription.text.bytes().all(|byte| byte == b'x'));
+        }
         // A stored text beyond the item's maximum, a non-readable item and an unknown
         // revision are refused rather than sent.
         assert!(reply(native, &definition(3507), "x".repeat(80)).is_none());

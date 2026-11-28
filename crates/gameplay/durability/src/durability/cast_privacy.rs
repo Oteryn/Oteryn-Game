@@ -54,9 +54,11 @@ impl DurabilityRoot {
         if until <= Instant::now() {
             return self.try_issue_semantic_pass();
         }
+        let deadline =
+            tokio::time::Instant::now() + until.saturating_duration_since(Instant::now());
         let mut waiter = None;
         loop {
-            match self.try_issue_semantic_pass_by(until) {
+            match self.try_issue_semantic_pass_by(deadline) {
                 Ok(pass) => return Ok(pass),
                 Err(DurabilityError::RootUnavailable) if Instant::now() < until => {
                     if waiter.is_none() {
@@ -64,7 +66,7 @@ impl DurabilityRoot {
                     }
                     let now = tokio::time::Instant::now();
                     let latest = (now + Duration::from_millis(50))
-                        .min(tokio::time::Instant::from_std(until));
+                        .min(deadline);
                     if !self.wait_holder_turn(now, latest).await {
                         tokio::time::sleep_until(latest).await;
                     }
@@ -133,7 +135,8 @@ impl DurabilityRoot {
         let pass = if wait_for_holder {
             self.cast_privacy_worker_pass(worker.valid_until()).await?
         } else if worker.valid() {
-            self.try_issue_semantic_pass_by(worker.valid_until())?
+            let remaining = worker.valid_until().saturating_duration_since(Instant::now());
+            self.try_issue_semantic_pass_by(tokio::time::Instant::now() + remaining)?
         } else {
             self.try_issue_semantic_pass()?
         };

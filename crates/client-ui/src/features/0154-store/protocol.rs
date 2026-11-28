@@ -180,6 +180,13 @@ pub fn request(
     }
     panel.pending = true;
     panel.pending_action = command.command_type;
+    panel.inbox_query_pending = if command.command_type != COMMAND_TYPE_STORE_INBOX_CLAIM {
+        None
+    } else if command.payload == STORE_INBOX_QUERY {
+        Some(None)
+    } else {
+        store::decode_inbox_query(&command.payload)
+    };
     panel.feedback = None;
     Some(command)
 }
@@ -191,6 +198,7 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
 
     panel.pending = false;
     let coin_history = std::mem::take(&mut panel.coin_history.pending);
+    let inbox_query = std::mem::take(&mut panel.inbox_query_pending);
     if !matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -228,8 +236,25 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
         }
+        COMMAND_TYPE_STORE_INBOX_CLAIM if inbox_query.is_some() => {
+            store::decode_inbox_page(&result.payload).map(|page| {
+                panel.inbox = page;
+                panel.inbox_page_cursor = inbox_query.flatten();
+            })
+        }
         COMMAND_TYPE_STORE_INBOX_CLAIM => {
-            store::decode_claim_receipt(&result.payload).map(|v| panel.claim = Some(v))
+            store::decode_claim_receipt(&result.payload).map(|receipt| {
+                if matches!(
+                    receipt.result,
+                    StoreClaimCode::Committed | StoreClaimCode::Revoked
+                ) {
+                    panel
+                        .inbox
+                        .entries
+                        .retain(|entry| entry.claim_key() != receipt.fulfilment_unit_id);
+                }
+                panel.claim = Some(receipt);
+            })
         }
         _ => store::decode_purchase_result(&result.payload).map(|v| {
             panel.confirmed_purchase = None;

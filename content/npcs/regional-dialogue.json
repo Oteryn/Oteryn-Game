@@ -1,0 +1,3441 @@
+{
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "contacts": {
+    "oteryn:npc.a_beggar": {
+      "path": "data-global/npc/a_beggar.lua",
+      "sha256": "0de84089f4a3c0cd843bf795177320c6e749e8d569ba6b88f5c3405a25f1e23b",
+      "greet": "Hi! What is it, what d'ye {want}?"
+    },
+    "oteryn:npc.a_grumpy_cyclops": {
+      "path": "data-global/npc/a_grumpy_cyclops.lua",
+      "sha256": "7845536c224139baf1f3a3b99a62b275a9902ee050b721466e1f27753e355723"
+    },
+    "oteryn:npc.alaistar": {
+      "path": "data-global/npc/alaistar.lua",
+      "sha256": "632237084e0382dd959172a0f7d737ed747fad710a2cea9db51b7f849bd8c36c"
+    },
+    "oteryn:npc.alternative_rock": {
+      "path": "data-global/npc/alternative_rock.lua",
+      "sha256": "330036b43f99ccbe0f6869225d0bcde1fb3ecc6ac6b7215d3a151d8dba5a2a84",
+      "keywords": [
+        {
+          "key": "help",
+          "triggers": [
+            "help"
+          ],
+          "reply": [
+            "Find the Golden Anchor and click there, after talk with Navigator."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        66
+      ]
+    },
+    "oteryn:npc.alyxo": {
+      "path": "data-global/npc/alyxo.lua",
+      "sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.ambassador_of_rathleton": {
+      "path": "data-global/npc/ambassador_of_rathleton.lua",
+      "sha256": "d19955a95e8a55c634f50326cde734050435a51582ce88f6a7f20e644b8ba705",
+      "greet": "Greetings, friend.",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.amra": {
+      "path": "data-global/npc/amra.lua",
+      "sha256": "66a7271f669d84d0c75b2bc28165862546248e7dd9473a8426ad0733fd0f6e2d"
+    },
+    "oteryn:npc.armenius": {
+      "path": "data-global/npc/armenius.lua",
+      "sha256": "dba131f2af9d192c281abd3e0b1ec3fc359bbde246c608077c4be56b2517b22a",
+      "greet": "Ah, an adventurer. Be greeted and have a seat. How may I {serve} you?"
+    },
+    "oteryn:npc.asnarus": {
+      "path": "data-global/npc/asnarus.lua",
+      "sha256": "3ef70ed5e4f9e4a27744b4127b7db6f02252e7a07caf911475ea2bd7fe8c010b"
+    },
+    "oteryn:npc.asphota": {
+      "path": "data-global/npc/asphota.lua",
+      "sha256": "83434f16310ee4beaba56d376ecd4940eeefc16ebbd9892438c050f2e6b16b7c"
+    },
+    "oteryn:npc.atur": {
+      "path": "data-global/npc/atur.lua",
+      "sha256": "f7c93073fc92d0ccbcedfd35d844bc690e7783d4026f6c1a3ba18573eec1af95",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.auron": {
+      "path": "data-global/npc/auron.lua",
+      "sha256": "fc53c157473e326fc070b4ee7f3b4603a537d2c5c79c222272cc8ae04d687516"
+    },
+    "oteryn:npc.azalea": {
+      "path": "data-global/npc/azalea.lua",
+      "sha256": "f17c1f3e096fabb39f9c2c4689dc65e6c408e1dd536ece13373c3ed507ed8d15",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Apprentice's Strike}, {Chill Out}, {Creature Illusion}, {Energy Strike}, {Envenom}, {Flame Strike}, {Ice Strike}, {Ice Wave}, {Mud Attack}, {Physical Strike}, {Strong Ice Strike}, {Strong Ice Wave}, {Strong Terra Strike}, {Terra Strike} and {Terra Wave}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Bleeding}, {Cure Burning}, {Cure Electrification}, {Cure Poison}, {Heal Friend}, {Intense Healing}, {Light Healing}, {Magic Patch}, {Mass Healing}, {Nature's Embrace}, {Restoration} and {Ultimate Healing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Animate Dead}, {Cancel Magic Shield}, {Convince Creature}, {Find Fiend}, {Find Person}, {Food}, {Great Light}, {Haste}, {Invisible}, {Levitate}, {Light}, {Magic Rope}, {Magic Shield}, {Strong Haste}, {Summon Creature}, Summon {Druid Familiar} and {Ultimate Light}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Avalanche} Rune, {Chameleon} Rune, {Cure Poison Rune}, {Destroy Field} Rune, {Disintegrate} Rune, {Energy Field} Rune, {Energy Wall} Rune, {Explosion} Rune, {Fire Bomb} Rune, {Fire Field} Rune, {Fire Wall} Rune, {Heavy Magic Missile} Rune, {Icicle} Rune, {Intense Healing Rune}, {Light Magic Missile} Rune, {Paralyse} Rune, {Poison Bomb} Rune, {Poison Field} Rune, {Poison Wall} Rune, {Soulfire} Rune, {Stalagmite} Rune, {Stone Shower} Rune and {Ultimate Healing Rune}."
+          ]
+        },
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        254,
+        259,
+        265,
+        271,
+        277,
+        390,
+        391
+      ]
+    },
+    "oteryn:npc.barazbaz": {
+      "path": "data-global/npc/barazbaz.lua",
+      "sha256": "9a046702f78dc2351c2345061fee6c4dc8697cea1c7d73b899da9599042c2812",
+      "greet": "Oh, hello there!"
+    },
+    "oteryn:npc.barnabas_dee": {
+      "path": "data-global/npc/barnabas_dee.lua",
+      "sha256": "bd1c28a5c34f121a36236902e4d7d3e5c985bfd14f2595b57ab0bd92040253ae",
+      "greet": "Welcome to my humble abode. If you come for new sorcerer {spells}, you have come to the right place.",
+      "farewell": "Take care, child",
+      "walkaway": "'The impetuosity of youth', as my friend Mordecai would say.",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Apprentice's Strike}, {Buzz}, {Creature Illusion}, {Curse}, {Death Strike}, {Electrify}, {Energy Beam}, {Energy Strike}, {Energy Wave}, {Fire Wave}, {Flame Strike}, {Great Energy Beam}, {Great Fire Wave}, {Ice Strike}, {Ignite}, {Invisible}, {Lightning}, {Scorch}, {Strong Energy Strike}, {Strong Flame Strike} and {Terra Strike}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Poison}, {Intense Healing}, {Light Healing}, {Magic Patch}, {Restoration} and {Ultimate Healing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Animate Dead}, {Cancel Magic Shield}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope}, {Magic Shield}, {Strong Haste}, {Summon Creature}, Summon {Sorcerer Familiar} and {Ultimate Light}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Destroy Field} Rune, {Disintegrate} Rune, {Energy Bomb} Rune, {Energy Field} Rune, {Energy Wall} Rune, {Explosion} Rune, {Fire Bomb} Rune, {Fire Field} Rune, {Fire Wall} Rune, {Fireball} Rune, {Great Fireball} Rune, {Heavy Magic Missile} Rune, {Light Magic Missile} Rune, {Poison Field} Rune, {Poison Wall} Rune, {Soulfire} Rune, {Stalagmite} Rune, {Sudden Death} Rune and {Thunderstorm} Rune."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        317,
+        322,
+        328,
+        334,
+        340
+      ]
+    },
+    "oteryn:npc.barry": {
+      "path": "data-global/npc/barry.lua",
+      "sha256": "e2fbda665e3c1f6b656a3005b5e21cc8b890e5730d3e0627a75a31bf1b7567b7"
+    },
+    "oteryn:npc.bruce": {
+      "path": "data-global/npc/bruce.lua",
+      "sha256": "e1d328f0a96ab5cb4b07f6842226e6df75709156b9e0bee9747231671ea1d4f9"
+    },
+    "oteryn:npc.captain_chelop": {
+      "path": "data-global/npc/captain_chelop.lua",
+      "sha256": "b0661cd63a39d82d2eb4906cc2d7b152bbadfe15228696b52ed6a2b2ec2ef21a",
+      "greet": "Welcome on board, recruit |PLAYERNAME|. Where can I {sail} you today?",
+      "farewell": "On behalf of the inquisition, I bid you farewell.",
+      "walkaway": "Good bye then.",
+      "keywords": [
+        {
+          "key": "sail",
+          "triggers": [
+            "sail"
+          ],
+          "reply": [
+            "I can bring you back to {Thais} if you are weary or you can stay and fight. What shall it be?"
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "My name is Chelop and I am a captain of this {inquisition} ship."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "Can't you see? I'm captain of the Pesadilla, the proud {inquisition} ship which anchors here."
+          ]
+        },
+        {
+          "key": "inquisition",
+          "triggers": [
+            "inquisition"
+          ],
+          "reply": [
+            "By edict of the honorable Henricus himself, we are ordered to give passage to all recruits of the Roshamuul mission for a small fee."
+          ]
+        },
+        {
+          "key": "roshamuul",
+          "triggers": [
+            "roshamuul"
+          ],
+          "reply": [
+            "This is the island you are currently on, just in case you forgot."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        69,
+        70,
+        71,
+        72,
+        73
+      ]
+    },
+    "oteryn:npc.captain_cookie": {
+      "path": "data-global/npc/captain_cookie.lua",
+      "sha256": "1bbab19f009c8ed089c0966ad8971071d473ebde1d5641c62b33e10a8a3f7efd",
+      "greet": "Greetings, daring adventurer. If you need a {passage}, let me know.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "keywords": [
+        {
+          "key": "sail",
+          "triggers": [
+            "sail"
+          ],
+          "reply": [
+            "I can take you to {Liberty Bay}."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I am the captain of this ship."
+          ]
+        },
+        {
+          "key": "captain",
+          "triggers": [
+            "captain"
+          ],
+          "reply": [
+            "I am the captain of this ship."
+          ]
+        },
+        {
+          "key": "yalahar",
+          "triggers": [
+            "yalahar"
+          ],
+          "reply": [
+            "I travelled here, hoping to find the cockaigne. Imagine my disappointment when I discovered I was wrong."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        63,
+        64,
+        65,
+        66
+      ]
+    },
+    "oteryn:npc.captain_harava": {
+      "path": "data-global/npc/captain_harava.lua",
+      "sha256": "58fe2007fccc69407260e5071d0f94ece294765b7388aeb35a9e6d59a967e3a4",
+      "greet": "Welcome on board, traveller. Where can I {sail} you today?",
+      "farewell": "Good bye. Recommend us if you were satisfied with our service.",
+      "walkaway": "Good bye then.",
+      "keywords": [
+        {
+          "key": "trip",
+          "triggers": [
+            "trip"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "route",
+          "triggers": [
+            "route"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "town",
+          "triggers": [
+            "town"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "destination",
+          "triggers": [
+            "destination"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "sail",
+          "triggers": [
+            "sail"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        },
+        {
+          "key": "go",
+          "triggers": [
+            "go"
+          ],
+          "reply": [
+            "I'm ready to bring you to {Oramond}, {Krailos}, {Venore} or {Darashia}."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85
+      ]
+    },
+    "oteryn:npc.chavis": {
+      "path": "data-global/npc/chavis.lua",
+      "sha256": "944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb",
+      "greet": "Hey there! You don't happen to have some {food} on you, you're willing to share? Well, where are my manners, a warm welcome for now.",
+      "farewell": "Take care out there!",
+      "keywords": [
+        {
+          "key": "magistrate",
+          "triggers": [
+            "magistrate"
+          ],
+          "reply": [
+            "They act so important but it is us common people who keep things going. There is a lot you can do in this city to earn a right to vote in the magistrate, though. So keep an eye out for everyone who needs help."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        105
+      ]
+    },
+    "oteryn:npc.christine": {
+      "path": "data-global/npc/christine.lua",
+      "sha256": "f2c607ca41ac785e1deccf9c027ba93c84ead66eb89c2b4b5714074db21a7f85"
+    },
+    "oteryn:npc.chuckles": {
+      "path": "data-global/npc/chuckles.lua",
+      "sha256": "c84f66e6c98759db1fb23ac058349205cf7871ef1e6969d133d77eac3c5903d6"
+    },
+    "oteryn:npc.dhira": {
+      "path": "data-global/npc/dhira.lua",
+      "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9",
+      "greet": "Greetings, two-leg.",
+      "farewell": "Mind the beavers on your way out.",
+      "walkaway": "Mind the beavers on your way out.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Dhira. The beavers call me something else, but you could not pronounce it."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I look after the beavers of Silvertides."
+          ]
+        },
+        {
+          "key": "beaver_beavers",
+          "triggers": [
+            "beaver",
+            "beavers"
+          ],
+          "reply": [
+            "They are cleverer than most two-legs and they complain less."
+          ]
+        },
+        {
+          "key": "lagoon_sparkling_lagoon",
+          "triggers": [
+            "lagoon",
+            "sparkling lagoon"
+          ],
+          "reply": [
+            "Beautiful place, if you keep an eye out for parders and jungle moas."
+          ]
+        },
+        {
+          "key": "tide_veil_whisper_reed",
+          "triggers": [
+            "tide veil",
+            "whisper reed"
+          ],
+          "reply": [
+            "Both grow out in the lagoon, and both have that silvery sheen now. Cut a sample with a knife and take it to the laboratory."
+          ]
+        },
+        {
+          "key": "laboratory",
+          "triggers": [
+            "laboratory"
+          ],
+          "reply": [
+            "The refiner of magic in the laboratory here in Silvertides will tell you what is in those leaves."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        79,
+        80,
+        81,
+        82,
+        83,
+        84
+      ]
+    },
+    "oteryn:npc.dorbin": {
+      "path": "data-global/npc/dorbin.lua",
+      "sha256": "2114eb1d8e720cb2b26cc19c0dce850607587c1784f634833811184b59727dfd"
+    },
+    "oteryn:npc.doubleday": {
+      "path": "data-global/npc/doubleday.lua",
+      "sha256": "c0dff3c79ef282bbffb5594f4bab8aea5a2bb86a89f27774404d6969fabddf6c",
+      "greet": "Hello there, hmm just... just wait right there, I'll be with you in a second. Just getting this {experiment} done..."
+    },
+    "oteryn:npc.dr_merlay": {
+      "path": "data-global/npc/dr_merlay.lua",
+      "sha256": "7859daeacda5cb07e2c59eea2aa67e7b61696c65e337000ee548484354af1f18"
+    },
+    "oteryn:npc.dream_butterfly": {
+      "path": "data-global/npc/dream_butterfly.lua",
+      "sha256": "10e74e0bbe7650a6917342ad272ce3873efb7b7d11d02e7d367c3df2980de2d8"
+    },
+    "oteryn:npc.dregor": {
+      "path": "data-global/npc/dregor.lua",
+      "sha256": "e1a7da8800a0af7279756bf34984c3332bf9ffe94485f1c6970e763635546023"
+    },
+    "oteryn:npc.drystan_wildweed": {
+      "path": "data-global/npc/drystan_wildweed.lua",
+      "sha256": "d11d66f1365fc8052dbc0965c1d69ebc44cbf8e628b906427577b95d8040f43a"
+    },
+    "oteryn:npc.eathar": {
+      "path": "data-global/npc/eathar.lua",
+      "sha256": "ad3acba8ed9eb19e109c08bbac0eb7ba314c5bd808568984eb64894df14795b5"
+    },
+    "oteryn:npc.edmund": {
+      "path": "data-global/npc/edmund.lua",
+      "sha256": "d56ee37bafc13d9acad5dc934155a76c1f646164aca9404e68ce69812b3f571d"
+    },
+    "oteryn:npc.eighty": {
+      "path": "data-global/npc/eighty.lua",
+      "sha256": "d9b1c94908d29de5d92c90de740097046c1974f3a62e75bd207e24064409a861",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.elbert": {
+      "path": "data-global/npc/elbert.lua",
+      "sha256": "4a003f408a2c5ad58993b50379acd63f6dd2cd6e780ea7d87f69da03de194880"
+    },
+    "oteryn:npc.eliyas": {
+      "path": "data-global/npc/eliyas.lua",
+      "sha256": "0e39800b2fedaf7d5c924deb11f080846f0dc7b7c28936655f13f1d4d9c08038",
+      "greet": "Be greeted, |PLAYERNAME|. Which of my fine gems do you {need}?",
+      "farewell": "Daraman's blessings and good bye.",
+      "walkaway": "Daraman's blessings and good bye.",
+      "keywords": [
+        {
+          "key": "need",
+          "triggers": [
+            "need"
+          ],
+          "reply": [
+            "I am a jeweller. Maybe you want to have a look at my wonderful {offers}."
+          ]
+        },
+        {
+          "key": "offers",
+          "triggers": [
+            "offers"
+          ],
+          "reply": [
+            "Well, I sell gems and {goblets}. If you'd like to see my offers, ask me for a {trade}."
+          ]
+        },
+        {
+          "key": "goblets",
+          "triggers": [
+            "goblets"
+          ],
+          "reply": [
+            "Ah, our newest import! We have golden goblets, silver goblets and bronze goblets. All of them have space for a hand-written dedication."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        64,
+        65,
+        66
+      ]
+    },
+    "oteryn:npc.elliott": {
+      "path": "data-global/npc/elliott.lua",
+      "sha256": "542a009f0eb6775ed8c5680ff6fbd20801d7847f3b99bf3cc445e6223a77baa0",
+      "greet": "<nods>",
+      "farewell": "<nods> Yeah."
+    },
+    "oteryn:npc.emily": {
+      "path": "data-global/npc/emily.lua",
+      "sha256": "532b06b42a077b1030e985230c1cd9d2aa0de88baff28e97aa0b9b5ed29be06a"
+    },
+    "oteryn:npc.eruaran": {
+      "path": "data-global/npc/eruaran.lua",
+      "sha256": "6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936",
+      "farewell": "Good bye!",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "greet_aliases": [
+        "ashari"
+      ],
+      "keywords": [
+        {
+          "key": "outfit",
+          "triggers": [
+            "outfit"
+          ],
+          "reply": [
+            "What addon you are looking? I need for first addon: {dream warden mask} and for second {dream warden claw}."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        452
+      ]
+    },
+    "oteryn:npc.eshaya": {
+      "path": "data-global/npc/eshaya.lua",
+      "sha256": "0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+      "greet": "Suon's and Bastesh's blessing, dear guest!",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.esrik": {
+      "path": "data-global/npc/esrik.lua",
+      "sha256": "34f8ee5895c33de0d991fdfbd695041dc1e3175486a8219d268d3eabba6cdc17",
+      "greet": "Hello, |PLAYERNAME| and welcome to my little forge.",
+      "farewell": "Bye."
+    },
+    "oteryn:npc.ethan": {
+      "path": "data-global/npc/ethan.lua",
+      "sha256": "3f94045721c89cce72dd1fb30d8ad95aa533fc41e2070130f86450686a764a73",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Arrow Call}, {Divine Caldera}, {Divine Missile}, {Ethereal Spear}, {Holy Flash}, {Strong Ethereal Spear} and Summon {Paladin Familiar}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Curse}, {Cure Poison}, {Divine Healing}, {Intense Healing}, {Intense Recovery}, {Light Healing}, {Magic Patch}, {Recovery} and {Salvation}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Cancel Invisibility}, {Conjure Arrow}, {Conjure Explosive Arrow}, {Enchant Spear}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope} and {Swift Foot}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Destroy Field} Rune, {Disintegrate} Rune and {Holy Missile} Rune."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        146,
+        151,
+        157,
+        163,
+        169
+      ]
+    },
+    "oteryn:npc.faloriel": {
+      "path": "data-global/npc/faloriel.lua",
+      "sha256": "1ea067bd1bd7fbe8c7575ec689b776c64b4a44ac271a7190667a905a6b0c4dcc",
+      "greet": "Greetings, dear guest and welcome to my {potion} shop.",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.fayla": {
+      "path": "data-global/npc/fayla.lua",
+      "sha256": "c897bed7095d86ce3818e485b1313626a5d9afd897b53e5794453dc1470e56f9"
+    },
+    "oteryn:npc.fillias": {
+      "path": "data-global/npc/fillias.lua",
+      "sha256": "2c04155d7e79a57a2164929893040bc82b553185fd4c982746c3116933ea81a9"
+    },
+    "oteryn:npc.flint": {
+      "path": "data-global/npc/flint.lua",
+      "sha256": "096b8ed45a4d6829cd001d3620350e608ce08ec88ee138de5ccc5f6a0b98e40c"
+    },
+    "oteryn:npc.flora": {
+      "path": "data-global/npc/flora.lua",
+      "sha256": "a3491eb5948f186902e10226a4c96273d7dcf012716db0f47bd4d5dbd7390853",
+      "farewell": "Come back soon.",
+      "walkaway": ""
+    },
+    "oteryn:npc.fyodor": {
+      "path": "data-global/npc/fyodor.lua",
+      "sha256": "968a44d7c02ad77ca4aa2eb905a9560555f090df6ab429c66851affb3c8b3c3b"
+    },
+    "oteryn:npc.gederas": {
+      "path": "data-global/npc/gederas.lua",
+      "sha256": "cbc820091e5db94352bb1a814466647f3d70ea659f4141b76c7aa63d3749ff8e"
+    },
+    "oteryn:npc.giri": {
+      "path": "data-global/npc/giri.lua",
+      "sha256": "17d9df6c08b1154e717bc285435f46a0758394ac5679d662dc7cd2318d2b3e9d"
+    },
+    "oteryn:npc.golem_guardian": {
+      "path": "data-global/npc/golem_guardian.lua",
+      "sha256": "ad5a2b304eceb173f6292557d7639dd131f5dbfd690c592759e784f51ecff99b"
+    },
+    "oteryn:npc.graham": {
+      "path": "data-global/npc/graham.lua",
+      "sha256": "e83b54d3a70d710ab94ebb2a2da89a724f0f8bb5385094757e15f1856c131a79",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells and {support} spells. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Annihilation}, {Berserk}, {Brutal Strike}, {Chivalrous Challenge}, {Fierce Berserk}, {Front Sweep}, {Groundshaker}, {Inflict Wound}, {Lesser Front Sweep} and {Whirlwind Throw}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Bruise Bane}, {Cure Bleeding}, {Cure Poison}, {Fair Wound Cleansing}, {Intense Recovery}, {Intense Wound Cleansing}, {Recovery} and {Wound Cleansing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Charge}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope} and Summon {Knight Familiar}."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        134,
+        139,
+        145,
+        151
+      ]
+    },
+    "oteryn:npc.gree_dee": {
+      "path": "data-global/npc/gree_dee.lua",
+      "sha256": "077e23c3212383de3e42071584725cb354c3eb7aa0a367f9c7e2524f0f9a6528"
+    },
+    "oteryn:npc.guard_bazaya": {
+      "path": "data-global/npc/guard_bazaya.lua",
+      "sha256": "1fd334ba5a8071fd30b0b7d6a6cdb2e36a2d63e9ca14632528abca2d5cc51ed5"
+    },
+    "oteryn:npc.guard_inurta": {
+      "path": "data-global/npc/guard_inurta.lua",
+      "sha256": "3171d5853a2bf6ada0733b63de45a5f986a03e1fda5b9ce6d96b29332658638b"
+    },
+    "oteryn:npc.guard_saros": {
+      "path": "data-global/npc/guard_saros.lua",
+      "sha256": "11a5ec716dc0d673f4b075ea8d5158f4159903bf5c208ce7233c3a849c8b669d",
+      "farewell": "Good bye, |PLAYERNAME|. I really hope we'll talk again soon.",
+      "walkaway": "I hope to see you soon."
+    },
+    "oteryn:npc.guard_senet": {
+      "path": "data-global/npc/guard_senet.lua",
+      "sha256": "2949af9dea6006739b2ea1372697650ac820da007e1207c027b1952bbcc779bd"
+    },
+    "oteryn:npc.guide_edna": {
+      "path": "data-global/npc/guide_edna.lua",
+      "sha256": "5c679c5a1f2bc8d976c659aa6f65f1e81de0a9bc12c2dbfc9861369d4cbe9f26",
+      "greet": "Meow, welcome to Yalahar |PLAYERNAME|! Even though I might not look like it, I can give you {information} and a {map} guide. Need some?",
+      "farewell": "Enjoy your stay in Yalahar, |PLAYERNAME|. Meow.",
+      "walkaway": "Good bye.",
+      "keywords": [
+        {
+          "key": "information",
+          "triggers": [
+            "information"
+          ],
+          "reply": [
+            "Currently, I can tell you all about the town, its temple, the bank, shops, spell trainers and the depot, as well as about the world status."
+          ]
+        },
+        {
+          "key": "temple",
+          "triggers": [
+            "temple"
+          ],
+          "reply": [
+            "The temple is just south west of here. Actually, it's a temple raft and the priestess is somewhat... meow... you'll see what I mean."
+          ]
+        },
+        {
+          "key": "bank",
+          "triggers": [
+            "bank"
+          ],
+          "reply": [
+            "Our bank clerk Znozel is somewhat... special. You can find him north of this harbour and then to the right, past the tavern."
+          ]
+        },
+        {
+          "key": "shops",
+          "triggers": [
+            "shops"
+          ],
+          "reply": [
+            "You can buy weapons, armor, tools, gems, magical equipment, furniture, spells and food here."
+          ]
+        },
+        {
+          "key": "depot",
+          "triggers": [
+            "depot"
+          ],
+          "reply": [
+            "The depot is a place where you can safely store your belongings. You are also protected against attacks there. I escort newcomers there, but it's just north of here."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I'm the only feline guide in Tibia. I might not have fingers anymore, but with my paw I can still mark important locations on your map and give you some information about the town and the world status."
+          ]
+        },
+        {
+          "key": "town",
+          "triggers": [
+            "town"
+          ],
+          "reply": [
+            "Yalahar is a very old city of gigantic size, consisting of a city centre and eight quarters. The beings that are closest to be called rulers of the city are the Yalahari."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "I'm Jonathan. Pleased to meet you."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98
+      ]
+    },
+    "oteryn:npc.guide_meruka": {
+      "path": "data-global/npc/guide_meruka.lua",
+      "sha256": "72039676843b6846ce163d7bc52cabddc3146bbec2d26c573370248a9714279b"
+    },
+    "oteryn:npc.haani": {
+      "path": "data-global/npc/haani.lua",
+      "sha256": "5fe5035a7006c5a2e2acb2345a3c93bb80bdea85dff7f800863d6f924f515258"
+    },
+    "oteryn:npc.hal": {
+      "path": "data-global/npc/hal.lua",
+      "sha256": "cf1e145ca998594be7c05f3157523a177c8a7cb8345a414226eadcbcb3d62813"
+    },
+    "oteryn:npc.hexel": {
+      "path": "data-global/npc/hexel.lua",
+      "sha256": "d0997672e960e5b68485950f095f89838a8d6ddde99e01571e348c6964dd7301"
+    },
+    "oteryn:npc.inkaef": {
+      "path": "data-global/npc/inkaef.lua",
+      "sha256": "537546828c2c46d2dcf92a50bce12122f78e6f3503eea80e1238a0ebccf28023"
+    },
+    "oteryn:npc.iptar_sin": {
+      "path": "data-global/npc/iptar-sin.lua",
+      "sha256": "73b75d68bf683ef20d3a5beda462a9f0912fb2c3c9400da8b7356334ca92cc21",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free or you want the {adventurer stone}?",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        153,
+        154
+      ]
+    },
+    "oteryn:npc.isika": {
+      "path": "data-global/npc/isika.lua",
+      "sha256": "35c94b70e1f74e7acc37f1cd808abe6cfa85f77a2352494de25c1fd48a3ac89c"
+    },
+    "oteryn:npc.jacob": {
+      "path": "data-global/npc/jacob.lua",
+      "sha256": "ebbfee8d5058bdfec0e01a79d4eb86a004b3f3a22db564e4782109eb8a1efcd9",
+      "greet": "<nods> Hi.",
+      "farewell": "<nods> See ya."
+    },
+    "oteryn:npc.javala": {
+      "path": "data-global/npc/javala.lua",
+      "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304",
+      "greet": "Greetings, little mortal.",
+      "farewell": "Go quietly, mortal.",
+      "walkaway": "Go quietly, mortal.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Javala, of the dawnfire."
+          ]
+        },
+        {
+          "key": "feverbloom",
+          "triggers": [
+            "feverbloom"
+          ],
+          "reply": [
+            "The feverbloom bloom in heat and fever, as we burn in sunlight. Both of us take our strength from fire, not from that cold silver light my sisters worship."
+          ]
+        },
+        {
+          "key": "dawnfire",
+          "triggers": [
+            "dawnfire"
+          ],
+          "reply": [
+            "We greet the sun before it rises. That is where power comes from, mortal. Not from a dead rock in the sky."
+          ]
+        },
+        {
+          "key": "midnight_frostflower",
+          "triggers": [
+            "midnight",
+            "frostflower"
+          ],
+          "reply": [
+            "My misguided sisters. They drink the moon and call the poisoning a gift."
+          ]
+        },
+        {
+          "key": "moonsilver",
+          "triggers": [
+            "moonsilver"
+          ],
+          "reply": [
+            "Unstable, corrupting and utterly fascinating to those with no patience."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        77,
+        78,
+        79,
+        80,
+        81
+      ]
+    },
+    "oteryn:npc.jondrin": {
+      "path": "data-global/npc/jondrin.lua",
+      "sha256": "9b78488af490e1af850c0c965f87724a51db0bf503a28b764a6921b6aa431425",
+      "greet": "Hi!"
+    },
+    "oteryn:npc.jossel": {
+      "path": "data-global/npc/jossel.lua",
+      "sha256": "a57112e1108fd5777f0d865654ecdf58c12a94bdd107f4c0ba2b7b808561517f"
+    },
+    "oteryn:npc.julius": {
+      "path": "data-global/npc/julius.lua",
+      "sha256": "a3184eb9261079bc3fc08b97a5437fc34bf57b7df84b95dba39432316e775ea4",
+      "farewell": "Good bye, |PLAYERNAME|. Never trust anyone.",
+      "keywords": [
+        {
+          "key": "distracted",
+          "triggers": [
+            "distracted"
+          ],
+          "reply": [
+            "I come from a family of {vampire} hunters, but to be honest, I'm more into the theoretic part and strategic planning."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I come from a family of {vampire} hunters, but to be honest, I'm more into the theoretic part and strategic planning."
+          ]
+        },
+        {
+          "key": "yalahar",
+          "triggers": [
+            "yalahar"
+          ],
+          "reply": [
+            "A better name would be Gomorrah, if you ask me."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "My name is Julius."
+          ]
+        },
+        {
+          "key": "storkus",
+          "triggers": [
+            "storkus"
+          ],
+          "reply": [
+            "Storkus? Oh yes, I know him. A long time ago we used to hunt together... sometimes."
+          ]
+        },
+        {
+          "key": "time",
+          "triggers": [
+            "time"
+          ],
+          "reply": [
+            "It's about time you showed the vampires that they should never bother the citizens again."
+          ]
+        },
+        {
+          "key": "news",
+          "triggers": [
+            "news"
+          ],
+          "reply": [
+            "Another vampire raid last night. But then again, that's nothing new."
+          ]
+        },
+        {
+          "key": "thank",
+          "triggers": [
+            "thank"
+          ],
+          "reply": [
+            "Well, I should be the one to thank you I guess."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        530,
+        531,
+        532,
+        533,
+        534,
+        535,
+        536,
+        537
+      ]
+    },
+    "oteryn:npc.kallimae": {
+      "path": "data-global/npc/kallimae.lua",
+      "sha256": "f075d0e544783b1100e46f881467a54baba392e07ed57e35c8f279de200a66f3",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.karith": {
+      "path": "data-global/npc/karith.lua",
+      "sha256": "8a9aa8b5e66848dcbd962799aa7b86cfe639d69cd7f896fbb499f9929effdffe",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "greet": "Hello! Tell me what's on your mind. Time is money.",
+      "greet_aliases": [
+        "ashari"
+      ],
+      "keywords": [
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I am the captain of this ship."
+          ]
+        },
+        {
+          "key": "captain",
+          "triggers": [
+            "captain"
+          ],
+          "reply": [
+            "I am the captain of this ship."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "I'm Karith. I don't belong to a caste any longer, and only serve the Yalahari."
+          ]
+        },
+        {
+          "key": "yalahar",
+          "triggers": [
+            "yalahar"
+          ],
+          "reply": [
+            "The city was a marvel to behold. It is certain that it have been the many foreigners that ruined it."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        346,
+        347,
+        348,
+        349
+      ]
+    },
+    "oteryn:npc.khanna": {
+      "path": "data-global/npc/khanna.lua",
+      "sha256": "fa96c3e4a25ebf95c635574a488aa572887576085c83b675e70c39938ec9482e"
+    },
+    "oteryn:npc.klesar": {
+      "path": "data-global/npc/klesar.lua",
+      "sha256": "b7de3802b78ee2e378e0404be07ec89fa691ef76952a85e3ecd17039dbce3dff"
+    },
+    "oteryn:npc.kromrek": {
+      "path": "data-global/npc/kromrek.lua",
+      "sha256": "19defe408f8a691aecebf84d3826b71da2d5fa8ac21ac60086b63a048a465b2f"
+    },
+    "oteryn:npc.lisander": {
+      "path": "data-global/npc/lisander.lua",
+      "sha256": "10519e873d2322178d56a207f4e113822c051c5e7974f8ba7f498e61ccdc88cd",
+      "greet": "I'd rather be left in {peace}. Keep it short."
+    },
+    "oteryn:npc.lorietta": {
+      "path": "data-global/npc/lorietta.lua",
+      "sha256": "8ce5e890ad29e844ebc80b76fae169478b4d94efe00b205ba897b1d02fa82a10",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        117,
+        118
+      ]
+    },
+    "oteryn:npc.maris": {
+      "path": "data-global/npc/maris.lua",
+      "sha256": "3ef386f74034fdcebf6875ebef9d1c2191f54e2f42c855fd6b0539af9d702908",
+      "greet": "I hope you have a good reason to step near my {ship}, |PLAYERNAME|.",
+      "farewell": "Yeah, bye or whatever.",
+      "walkaway": "Bye.",
+      "keywords": [
+        {
+          "key": "offer",
+          "triggers": [
+            "offer"
+          ],
+          "reply": [
+            "I can take you to {Fenrock} and {Mistrock}!"
+          ]
+        },
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "I can take you to {Fenrock} and {Mistrock}!"
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I am Maris, Captain of this ship."
+          ]
+        },
+        {
+          "key": "captain",
+          "triggers": [
+            "captain"
+          ],
+          "reply": [
+            "I am Maris, Captain of this ship."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        83,
+        84,
+        85,
+        86
+      ]
+    },
+    "oteryn:npc.maritima": {
+      "path": "data-global/npc/maritima.lua",
+      "sha256": "e3bb19611154f4830fcf078dea034e6f64440a4fad19563eac32862d17aab99d"
+    },
+    "oteryn:npc.maro": {
+      "path": "data-global/npc/maro.lua",
+      "sha256": "5c202888d402267f8fdecbd4496779d2e65273f3a7b1a846a6a810ee4865b6dd"
+    },
+    "oteryn:npc.marvin": {
+      "path": "data-global/npc/marvin.lua",
+      "sha256": "589a9cd84890871da5a75b74d2ebac733a2b2d63f0368329ed53ce56307720fb",
+      "greet": "Ah, you come just in time for the special voting about the most recent {funding} project. I guess you want to participate in it."
+    },
+    "oteryn:npc.maun": {
+      "path": "data-global/npc/maun.lua",
+      "sha256": "be9bd493479189b6cebadd6cd3921e59c28a33da3c6b408b33973adc65aae52d"
+    },
+    "oteryn:npc.melian": {
+      "path": "data-global/npc/melian.lua",
+      "sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "greet": "Greetings, traveller |PLAYERNAME|. Where do you want me to {fly} you?",
+      "farewell": "Good bye!",
+      "walkaway": "Good bye!",
+      "keywords": [
+        {
+          "key": "lizard",
+          "triggers": [
+            "lizard"
+          ],
+          "reply": [
+            "There are many of them to the north and south of this continent. I had thought they only existed on Tiquanda, but I was mistaken."
+          ]
+        },
+        {
+          "key": "zao",
+          "triggers": [
+            "zao"
+          ],
+          "reply": [
+            "What a strange and bizarre continent. I'm glad my landing place is far away from all the mess I've seen from above."
+          ]
+        },
+        {
+          "key": "fly",
+          "triggers": [
+            "fly"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, {Edron}, {Issavi}, {Svargrond}, {Kazordoon}, {Femor Hills} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "service",
+          "triggers": [
+            "service"
+          ],
+          "reply": [
+            "I'm a carpet pilot. I can fly you to the {Femor Hills}, to {Kazordoon}, {Svargrond}, {Edron}, {Darashia}, {Issavi} or {Marapur}."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I'm a carpet pilot. I can fly you to the {Femor Hills}, to {Kazordoon}, {Svargrond}, {Edron}, {Darashia}, {Issavi} or {Marapur}."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Melian at your service."
+          ]
+        },
+        {
+          "key": "mountain",
+          "triggers": [
+            "mountain"
+          ],
+          "reply": [
+            "These mountains don't look friendly. I prefer not staying long inbetween my carpet trips."
+          ]
+        },
+        {
+          "key": "carpet",
+          "triggers": [
+            "carpet"
+          ],
+          "reply": [
+            "Only licensed carpet pilots are allowed to fly those."
+          ]
+        },
+        {
+          "key": "orc",
+          "triggers": [
+            "orc"
+          ],
+          "reply": [
+            "There's so much green stuff down there that I'm not sure whether there are any, but yes, might be, might be."
+          ]
+        },
+        {
+          "key": "dwarf",
+          "triggers": [
+            "dwarf"
+          ],
+          "reply": [
+            "Well, dwarves and their steamboat technology are well and good, but nothing beats flying on a carpet."
+          ]
+        },
+        {
+          "key": "steamboat",
+          "triggers": [
+            "steamboat"
+          ],
+          "reply": [
+            "Well, dwarves and their steamboat technology are well and good, but nothing beats flying on a carpet."
+          ]
+        },
+        {
+          "key": "farmine",
+          "triggers": [
+            "farmine"
+          ],
+          "reply": [
+            "That's the name of that dwarven base as far as I know. Got a bit of a pessimistic ring to it if you ask me. Sounds to me like they're starving."
+          ]
+        },
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "I can fly you to {Darashia} on {Darama}, to {Kazordoon}, to {Svargrond} on Hrodmir, to {Edron}, to the {Femor Hills}, to {Issavi} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "tibia",
+          "triggers": [
+            "tibia"
+          ],
+          "reply": [
+            "I can fly you to {Darashia} on {Darama}, to {Kazordoon}, to {Svargrond} on Hrodmir, to {Edron}, to the {Femor Hills}, to {Issavi} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "ride",
+          "triggers": [
+            "ride"
+          ],
+          "reply": [
+            "I can fly you to {Darashia} on {Darama}, to {Kazordoon}, to {Svargrond} on Hrodmir, to {Edron}, to the {Femor Hills}, to {Issavi} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "trip",
+          "triggers": [
+            "trip"
+          ],
+          "reply": [
+            "I can fly you to {Darashia} on {Darama}, to {Kazordoon}, to {Svargrond} on Hrodmir, to {Edron}, to the {Femor Hills}, to {Issavi} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "transport",
+          "triggers": [
+            "transport"
+          ],
+          "reply": [
+            "I can fly you to {Darashia} on {Darama}, to {Kazordoon}, to {Svargrond} on Hrodmir, to {Edron}, to the {Femor Hills}, to {Issavi} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "human",
+          "triggers": [
+            "human"
+          ],
+          "reply": [
+            "The only humans I've seen on this continent are those that come up to my carpet."
+          ]
+        },
+        {
+          "key": "continent",
+          "triggers": [
+            "continent"
+          ],
+          "reply": [
+            "What a strange and bizarre continent. I'm glad my landing place is far away from all the mess I've seen from above."
+          ]
+        },
+        {
+          "key": "femur",
+          "triggers": [
+            "femur"
+          ],
+          "reply": [
+            "You are probably talking about the {FEMOR hills}."
+          ]
+        },
+        {
+          "key": "time",
+          "triggers": [
+            "time"
+          ],
+          "reply": [
+            "It's 2:55 pm right now. I think I'm five minutes late in my schedule."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92
+      ]
+    },
+    "oteryn:npc.menacing_mummy": {
+      "path": "data-global/npc/menacing_mummy.lua",
+      "sha256": "8d082bce57549e7ba61408946b4890e99249ed3d70dbec885de3f323c0274c38"
+    },
+    "oteryn:npc.moe": {
+      "path": "data-global/npc/moe.lua",
+      "sha256": "966720ba80434ac1626cea5c9592f06c8c709132bd58802727e0c83bea515953",
+      "greet": "Greetings, traveller. It seems, you're a {guest} here, just like me.",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.morax": {
+      "path": "data-global/npc/morax.lua",
+      "sha256": "ccaa3d6e60e787b59b748157d554a8669ea432952ac080805f1b4bd79a6fad1a"
+    },
+    "oteryn:npc.morpel": {
+      "path": "data-global/npc/morpel.lua",
+      "sha256": "12eb037ba49b826abf9a6adc653b460a349ae680f7f05afc44dd7aa640b04f47"
+    },
+    "oteryn:npc.mortis": {
+      "path": "data-global/npc/mortis.lua",
+      "sha256": "439f51c2f8f92791665784f442a36b87c61184771e2699e093a565f2bab2ad68"
+    },
+    "oteryn:npc.mr_brandon": {
+      "path": "data-global/npc/mr_brandon.lua",
+      "sha256": "0ff104958d5027d2f0299e903ada4e3de9385105e45c5cac7ba6802d9a6b3259"
+    },
+    "oteryn:npc.mr_west": {
+      "path": "data-global/npc/mr._west.lua",
+      "sha256": "ba670fd9c14b644be753c72598a13ec1d88d4e7314a6a064b8ec5b88c8b49474"
+    },
+    "oteryn:npc.murim": {
+      "path": "data-global/npc/murim.lua",
+      "sha256": "7ff6415e1794f1daebbc2d84cd918059bd723483fc069940fc283d28f0271393",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.narsai": {
+      "path": "data-global/npc/narsai.lua",
+      "sha256": "f3f196c573ac1781e93586ed984c42bb5cf792db70d3a1d58039ebc6b2e42a59",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.nicholas": {
+      "path": "data-global/npc/nicholas.lua",
+      "sha256": "cff0a007b514026863d96f1cae704430e9f628c338a164bf0243eafee5ef58b1"
+    },
+    "oteryn:npc.nilavarna": {
+      "path": "data-global/npc/nilavarna.lua",
+      "sha256": "ed7dcc976d2adfecbf3c448658b183a5640bcd1b68da0e948b6f738833fca979",
+      "greet": "Greetings, two-leg. What a rare sight around here.",
+      "farewell": "Go with the tide.",
+      "walkaway": "Go with the tide.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Nilavarna, of the Silvertides."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I lead the nagas of these shores. The sea tells me what it wants and I listen."
+          ]
+        },
+        {
+          "key": "silvertides",
+          "triggers": [
+            "silvertides"
+          ],
+          "reply": [
+            "Our home. Where the tide meets the stone and neither one wins."
+          ]
+        },
+        {
+          "key": "amati",
+          "triggers": [
+            "amati"
+          ],
+          "reply": [
+            "The moon goddess. She fell once and the stars carried her back. We have not forgotten."
+          ]
+        },
+        {
+          "key": "tarisu",
+          "triggers": [
+            "tarisu"
+          ],
+          "reply": [
+            "Our shaman. He hears the tides the way you hear voices."
+          ]
+        },
+        {
+          "key": "dhira",
+          "triggers": [
+            "dhira"
+          ],
+          "reply": [
+            "She cares for the beavers and knows the plants of the lagoon better than any scholar."
+          ]
+        },
+        {
+          "key": "nipuna",
+          "triggers": [
+            "nipuna"
+          ],
+          "reply": [
+            "She keeps the shop and works the yukti. If the magic is off, she noticed first."
+          ]
+        },
+        {
+          "key": "yukti",
+          "triggers": [
+            "yukti"
+          ],
+          "reply": [
+            "The gestures that shape magic. Ask Nipuna, she lives by them."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93
+      ]
+    },
+    "oteryn:npc.ninev": {
+      "path": "data-global/npc/ninev.lua",
+      "sha256": "c17fd5d7651677134d2f745c3bee8f7b5a9bbf5a51bb0b04ae0cc3f4a72866c1",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free or you want the {adventurer stone}?",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        153,
+        154
+      ]
+    },
+    "oteryn:npc.ninos": {
+      "path": "data-global/npc/ninos.lua",
+      "sha256": "c4f5d4de63577e1c48efcd9683ad86cd2c9790fa4ca0687a38a70c98032adc72",
+      "greet": "Hello. How may I help you |PLAYERNAME|? Ask me for a {trade} if you want to buy something. I can also explain the {mail} system.",
+      "farewell": "It was a pleasure to help you, |PLAYERNAME|."
+    },
+    "oteryn:npc.nipuna": {
+      "path": "data-global/npc/nipuna.lua",
+      "sha256": "f740d4bab773efba5a4f6d27c5a26180dc68df6db4c74ef8c030e85c8c3ef14e"
+    },
+    "oteryn:npc.normod": {
+      "path": "data-global/npc/normod.lua",
+      "sha256": "f32fbf27549b55fbd9cd98068a34ca05318b3b4f584c8d6cd81f46dfbccc1ea7"
+    },
+    "oteryn:npc.oiriz": {
+      "path": "data-global/npc/oiriz.lua",
+      "sha256": "6553ae5b24a71f531d4109391f6714302ac430f03dc0939e28be19f5c362661b"
+    },
+    "oteryn:npc.old_rock_boy": {
+      "path": "data-global/npc/old_rock_boy.lua",
+      "sha256": "0b12e5402bbdd68823eecdbc49d5cebe13926e3bb5ff4bed0274c8c4584c06f2"
+    },
+    "oteryn:npc.oliver": {
+      "path": "data-global/npc/oliver.lua",
+      "sha256": "d8181f4fc995f95eab40cb1f9ce90bb75ade3c0fc5ff3431846d21af09c0defd"
+    },
+    "oteryn:npc.ongulf": {
+      "path": "data-global/npc/ongulf.lua",
+      "sha256": "707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
+      "greet": "Hello, |PLAYERNAME|. You've come at a good time for our {project}."
+    },
+    "oteryn:npc.orc_berserker": {
+      "path": "data-global/npc/orc_berserker.lua",
+      "sha256": "f7c1757769966e3edb2bd5b9e6d1de4aaa2e00891b4776dfaf725158bde57094"
+    },
+    "oteryn:npc.ortheus": {
+      "path": "data-global/npc/ortheus.lua",
+      "sha256": "240e12b8d02dead53da67f9f220e2b4f8b0333f74144671fe6a6e3635b00bd05",
+      "greet": "What's your business here with the {magicians}, |PLAYERNAME|?",
+      "keywords": [
+        {
+          "key": "magicians",
+          "triggers": [
+            "magicians"
+          ],
+          "reply": [
+            "I can't imagine a better place to live."
+          ]
+        },
+        {
+          "key": "live",
+          "triggers": [
+            "live"
+          ],
+          "reply": [
+            "Though the city has seen better days, the quality of life is still much better than in most other cities."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "Hm, good question. Maybe old, wise man?"
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "I'm used to being called old man. Simple as that."
+          ]
+        },
+        {
+          "key": "vampire",
+          "triggers": [
+            "vampire"
+          ],
+          "reply": [
+            "I don't know what you're talking about."
+          ]
+        },
+        {
+          "key": "blood",
+          "triggers": [
+            "blood"
+          ],
+          "reply": [
+            "Yes, it's a bit messy down there. Sorry."
+          ]
+        },
+        {
+          "key": "julius",
+          "triggers": [
+            "julius"
+          ],
+          "reply": [
+            "Doesn't ring a bell."
+          ]
+        },
+        {
+          "key": "armenius",
+          "triggers": [
+            "armenius"
+          ],
+          "reply": [
+            "He rarely comes here."
+          ]
+        },
+        {
+          "key": "maris",
+          "triggers": [
+            "maris"
+          ],
+          "reply": [
+            "A man of the seas."
+          ]
+        },
+        {
+          "key": "lisander",
+          "triggers": [
+            "lisander"
+          ],
+          "reply": [
+            "He used to visit me for a chat, but ever since that new tavern opened I haven't seen him much anymore."
+          ]
+        },
+        {
+          "key": "serafin",
+          "triggers": [
+            "serafin"
+          ],
+          "reply": [
+            "He sometimes delivers fruit and vegetables to this quarter."
+          ]
+        },
+        {
+          "key": "yalahar",
+          "triggers": [
+            "yalahar"
+          ],
+          "reply": [
+            "Though the city has seen better days, the quality of life is still much better than in most other cities."
+          ]
+        },
+        {
+          "key": "quarter",
+          "triggers": [
+            "quarter"
+          ],
+          "reply": [
+            "I can't imagine a better place to live"
+          ]
+        },
+        {
+          "key": "reward",
+          "triggers": [
+            "reward"
+          ],
+          "reply": [
+            "I don't have anything that I could give you as a reward. Guess you aren't so selfless after all, huh?"
+          ]
+        },
+        {
+          "key": "augur",
+          "triggers": [
+            "augur"
+          ],
+          "reply": [
+            "They try to protect the city and do a decent job. Well - no, a poor job, I mean a poor job."
+          ]
+        },
+        {
+          "key": "mission",
+          "triggers": [
+            "mission"
+          ],
+          "reply": [
+            "You can bring me a mug of tea if you want to."
+          ]
+        },
+        {
+          "key": "quest",
+          "triggers": [
+            "quest"
+          ],
+          "reply": [
+            "You can bring me a mug of tea if you want to."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        105,
+        106,
+        107,
+        108
+      ]
+    },
+    "oteryn:npc.peremin": {
+      "path": "data-global/npc/peremin.lua",
+      "sha256": "aa883bd96f82b9a4cbcefb3bf4166ec46df7043083b559bbc045d49663643a9f"
+    },
+    "oteryn:npc.peter": {
+      "path": "data-global/npc/peter.lua",
+      "sha256": "bf01ac78a85491b33def6126220c0b49246169a158216b2a801bb4dc8b9bacdd",
+      "greet": "Hello. Unless you have official business here or want to pass the gate, please move on.",
+      "farewell": "Goodbye citizen!",
+      "keywords": [
+        {
+          "key": "alchemist_quarter",
+          "triggers": [
+            "alchemist quarter"
+          ],
+          "reply": [
+            "There it's even more smelly than in the factory quarter. Smells a bit like rotten eggs."
+          ]
+        },
+        {
+          "key": "arena_quarter",
+          "triggers": [
+            "arena quarter"
+          ],
+          "reply": [
+            "You don't look as if you would last one second there."
+          ]
+        },
+        {
+          "key": "augur",
+          "triggers": [
+            "augur"
+          ],
+          "reply": [
+            "One day I will walk into the office of my superior and announce my resignment. Probably not long from now."
+          ]
+        },
+        {
+          "key": "cemetery_quarter",
+          "triggers": [
+            "cemetery quarter"
+          ],
+          "reply": [
+            "Good idea. Go for a walk there. Preferably six feet down."
+          ]
+        },
+        {
+          "key": "factory_quarter",
+          "triggers": [
+            "factory quarter"
+          ],
+          "reply": [
+            "It's too noisy and smelly."
+          ]
+        },
+        {
+          "key": "foreign_quarter",
+          "triggers": [
+            "foreign quarter"
+          ],
+          "reply": [
+            "Go there if you wanna get beaten up."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "Sergeant first class of the Yalaharian Guard Force. But I don't care about ranks and titles."
+          ]
+        },
+        {
+          "key": "official",
+          "triggers": [
+            "official"
+          ],
+          "reply": [
+            "Sergeant first class of the Yalaharian Guard Force. But I don't care about ranks and titles."
+          ]
+        },
+        {
+          "key": "magician_quarter",
+          "triggers": [
+            "magician quarter"
+          ],
+          "reply": [
+            "I can't stand those arrogant fools."
+          ]
+        },
+        {
+          "key": "mission",
+          "triggers": [
+            "mission"
+          ],
+          "reply": [
+            "Leave me alone with your 'mission' unless you have precise orders from my superiors."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Peter."
+          ]
+        },
+        {
+          "key": "sunken_quarter",
+          "triggers": [
+            "sunken quarter"
+          ],
+          "reply": [
+            "That quara brood should be extinguished."
+          ]
+        },
+        {
+          "key": "trade_quarter",
+          "triggers": [
+            "trade quarter"
+          ],
+          "reply": [
+            "The leader of their pack is the biggest criminal among them all."
+          ]
+        },
+        {
+          "key": "quarter",
+          "triggers": [
+            "quarter"
+          ],
+          "reply": [
+            "Count them yourself."
+          ]
+        },
+        {
+          "key": "yalahar",
+          "triggers": [
+            "yalahar"
+          ],
+          "reply": [
+            "You're here. So what?"
+          ]
+        }
+      ],
+      "keyword_lines": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115
+      ]
+    },
+    "oteryn:npc.pompan": {
+      "path": "data-global/npc/pompan.lua",
+      "sha256": "044654a7cdc1f2dcd811f7c3dd827b58fdb9a5cc39841f046a4d252a385f4578",
+      "greet": "Hello.",
+      "farewell": "It was a pleasure to help you, |PLAYERNAME|."
+    },
+    "oteryn:npc.prezil": {
+      "path": "data-global/npc/prezil.lua",
+      "sha256": "5565b3505211f7fc0700fecb662d5cb399c0ff6910a216b07700c927fd768089",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        112,
+        113
+      ]
+    },
+    "oteryn:npc.pugwah": {
+      "path": "data-global/npc/pugwah.lua",
+      "sha256": "794f103ebc86b26742e257ffe23a331ba324f496a7863ccec6f3cc5c102807b7"
+    },
+    "oteryn:npc.rabaz": {
+      "path": "data-global/npc/rabaz.lua",
+      "sha256": "b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+      "greet": "Ah, a customer! Please feel free to browse my wares, |PLAYERNAME|.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye."
+    },
+    "oteryn:npc.ramina": {
+      "path": "data-global/npc/ramina.lua",
+      "sha256": "6fe52061fa05ecb09954c99c710c29daeb64d306bc46f0dfd1697f4c4d7a6caa"
+    },
+    "oteryn:npc.redward": {
+      "path": "data-global/npc/redward.lua",
+      "sha256": "a5277bd31a9383c1395fa9d084972497960727f81d0dfc59744933fa940e81af"
+    },
+    "oteryn:npc.reed": {
+      "path": "data-global/npc/reed.lua",
+      "sha256": "8c2d7d15d564331dba3aa8d8364bea437fe3423f1be8d42d1e6beeb7d253b48f"
+    },
+    "oteryn:npc.rock_in_a_hard_place": {
+      "path": "data-global/npc/rock_in_a_hard_place.lua",
+      "sha256": "ad942288e6a001e33304fb5c733ab953fd5a334db0d04d4add3dbd2b6c2c59ab",
+      "greet": "Everyone on this island has gone crazy! Except for me and you, it seems. Let's {trade} like normal people would.",
+      "farewell": "Promise to come back sometime, will ya?",
+      "walkaway": "Hey! Don't leave me alone with all these lunatics!",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "No, you got it all wrong! I said I'm stuck between a rock and a hard place!"
+          ]
+        },
+        {
+          "key": "help",
+          "triggers": [
+            "help"
+          ],
+          "reply": [
+            "I can help you buy trading stuff with you. Good for me, good for you. It's a win-win!"
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "Have you noticed that I'm actually the only rock on this island with a proper job? Those lazy pebbleheads! I'm proud to announce: I'm a trader"
+          ]
+        }
+      ],
+      "keyword_lines": [
+        300,
+        301,
+        299
+      ]
+    },
+    "oteryn:npc.rock_steady": {
+      "path": "data-global/npc/rock_steady.lua",
+      "sha256": "2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+    },
+    "oteryn:npc.rock_with_a_soft_spot": {
+      "path": "data-global/npc/rock_with_a_soft_spot.lua",
+      "sha256": "a1311724b2bf94ea250fb3ad2a0b89257e3eea01dd6feebd4e483a9c7099e7e8",
+      "greet": "Welcome, this is the {Gray Beach temple}, |PLAYERNAME|. Whether you are wounded, poisoned - or wait, don't tell me - yes, this is probably a case of being more emotionally hurt, I will do my best to {heal} you.",
+      "farewell": "Goodbye then, |PLAYERNAME|!",
+      "walkaway": "Only the best for you.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        112,
+        113
+      ]
+    },
+    "oteryn:npc.roswitha": {
+      "path": "data-global/npc/roswitha.lua",
+      "sha256": "b6ca29d9f7ef201e37d8322bda5cfc753210d08202517d33f0b35b51f9c0ea3c",
+      "greet": "Hello, my lad. Sit down, have a drink, why don't you?"
+    },
+    "oteryn:npc.sandomo": {
+      "path": "data-global/npc/sandomo.lua",
+      "sha256": "b77b196a4ccd988d7443c4103948a006356aca4e1d66fa092f694142ad735a92",
+      "greet": "Hm. Greetings.",
+      "farewell": "Praise the gods, I bid you farewell.",
+      "keywords": [
+        {
+          "key": "bucket",
+          "triggers": [
+            "bucket"
+          ],
+          "reply": [
+            "Head to brother Maun if you are in need of basic supplies. He will help you - for a small fee."
+          ]
+        },
+        {
+          "key": "supplies",
+          "triggers": [
+            "supplies"
+          ],
+          "reply": [
+            "Head to brother Maun if you are in need of basic supplies. He will help you - for a small fee."
+          ]
+        },
+        {
+          "key": "maun",
+          "triggers": [
+            "maun"
+          ],
+          "reply": [
+            "Brother Maun is a valuable member of the Inquisition. He will help you out with supplies. Provided you can actually compensate of course."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        168,
+        168,
+        170
+      ]
+    },
+    "oteryn:npc.saraki": {
+      "path": "data-global/npc/saraki.lua",
+      "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659",
+      "greet": "Greetings, traveller. May the Moon Goddess bless you.",
+      "farewell": "May the Moon Goddess light your path.",
+      "walkaway": "May the Moon Goddess light your path.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "I am Saraki, maharani of Moonfall."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I rule Moonfall and I watch over the peace of my people."
+          ]
+        },
+        {
+          "key": "moonfall",
+          "triggers": [
+            "moonfall"
+          ],
+          "reply": [
+            "Moonfall is where the goddess touched the world. We have guarded this place ever since."
+          ]
+        },
+        {
+          "key": "amati",
+          "triggers": [
+            "amati"
+          ],
+          "reply": [
+            "The Moon Goddess fell upon this island long ago, and the stars themselves descended to carry her home."
+          ]
+        },
+        {
+          "key": "udu",
+          "triggers": [
+            "udu"
+          ],
+          "reply": [
+            "Our astronomer. She sleeps by day and argues with the sky by night."
+          ]
+        },
+        {
+          "key": "sundara",
+          "triggers": [
+            "sundara"
+          ],
+          "reply": [
+            "She keeps the potion shop here in Moonfall and knows the yukti better than anyone."
+          ]
+        },
+        {
+          "key": "yukti",
+          "triggers": [
+            "yukti"
+          ],
+          "reply": [
+            "Our magic. Ask Sundara about it, she will explain it far better than I could."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91
+      ]
+    },
+    "oteryn:npc.serafin": {
+      "path": "data-global/npc/serafin.lua",
+      "sha256": "7a638fc28d6fdff0f78775d6878978fcaf3f7f2e3c11ce392e92c78b8b53bcfb",
+      "greet": "Welcome to my fruit and vegetable store, |PLAYERNAME|! Ask me for a {trade} if you'd like to see my wares."
+    },
+    "oteryn:npc.sessek": {
+      "path": "data-global/npc/sessek.lua",
+      "sha256": "db8aba545929443d7a1efc4311f87fbc914d8fa7a3ce40d28267c64dea7e7b55"
+    },
+    "oteryn:npc.sharai": {
+      "path": "data-global/npc/sharai.lua",
+      "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a",
+      "greet": "Greetings, two-leg.",
+      "farewell": "The sea remembers everything, two-leg.",
+      "walkaway": "The sea remembers everything, two-leg.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Sharai."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I watch this stretch of coast. Lately it has been giving me plenty to watch."
+          ]
+        },
+        {
+          "key": "complex_citadel",
+          "triggers": [
+            "complex",
+            "citadel"
+          ],
+          "reply": [
+            "An asura complex, drowned centuries ago. The sea took it slowly, wall by wall."
+          ]
+        },
+        {
+          "key": "asura_asuri",
+          "triggers": [
+            "asura",
+            "asuri"
+          ],
+          "reply": [
+            "They claim the place now. Not all of them agree on what to do with it, which is the only good news."
+          ]
+        },
+        {
+          "key": "oskayaat",
+          "triggers": [
+            "oskayaat"
+          ],
+          "reply": [
+            "They learned to live with the moon's darker face. If anyone can seal that shard, it is them."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        87,
+        88,
+        89,
+        90,
+        91
+      ]
+    },
+    "oteryn:npc.sholley": {
+      "path": "data-global/npc/sholley.lua",
+      "sha256": "c3a8a9d2d485f06ea92e6fd18088b50fbf4d6d852cc422fa1c6aab70eb7cb6b6",
+      "greet": "Hi!"
+    },
+    "oteryn:npc.siestaar": {
+      "path": "data-global/npc/siestaar.lua",
+      "sha256": "f9eb1c166d7631f3f57cec8595bd03ca7fbd9fae9b47062486f5d538d4595335",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.silas": {
+      "path": "data-global/npc/silas.lua",
+      "sha256": "53ece644b14c6b3318442b246dee82b3ab34de576cb4e04f64387715118867eb",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Arrow Call}, {Divine Caldera}, {Divine Missile}, {Ethereal Spear}, {Holy Flash}, {Strong Ethereal Spear} and Summon {Paladin Familiar}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Curse}, {Cure Poison}, {Divine Healing}, {Intense Healing}, {Intense Recovery}, {Light Healing}, {Magic Patch}, {Recovery} and {Salvation}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Cancel Invisibility}, {Conjure Arrow}, {Conjure Explosive Arrow}, {Enchant Spear}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope} and {Swift Foot}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Destroy Field} Rune, {Disintegrate} Rune and {Holy Missile} Rune."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        146,
+        151,
+        157,
+        163,
+        169
+      ]
+    },
+    "oteryn:npc.sissek": {
+      "path": "data-global/npc/sissek.lua",
+      "sha256": "afa561ddd5bd4afd54affd1525ca0e8ab4ad38b4ef9cc19aec440115cd09e565",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.soilance": {
+      "path": "data-global/npc/soilance.lua",
+      "sha256": "104893fc5b0834ceb665862833987040efadd5bd77da760b03429daf92865fc8"
+    },
+    "oteryn:npc.strange_pipe": {
+      "path": "data-global/npc/strange_pipe.lua",
+      "sha256": "68dd38d00e9e4b2155f998e41f2b51cc7096086a6a36c385fa528bfe3adb572b",
+      "keywords": [
+        {
+          "key": "importance",
+          "triggers": [
+            "importance"
+          ],
+          "reply": [
+            "I can't reveal much to you right now as time is of the essence. I can tell you though that the glooth plant and the whole town are in danger and we have to act to stop a {madman} and his schemes."
+          ]
+        },
+        {
+          "key": "laboratory",
+          "triggers": [
+            "laboratory"
+          ],
+          "reply": [
+            "I defeated him there in the past. It has been abandoned for many {years}, but I suspected him to return from the dead eventually, as he has done so often before."
+          ]
+        },
+        {
+          "key": "plan",
+          "triggers": [
+            "plan"
+          ],
+          "reply": [
+            "The creature is powerful but not very clever. It seems it can be easily {enraged} and then it would likely let slip all caution and would relentlessly attack without regard for its safety."
+          ]
+        },
+        {
+          "key": "years",
+          "triggers": [
+            "years"
+          ],
+          "reply": [
+            "I used the time to prepare. You'll find my talking tubes all the {way} to his lair, and I can provide you with vital information about the things ahead."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        54,
+        55,
+        56,
+        57
+      ]
+    },
+    "oteryn:npc.strange_pipe_1": {
+      "path": "data-global/npc/strange_pipe1.lua",
+      "sha256": "7b30d3a0c2d3bb76285fc3039d561947895f8f81b4fc952ac60ca9210378f5dc",
+      "keywords": [
+        {
+          "key": "importance",
+          "triggers": [
+            "importance"
+          ],
+          "reply": [
+            "I can't reveal much to you right now as time is of the essence. I can tell you though that the glooth plant and the whole town are in danger and we have to act to stop a {madman} and his schemes."
+          ]
+        },
+        {
+          "key": "laboratory",
+          "triggers": [
+            "laboratory"
+          ],
+          "reply": [
+            "I defeated him there in the past. It has been abandoned for many {years}, but I suspected him to return from the dead eventually, as he has done so often before."
+          ]
+        },
+        {
+          "key": "plan",
+          "triggers": [
+            "plan"
+          ],
+          "reply": [
+            "The creature is powerful but not very clever. It seems it can be easily {enraged} and then it would likely let slip all caution and would relentlessly attack without regard for its safety."
+          ]
+        },
+        {
+          "key": "years",
+          "triggers": [
+            "years"
+          ],
+          "reply": [
+            "I used the time to prepare. You'll find my talking tubes all the {way} to his lair, and I can provide you with vital information about the things ahead."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        54,
+        55,
+        56,
+        57
+      ]
+    },
+    "oteryn:npc.strange_pipe_2": {
+      "path": "data-global/npc/strange_pipe2.lua",
+      "sha256": "e58745d7bf70da2779e2e7b4651db4c204cc5318d5051380c2671cd080874027",
+      "keywords": [
+        {
+          "key": "importance",
+          "triggers": [
+            "importance"
+          ],
+          "reply": [
+            "I can't reveal much to you right now as time is of the essence. I can tell you though that the glooth plant and the whole town are in danger and we have to act to stop a {madman} and his schemes."
+          ]
+        },
+        {
+          "key": "laboratory",
+          "triggers": [
+            "laboratory"
+          ],
+          "reply": [
+            "I defeated him there in the past. It has been abandoned for many {years}, but I suspected him to return from the dead eventually, as he has done so often before."
+          ]
+        },
+        {
+          "key": "plan",
+          "triggers": [
+            "plan"
+          ],
+          "reply": [
+            "The creature is powerful but not very clever. It seems it can be easily {enraged} and then it would likely let slip all caution and would relentlessly attack without regard for its safety."
+          ]
+        },
+        {
+          "key": "years",
+          "triggers": [
+            "years"
+          ],
+          "reply": [
+            "I used the time to prepare. You'll find my talking tubes all the {way} to his lair, and I can provide you with vital information about the things ahead."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        54,
+        55,
+        56,
+        57
+      ]
+    },
+    "oteryn:npc.strange_pipe_3": {
+      "path": "data-global/npc/strange_pipe3.lua",
+      "sha256": "f91fc304eeee77003f8db299ed7ba05493da256c943930bf7f3c88981ff0a2d2",
+      "keywords": [
+        {
+          "key": "importance",
+          "triggers": [
+            "importance"
+          ],
+          "reply": [
+            "I can't reveal much to you right now as time is of the essence. I can tell you though that the glooth plant and the whole town are in danger and we have to act to stop a {madman} and his schemes."
+          ]
+        },
+        {
+          "key": "laboratory",
+          "triggers": [
+            "laboratory"
+          ],
+          "reply": [
+            "I defeated him there in the past. It has been abandoned for many {years}, but I suspected him to return from the dead eventually, as he has done so often before."
+          ]
+        },
+        {
+          "key": "plan",
+          "triggers": [
+            "plan"
+          ],
+          "reply": [
+            "The creature is powerful but not very clever. It seems it can be easily {enraged} and then it would likely let slip all caution and would relentlessly attack without regard for its safety."
+          ]
+        },
+        {
+          "key": "years",
+          "triggers": [
+            "years"
+          ],
+          "reply": [
+            "I used the time to prepare. You'll find my talking tubes all the {way} to his lair, and I can provide you with vital information about the things ahead."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        54,
+        55,
+        56,
+        57
+      ]
+    },
+    "oteryn:npc.sundara": {
+      "path": "data-global/npc/sundara.lua",
+      "sha256": "a60833cdd7193b0cc6299662f7e84d6cc809dd8e79683d4e90114cf6769e3255"
+    },
+    "oteryn:npc.swolt": {
+      "path": "data-global/npc/swolt.lua",
+      "sha256": "dfe1cb1b17cfb1056ce06bca043be0fdfa6ce865d25a00071753249e975ac955",
+      "keywords": [
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "Well, you see me standing behind a bar. Selling drinks. Food. And stuff. Now try figuring out what I could be making a living of down here."
+          ]
+        },
+        {
+          "key": "food",
+          "triggers": [
+            "food"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "offer",
+          "triggers": [
+            "offer"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "drinks",
+          "triggers": [
+            "drinks"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "buy",
+          "triggers": [
+            "buy"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "sell",
+          "triggers": [
+            "sell"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "equipment",
+          "triggers": [
+            "equipment"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "goods",
+          "triggers": [
+            "goods"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "stuff",
+          "triggers": [
+            "stuff"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        },
+        {
+          "key": "ware",
+          "triggers": [
+            "ware"
+          ],
+          "reply": [
+            "I can offer you bread, cheese, ham, or meat. And as drinks we serve beer and water. If you'd like to see what we have to offer, just ask me for a trade."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110
+      ]
+    },
+    "oteryn:npc.tamara": {
+      "path": "data-global/npc/tamara.lua",
+      "sha256": "0ef225df1db1c754a235aa9562d8de73b27f3562e52211b992dadbc071fba630",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Apprentice's Strike}, {Chill Out}, {Creature Illusion}, {Energy Strike}, {Envenom}, {Flame Strike}, {Ice Strike}, {Ice Wave}, {Mud Attack}, {Physical Strike}, {Strong Ice Strike}, {Strong Ice Wave}, {Strong Terra Strike}, {Terra Strike} and {Terra Wave}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Bleeding}, {Cure Burning}, {Cure Electrification}, {Cure Poison}, {Heal Friend}, {Intense Healing}, {Light Healing}, {Magic Patch}, {Mass Healing}, {Nature's Embrace}, {Restoration} and {Ultimate Healing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Animate Dead}, {Cancel Magic Shield}, {Convince Creature}, {Find Fiend}, {Find Person}, {Food}, {Great Light}, {Haste}, {Invisible}, {Levitate}, {Light}, {Magic Rope}, {Magic Shield}, {Strong Haste}, {Summon Creature}, Summon {Druid Familiar} and {Ultimate Light}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Avalanche} Rune, {Chameleon} Rune, {Cure Poison Rune}, {Destroy Field} Rune, {Disintegrate} Rune, {Energy Field} Rune, {Energy Wall} Rune, {Explosion} Rune, {Fire Bomb} Rune, {Fire Field} Rune, {Fire Wall} Rune, {Heavy Magic Missile} Rune, {Icicle} Rune, {Intense Healing Rune}, {Light Magic Missile} Rune, {Paralyse} Rune, {Poison Bomb} Rune, {Poison Field} Rune, {Poison Wall} Rune, {Soulfire} Rune, {Stalagmite} Rune, {Stone Shower} Rune and {Ultimate Healing Rune}."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        254,
+        259,
+        265,
+        271,
+        277
+      ]
+    },
+    "oteryn:npc.tamed_lion": {
+      "path": "data-global/npc/tamed_lion.lua",
+      "sha256": "07a5d1beaafae8a9c171d6e597e447f01323cf5ffec12efe8a57fff44336f66e"
+    },
+    "oteryn:npc.tamerin": {
+      "path": "data-global/npc/tamerin.lua",
+      "sha256": "347795006b508f27005758a62424fd3db4b304716ab3798a574422dc21f8c492"
+    },
+    "oteryn:npc.tamoril": {
+      "path": "data-global/npc/tamoril.lua",
+      "sha256": "d5d55a74c2bb9ade413c23442924b46ee6e5b05c9daf73ed8259e67f04576969",
+      "greet": "Another pesky mortal who believes his gold outweighs his nutrition value.",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Apprentice's Strike}, {Buzz}, {Creature Illusion}, {Curse}, {Death Strike}, {Electrify}, {Energy Beam}, {Energy Strike}, {Energy Wave}, {Fire Wave}, {Flame Strike}, {Great Energy Beam}, {Great Fire Wave}, {Ice Strike}, {Ignite}, {Invisible}, {Lightning}, {Scorch}, {Strong Energy Strike}, {Strong Flame Strike} and {Terra Strike}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Cure Poison}, {Intense Healing}, {Light Healing}, {Magic Patch}, {Restoration} and {Ultimate Healing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Animate Dead}, {Cancel Magic Shield}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope}, {Magic Shield}, {Strong Haste}, {Summon Creature}, Summon {Sorcerer Familiar} and {Ultimate Light}."
+          ]
+        },
+        {
+          "key": "runes",
+          "triggers": [
+            "runes"
+          ],
+          "reply": [
+            "My rune spells are: {Destroy Field} Rune, {Disintegrate} Rune, {Energy Bomb} Rune, {Energy Field} Rune, {Energy Wall} Rune, {Explosion} Rune, {Fire Bomb} Rune, {Fire Field} Rune, {Fire Wall} Rune, {Fireball} Rune, {Great Fireball} Rune, {Heavy Magic Missile} Rune, {Light Magic Missile} Rune, {Poison Field} Rune, {Poison Wall} Rune, {Soulfire} Rune, {Stalagmite} Rune, {Sudden Death} Rune and {Thunderstorm} Rune."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        302,
+        307,
+        313,
+        319,
+        325
+      ]
+    },
+    "oteryn:npc.tanyt": {
+      "path": "data-global/npc/tanyt.lua",
+      "sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "greet": "Ah, the wind brings in another visitor. Welcome, dear guest. Are you looking for a {passage} with my carpet?",
+      "farewell": "Good bye. Recommend us if you were satisfied with our service.",
+      "walkaway": "Good bye then.",
+      "keywords": [
+        {
+          "key": "trip",
+          "triggers": [
+            "trip"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "route",
+          "triggers": [
+            "route"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "fly",
+          "triggers": [
+            "fly"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, {Edron}, {Issavi}, {Svargrond}, {Kazordoon}, {Zao} or to {Femor Hills} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "town",
+          "triggers": [
+            "town"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "destination",
+          "triggers": [
+            "destination"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "sail",
+          "triggers": [
+            "sail"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "go",
+          "triggers": [
+            "go"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, {Edron} or to {Marapur} if you like. Where do you want to go?"
+          ]
+        }
+      ],
+      "keyword_lines": [
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98
+      ]
+    },
+    "oteryn:npc.tarak_inner": {
+      "path": "data-global/npc/tarak_inner.lua",
+      "sha256": "6f291427c629fd47f3d8fc0ca218edf0b0f898b9f903ea6950f2291a0e46135f",
+      "greet": "Can I interest you in a trip to the {monument tower}?"
+    },
+    "oteryn:npc.tarak_sunken": {
+      "path": "data-global/npc/tarak_sunken.lua",
+      "sha256": "e9f43e259d55c6304c21b8f3144ba62593011b2e43ee3a14d88cad5424f668e9",
+      "greet": "Want to go back to Yalahar? Just ask me for a free {passage}."
+    },
+    "oteryn:npc.tarisu": {
+      "path": "data-global/npc/tarisu.lua",
+      "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e",
+      "greet": "May the tides always guide you safely.",
+      "farewell": "May the tides always guide you safely.",
+      "walkaway": "May the tides always guide you safely.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Tarisu, shaman of Silvertides."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I listen to the sea and tell my people what it says."
+          ]
+        },
+        {
+          "key": "sea_ocean",
+          "triggers": [
+            "sea",
+            "ocean"
+          ],
+          "reply": [
+            "The sea has one voice for every hour of the day. Lately one of them is a stranger."
+          ]
+        },
+        {
+          "key": "amati",
+          "triggers": [
+            "amati"
+          ],
+          "reply": [
+            "The moon pulls the water. When the moon is troubled, so is the tide."
+          ]
+        },
+        {
+          "key": "marker_markers",
+          "triggers": [
+            "marker",
+            "markers"
+          ],
+          "reply": [
+            "Three stones along the coast, set by my grandmother's grandmother. They have measured the water ever since."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ]
+    },
+    "oteryn:npc.taya": {
+      "path": "data-global/npc/taya.lua",
+      "sha256": "a336156d557a72b1bfa60cff1307a0a4ca83250b33f5629d172154723a2880cf",
+      "greet": "Suon's blessing!",
+      "farewell": "Suon be praised.",
+      "walkaway": "Well, bye then.",
+      "keywords": [
+        {
+          "key": "midnight_flame",
+          "triggers": [
+            "midnight flame"
+          ],
+          "reply": [
+            "The Circle of the Midnight Flame is an order of seers and prophets. One day I will be one of them."
+          ]
+        },
+        {
+          "key": "artefact",
+          "triggers": [
+            "artefact"
+          ],
+          "reply": [
+            "They say it is called the Eye of Suon. Ask Narsai in Issavi about it, I guess she knows more."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I tend the sheep here in the steppe, but my heart belongs to the stars."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        63,
+        67,
+        71
+      ]
+    },
+    "oteryn:npc.terrence": {
+      "path": "data-global/npc/terrence.lua",
+      "sha256": "bf4b9b41584acb3b74406d6d7d7e58ead82b1ec69fe08181e686500e610dac13",
+      "greet": "Hey there, you are surely interested in helping the Rathleton city guard, right? Right - especially now since the dreaded minotaurs gain more ground every day."
+    },
+    "oteryn:npc.the_beggar_king": {
+      "path": "data-global/npc/the_beggar_king.lua",
+      "sha256": "e53a642fd569eea72ed3f400a1f4779a083a9ebfaa6c6cea268cc53b5da7296e",
+      "greet": "Hi! You look like someone on a {mission}.",
+      "farewell": "Good bye!"
+    },
+    "oteryn:npc.the_empress": {
+      "path": "data-global/npc/the_empress.lua",
+      "sha256": "a4bfa77657f9382a61828946a9e4e2b34787ae41d39fa409a7ba0d2dcb5df26f",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.the_librarian": {
+      "path": "data-global/npc/the_librarian.lua",
+      "sha256": "79a2903e42ebd5f55b92ba0c9a4eb2e21778c4c6e4639d9221e936d04029a8dd",
+      "greet": "Greetings, dear guest. If you are interested in paperware such as books or scrolls, ask me for a trade.",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.thorgrin": {
+      "path": "data-global/npc/thorgrin.lua",
+      "sha256": "4a4a7c8eabb61d67e397e5fbec60e6d9fb1f0222582aea006ff1528c7e1ba7a3",
+      "greet": "Welcome, |PLAYERNAME|! May earth protect you on the rocky grounds. If you need a {passage} back, I can help you.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye then.",
+      "keywords": [
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "Do you want me take you to {Cormaya}, {Kazordoon} or {Gnomprona}?"
+          ]
+        }
+      ],
+      "keyword_lines": [
+        65
+      ]
+    },
+    "oteryn:npc.timothy": {
+      "path": "data-global/npc/timothy.lua",
+      "sha256": "d2d4e1a649868a58efea4e35c982be7094c750f15ab80db92c333b8a8fe28898",
+      "greet": "Oh, hello! It's a pleasure to see a visitor from the continent."
+    },
+    "oteryn:npc.tony": {
+      "path": "data-global/npc/tony.lua",
+      "sha256": "5771b15c31ec276c47222c1aad580e3965443c6087b87dd0167fd589a7728d38"
+    },
+    "oteryn:npc.udu": {
+      "path": "data-global/npc/udu.lua",
+      "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7",
+      "greet": "Greetings, two-leg.",
+      "farewell": "Mind the sky once in a while.",
+      "walkaway": "Mind the sky once in a while.",
+      "keywords": [
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Udu. Astronomer, insomniac, and the only one here who looks up."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I watch the sky above Marapur every night and write down what it does."
+          ]
+        },
+        {
+          "key": "sky_stars",
+          "triggers": [
+            "sky",
+            "stars"
+          ],
+          "reply": [
+            "The stars are reliable. It is everything else that keeps surprising me."
+          ]
+        },
+        {
+          "key": "emerald_gardens",
+          "triggers": [
+            "emerald gardens"
+          ],
+          "reply": [
+            "East of Marapur, out where the water goes green. That is where it came down."
+          ]
+        },
+        {
+          "key": "amati",
+          "triggers": [
+            "amati"
+          ],
+          "reply": [
+            "Whatever the priests say, something tore loose from her that night."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        76,
+        77,
+        78,
+        79,
+        80
+      ]
+    },
+    "oteryn:npc.vincent": {
+      "path": "data-global/npc/vincent.lua",
+      "sha256": "0eee6c8e541294aabc8e66a8cc3e81f87fefcd8e669827098db9086ea5ac28d3"
+    },
+    "oteryn:npc.virgil": {
+      "path": "data-global/npc/virgil.lua",
+      "sha256": "0bbd291f2716861956d5a9214f00918b992e8dae0b242140cf905c5e83f1edad",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    },
+    "oteryn:npc.wesley": {
+      "path": "data-global/npc/wesley.lua",
+      "sha256": "ff566278f98be7f0c477d3f72ade06074ca98db7b6f00871b8227f50bdc447d9"
+    },
+    "oteryn:npc.yonan": {
+      "path": "data-global/npc/yonan.lua",
+      "sha256": "ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848",
+      "walkaway": "Well, bye then."
+    },
+    "oteryn:npc.zarak": {
+      "path": "data-global/npc/zarak.lua",
+      "sha256": "4297875c27478bb5444ceeb7980966bae406535375f7980ca45a3b0f5ee69e74",
+      "keywords": [
+        {
+          "key": "spells",
+          "triggers": [
+            "spells"
+          ],
+          "reply": [
+            "I can teach you {attack} spells, {healing} spells and {support} spells. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+          ]
+        },
+        {
+          "key": "attack",
+          "triggers": [
+            "attack"
+          ],
+          "reply": [
+            "My attack spells are: {Annihilation}, {Berserk}, {Brutal Strike}, {Chivalrous Challenge}, {Fierce Berserk}, {Front Sweep}, {Groundshaker}, {Inflict Wound}, {Lesser Front Sweep} and {Whirlwind Throw}."
+          ]
+        },
+        {
+          "key": "healing",
+          "triggers": [
+            "healing"
+          ],
+          "reply": [
+            "My healing spells are: {Bruise Bane}, {Cure Bleeding}, {Cure Poison}, {Fair Wound Cleansing}, {Intense Recovery}, {Intense Wound Cleansing}, {Recovery} and {Wound Cleansing}."
+          ]
+        },
+        {
+          "key": "support",
+          "triggers": [
+            "support"
+          ],
+          "reply": [
+            "My support spells are: {Charge}, {Find Fiend}, {Find Person}, {Great Light}, {Haste}, {Levitate}, {Light}, {Magic Rope} and Summon {Knight Familiar}."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        129,
+        134,
+        140,
+        146
+      ]
+    },
+    "oteryn:npc.zedrulon_the_fallen": {
+      "path": "data-global/npc/zedrulon_the_fallen.lua",
+      "sha256": "816ffda7f3222b110aedb8f761fedcbfcf6c0f22cdba07af85f8ff1c0ed7ccdd",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "keywords": [
+        {
+          "key": "pilgrimage",
+          "triggers": [
+            "pilgrimage"
+          ],
+          "reply": [
+            "Whenever you receive a lethal wound, your vital force is damaged and there is a chance that you lose some of your equipment. With every single of the five {blessings} you have, this damage and chance of loss will be reduced."
+          ]
+        },
+        {
+          "key": "blessings",
+          "triggers": [
+            "blessings"
+          ],
+          "reply": [
+            "There are five blessings available in five sacred places: the {spiritual} shielding, the spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. Additionally, you can receive the {twist of fate} here."
+          ]
+        }
+      ],
+      "keyword_lines": [
+        117,
+        118
+      ]
+    },
+    "oteryn:npc.zeronex": {
+      "path": "data-global/npc/zeronex.lua",
+      "sha256": "5b3257f526415168997e7a45d6ea61f221a2f3900fe4d6d9702ee78a1e281df0"
+    },
+    "oteryn:npc.ziyad": {
+      "path": "data-global/npc/ziyad.lua",
+      "sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "greet": "Ah, the wind brings in another visitor. Welcome, dear guest. Are you looking for a {passage} with my carpet?",
+      "farewell": "Good bye. Recommend us if you were satisfied with our service.",
+      "walkaway": "Good bye then.",
+      "keywords": [
+        {
+          "key": "trip",
+          "triggers": [
+            "trip"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "route",
+          "triggers": [
+            "route"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "passage",
+          "triggers": [
+            "passage"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "fly",
+          "triggers": [
+            "fly"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, {Edron}, {Issavi}, {Svargrond}, {Kazordoon}, {Zao} or to {Femor Hills} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "town",
+          "triggers": [
+            "town"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "destination",
+          "triggers": [
+            "destination"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "sail",
+          "triggers": [
+            "sail"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        },
+        {
+          "key": "go",
+          "triggers": [
+            "go"
+          ],
+          "reply": [
+            "I can fly you to {Darashia}, to {Svargrond}, to {Kazordoon}, to {Zao}, to the {Femor Hills}, to {Edron} or to {Issavi} if you like. Where do you want to go?"
+          ]
+        }
+      ],
+      "keyword_lines": [
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98
+      ]
+    },
+    "oteryn:npc.znozel": {
+      "path": "data-global/npc/znozel.lua",
+      "sha256": "9af991b72f618c593e5db5c407f3331aff61b56fbac8ac8f94cfdb4a24852d98",
+      "greet": "Yes? What may I do for you, |PLAYERNAME|? Bank business, perhaps?",
+      "farewell": "Have a nice day.",
+      "walkaway": "Have a nice day."
+    }
+  }
+}

@@ -226,6 +226,7 @@ pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;
 mod spell_character_facts;
+mod spell_cooldowns;
 mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
@@ -246,6 +247,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod use_receipt_recovery;
 mod viola_book;
 mod vip_presence;
 mod vocation_choice;
@@ -268,6 +270,7 @@ use bundle_map_position::bundle_world_map;
 pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
+pub use npc_command::validate_quest_reward_offers;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
 pub use promotion_login::PremiumSessions;
@@ -278,7 +281,10 @@ pub use seam_rooms::SeamRooms;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
-pub use store::{StorePurchaseMode, with_store_offer};
+pub use store::{
+    StorePurchaseMode, run_retained_store_reconciliation, run_store_receipt_outbox,
+    with_store_offer,
+};
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;

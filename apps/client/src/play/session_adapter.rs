@@ -340,6 +340,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
         oteryn_client_runtime::raw_feature::send(self, command).await
     }
+    fn actor_cooldown_snapshot(&self) -> Option<oteryn_session::ActorCooldownUpdate> {
+        Session::actor_cooldown_snapshot(self).cloned()
+    }
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
         self.gated_snapshot(domain)
             .map(|snapshot| snapshot.payload.clone())
@@ -378,6 +381,13 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         &mut self,
         request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
     ) -> Result<oteryn_client_runtime::server_mechanic::ServerMechanicResponse, SessionError> {
+        use oteryn_client_runtime::world_interaction::world_object as wire;
+        if request.capability == wire::CAPABILITY_ITEM_USE_V1
+            && request.command_type == wire::COMMAND_TYPE_USE_INTENT
+            && self.is_selected(wire::CAPABILITY_ITEM_USE_V1)
+        {
+            return self.world_context_use(&request.payload).await;
+        }
         self.gated_command(request.capability, request.command_type, &request.payload)
             .await
     }

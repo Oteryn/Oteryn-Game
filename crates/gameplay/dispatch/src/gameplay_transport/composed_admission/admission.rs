@@ -432,7 +432,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 transport: attempt.transport,
                 account_id: *record.account_id.as_bytes(),
             }),
-            continuity: SessionContinuity::FRESH,
+            continuity: SessionContinuity {
+                house_input_pending: Some(false),
+                ..SessionContinuity::FRESH
+            },
             item_fence,
         };
         self.states.command_ingress.admit(admitted.game_session_id);

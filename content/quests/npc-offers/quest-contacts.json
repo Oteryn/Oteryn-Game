@@ -1,0 +1,675 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "documents"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I will forge your documents for one thousand gold."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 4,
+          "maximum": 4
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.carina",
+      "keywords": [
+        "precious necklace"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "The necklace will cost five thousand gold. Do you want it?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.chantalle",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I would never hand over his key for gold. Herbert would be easier to bribe."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 6,
+          "maximum": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission07",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [],
+      "reply": [
+        "Have you finished your mission?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 8,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "thieves",
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Would you like to join the Thieves Guild?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.herbert",
+      "keywords": [
+        "letter"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I have a letter for Chantalle. A postman must be above bribes."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.herbert",
+      "keywords": [
+        "gold"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "How much are you offering? A thousand gold?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 14,
+          "maximum": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.oswald",
+      "keywords": [
+        "invitation"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Why should I give you an invitation?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.oswald",
+      "keywords": [
+        "yes",
+        "gold"
+      ],
+      "topic": 1,
+      "next_topic": 3,
+      "storage": [],
+      "reply": [
+        "Donate a thousand gold and I will give you an invitation."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "keywords": [
+        "help",
+        "slime"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "The fungus has spread. Will you help us clear it?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "keywords": [
+        "master"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Our master has left the tower."
+      ],
+      "requires": [],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "keywords": [
+        "sentry"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Our master conducted experiments here. Keep clear of the fungus."
+      ],
+      "requires": [],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "keywords": [
+        "slime"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "The slime is dangerous. We will stand sentry."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "disguise",
+        "test"
+      ],
+      "topic": 0,
+      "next_topic": 41,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "A little test first. Are you ready?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 41,
+      "next_topic": 42,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Where should you wait when you are out of sight of the audience?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "dwarven bridge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You want to sell me the bridge?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Is the whole bridge included?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you have the deed?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Shall we seal the deal for the Mina Losa?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you destroy the brew and recover the grimoire?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you ready to help me hunt vampires?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 1,
+          "maximum": 20,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you brought any vampire dust? You are carrying {carried_dust} of the 20 ounces I asked for."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you finished helping Storkus?"
+      ]
+    }
+  ]
+}

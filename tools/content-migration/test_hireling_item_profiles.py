@@ -7,6 +7,7 @@ from pathlib import Path
 
 import hireling_item_profiles as hireling
 from import_cyclopedia_global import apply_profile_weights
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = "content/items/definitions/spell-native-profiles.json"
@@ -53,8 +54,13 @@ class HirelingItemProfiles(unittest.TestCase):
             # the one virtual GoldPouch movable pair approved in Q15A.
             self.assertEqual(hireling.merge_fact(row["semantics"]["physical"],
                 qualified["semantics"]["physical"], f"{key}:physical"), row["semantics"]["physical"])
-            # Every earlier owner's other facts survive another application.
-            self.assertEqual(hireling.merge_record(row, source), row)
+            # Decode omitted UNKNOWN groups before replaying the source merger.
+            # Every earlier owner's facts must survive another application.
+            decoded = copy.deepcopy(row)
+            for group in hireling.VALUE_GROUPS:
+                decoded["semantics"].setdefault(group, {"state": "UNKNOWN"})
+            replay = hireling.merge_record(decoded, source)
+            self.assertEqual(compact_item_record(replay), compact_item_record(copy.deepcopy(row)), key)
         manifest = json.loads((ROOT / "content/spells.manifest.json").read_bytes())
         self.assertEqual(manifest["item_profiles"]["sha256"], hashlib.sha256(self.raw).hexdigest())
         print(f"HIRELING_NATIVE_PROFILE_CLOSURE items={len(self.overlay['required_ids'])} "

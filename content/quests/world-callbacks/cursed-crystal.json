@@ -1,0 +1,398 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": 104
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31971,
+        "y": 32904,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": 104
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31975,
+        "y": 32911,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": 104
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": 104
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cursed-crystal/bell",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32031,
+          "y": 32914,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 40001,
+        "appearance": 4285,
+        "native": {
+          "position": {
+            "x": 32031,
+            "y": 32914,
+            "floor": -8
+          },
+          "appearance": 4285,
+          "ordinal": 1
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/small_crystal_bell",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "There is nothing more to take.",
+      "success_message": "You find a small crystal bell among the bones.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:92-99:sha256:75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21554",
+          "count": 1
+        },
+        "item_reward_per_use": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cursed-crystal/blood",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32022,
+          "y": 32918,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 40002,
+        "appearance": 21572,
+        "native": {
+          "position": {
+            "x": 32022,
+            "y": 32918,
+            "floor": -10
+          },
+          "appearance": 21572,
+          "ordinal": 1
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/sheet_of_paper",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/small_crystal_bell",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "There is nothing more to take.",
+      "success_message": "You take a vial of blood from the hollow red crystal.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:100-108:sha256:75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21504",
+          "count": 1
+        },
+        "item_reward_per_use": true,
+        "magic": {
+          "position": {
+            "x": 32022,
+            "y": 32918,
+            "floor": -10
+          },
+          "effect": 14
+        }
+      },
+      "state_operations": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/time",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 1
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cursed-crystal/inscription",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32017,
+          "y": 32917,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": 104,
+        "position_aliases": [
+          {
+            "x": 32017,
+            "y": 32918,
+            "floor": -10
+          }
+        ]
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "minimum": -1,
+          "maximum": 4,
+          "set": 1,
+          "set_if": 0
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "An inscription in the shrine describes an ointment made from embalming fluid, medusa blood, and crystal dust.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:37-43:sha256:63d28a96028d46b79866e38487e880d9d92ebdb2c5f1db3cb88bd6774e6f22a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cursed-crystal/paper",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 31974,
+          "y": 32907,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 40001,
+        "appearance": 4285,
+        "native": {
+          "position": {
+            "x": 31974,
+            "y": 32907,
+            "floor": -8
+          },
+          "appearance": 4285,
+          "ordinal": 1
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/sheet_of_paper",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "There is nothing more to take.",
+      "success_message": "You find a note among the bones.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:79-90:sha256:75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2820",
+          "count": 1,
+          "text": "I reached the crystal gardens and found a lake. Harry rang a little crystal bell there, and the water opened into a whirlpool. It might lead to the caverns we have been looking for. He went back to the surface, so I will have to find the bell myself."
+        },
+        "item_reward_per_use": true
+      }
+    }
+  ]
+}

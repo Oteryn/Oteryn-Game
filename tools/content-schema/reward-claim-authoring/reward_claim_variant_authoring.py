@@ -190,7 +190,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, claim_items, stack_problem)
-            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
+            poison_daggers.verify_canonical(source['identity']['key'], placement['position'], reward)
             global_corrections.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
@@ -202,7 +202,14 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             uids = sorted({(w['source'], w['uid']) for entry in witnesses for w in entry['sources']})
             if not uids:
                 raise ValueError('canonical variant placement has no exact source UID binding')
-            p = {'appearance_tibia_id': int(placement['appearance']['key'].split(':item/', 1)[1]),
+            appearance = int(placement['appearance']['key'].split(':item/', 1)[1])
+            if (source['identity']['key'] == 'canary:reward-claim/quest/key/id3667'
+                    and placement['position'] == {'x': 32576, 'y': 32216, 'z': 15}):
+                # Crystal 201189f chest.lua:492-498 and the retained tile use corpse 4240.
+                if appearance != 3204:
+                    raise ValueError('KEY_3667_SOURCE_APPEARANCE_DRIFT')
+                appearance = 4240
+            p = {'appearance_tibia_id': appearance,
                 'source_binding': {'project_position': copy.deepcopy(placement['position']),
                     'legacy_unique_ids': [{'server': server, 'unique_id': uid} for server, uid in uids]},
                 'reward': reward}

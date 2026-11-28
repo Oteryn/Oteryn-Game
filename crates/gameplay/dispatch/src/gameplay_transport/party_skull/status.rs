@@ -7,33 +7,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn observe_own_pvp(
         &self,
         admitted: AdmittedSession,
-    ) -> Option<PvpStatus> {
+    ) -> Result<PvpStatus, DurabilityError> {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_PARTY_SKULL_V1)
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
         let identified = admitted
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_PVP_SITUATION_ID_V1);
-        let actor = admitted.runtime_actor?;
-        let fence = admitted.item_fence?;
+        let actor = admitted.runtime_actor.ok_or(DurabilityError::Unavailable)?;
+        let fence = admitted.item_fence.ok_or(DurabilityError::Unavailable)?;
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
-        let permit = self.spell_lane_permit().await?;
+        let permit = self.try_spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
-        runtime.assert_actor_spell_unreserved(actor).ok()?;
+        runtime
+            .assert_actor_spell_unreserved(actor)
+            .map_err(|_| DurabilityError::Unavailable)?;
         if !crate::gameplay_transport::battle_instinct_status::actor_is_current(&runtime, admitted)
         {
-            return None;
+            return Err(DurabilityError::Unavailable);
         }
-        let pass = self.root.try_issue_semantic_pass().ok()?;
+        let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, &*runtime, &permit);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -74,6 +76,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tx.commit().await?;
                 Ok(status)
             })
-        }).await.ok()
+        }).await
     }
 }

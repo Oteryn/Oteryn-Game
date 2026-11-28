@@ -5,11 +5,10 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 use super::fixture::{Harness, debug, id};
 
-use super::questpc8_authored_programmes_fixtures::{object_target, step, use_target};
+use super::questpc7_ferumbras_fixtures::use_at;
+use super::questpc8_authored_programmes_fixtures::step;
 
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
-
-use crate::map::overlay::TilePos;
 
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -73,14 +72,13 @@ pub(super) async fn exercise(
         "refresh cannot duplicate the guardian"
     );
     assert_eq!(progress(h, "stage").await?, 1);
-    let position = TilePos {
-        x: 32777,
-        y: 32254,
+    let position = Position {
+        x: 32776,
+        y: 32253,
         floor: -8,
     };
-    let target = object_target(owner, position, 1)?;
     assert_eq!(
-        use_target(owner, admitted, 2, &target).await?,
+        use_at(owner, admitted, position, 2472).await?,
         UseDisposition::Rejected
     );
     super::grizzly_npc_fixtures::questpc8_campaign::lethal(
@@ -111,28 +109,36 @@ pub(super) async fn exercise(
         item: "oteryn:item.tibia.i20357".into(),
         count: 1,
     };
-    for n in 100..118 {
+    for n in 100..120 {
         quest_world_callbacks::input_item(owner, fence.item_fence(), &input, n, true).await?;
     }
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
-        occupied, 18,
-        "the fixture must leave exactly two direct entries"
+        occupied, 20,
+        "the first native reward is tested with a full backpack"
     );
     assert_eq!(
-        use_target(owner, admitted, 3, &target).await?,
+        use_at(owner, admitted, position, 2472).await?,
         UseDisposition::Rejected,
-        "two free backpack entries cannot admit three outputs"
+        "a full backpack cannot admit a source box reward"
     );
     assert_eq!(quantity(h, "oteryn:item.tibia.i3208").await?, 0);
     assert_eq!(quantity(h, "oteryn:item.tibia.i3034").await?, 0);
     assert_eq!(progress(h, "stage").await?, 1);
     let gold_before = quantity(h, "oteryn:item.tibia.i3031").await?;
-    drop_filler(owner, admitted, h, fence.item_fence(), input.position).await?;
-    assert_eq!(
-        use_target(owner, admitted, 4, &target).await?,
-        UseDisposition::Committed
-    );
+    for (index, x) in [32778, 32776, 32774].into_iter().enumerate() {
+        let approach = x.clamp(32775, 32777);
+        super::questpc7_ferumbras_fixtures::walk(owner, admitted, Position { x: approach, y: 32254, floor: -8 }).await?;
+        let site = Position { x, y: 32253, floor: -8 };
+        assert_eq!(use_at(owner, admitted, site, 2472).await?, UseDisposition::Rejected);
+        assert_eq!(progress(h, "stage").await?, 1);
+        drop_filler(owner, admitted, h, fence.item_fence(), Position { x: approach, y: 32254, floor: -8 }, 999000 + u64::try_from(index)?).await?;
+        let command = admitted.continuity.next_command_id;
+        let payload = super::questpc7_hoist_story_fixtures::target(owner, site, 2472)?;
+        assert_eq!(use_at(owner, admitted, site, 2472).await?, UseDisposition::Committed);
+        let replay = quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&replay).map_err(debug)?, UseDisposition::Committed);
+    }
     assert_eq!(progress(h, "stage").await?, 3);
     assert_eq!(quantity(h, "oteryn:item.tibia.i3208").await?, 1);
     assert_eq!(quantity(h, "oteryn:item.tibia.i3034").await?, 1);
@@ -142,15 +148,8 @@ pub(super) async fn exercise(
     );
     let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(entries, 20);
-    assert_eq!(
-        use_target(owner, admitted, 4, &target).await?,
-        UseDisposition::Committed
-    );
-    let target = object_target(owner, position, 1)?;
-    assert_eq!(
-        use_target(owner, admitted, 5, &target).await?,
-        UseDisposition::Rejected
-    );
+    super::questpc7_ferumbras_fixtures::walk(owner, admitted, Position { x: 32776, y: 32254, floor: -8 }).await?;
+    assert_ne!(use_at(owner, admitted, position, 2472).await?, UseDisposition::Committed);
     assert_eq!(quantity(h, "oteryn:item.tibia.i3208").await?, 1);
     assert_eq!(
         quantity(h, "oteryn:item.tibia.i3031").await? - gold_before,
@@ -175,6 +174,7 @@ async fn drop_filler(
     h: &Harness,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     position: Position,
+    sequence: u64,
 ) -> TestResult {
     use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
     let bytes: Vec<u8> = sqlx::query_scalar("SELECT decode(replace(e.item_instance_id::text,'-',''),'hex') FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i20357' ORDER BY e.placement_ordinal LIMIT 1").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
@@ -201,7 +201,7 @@ async fn drop_filler(
             &fence,
             crate::foundation::CommandRef::new(
                 admitted.game_session_id,
-                crate::foundation::CommandId::new(999000).map_err(debug)?,
+                crate::foundation::CommandId::new(sequence).map_err(debug)?,
             ),
             &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
             LoopMoveRequest {

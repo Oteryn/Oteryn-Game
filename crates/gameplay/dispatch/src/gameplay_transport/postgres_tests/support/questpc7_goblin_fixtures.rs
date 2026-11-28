@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 pub(super) const ROOT: &str = "oteryn:quest-progress/questpc7/goblin/";
 
@@ -49,7 +50,7 @@ pub(super) async fn exercise(
     a: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    exercise_with_probes(owner,a,h,&[]).await
+    exercise_with_probes(owner,a,h,&[]).await.map(|_| ())
 }
 
 async fn exercise_with_probes(
@@ -57,7 +58,7 @@ async fn exercise_with_probes(
     a: &mut AdmittedSession,
     h: &Harness,
     probes: &[(Position,u16)],
-) -> TestResult {
+) -> TestResult<EntityRef> {
     let version: String = sqlx::query_scalar("SHOW server_version")
         .fetch_one(&h.pool)
         .await?;
@@ -180,7 +181,7 @@ async fn exercise_with_probes(
         unfinished,
         "introduction and shopping do not complete the six jobs"
     );
-    Ok(())
+    Ok(rafzan)
 }
 
 // Exact sign sites from Task:Rafzan oldid401277; source B3 witnesses are
@@ -200,12 +201,54 @@ pub(super) fn sign_objects() -> Vec<(Position, u16)> {
     for x in 33025..=33056 { for y in 32082..=32093 {
         objects.push((Position { x, y, floor: -7 }, 100));
     }}
-    // Native targets are added only by sign_native_items, never duplicated as terrain.
     objects
 }
 
 pub(super) fn sign_native_items() -> Vec<(Position, u32)> {
     SIGN_SITES.into_iter().chain([SIGN_DECOY]).map(|p| (p, 17679)).collect()
+}
+
+async fn use_site_tool(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    site: Position,
+    appearance: u16,
+    tool: u32,
+) -> TestResult<(oteryn_protocol_oteryn::world_object::UseDisposition, Vec<u8>)> {
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseIntent, UseTarget, decode_use_intent, encode_item_use_intent,
+    };
+    super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, admitted).await?;
+    let target = decode_use_intent(
+        &super::questpc7_hoist_story_fixtures::target(owner, site, appearance)?,
+    )
+    .map_err(debug)?;
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| {
+            index.definition_ref("Item", &format!("oteryn:item.tibia.i{tool}"), "definition-r1")
+        })
+        .ok_or("site tool definition")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let (next, disposition, actual) = super::rust_lottery_fixtures::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+        None,
+    )
+    .await?;
+    *admitted = next;
+    Ok((disposition, actual))
 }
 
 pub(super) async fn exercise_signs(
@@ -231,8 +274,8 @@ pub(super) async fn exercise_signs(
     for (index, (site, approach)) in SIGN_SITES.into_iter().zip(approaches).enumerate() {
         walk(owner, admitted, approach).await?;
         let command = admitted.continuity.next_command_id;
-        let payload = super::questpc7_hoist_story_fixtures::target(owner, site, 17679)?;
-        assert_eq!(use_at(owner, admitted, site, 17679).await?, UseDisposition::Committed);
+        let (result, payload) = use_site_tool(owner, admitted, site, 17679, 17668).await?;
+        assert_eq!(result, UseDisposition::Committed);
         assert_eq!(quantity(h, 17668).await?, 2 - i64::try_from(index)?);
         assert_eq!(value(owner, admitted, &format!("{ROOT}signs")).await?, i64::try_from(index + 1)?);
         assert_eq!(value(owner, admitted, &format!("{ROOT}sign-site-{}", index + 1)).await?, 1);
@@ -241,7 +284,7 @@ pub(super) async fn exercise_signs(
         let replay = super::quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload).await?;
         assert_eq!(decode_use_result(&replay).map_err(debug)?, UseDisposition::Committed);
         assert_eq!(receipts(h).await?, expected_receipts, "exact command replay has no new effect");
-        assert_eq!(use_at(owner, admitted, site, 17679).await?, if index < 2 { UseDisposition::Rejected } else { UseDisposition::NothingToUse });
+        assert_eq!(use_at(owner, admitted, site, 17680).await?, UseDisposition::NothingToUse);
         assert_eq!(quantity(h, 17668).await?, 2 - i64::try_from(index)?);
         assert_eq!(receipts(h).await?, expected_receipts, "fresh duplicate visit cannot spend another sign");
     }
@@ -254,6 +297,20 @@ pub(super) async fn exercise_signs(
     let finished: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
         .bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert!(!finished, "three signs do not complete the six-job programme");
+    let map = owner.bundle_map().ok_or("sign map")?;
+    let first = SIGN_SITES[0];
+    let target = |appearance| -> TestResult<_> {
+        let payload = super::questpc7_hoist_story_fixtures::target(owner, first, appearance)?;
+        oteryn_protocol_oteryn::world_object::decode_use_intent(&payload).map_err(debug)
+    };
+    let placed = target(17680)?;
+    assert_eq!(placed.expected_revision, 1);
+    let due = map.facts.next_movement_decay_time().ok_or("shared sign reset")?;
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert!(map.facts.expire_movement_items(due) >= 1);
+    let restored = target(17679)?;
+    assert_eq!(restored.placement, placed.placement);
+    assert_eq!(restored.expected_revision, 2, "the shared site restores the cracked stone");
     Ok(())
 }
 
@@ -309,20 +366,22 @@ pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_
         if index==1 { walk(owner,a,Position{x:33128,y:32048,floor:-10}).await?; }
         if index==2 { walk(owner,a,Position{x:33135,y:32060,floor:-10}).await?; }
         walk(owner,a,approach).await?;
+        assert_eq!(use_at(owner,a,site,17677).await?,UseDisposition::Rejected,
+            "bare use cannot borrow any hammer from the backpack");
         let command=a.continuity.next_command_id;
-        let payload=super::questpc7_hoist_story_fixtures::target(owner,site,17677)?;
-        assert_eq!(use_at(owner,a,site,17677).await?,UseDisposition::Committed);
-        assert_eq!(quantity(h,17676).await?,1,"hammer is retained");
+        let (result, payload) = use_site_tool(owner, a, site, 17677, 17676).await?;
+        assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(quantity(h,17676).await?,i64::from(index < 2),"the third trunk breaks the hammer");
         assert_eq!(value(owner,a,&format!("{ROOT}trunks")).await?,i64::try_from(index+1)?);
         assert_eq!(value(owner,a,&format!("{ROOT}trunk-site-{}",index+1)).await?,1);
         let expected=3+i64::try_from(index)?;
         assert_eq!(receipts(h).await?,expected);
         let replay=super::quest_world_callbacks_fixtures::wire(owner,a,command,2,payload).await?;
         assert_eq!(decode_use_result(&replay).map_err(debug)?,UseDisposition::Committed);
-        assert_eq!(use_at(owner,a,site,17677).await?,if index<2 {UseDisposition::Rejected}else{UseDisposition::NothingToUse});
+        assert_eq!(use_at(owner,a,site,17678).await?,UseDisposition::NothingToUse);
         assert_eq!(receipts(h).await?,expected);
     }
-    for (item,count) in TOOLS { assert_eq!(quantity(h,item).await?,count); }
+    for (item,count) in TOOLS { assert_eq!(quantity(h,item).await?,if item == 17676 { 0 } else { count }); }
     assert_eq!(money(h).await?,8875);
     for suffix in ["programme","signs","odours","captures","urine","stalkers"] { assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0); }
     let finished:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
@@ -353,7 +412,7 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     use super::questpc7_ferumbras_fixtures::{value,walk};
     let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
     eprintln!("QUESTPC7_GOBLIN_STALKERS POSTGRES_STARTED version={version}");
-    exercise(owner,a,h).await?;
+    let rafzan = exercise_with_probes(owner,a,h,&[]).await?;
     super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner,a).await?;
     let creature="oteryn:creature.marsh_stalker";
     // Wrong region and wrong species produce ordinary kills without quest credit.
@@ -374,6 +433,47 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     assert_eq!(receipts(h).await?,7);
     for (item,count) in TOOLS {assert_eq!(quantity(h,item).await?,count);}
     for suffix in ["programme","signs","odours","captures","urine","trunks"] {assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0);}
+    for (x, y) in [(33059, 32150), (33073, 32134), (33073, 32109)] {
+        walk(owner, a, Position { x, y, floor: -7 }).await?;
+    }
+    // Arrange the earned-count boundary while keeping this task's combat and
+    // payment on their real producers.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, a, &[(format!("{ROOT}reports"), 499)], 79,
+    ).await?;
+    owner.refresh_quest_session(a.game_session_id, true).await;
+    let report = conversation("report-kill", "kill")?;
+    let platinum = quantity(h, 3035).await?;
+    let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &report, false).await?;
+    assert_eq!(paid, NpcIntentDisposition::Ok);
+    assert_eq!(quantity(h, 3035).await?, platinum + 1);
+    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 500);
+    let awards:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/task_manager'")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(awards, 1, "the five-hundredth report grants Task Manager");
+    let get = conversation("accept-kill", "get kill")?;
+    let _ = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, -1, "the 20-hour cooldown refuses a new start");
+    assert_eq!(quantity(h,3035).await?,platinum + 1);
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
+        .fetch_one(&h.pool).await?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, a, &[
+            (format!("{ROOT}stalkers/last-report"), now - 72_000),
+            (format!("{ROOT}captures"), 3),
+        ], 78,
+    ).await?;
+    owner.refresh_quest_session(a.game_session_id, true).await;
+    let (started, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
+    assert_eq!(started, NpcIntentDisposition::Ok);
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, 0, "the task reopens after 20 hours");
+    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 500, "starting again cannot pay a report");
+    let guards = conversation("report-guards", "guards")?;
+    let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &guards, false).await?;
+    assert_eq!(paid, NpcIntentDisposition::Ok);
+    assert_eq!(quantity(h, 3035).await?, platinum + 2, "guards reports the finished task even with the original offer unvisited");
+    assert_eq!(value(owner, a, &format!("{ROOT}captures")).await?, -1);
+    assert_eq!(value(owner, a, &format!("{ROOT}reports")).await?, 501);
     Ok(())
 }
 
@@ -395,5 +495,79 @@ pub(super) async fn exercise_perfume_items(owner:&mut ComposedFreshAdmission<'_,
     }
     assert_eq!(receipts(h).await?,2,"only the real introduction and paid kit commit");
     assert_eq!(money(h).await?,8875);
+    Ok(())
+}
+
+
+pub(super) const PERFUME_GAS: Position = Position { x: 33067, y: 32121, floor: -7 };
+
+pub(super) async fn exercise_perfume_finish(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+    use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget, decode_use_intent};
+    let [rafzan] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rafzan"]).await?;
+    let mut sequence = admitted.continuity.next_command_id;
+    for word in ["hi", "perfume", "yes"] {
+        let result = super::qengine_rewards_fixtures::talk(owner, admitted, rafzan, sequence, word).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok, "{word}");
+        sequence = sequence.checked_add(1).ok_or("NPC command overflow")?;
+    }
+    assert_eq!(quantity(h, 17670).await?, 1, "Rafzan supplies the first gatherer");
+    let actor = admitted.runtime_actor.ok_or("perfume actor")?;
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "perfume fence")?.ok_or("perfume fence")?.item_fence();
+    let handle = std::num::NonZeroU64::new(1).ok_or("fixture handle")?;
+    for item in [17672_u32, 17674, 3120] {
+        // The fresh-corpse and live Rotworm sample have independent mounted cases.
+        super::quest_world_callbacks_fixtures::input_item(owner, fence, &Offering {
+            position: PERFUME_GAS, item: format!("oteryn:item.tibia.i{item}"), count: 1,
+        }, 890 + u64::from(item), true).await?;
+    }
+    let instance = |item| async move {
+        let bytes: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 LIMIT 1"
+        ).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?;
+        Ok::<_, Box<dyn std::error::Error>>(ItemKey::Instance(bytes.try_into().map_err(|_| "perfume item")?))
+    };
+    let gas_target = decode_use_intent(&super::questpc7_hoist_story_fixtures::target(owner, PERFUME_GAS, 17681)?).map_err(debug)?;
+    let gas = UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None, use_with_map_item: Some(MapUseTarget::Object(gas_target)), use_with_position: None,
+    };
+    let command = |id| UseCommand { game_session_id: fence.game_session_id, command_id: id, item_fence: Some(fence) };
+    let refused = owner.tame_mount_impl(actor, command(77000), gas.clone(), Some(instance(17672).await?), None, true)
+        .await.map_err(|()| "gas tool dispatch")?.ok_or("gas route")?;
+    assert_eq!(refused.disposition, UseDisposition::Rejected);
+    assert_eq!((quantity(h,17672).await?,quantity(h,17673).await?), (1,0));
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(format!("{ROOT}odours"), 1)], 76,
+    ).await?;
+    owner.refresh_quest_session(admitted.game_session_id, true).await;
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "perfume fence")?.ok_or("perfume fence")?.item_fence();
+    let command = |id| UseCommand { game_session_id: fence.game_session_id, command_id: id, item_fence: Some(fence) };
+    super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, admitted).await?;
+    let outcome = owner.tame_mount_impl(actor, command(77001), gas, Some(instance(17672).await?), None, true)
+        .await.map_err(|()| "gas tool dispatch")?.ok_or("gas route")?;
+    assert_eq!(outcome.disposition, UseDisposition::Committed);
+    assert_eq!((quantity(h,17672).await?,quantity(h,17673).await?), (0,1));
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted,
+        &[("oteryn:quest-progress/goblin_merchant/rotworm_sample".into(), 1)],
+        77,
+    ).await?;
+    owner.refresh_quest_session(admitted.game_session_id, true).await;
+    let cheese = UseIntent { target: UseTarget::Item(handle), use_with:None,
+        use_with_map_item:Some(MapUseTarget::Item(std::num::NonZeroU64::new(2).ok_or("cheese handle")?)),
+        use_with_position:None };
+    let outcome = owner.use_cooking_conversion(actor, command(77002), cheese, Some(instance(17674).await?), Some(instance(3120).await?)).await.ok_or("cheese route")?;
+    assert_eq!(outcome.disposition, UseDisposition::Committed);
+    assert_eq!((quantity(h,17674).await?,quantity(h,3120).await?,quantity(h,17675).await?), (0,0,1));
+    assert_eq!(super::questpc7_outfit_items_fixtures::talk(owner, admitted, rafzan, &mut sequence, "perfume").await?, NpcIntentDisposition::Ok);
+    assert_eq!((quantity(h,17675).await?,quantity(h,3035).await?), (0,2));
+    assert_eq!(super::questpc7_ferumbras_fixtures::value(owner,admitted,&format!("{ROOT}reports")).await?,1);
     Ok(())
 }

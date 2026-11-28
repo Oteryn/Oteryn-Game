@@ -20,9 +20,10 @@ use base64::engine::general_purpose::STANDARD;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::sync::{Mutex, OwnedMutexGuard, oneshot};
 use tokio::task::JoinHandle;
+use tokio::time::Instant;
 
 const FRESH_ISSUER: &str = "urn:oteryn:platform:game-admission";
 const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
@@ -572,7 +573,7 @@ async fn hand_over(
     hold_until: Instant,
 ) {
     if accepted.send(()).is_ok() {
-        let _ = tokio::time::timeout_at(tokio::time::Instant::from_std(hold_until), release).await;
+        let _ = tokio::time::timeout_at(hold_until, release).await;
     }
 }
 

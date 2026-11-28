@@ -21,7 +21,7 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseCase::AtomicStop, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "exercise PG panic")??;
     Ok(())
@@ -31,7 +31,7 @@ fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload
 fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseCase::TerminalReadback, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terminal exercise readback PG panic")??;
     Ok(())
@@ -41,9 +41,32 @@ fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() 
 fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseCase::NodeBoot, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "node boot training PG panic")??;
+    Ok(())
+}
+
+#[test]
+fn exercise_second_start_refuses_and_preserves_first_run_and_dummy() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            let started = std::time::Instant::now();
+            let result =
+                scenario(ExerciseCase::SecondStart, Some(admin)).map_err(|e| e.to_string());
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED exercise_second_start_refuses_and_preserves_first_run_and_dummy duration={:?} success={}",
+                started.elapsed(),
+                result.is_ok()
+            );
+            result
+        })?
+        .join()
+        .map_err(|_| "second exercise Start PG panic")??;
     Ok(())
 }
 
@@ -98,7 +121,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
             .native_gameplay()
             .and_then(|native| native.item_index())
             .ok_or("items")?;
-        let world = super::world::training_world(index, deps.admitted, flags)?;
+        let world = super::world::training_world(index, deps.admitted, flags, 0)?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -221,7 +244,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
             Ok(bytes)
         };
         // A different map with clear player flags still cannot authorize statue logout.
-        let wrong_world = super::world::training_world(index, admitted, [1, 17])?;
+        let wrong_world = super::world::training_world(index, admitted, [1, 17], 0)?;
         let wrong_cells = wrong_world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -320,12 +343,24 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
     })
 }
 
-fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
-    run(async |admin| {
-        let tag = if terminal_readback {
-            "loop_training_terminal_readback"
-        } else {
-            "loop_training_exercise"
+#[derive(Clone, Copy)]
+enum ExerciseCase {
+    AtomicStop,
+    NodeBoot,
+    SecondStart,
+    TerminalReadback,
+}
+
+fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
+    run(async |configured_admin| {
+        let admin = admin.unwrap_or(configured_admin);
+        let node_boot = matches!(case, ExerciseCase::NodeBoot);
+        let terminal_readback = matches!(case, ExerciseCase::TerminalReadback);
+        let second_start = matches!(case, ExerciseCase::SecondStart);
+        let tag = match case {
+            ExerciseCase::TerminalReadback => "loop_training_terminal_readback",
+            ExerciseCase::SecondStart => "exercise_second_start",
+            _ => "loop_training_exercise",
         };
         let h = Harness::create_with_admission_seed(admin, tag, !node_boot, false).await?;
         eprintln!("POSTGRES_STARTED LOOP-TRAIN-1 exercise");
@@ -412,10 +447,24 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
-        let world = super::world::training_world(index, deps.admitted, [1, 1])?;
+        let world = super::world::training_world(index, deps.admitted, [1, 1], u32::from(second_start))?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let cells = if second_start {
+            use crate::content::{LogicalCell, ProjectV2DefinitionRef, ProjectV2Family};
+            cells.with_bundle_house_for_test(
+                ProjectV2DefinitionRef {
+                    family: ProjectV2Family::House,
+                    key: "oteryn:content.house.training-room".into(),
+                    revision: "definition-r1".into(),
+                },
+                [LogicalCell { x: 1, y: 0, z: 7 }, LogicalCell { x: 2, y: 0, z: 7 }].into(),
+                LogicalCell { x: 0, y: 0, z: 7 },
+            )
+        } else {
+            cells
+        };
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -711,6 +760,78 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
         .ok_or("known start")?;
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
+        if second_start {
+            let ItemKey::MapBase { bundle_digest, placement_key, .. } = dummy else {
+                return Err("house dummy placement key".into());
+            };
+            let placement = placement_key.to_string();
+            let lease = || {
+                sqlx::query_as::<_, (String, i64)>(
+                    "SELECT game_session_id::text, lease_until_ms \
+                     FROM game_exercise_dummy_reservations \
+                     WHERE world_id = encode($1, 'hex')::uuid \
+                       AND base_bundle_digest = $2 AND placement_key = $3::text::numeric",
+                )
+                .bind(admitted.world_id.as_bytes().as_slice())
+                .bind(bundle_digest.as_slice())
+                .bind(&placement)
+                .fetch_optional(&h.pool)
+            };
+            let original = lease().await?.ok_or("first Start must reserve the house dummy")?;
+            assert_eq!(
+                original.0,
+                crate::gameplay_transport::canonical_uuid(admitted.game_session_id.as_bytes())
+            );
+            let send = async |id, payload: &[u8]| {
+                crate::gameplay_transport::loop_training::wire::dispatch(
+                    &owner,
+                    admitted,
+                    UseCommand {
+                        command_id: id,
+                        ..command
+                    },
+                    COMMAND_TYPE_EXERCISE_TRAINING,
+                    payload,
+                    Some(&items),
+                )
+                .await
+            };
+            // The initial Start exhaust has elapsed, with five charges due on the first run.
+            let clock = &owner.states.test_owner_time;
+            clock.fetch_add(10_000_000, std::sync::atomic::Ordering::Relaxed);
+            assert!(
+                owner.training_activity(admitted, COMMAND_TYPE_EXERCISE_TRAINING).await
+            );
+            assert_eq!(send(2, &start).await, Some(TrainingResult::REFUSED));
+            assert_eq!(
+                lease().await?.as_ref(),
+                Some(&original),
+                "repeat Start must leave the first lease intact"
+            );
+            let status = send(3, &[8, 2]).await.ok_or("running Status")?;
+            assert_eq!((status.disposition, status.charges), (1, 495));
+
+            // An overdue checkpoint must still wait for cadence or an explicit Status/Stop.
+            clock.fetch_add(50_000_000, std::sync::atomic::Ordering::Relaxed);
+            assert!(
+                owner.training_activity(admitted, COMMAND_TYPE_EXERCISE_TRAINING).await
+            );
+            assert_eq!(send(4, &start).await, Some(TrainingResult::REFUSED));
+            assert_eq!(lease().await?, Some(original), "a due checkpoint must leave the lease intact on repeat Start");
+            let checkpoints: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(checkpoints, 0, "repeat Start must leave the first checkpoint due");
+            let stopped = send(5, &[8, 3]).await.ok_or("explicit Stop")?;
+            assert_eq!(stopped.disposition, 2);
+            assert!(stopped.charges < status.charges, "Stop settles charges due on the first run");
+            assert!(lease().await?.is_none(), "explicit Stop releases the house dummy");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert_eq!(
             owner.gameplay_idle_exemptions(admitted).await,
             Some((true, false)),

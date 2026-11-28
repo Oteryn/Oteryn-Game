@@ -632,18 +632,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn resolve_player_trades(
         &self,
         permit: &SpellLanePermit,
-    ) -> bool {
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError;
+
         let record = {
             let Ok(book) = self.states.player_trades.0.lock() else {
-                return false;
+                return Err(DurabilityError::Unavailable);
             };
             book.records.values().find(|r| r.request.is_some()).cloned()
         };
         let Some(record) = record else {
-            return true;
+            return Ok(());
         };
         let Some(request) = record.request.clone() else {
-            return false;
+            return Err(DurabilityError::Unavailable);
         };
         let _runtime = self.runtime.lock().await;
         let verdict = match self
@@ -653,7 +655,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Ok(TradeReceipt::Absent)) => {
                 let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
-                    return false;
+                    return Err(DurabilityError::Unavailable);
                 };
                 let mut fences = request.participants.each_ref().map(|p| p.accepted);
                 for fence in &mut fences {
@@ -679,12 +681,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             outcome => outcome,
         };
-        let Some(code) = verdict.ok().and_then(|v| self.trade_verdict(&record, v)) else {
-            return false;
-        };
+        let code = self.trade_verdict(&record, verdict?).ok_or(DurabilityError::Unavailable)?;
         let command = record.request.as_ref().map(|r| r.participants[1].command);
         command
             .and_then(|command| self.states.command_ingress.complete_trade(command, code))
-            .is_some()
+            .map(|_| ())
+            .ok_or(DurabilityError::Unavailable)
     }
 }

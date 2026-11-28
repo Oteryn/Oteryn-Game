@@ -1,19 +1,805 @@
 {
   "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
   "source": {
-    "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
-    "record": "oteryn:content.outfit.field_surgeon_outfits",
-    "revision": "wiki:108239:1181114",
-    "selector": "full_store_price, male_look_type, female_look_type",
+    "crystal": {
+      "catalogue_path": "data/modules/scripts/gamestore/gamestore.lua",
+      "catalogue_sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "mount_identity_path": "data/XML/mounts.xml",
+      "mount_identity_sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f",
+      "offer_ordinals": {
+        "store:mount:armoured-war-horse": 111,
+        "store:mount:crimson-ray": 133,
+        "store:mount:death-crawler": 138,
+        "store:mount:desert-king": 139,
+        "store:mount:flamesteed": 155,
+        "store:mount:jade-lion": 178,
+        "store:mount:jade-pincer": 179,
+        "store:mount:nethersteed": 194,
+        "store:mount:shadow-draptor": 221,
+        "store:mount:steelbeak": 231,
+        "store:mount:tombstinger": 237,
+        "store:outfit:arena-champion": 267,
+        "store:outfit:evoker": 278,
+        "store:outfit:grove-keeper": 284,
+        "store:outfit:lupine-warden": 289,
+        "store:outfit:pharaoh": 295,
+        "store:outfit:philosopher": 296,
+        "store:outfit:retro-nobleman": 318,
+        "store:outfit:retro-summoner": 319,
+        "store:outfit:retro-warrior": 320,
+        "store:outfit:royal-pumpkin": 300,
+        "store:outfit:sea-dog": 302,
+        "store:outfit:seaweaver": 303,
+        "store:outfit:spirit-caller": 307,
+        "store:outfit:trophy-hunter": 310,
+        "store:outfit:winter-warden": 313
+      },
+      "outfit_identity_path": "data/XML/outfits.xml",
+      "outfit_identity_sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757",
+      "path": "data/modules/scripts/gamestore/gamestore.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7"
+    },
+    "field_surgeon": {
+      "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
+      "record": "oteryn:content.outfit.field_surgeon_outfits",
+      "revision": "wiki:108239:1181114",
+      "selector": "full_store_price, male_look_type, female_look_type"
+    },
+    "mount_looks": {
+      "oteryn:content.mount.armoured_war_horse": 426,
+      "oteryn:content.mount.battle_werewolf": 1873,
+      "oteryn:content.mount.boisterous_bull": 1672,
+      "oteryn:content.mount.crimson_ray": 521,
+      "oteryn:content.mount.death_crawler": 624,
+      "oteryn:content.mount.desert_king": 572,
+      "oteryn:content.mount.flamesteed": 626,
+      "oteryn:content.mount.jade_lion": 627,
+      "oteryn:content.mount.jade_pincer": 628,
+      "oteryn:content.mount.magma_skull": 1686,
+      "oteryn:content.mount.nethersteed": 629,
+      "oteryn:content.mount.obstinate_ox": 1674,
+      "oteryn:content.mount.shadow_draptor": 427,
+      "oteryn:content.mount.steelbeak": 522,
+      "oteryn:content.mount.surly_steer": 1673,
+      "oteryn:content.mount.tombstinger": 546
+    },
     "outfit_looks": {
+      "oteryn:outfit.aerial_disciple": [
+        1936,
+        1937
+      ],
+      "oteryn:outfit.arbalester": [
+        1449,
+        1450
+      ],
+      "oteryn:outfit.arena_champion": [
+        884,
+        885
+      ],
+      "oteryn:outfit.armoured_archer": [
+        1618,
+        1619
+      ],
+      "oteryn:outfit.bat_knight": [
+        1874,
+        1875
+      ],
+      "oteryn:outfit.beekeeper": [
+        1776,
+        1777
+      ],
+      "oteryn:outfit.blade_dancer": [
+        1745,
+        1746
+      ],
+      "oteryn:outfit.breezy_garb": [
+        1245,
+        1246
+      ],
+      "oteryn:outfit.celestial_avenger": [
+        1725,
+        1726
+      ],
+      "oteryn:outfit.darklight_evoker": [
+        1675,
+        1676
+      ],
+      "oteryn:outfit.doom_knight": [
+        1713,
+        1714
+      ],
+      "oteryn:outfit.dragon_knight": [
+        1444,
+        1445
+      ],
+      "oteryn:outfit.dragon_slayer": [
+        1288,
+        1289
+      ],
+      "oteryn:outfit.evoker": [
+        725,
+        724
+      ],
+      "oteryn:outfit.fencer": [
+        1575,
+        1576
+      ],
       "oteryn:outfit.field_surgeon": [
         1814,
         1815
+      ],
+      "oteryn:outfit.flamefury_mage": [
+        1680,
+        1681
+      ],
+      "oteryn:outfit.forest_warden": [
+        1415,
+        1416
+      ],
+      "oteryn:outfit.frost_tracer": [
+        1612,
+        1613
+      ],
+      "oteryn:outfit.ghost_blade": [
+        1489,
+        1490
+      ],
+      "oteryn:outfit.grove_keeper": [
+        908,
+        909
+      ],
+      "oteryn:outfit.guidon_bearer": [
+        1186,
+        1187
+      ],
+      "oteryn:outfit.herbalist": [
+        1021,
+        1020
+      ],
+      "oteryn:outfit.herder": [
+        1279,
+        1280
+      ],
+      "oteryn:outfit.jouster": [
+        1331,
+        1332
+      ],
+      "oteryn:outfit.lion_of_war": [
+        1206,
+        1207
+      ],
+      "oteryn:outfit.lupine_warden": [
+        899,
+        900
+      ],
+      "oteryn:outfit.martial_artist": [
+        1837,
+        1838
+      ],
+      "oteryn:outfit.mercenary": [
+        1056,
+        1057
+      ],
+      "oteryn:outfit.merry_garb": [
+        1382,
+        1383
+      ],
+      "oteryn:outfit.moon_guardian": [
+        1976,
+        1977
+      ],
+      "oteryn:outfit.moth_cape": [
+        1338,
+        1339
+      ],
+      "oteryn:outfit.necromancer": [
+        1845,
+        1846
+      ],
+      "oteryn:outfit.nordic_chieftain": [
+        1500,
+        1501
+      ],
+      "oteryn:outfit.owl_keeper": [
+        1173,
+        1174
+      ],
+      "oteryn:outfit.pharaoh": [
+        955,
+        956
+      ],
+      "oteryn:outfit.philosopher": [
+        873,
+        874
+      ],
+      "oteryn:outfit.phoenix_evoker": [
+        1920,
+        1921
+      ],
+      "oteryn:outfit.pumpkin_mummy": [
+        1127,
+        1128
+      ],
+      "oteryn:outfit.retro_nobleman": [
+        966,
+        967
+      ],
+      "oteryn:outfit.retro_summoner": [
+        964,
+        965
+      ],
+      "oteryn:outfit.retro_warrior": [
+        962,
+        963
+      ],
+      "oteryn:outfit.royal_pumpkin": [
+        760,
+        759
+      ],
+      "oteryn:outfit.rune_master": [
+        1384,
+        1385
+      ],
+      "oteryn:outfit.sea_dog": [
+        750,
+        749
+      ],
+      "oteryn:outfit.seaweaver": [
+        733,
+        732
+      ],
+      "oteryn:outfit.shadowlotus_disciple": [
+        1581,
+        1582
+      ],
+      "oteryn:outfit.siege_master": [
+        1051,
+        1050
+      ],
+      "oteryn:outfit.sinister_archer": [
+        1102,
+        1103
+      ],
+      "oteryn:outfit.spirit_caller": [
+        699,
+        698
+      ],
+      "oteryn:outfit.sun_priest": [
+        1023,
+        1024
+      ],
+      "oteryn:outfit.trailblazer": [
+        1292,
+        1293
+      ],
+      "oteryn:outfit.trophy_hunter": [
+        957,
+        958
+      ],
+      "oteryn:outfit.vampire_noble": [
+        1948,
+        1949
+      ],
+      "oteryn:outfit.veteran_paladin": [
+        1204,
+        1205
+      ],
+      "oteryn:outfit.void_master": [
+        1202,
+        1203
+      ],
+      "oteryn:outfit.winged_druid": [
+        1831,
+        1832
+      ],
+      "oteryn:outfit.winter_warden": [
+        853,
+        852
       ]
     },
-    "mount_looks": {}
+    "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
+    "priced_records": {
+      "store:outfit:aerial-disciple": "wiki:/records/0",
+      "store:outfit:arbalester": "crystal:2410",
+      "store:outfit:arena-champion": "crystal:2419",
+      "store:outfit:armoured-archer": "crystal:2428",
+      "store:outfit:bat-knight": "wiki:/records/8",
+      "store:outfit:beekeeper": "wiki:/records/11",
+      "store:outfit:blade-dancer": "wiki:/records/13",
+      "store:outfit:breezy-garb": "crystal:2447",
+      "store:outfit:celestial-avenger": "wiki:/records/18",
+      "store:outfit:darklight-evoker": "wiki:/records/26",
+      "store:outfit:doom-knight": "wiki:/records/33",
+      "store:outfit:dragon-knight": "crystal:2501",
+      "store:outfit:dragon-slayer": "crystal:6759",
+      "store:outfit:evoker": "crystal:2519",
+      "store:outfit:fencer": "crystal:2528",
+      "store:outfit:field-surgeon": "wiki:/records/47",
+      "store:outfit:flamefury-mage": "crystal:2537",
+      "store:outfit:forest-warden": "crystal:2546",
+      "store:outfit:frost-tracer": "crystal:2555",
+      "store:outfit:ghost-blade": "crystal:2564",
+      "store:outfit:grove-keeper": "crystal:2573",
+      "store:outfit:guidon-bearer": "crystal:2582",
+      "store:outfit:herbalist": "crystal:2591",
+      "store:outfit:herder": "crystal:2600",
+      "store:outfit:jouster": "crystal:2609",
+      "store:outfit:lion-of-war": "crystal:6844",
+      "store:outfit:lupine-warden": "crystal:2618",
+      "store:outfit:martial-artist": "crystal:2908",
+      "store:outfit:mercenary": "crystal:2627",
+      "store:outfit:merry-garb": "crystal:2636",
+      "store:outfit:moon-guardian": "wiki:/records/78",
+      "store:outfit:moth-cape": "crystal:2645",
+      "store:outfit:necromancer": "crystal:2917",
+      "store:outfit:nordic-chieftain": "crystal:2654",
+      "store:outfit:owl-keeper": "crystal:2663",
+      "store:outfit:pharaoh": "crystal:2672",
+      "store:outfit:philosopher": "crystal:2681",
+      "store:outfit:phoenix-evoker": "wiki:/records/92",
+      "store:outfit:pumpkin-mummy": "crystal:2690",
+      "store:outfit:royal-pumpkin": "crystal:2717",
+      "store:outfit:rune-master": "crystal:2726",
+      "store:outfit:sea-dog": "crystal:2735",
+      "store:outfit:seaweaver": "crystal:2744",
+      "store:outfit:shadowlotus-disciple": "crystal:2753",
+      "store:outfit:siege-master": "crystal:2762",
+      "store:outfit:sinister-archer": "crystal:2771",
+      "store:outfit:spirit-caller": "crystal:2780",
+      "store:outfit:sun-priest": "crystal:2789",
+      "store:outfit:trailblazer": "crystal:2798",
+      "store:outfit:trophy-hunter": "crystal:2807",
+      "store:outfit:vampire-noble": "wiki:/records/126",
+      "store:outfit:veteran-paladin": "crystal:2816",
+      "store:outfit:void-master": "crystal:2825",
+      "store:outfit:winged-druid": "crystal:2899",
+      "store:outfit:winter-warden": "crystal:2834"
+    },
+    "record": "oteryn:content.outfit.field_surgeon_outfits",
+    "revision": "wiki:108239:1181114",
+    "selector": "full_store_price, male_look_type, female_look_type",
+    "tibiawiki_br": {
+      "offer_revisions": {
+        "store:mount:battle-werewolf": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=427794",
+          "page_id": 65665,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 245
+        },
+        "store:mount:boisterous-bull": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394898",
+          "page_id": 59766,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 213
+        },
+        "store:mount:magma-skull": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=405763",
+          "page_id": 61038,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 220
+        },
+        "store:mount:obstinate-ox": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394900",
+          "page_id": 59768,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 215
+        },
+        "store:mount:surly-steer": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394899",
+          "page_id": 59767,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 214
+        }
+      }
+    }
   },
   "offers": [
+    {
+      "key": "store:mount:armoured-war-horse",
+      "category": "cosmetics.mounts",
+      "title": "Armoured War Horse",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.armoured_war_horse",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.armoured_war_horse"
+      },
+      "source_line": 1146
+    },
+    {
+      "key": "store:mount:battle-werewolf",
+      "category": "cosmetics.mounts",
+      "title": "Battle Werewolf",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.battle_werewolf",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.battle_werewolf"
+      },
+      "source_line": 19
+    },
+    {
+      "key": "store:mount:boisterous-bull",
+      "category": "cosmetics.mounts",
+      "title": "Boisterous Bull",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.boisterous_bull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.boisterous_bull"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:crimson-ray",
+      "category": "cosmetics.mounts",
+      "title": "Crimson Ray",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.crimson_ray",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.crimson_ray"
+      },
+      "source_line": 1324
+    },
+    {
+      "key": "store:mount:death-crawler",
+      "category": "cosmetics.mounts",
+      "title": "Death Crawler",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.death_crawler",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.death_crawler"
+      },
+      "source_line": 1364
+    },
+    {
+      "key": "store:mount:desert-king",
+      "category": "cosmetics.mounts",
+      "title": "Desert King",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.desert_king",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.desert_king"
+      },
+      "source_line": 1372
+    },
+    {
+      "key": "store:mount:flamesteed",
+      "category": "cosmetics.mounts",
+      "title": "Flamesteed",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.flamesteed",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.flamesteed"
+      },
+      "source_line": 1502
+    },
+    {
+      "key": "store:mount:jade-lion",
+      "category": "cosmetics.mounts",
+      "title": "Jade Lion",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jade_lion",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jade_lion"
+      },
+      "source_line": 1686
+    },
+    {
+      "key": "store:mount:jade-pincer",
+      "category": "cosmetics.mounts",
+      "title": "Jade Pincer",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jade_pincer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jade_pincer"
+      },
+      "source_line": 1694
+    },
+    {
+      "key": "store:mount:magma-skull",
+      "category": "cosmetics.mounts",
+      "title": "Magma Skull",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.magma_skull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.magma_skull"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:nethersteed",
+      "category": "cosmetics.mounts",
+      "title": "Nethersteed",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.nethersteed",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.nethersteed"
+      },
+      "source_line": 1824
+    },
+    {
+      "key": "store:mount:obstinate-ox",
+      "category": "cosmetics.mounts",
+      "title": "Obstinate Ox",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.obstinate_ox",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.obstinate_ox"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:shadow-draptor",
+      "category": "cosmetics.mounts",
+      "title": "Shadow Draptor",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.shadow_draptor",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.shadow_draptor"
+      },
+      "source_line": 2040
+    },
+    {
+      "key": "store:mount:steelbeak",
+      "category": "cosmetics.mounts",
+      "title": "Steelbeak",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.steelbeak",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.steelbeak"
+      },
+      "source_line": 2120
+    },
+    {
+      "key": "store:mount:surly-steer",
+      "category": "cosmetics.mounts",
+      "title": "Surly Steer",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.surly_steer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.surly_steer"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:tombstinger",
+      "category": "cosmetics.mounts",
+      "title": "Tombstinger",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tombstinger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tombstinger"
+      },
+      "source_line": 2168
+    },
+    {
+      "key": "store:outfit:aerial-disciple",
+      "category": "cosmetics.outfits",
+      "title": "Aerial Disciple (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.aerial_disciple",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.aerial_disciple"
+      },
+      "source_line": 10
+    },
+    {
+      "key": "store:outfit:arbalester",
+      "category": "cosmetics.outfits",
+      "title": "Arbalester (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.arbalester",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.arbalester"
+      },
+      "source_line": 2410
+    },
+    {
+      "key": "store:outfit:arena-champion",
+      "category": "cosmetics.outfits",
+      "title": "Arena Champion (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.arena_champion",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.arena_champion"
+      },
+      "source_line": 2419
+    },
+    {
+      "key": "store:outfit:armoured-archer",
+      "category": "cosmetics.outfits",
+      "title": "Armoured Archer (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.armoured_archer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.armoured_archer"
+      },
+      "source_line": 2428
+    },
+    {
+      "key": "store:outfit:bat-knight",
+      "category": "cosmetics.outfits",
+      "title": "Bat Knight (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.bat_knight",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.bat_knight"
+      },
+      "source_line": 1437
+    },
+    {
+      "key": "store:outfit:beekeeper",
+      "category": "cosmetics.outfits",
+      "title": "Beekeeper (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.beekeeper",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.beekeeper"
+      },
+      "source_line": 1963
+    },
+    {
+      "key": "store:outfit:blade-dancer",
+      "category": "cosmetics.outfits",
+      "title": "Blade Dancer (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.blade_dancer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.blade_dancer"
+      },
+      "source_line": 2292
+    },
+    {
+      "key": "store:outfit:breezy-garb",
+      "category": "cosmetics.outfits",
+      "title": "Breezy Garb (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.breezy_garb",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.breezy_garb"
+      },
+      "source_line": 2447
+    },
+    {
+      "key": "store:outfit:celestial-avenger",
+      "category": "cosmetics.outfits",
+      "title": "Celestial Avenger (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.celestial_avenger",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.celestial_avenger"
+      },
+      "source_line": 3127
+    },
+    {
+      "key": "store:outfit:darklight-evoker",
+      "category": "cosmetics.outfits",
+      "title": "Darklight Evoker (full outfit)",
+      "price": 1500,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.darklight_evoker",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.darklight_evoker"
+      },
+      "source_line": 4570
+    },
+    {
+      "key": "store:outfit:doom-knight",
+      "category": "cosmetics.outfits",
+      "title": "Doom Knight (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.doom_knight",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.doom_knight"
+      },
+      "source_line": 5680
+    },
+    {
+      "key": "store:outfit:dragon-knight",
+      "category": "cosmetics.outfits",
+      "title": "Dragon Knight (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.dragon_knight",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.dragon_knight"
+      },
+      "source_line": 2501
+    },
+    {
+      "key": "store:outfit:dragon-slayer",
+      "category": "cosmetics.outfits",
+      "title": "Dragon Slayer (full outfit)",
+      "price": 5000,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.dragon_slayer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.dragon_slayer"
+      },
+      "source_line": 6759
+    },
+    {
+      "key": "store:outfit:evoker",
+      "category": "cosmetics.outfits",
+      "title": "Evoker (full outfit)",
+      "price": 840,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.evoker",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.evoker"
+      },
+      "source_line": 2519
+    },
+    {
+      "key": "store:outfit:fencer",
+      "category": "cosmetics.outfits",
+      "title": "Fencer (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.fencer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.fencer"
+      },
+      "source_line": 2528
+    },
     {
       "key": "store:outfit:field-surgeon",
       "category": "cosmetics.outfits",
@@ -26,6 +812,552 @@
         "key": "oteryn:outfit.field_surgeon"
       },
       "source_line": 8099
+    },
+    {
+      "key": "store:outfit:flamefury-mage",
+      "category": "cosmetics.outfits",
+      "title": "Flamefury Mage (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.flamefury_mage",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.flamefury_mage"
+      },
+      "source_line": 2537
+    },
+    {
+      "key": "store:outfit:forest-warden",
+      "category": "cosmetics.outfits",
+      "title": "Forest Warden (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.forest_warden",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.forest_warden"
+      },
+      "source_line": 2546
+    },
+    {
+      "key": "store:outfit:frost-tracer",
+      "category": "cosmetics.outfits",
+      "title": "Frost Tracer (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.frost_tracer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.frost_tracer"
+      },
+      "source_line": 2555
+    },
+    {
+      "key": "store:outfit:ghost-blade",
+      "category": "cosmetics.outfits",
+      "title": "Ghost Blade (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.ghost_blade",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.ghost_blade"
+      },
+      "source_line": 2564
+    },
+    {
+      "key": "store:outfit:grove-keeper",
+      "category": "cosmetics.outfits",
+      "title": "Grove Keeper (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.grove_keeper",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.grove_keeper"
+      },
+      "source_line": 2573
+    },
+    {
+      "key": "store:outfit:guidon-bearer",
+      "category": "cosmetics.outfits",
+      "title": "Guidon Bearer (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.guidon_bearer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.guidon_bearer"
+      },
+      "source_line": 2582
+    },
+    {
+      "key": "store:outfit:herbalist",
+      "category": "cosmetics.outfits",
+      "title": "Herbalist (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.herbalist",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.herbalist"
+      },
+      "source_line": 2591
+    },
+    {
+      "key": "store:outfit:herder",
+      "category": "cosmetics.outfits",
+      "title": "Herder (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.herder",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.herder"
+      },
+      "source_line": 2600
+    },
+    {
+      "key": "store:outfit:jouster",
+      "category": "cosmetics.outfits",
+      "title": "Jouster (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.jouster",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.jouster"
+      },
+      "source_line": 2609
+    },
+    {
+      "key": "store:outfit:lion-of-war",
+      "category": "cosmetics.outfits",
+      "title": "Lion of War (full outfit)",
+      "price": 1750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.lion_of_war",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.lion_of_war"
+      },
+      "source_line": 6844
+    },
+    {
+      "key": "store:outfit:lupine-warden",
+      "category": "cosmetics.outfits",
+      "title": "Lupine Warden (full outfit)",
+      "price": 840,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.lupine_warden",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.lupine_warden"
+      },
+      "source_line": 2618
+    },
+    {
+      "key": "store:outfit:martial-artist",
+      "category": "cosmetics.outfits",
+      "title": "Martial Artist (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.martial_artist",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.martial_artist"
+      },
+      "source_line": 2908
+    },
+    {
+      "key": "store:outfit:mercenary",
+      "category": "cosmetics.outfits",
+      "title": "Mercenary (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.mercenary",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.mercenary"
+      },
+      "source_line": 2627
+    },
+    {
+      "key": "store:outfit:merry-garb",
+      "category": "cosmetics.outfits",
+      "title": "Merry Garb (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.merry_garb",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.merry_garb"
+      },
+      "source_line": 2636
+    },
+    {
+      "key": "store:outfit:moon-guardian",
+      "category": "cosmetics.outfits",
+      "title": "Moon Guardian (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.moon_guardian",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.moon_guardian"
+      },
+      "source_line": 13236
+    },
+    {
+      "key": "store:outfit:moth-cape",
+      "category": "cosmetics.outfits",
+      "title": "Moth Cape (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.moth_cape",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.moth_cape"
+      },
+      "source_line": 2645
+    },
+    {
+      "key": "store:outfit:necromancer",
+      "category": "cosmetics.outfits",
+      "title": "Necromancer (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.necromancer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.necromancer"
+      },
+      "source_line": 2917
+    },
+    {
+      "key": "store:outfit:nordic-chieftain",
+      "category": "cosmetics.outfits",
+      "title": "Nordic Chieftain (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.nordic_chieftain",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.nordic_chieftain"
+      },
+      "source_line": 2654
+    },
+    {
+      "key": "store:outfit:owl-keeper",
+      "category": "cosmetics.outfits",
+      "title": "Owl Keeper (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.owl_keeper",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.owl_keeper"
+      },
+      "source_line": 2663
+    },
+    {
+      "key": "store:outfit:pharaoh",
+      "category": "cosmetics.outfits",
+      "title": "Pharaoh (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.pharaoh",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.pharaoh"
+      },
+      "source_line": 2672
+    },
+    {
+      "key": "store:outfit:philosopher",
+      "category": "cosmetics.outfits",
+      "title": "Philosopher (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.philosopher",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.philosopher"
+      },
+      "source_line": 2681
+    },
+    {
+      "key": "store:outfit:phoenix-evoker",
+      "category": "cosmetics.outfits",
+      "title": "Phoenix Evoker (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.phoenix_evoker",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.phoenix_evoker"
+      },
+      "source_line": 15548
+    },
+    {
+      "key": "store:outfit:pumpkin-mummy",
+      "category": "cosmetics.outfits",
+      "title": "Pumpkin Mummy (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.pumpkin_mummy",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.pumpkin_mummy"
+      },
+      "source_line": 2690
+    },
+    {
+      "key": "store:outfit:retro-nobleman",
+      "category": "cosmetics.outfits",
+      "title": "Retro Noble(wo)man",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_nobleman",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_nobleman"
+      },
+      "source_line": 2875
+    },
+    {
+      "key": "store:outfit:retro-summoner",
+      "category": "cosmetics.outfits",
+      "title": "Retro Summoner",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_summoner",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_summoner"
+      },
+      "source_line": 2883
+    },
+    {
+      "key": "store:outfit:retro-warrior",
+      "category": "cosmetics.outfits",
+      "title": "Retro Warrior",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_warrior",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_warrior"
+      },
+      "source_line": 2891
+    },
+    {
+      "key": "store:outfit:royal-pumpkin",
+      "category": "cosmetics.outfits",
+      "title": "Royal Pumpkin (full outfit)",
+      "price": 840,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.royal_pumpkin",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.royal_pumpkin"
+      },
+      "source_line": 2717
+    },
+    {
+      "key": "store:outfit:rune-master",
+      "category": "cosmetics.outfits",
+      "title": "Rune Master (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.rune_master",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.rune_master"
+      },
+      "source_line": 2726
+    },
+    {
+      "key": "store:outfit:sea-dog",
+      "category": "cosmetics.outfits",
+      "title": "Sea Dog (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.sea_dog",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.sea_dog"
+      },
+      "source_line": 2735
+    },
+    {
+      "key": "store:outfit:seaweaver",
+      "category": "cosmetics.outfits",
+      "title": "Seaweaver (full outfit)",
+      "price": 570,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.seaweaver",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.seaweaver"
+      },
+      "source_line": 2744
+    },
+    {
+      "key": "store:outfit:shadowlotus-disciple",
+      "category": "cosmetics.outfits",
+      "title": "Shadowlotus Disciple (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.shadowlotus_disciple",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.shadowlotus_disciple"
+      },
+      "source_line": 2753
+    },
+    {
+      "key": "store:outfit:siege-master",
+      "category": "cosmetics.outfits",
+      "title": "Siege Master (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.siege_master",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.siege_master"
+      },
+      "source_line": 2762
+    },
+    {
+      "key": "store:outfit:sinister-archer",
+      "category": "cosmetics.outfits",
+      "title": "Sinister Archer (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.sinister_archer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.sinister_archer"
+      },
+      "source_line": 2771
+    },
+    {
+      "key": "store:outfit:spirit-caller",
+      "category": "cosmetics.outfits",
+      "title": "Spirit Caller (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.spirit_caller",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.spirit_caller"
+      },
+      "source_line": 2780
+    },
+    {
+      "key": "store:outfit:sun-priest",
+      "category": "cosmetics.outfits",
+      "title": "Sun Priest (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.sun_priest",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.sun_priest"
+      },
+      "source_line": 2789
+    },
+    {
+      "key": "store:outfit:trailblazer",
+      "category": "cosmetics.outfits",
+      "title": "Trailblazer (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.trailblazer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.trailblazer"
+      },
+      "source_line": 2798
+    },
+    {
+      "key": "store:outfit:trophy-hunter",
+      "category": "cosmetics.outfits",
+      "title": "Trophy Hunter (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.trophy_hunter",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.trophy_hunter"
+      },
+      "source_line": 2807
+    },
+    {
+      "key": "store:outfit:vampire-noble",
+      "category": "cosmetics.outfits",
+      "title": "Vampire Noble (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.vampire_noble",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.vampire_noble"
+      },
+      "source_line": 21583
+    },
+    {
+      "key": "store:outfit:veteran-paladin",
+      "category": "cosmetics.outfits",
+      "title": "Veteran Paladin (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.veteran_paladin",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.veteran_paladin"
+      },
+      "source_line": 2816
+    },
+    {
+      "key": "store:outfit:void-master",
+      "category": "cosmetics.outfits",
+      "title": "Void Master (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.void_master",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.void_master"
+      },
+      "source_line": 2825
+    },
+    {
+      "key": "store:outfit:winged-druid",
+      "category": "cosmetics.outfits",
+      "title": "Winged Druid (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.winged_druid",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.winged_druid"
+      },
+      "source_line": 2899
+    },
+    {
+      "key": "store:outfit:winter-warden",
+      "category": "cosmetics.outfits",
+      "title": "Winter Warden (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.winter_warden",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.winter_warden"
+      },
+      "source_line": 2834
     }
   ]
 }

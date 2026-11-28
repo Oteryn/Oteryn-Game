@@ -304,6 +304,16 @@
   ],
   "bankers": [
     {
+      "key": "oteryn:npc.adrian",
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/adrian.lua",
+        "line": 79,
+        "sha256": "f684e0d18eefcdee3bb2ec94166238d7793881708cc2347771a45cc5e74d3593"
+      }
+    },
+    {
       "key": "oteryn:npc.atur",
       "evidence": {
         "repository": "opentibiabr/canary",
@@ -371,6 +381,16 @@
         "path": "data-otservbr-global/npc/finarfin.lua",
         "line": 65,
         "sha256": "87fe5917576dc0d8ff120198dcae5d6b0259f502ee544cdcbd695f032a42150f"
+      }
+    },
+    {
+      "key": "oteryn:npc.flavius",
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/flavius.lua",
+        "line": 73,
+        "sha256": "88e3de09992b88dea1a33a299acc7d5d11f97314478718c1eb2a438f37b8690f"
       }
     },
     {

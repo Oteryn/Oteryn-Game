@@ -48,7 +48,7 @@ impl PlayLink {
         lock(&self.mailbox).cyclopedia_character.open = true;
         true
     }
-    /// The accepted custody summary is remote, read-only, and combines Store and mail deliveries.
+    /// Open the remote custody summary and request the buyer's Store claim entries.
     pub fn store_inbox_set_open(&self, open: bool) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.cyclopedia_character;
@@ -56,6 +56,7 @@ impl PlayLink {
         if !open {
             // Keep rejecting the superseded holdings reply until it has arrived.
             mailbox.store_inbox_refresh_pending &= panel.items.pending_offset.is_some();
+            mailbox.store_inbox_query_queued = false;
             return;
         }
         panel.items.page = None;
@@ -67,10 +68,19 @@ impl PlayLink {
             mailbox.store_inbox_refresh_pending = false;
             self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
         }
+        mailbox.store.inbox = Default::default();
+        mailbox.store.inbox_page_cursor = None;
+        self.store_inbox_refresh_locked(&mut mailbox);
     }
 
     pub(in crate::play) fn pump_store_inbox_refresh(&self) {
         let mut mailbox = lock(&self.mailbox);
+        if mailbox.store_inbox_query_queued && !mailbox.store.pending {
+            mailbox.store_inbox_query_queued = false;
+            if mailbox.cyclopedia_character.items.open {
+                self.store_inbox_refresh_locked(&mut mailbox);
+            }
+        }
         let panel = &mailbox.cyclopedia_character;
         if mailbox.store_inbox_refresh_pending && !panel.pending && !panel.blessings.pending {
             let open = panel.items.open;

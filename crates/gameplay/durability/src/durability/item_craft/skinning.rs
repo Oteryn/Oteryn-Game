@@ -138,7 +138,10 @@ impl DurabilityRoot {
                 return Ok(Some(UseDisposition::Rejected.into()));
             }
             let mut attempt = Attempt { request: &request, catalogue: context.2, rabbit_feet: None };
-            let disposition = super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some(&mut attempt)).await?;
+            let disposition = super::write(
+                &mut tx, context.3, fence, &request.craft, context.0, context.1,
+                super::CraftVariant::Skinning(&mut attempt),
+            ).await?;
             if disposition == UseDisposition::Committed {
                 tx.commit(deadline).await?;
                 return Ok(Some(SkinningOutcome { disposition, rabbit_feet: attempt.rabbit_feet }));

@@ -174,6 +174,8 @@ pub mod world_reset;
 // End sorted module declarations.
 
 pub use admission_journal::AdmissionReconnectJournal;
+#[cfg(any(test, feature = "test-support"))]
+pub use db::with_stalled_commit_response;
 pub use db::{
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
     IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
@@ -555,7 +557,7 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            admission_journal::commit_pass_transaction(transaction, deadline).await?;
+            admission_journal::commit_pass_read(transaction, deadline).await?;
             return Ok(ReplacementPassResult::ReplayReceipt);
         }
 
@@ -590,7 +592,7 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                admission_journal::commit_pass_read(transaction, deadline).await?;
                 return Ok(ReplacementPassResult::ReplayReceipt);
             }
             return Err(DurabilityError::InvalidStoredState);
@@ -1015,7 +1017,7 @@ impl AdmissionReconnectJournalV2 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let state = row.try_get("state").map_err(DurabilityError::from)?;
-                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    admission_journal::commit_pass_read(transaction, deadline).await?;
                     Ok(state)
                 })
             })

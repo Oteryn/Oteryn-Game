@@ -27,6 +27,7 @@ pub(in crate::gameplay_transport) struct TrainingRuntime {
 #[derive(Default)]
 struct Session {
     selected: Option<(CurrentCharacterItemFence, usize)>,
+    exercise_start: Arc<Mutex<()>>,
     exercise: Option<exercise::Run>,
     ready_at_us: u64,
     last_weapon: Option<crate::durability::exercise_training::TrainingWeapon>,
