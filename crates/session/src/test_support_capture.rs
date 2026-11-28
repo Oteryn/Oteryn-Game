@@ -64,26 +64,33 @@ pub async fn replay_vitals(
         }
     }
     let start = start.ok_or("capture missing the matching session admission")?;
-    let join_end = join_end.ok_or("capture missing the matching session snapshot")?;
-    let stream = tokio::io::join(Cursor::new(&bytes[start..join_end]), tokio::io::sink());
+    let _ = join_end.ok_or("capture missing the matching session snapshot")?;
+    let recording = &bytes[start..];
+    let stream = tokio::io::join(Cursor::new(recording), tokio::io::sink());
     let mut session = Session::admit(stream, admission).await?;
     let mut checkpoints = checkpoints.iter().peekable();
-    while (wire.position() as usize) < bytes.len() {
-        let body = read_frame(&mut wire).await?;
+    while (session.stream.reader().position() as usize) < recording.len() {
+        let body = read_frame(&mut session.stream).await?;
         let frame = decode_wire_envelope(&body)?;
         frame.validate(Direction::ServerToClient, true)?;
         session.check_generation(&frame)?;
-        match frame.message_type() {
+        let sequence = match frame.message_type() {
             MessageType::LivenessProbe => continue,
-            MessageType::CommandResult | MessageType::StateDelta => {}
-            _ => return Err("unexpected frame during vitals replay".into()),
-        }
-        let sequence = session.next_sequence(&frame)?;
-        if frame.message_type() == MessageType::StateDelta
-            && decode_state_delta(frame.payload())?.domain_id == STATE_DOMAIN_ACTOR_VITALS
-        {
-            session.apply_state_delta(sequence, frame.payload())?;
-        }
+            MessageType::SnapshotBegin => {
+                session.replace_snapshot(frame.payload()).await?;
+                session.take_events();
+                session.last_server_sequence()
+            }
+            MessageType::CommandResult => session.next_sequence(&frame)?,
+            MessageType::StateDelta => {
+                let sequence = session.next_sequence(&frame)?;
+                if decode_state_delta(frame.payload())?.domain_id == STATE_DOMAIN_ACTOR_VITALS {
+                    session.apply_state_delta(sequence, frame.payload())?;
+                }
+                sequence
+            }
+            other => return Err(format!("unexpected {other:?} during vitals replay").into()),
+        };
         if let Some((expected_sequence, expected)) = checkpoints.peek()
             && sequence >= *expected_sequence
         {

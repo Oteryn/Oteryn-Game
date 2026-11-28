@@ -184,6 +184,19 @@ fn c08_original_frames_require_matching_session_sequence_and_revisions() -> Resu
                 )
                 .await?;
             }
+            for frame in encode_single_chunk_snapshot(
+                1,
+                2,
+                44,
+                &[DomainSnapshot {
+                    domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    revision: 7,
+                    snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                    payload: &payloads[3],
+                }],
+            )? {
+                write_frame(&mut peer, &frame).await?;
+            }
             Ok::<_, BoxError>(peer)
         });
         let (result, bytes) = capture_inbound(async {
@@ -195,7 +208,12 @@ fn c08_original_frames_require_matching_session_sequence_and_revisions() -> Resu
         .await;
         result?;
         let session_id = GameSessionId::decode(&uuid_v7(1))?;
-        let checkpoints = [(41, expected[1]), (42, expected[2]), (43, expected[3])];
+        let checkpoints = [
+            (41, expected[1]),
+            (42, expected[2]),
+            (43, expected[3]),
+            (44, expected[3]),
+        ];
         replay_vitals(&bytes, admission()?, session_id, &checkpoints).await?;
         assert!(
             replay_vitals(
