@@ -2778,7 +2778,15 @@ mod tests {
         .expect("Crystal equipment JSON");
         let rows = facts["records"].as_array().expect("Crystal equipment rows");
         assert_eq!(rows.len(), 182);
-        let global = global_item_details(&[9020, 16107, 16116])?;
+        let global = global_item_details(&[9020, 16094, 16107, 16116])?;
+        assert_eq!(global[&16094]["Body Position"], "extra slot");
+        let lamp = native
+            .item_policy_for_source_id(16094)
+            .ok_or_else(|| invalid("Global Crystal Lamp profile"))?;
+        let abilities =
+            crate::content::item_abilities::item_ability_profile(&lamp.record().semantics)
+                .map_err(invalid)?;
+        assert!(abilities.extra_slot);
         let mut usable = 0;
         for row in rows {
             let id = row["id"].as_u64().expect("donor item ID");

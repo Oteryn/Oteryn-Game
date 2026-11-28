@@ -1225,6 +1225,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
     // END GENERATED SOURCE-QUALIFIED ZERO SPEED
+    // These six raid corpse roots also have source profiles with explicit zero speed.
+    for id in [18265, 18953, 18970, 18974, 18978, 18982] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or("missing raid corpse profile")?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     let diary = profiles
@@ -1339,8 +1349,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 2127, 4388, 5997, 6009, 6018, 6038, 6045, 6051, 6057, 6061, 6062, 6073, 6076,
                 6301, 6347, 8113, 8744, 8961, 8965, 9092, 10393, 10430, 12325, 12658, 12717,
                 12823, 12834, 13801, 13860, 13979, 13983, 15865, 15907, 16186, 16193, 17421,
-                17622, 18225, 18226, 18242, 18246, 18250, 18261, 18265, 18273, 18306, 18937,
-                18953, 18961, 18970, 18974, 18978, 18982, 19049, 19059, 20058, 20144, 21099,
+                17622, 18225, 18226, 18242, 18246, 18250, 18261, 18273, 18306, 18937,
+                18961, 19049, 19059, 20058, 20144, 21099,
                 21446, 21977, 22023, 22776, 23553, 23561, 24256, 25071, 25827, 25831, 25866,
                 27521, 27536, 27555, 27633, 27637, 27641, 27722, 28617, 28639, 28664, 28667,
                 28786, 28794, 28802, 30069, 30099, 30159, 31386, 31409, 31413, 31551, 32702,

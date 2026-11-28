@@ -786,6 +786,7 @@ fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u
         return None;
     }
     match (creature, corpse.key.as_str()) {
+        ("oteryn:creature.dragon_lord", "oteryn:item.tibia.i5984") => Some(56),
         ("oteryn:creature.glooth_golem", "oteryn:item.tibia.i20972") => Some(38),
         ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
         ("oteryn:creature.lost_berserker", "oteryn:item.tibia.i16071") => Some(50),
@@ -960,6 +961,7 @@ fn verified_source_corpses(
         // Crystal items.xml records larger physical containers for these roots.
         // The independent reward work and view limits remain at 48 entries.
         let ordinary_capacity = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i5984" => Some((56, false)),
             "oteryn:item.tibia.i7344" => Some((52, false)),
             "oteryn:item.tibia.i7893" => Some((60, false)),
             "oteryn:item.tibia.i15872" => Some((50, false)),
@@ -2497,6 +2499,25 @@ mod ordinary_corpse_slice2_tests {
             CreatureRewardTable::from_pin_with_native_corpses(&profiles, Some(&loot), Some(&items)),
             loot,
         ))
+    }
+
+    #[test]
+    fn dragon_lord_skinning_body_requires_its_native_container_proof() -> Result<(), Box<dyn Error>>
+    {
+        let key = "oteryn:creature.dragon_lord";
+        let (rewards, _) = pinned_rewards()?;
+        let row = rewards.row(key).map_err(|reason| reason.as_str())?;
+        let body = row.corpse_item.as_ref().ok_or("Dragon Lord body")?;
+        assert_eq!(body.production_key, "oteryn:item.tibia.i5984");
+        assert_eq!(body.revision_ref, "definition-r1");
+        assert_eq!(row.race.as_ref().map(BestiaryRace::key), Some(key));
+        let (creatures, loot) = super::protected_loot_tests::documents()?;
+        let unverified = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        assert_eq!(
+            unverified.row(key).err(),
+            Some(NoSettlementReason::CorpseItemInadmissible)
+        );
+        Ok(())
     }
 
     #[test]

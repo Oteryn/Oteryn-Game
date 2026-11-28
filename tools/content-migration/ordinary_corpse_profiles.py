@@ -84,7 +84,9 @@ def preserve_projected_capacity(record, prior, capacity_projections):
         or prior is None
         or prior["semantics"]["container"] != published
     ):
-        raise ValueError(f"Crystal corpse capacity projection differs from its owner: {key}")
+        raise ValueError(
+            f"Crystal corpse capacity projection differs from its owner: {key}"
+        )
     record["semantics"]["container"] = published
     return True
 
@@ -104,15 +106,21 @@ def preserve_published_ground_custody(item, prior, record):
         or prior["admission"] != GROUND_CORPSE_ADMISSION
         or record["admission"] != portable
     ):
-        raise ValueError(f"Crystal corpse Ground custody differs from its owner: {item}")
+        raise ValueError(
+            f"Crystal corpse Ground custody differs from its owner: {item}"
+        )
     if (
         physical["state"] != "KNOWN"
         or physical["value"]["movable"] != known(True)
         or physical["value"]["pickupable"] != known(True)
         or prior["semantics"]["physical"]
-        != known({**physical["value"], "pickupable": known(PUBLISHED_GROUND_PICKUP[item])})
+        != known(
+            {**physical["value"], "pickupable": known(PUBLISHED_GROUND_PICKUP[item])}
+        )
     ):
-        raise ValueError(f"Crystal corpse physical custody differs from its owner: {item}")
+        raise ValueError(
+            f"Crystal corpse physical custody differs from its owner: {item}"
+        )
     record["admission"] = copy.deepcopy(GROUND_CORPSE_ADMISSION)
     record["semantics"]["physical"] = prior["semantics"]["physical"]
 
@@ -221,6 +229,12 @@ def admit(root, generated, path, manifest_path, order, canonical, capacity_proje
         if unresolved:
             record["semantics"]["temporal"] = source.U
         preserve_published_ground_custody(item, current.get(str(item)), record)
+        # The donor's default zero for Lost Time and its 30-unit red gem differ
+        # from the Global items. Keep the canonical weight in both custody paths.
+        if item in (23729, 36706):
+            items.reconcile_canonical_physical(item, definition_row, record)
+            if str(item) in current:
+                items.reconcile_active_physical(current[str(item)], record)
         if item in mandatory_yields and str(item) in current:
             prior = copy.deepcopy(current[str(item)])
             if (
@@ -279,11 +293,9 @@ def qualify_inherited_portable_stages(root, records):
     }
     for item, pickupable in PUBLISHED_GROUND_PICKUP.items():
         record = active[item_ref(item)["key"]]
-        if (
-            record["admission"] != GROUND_CORPSE_ADMISSION
-            or record["semantics"]["physical"]["value"]["pickupable"]
-            != items.source.K(pickupable)
-        ):
+        if record["admission"] != GROUND_CORPSE_ADMISSION or record["semantics"][
+            "physical"
+        ]["value"]["pickupable"] != items.source.K(pickupable):
             raise ValueError(f"Published Ground corpse custody changed: {item}")
     for item in inherited_portable_stage_ids(root):
         record = active[item_ref(item)["key"]]

@@ -502,6 +502,9 @@ CANONICAL_WEIGHTS = {
     19361: (150, 850),
     19371: (1700, 170),
     23677: (2700, 200),
+    # Crystal ordinary loot uses this same physical-profile admission path.
+    23729: (10, 0),
+    36706: (100, 30),
     32228: (20, 250),
     34210: (6660, 6659),
 }
