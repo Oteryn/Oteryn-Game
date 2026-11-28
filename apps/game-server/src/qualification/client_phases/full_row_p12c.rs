@@ -226,15 +226,87 @@ async fn prepare_pvp_player(
     Ok(player)
 }
 
+async fn equip_pvp_axe(client: &mut DevClientSession, item: std::num::NonZeroU32) -> TestResult {
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+    let inventory = client.inventory().ok_or("missing attacker inventory")?;
+    let source = inventory
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == item)
+        .ok_or("fixture axe missing from attacker backpack")?
+        .handle;
+    let reply = client
+        .move_item(&oteryn_dev_client::ItemMoveIntent {
+            source,
+            destination: oteryn_dev_client::ItemMoveDestination::Equipment(
+                EquipmentSlot::RightHand,
+            ),
+        })
+        .await?;
+    if reply.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("PvP axe equip refused: {reply:?}").into());
+    }
+    full_row_p05::wait_for_inventory(client, "p12c-equip-axe", |client| {
+        client.inventory().is_some_and(|inventory| {
+            inventory.equipment.iter().any(|entry| {
+                entry.slot == EquipmentSlot::RightHand && entry.item.item_definition_ref == item
+            })
+        })
+    })
+    .await
+}
+
+async fn stow_victim_equipment(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
+    let equipment = client
+        .inventory()
+        .ok_or("missing victim inventory")?
+        .equipment
+        .clone();
+    for entry in equipment {
+        let reply = client
+            .session_mut()
+            .move_item_counted(MoveRequest {
+                source: entry.item.handle,
+                destination: ItemMoveDestination::MainBackpack,
+                count: None,
+            })
+            .await?;
+        if reply.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("PvP victim could not stow {:?}: {reply:?}", entry.slot).into());
+        }
+    }
+    full_row_p05::wait_for_inventory(client, "p12c-victim-equipment", |client| {
+        client
+            .inventory()
+            .is_some_and(|inventory| inventory.equipment.is_empty())
+    })
+    .await
+}
+
 async fn earn_pvp_kill(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult<DevClientSession> {
     use oteryn_protocol_oteryn::{attack, pvp_expert};
     let mut attacker = prepare_pvp_player(clients, "s08-knight", 0xca, 0).await?;
+    let axe_id = 3276;
+    let axe = provisioning::item_reference(&provisioning::item_index()?, axe_id)?;
+    request_fixture_control_at(
+        "NODE_BOOT_PVP_CONTROL_SOCKET",
+        uuid_text(attacker.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        format!("item-{axe_id}-1"),
+    )
+    .await?;
+    evidence(&format!(
+        "P12C_FIXTURE role=attacker item={axe_id} count=1 purpose=level-eight-pvp-damage"
+    ));
     logout(&mut attacker).await?;
     drop(attacker);
     let mut victim = prepare_pvp_player(clients, "s08-sorcerer", 0xcd, 1).await?;
+    stow_victim_equipment(&mut victim).await?;
     let unprotected = |at: TilePos| {
         world
             .base()
@@ -256,6 +328,7 @@ async fn earn_pvp_kill(
 
     let moving = async {
         let mut attacker = connect_character(clients, 0xce, 0).await?;
+        equip_pvp_axe(&mut attacker, axe).await?;
         let path = route(
             world,
             tile(attacker.world_spatial().actor_position)?,
@@ -325,6 +398,11 @@ async fn earn_pvp_kill(
         })
         .ok_or("victim missing from attacker visibility")?
         .entity;
+    let initial_health = victim
+        .actor_vitals()
+        .ok_or("missing pre-fight victim vitals")?
+        .health;
+    let mut lowest_health = initial_health;
     let attack = attacker.session_mut().attack_target(Some(&target)).await?;
     if attack.disposition != attack::AttackIntentDisposition::Ok {
         return Err(format!("Open PvP attack refused: {attack:?}").into());
@@ -337,16 +415,27 @@ async fn earn_pvp_kill(
             .await?;
         victim.service_liveness(Duration::from_millis(100)).await?;
         attacker.take_events();
-        victim.take_events();
-        let after = query(&mut attacker, 0, 50).await?;
-        if after.pvp_kills == before.pvp_kills + 1
-            && query(&mut victim, 0, 50).await?.deaths == before_victim.deaths + 1
+        for event in victim.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event {
+                lowest_health = lowest_health.min(delta.value.health);
+            }
+        }
+        if lowest_health < initial_health
+            && tile(victim.world_spatial().actor_position)? != victim_tile
+            && victim
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.health == vitals.max_health)
         {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("no credited unjustified kill and victim death before deadline; killer-history={}->{}", before.pvp_kills, after.pvp_kills).into());
+            return Err(format!("no live PvP respawn before deadline; victim-health={initial_health}->{lowest_health} victim-position={:?}", victim.world_spatial().actor_position).into());
         }
+    }
+    let after = query(&mut attacker, 0, 50).await?;
+    let victim_page = query(&mut victim, 0, 50).await?;
+    if after.pvp_kills != before.pvp_kills + 1 || victim_page.deaths != before_victim.deaths + 1 {
+        return Err(format!("PvP respawn lacked exact history credit; killer-history={}->{} victim-deaths={}->{} victim-health={initial_health}->{lowest_health}", before.pvp_kills, after.pvp_kills, before_victim.deaths, victim_page.deaths).into());
     }
     attacker.session_mut().attack_target(None).await?;
     let releasing = logout(&mut victim);
