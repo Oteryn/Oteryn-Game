@@ -242,7 +242,7 @@ fn check_scorcher_offer(entry: &catalogue::ProficiencyCatalogueEntry) -> TestRes
     if entry.weapon != "oteryn:item.tibia.i21348"
         || entry.thresholds[0] != 1_750
         || entry.levels.len() != 3
-        || entry.levels[0].perks != ["mana on hit (value: 2)"]
+        || entry.levels[0].perks != ["mana on hit (value: 2/1)"]
     {
         return Err(format!(
             "step=perk observed=wrong-scorcher-offer weapon={} threshold={} first={:?}",
@@ -459,7 +459,7 @@ mod tests {
             levels: vec![
                 catalogue::ProficiencyCatalogueLevel {
                     selected: None,
-                    perks: vec!["mana on hit (value: 2)".into()],
+                    perks: vec!["mana on hit (value: 2/1)".into()],
                 };
                 3
             ],
