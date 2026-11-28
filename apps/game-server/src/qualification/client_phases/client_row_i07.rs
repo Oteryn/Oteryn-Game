@@ -1730,7 +1730,7 @@ pub(super) async fn journey(
         let ids: Vec<Vec<u8>> = sqlx::query_scalar(
             "SELECT uuid_send(g.item_instance_id) FROM game_item_ground_locations g
              JOIN game_item_mint_receipts r USING (item_instance_id)
-             WHERE g.native_room_placement_context=$1 AND g.spatial_position=$2
+             WHERE substring(g.corpse_ref from 1 for 16)=$1 AND g.spatial_position=$2
                AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
              ORDER BY g.corpse_ref DESC LIMIT 32",
         )
