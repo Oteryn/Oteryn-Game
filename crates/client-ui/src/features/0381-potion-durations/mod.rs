@@ -54,7 +54,7 @@ mod tests {
         let text = panel_text_at(&panel, later);
         assert!(text.contains("Wealth Duplex: 59:29"));
         assert!(text.contains("Magic shield potion: 00:29"));
-        assert!(text.contains("Store XP boost +50%: 01:29"));
+        assert!(text.contains("Store XP boost +50%: 02:00"));
         assert!(!text.contains("Daily XP boost"));
         assert!(request(&mut panel).is_some());
         assert!(!panel.finish_at(false, &[], later));

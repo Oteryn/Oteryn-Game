@@ -441,6 +441,15 @@
       "source_line": 615
     },
     {
+      "key": "store:permanent-prey-slot",
+      "category": "useful-things.prey",
+      "title": "Permanent Prey Slot",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:permanent-prey-slot",
+      "source_line": 0
+    },
+    {
       "key": "store:prey-list-expansion",
       "category": "useful-things.prey",
       "title": "Prey List Expansion",
@@ -448,6 +457,24 @@
       "enabled": false,
       "currency": "TIBIA_COIN",
       "unlock_key": "prey-list-expansion",
+      "source_line": 0
+    },
+    {
+      "key": "store:prey-wildcards:1",
+      "category": "useful-things.prey",
+      "title": "Prey Wildcard",
+      "price": 10,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:prey-wildcards:1",
+      "source_line": 0
+    },
+    {
+      "key": "store:prey-wildcards:5",
+      "category": "useful-things.prey",
+      "title": "Prey Wildcards (5)",
+      "price": 50,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:prey-wildcards:5",
       "source_line": 0
     },
     {
@@ -514,6 +541,51 @@
         "charges": 500
       },
       "source_line": 668
+    },
+    {
+      "key": "store:xp-boost:1",
+      "category": "boosts",
+      "title": "XP Boost",
+      "price": 30,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:xp-boost:1",
+      "source_line": 0
+    },
+    {
+      "key": "store:xp-boost:2",
+      "category": "boosts",
+      "title": "XP Boost",
+      "price": 45,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:xp-boost:2",
+      "source_line": 0
+    },
+    {
+      "key": "store:xp-boost:3",
+      "category": "boosts",
+      "title": "XP Boost",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:xp-boost:3",
+      "source_line": 0
+    },
+    {
+      "key": "store:xp-boost:4",
+      "category": "boosts",
+      "title": "XP Boost",
+      "price": 180,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:xp-boost:4",
+      "source_line": 0
+    },
+    {
+      "key": "store:xp-boost:5",
+      "category": "boosts",
+      "title": "XP Boost",
+      "price": 360,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "store:xp-boost:5",
+      "source_line": 0
     }
   ]
 }

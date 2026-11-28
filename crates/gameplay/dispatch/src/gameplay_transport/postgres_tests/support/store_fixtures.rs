@@ -395,7 +395,10 @@ pub(super) fn platform_intent(request: &serde_json::Value, operation: &str, orde
     let revision = request["catalog_revision"].as_str().expect("catalogue revision");
     let key = request["offer_key"].as_str().expect("offer key");
     let unit_kind = crate::gameplay_transport::store::platform_unit_kind(revision, key).unwrap_or("ITEM");
-    serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":"oteryn.store.item_grant","product_version":"1","unit_kind":unit_kind,"catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":"item:test","grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
+    let hunting_offer = crate::durability::store::StoreHuntingOffer::from_key(key).is_some();
+    let grant_key = if hunting_offer { key } else { "item:test" };
+    let product_id = if hunting_offer { "oteryn.store.character_service" } else { "oteryn.store.item_grant" };
+    serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":product_id,"product_version":"1","unit_kind":unit_kind,"catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":grant_key,"grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
 }
 
 pub(super) fn platform_bytes(v: &serde_json::Value) -> Vec<u8> {

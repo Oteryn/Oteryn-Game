@@ -31,6 +31,20 @@ impl Metrics {
     }
 }
 
+pub(super) async fn permanent_slots(
+    tx: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> Result<[bool; 3], DurabilityError> {
+    let targets = sqlx::query_scalar::<_, i16>(
+        "SELECT target FROM game_character_permanent_prey_slots
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY target LIMIT 2",
+    )
+    .bind(character.as_slice())
+    .fetch_all(tx)
+    .await?;
+    Ok([false, targets.contains(&2), targets.contains(&3)])
+}
+
 pub(super) async fn load(
     tx: &mut Type2Transaction<'_>,
     character: &[u8; 16],

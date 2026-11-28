@@ -156,7 +156,7 @@ impl DurabilityRoot {
                 });
             }
             // Winter Update 2026: source 3 (Store) and 4 (Daily Reward) are separate lines.
-            let lines = super::super::hunting_xp::xp_boost_lines(&mut tx, fence.character_id.as_bytes().as_slice(), fence.runtime_scope.world_id().as_bytes().as_slice()).await?;
+            let lines = super::super::hunting_xp::xp_boost_lines(&mut tx, fence.character_id.as_bytes().as_slice(), fence.runtime_scope.world_id().as_bytes().as_slice(), None).await?;
             for (source, line) in [(3, lines.store), (4, lines.daily)] {
                 if let Some(line) = line {
                     active.push(ActivePotionDuration {

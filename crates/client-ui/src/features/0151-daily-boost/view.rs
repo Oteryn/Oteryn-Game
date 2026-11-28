@@ -130,7 +130,11 @@ pub fn xp_boost_lines(
         let Some(entry) = active.iter().find(|e| e.source == source) else {
             continue;
         };
-        let remaining = entry.remaining_ms.saturating_sub(elapsed_ms);
+        let remaining = if source == 3 {
+            entry.remaining_ms
+        } else {
+            entry.remaining_ms.saturating_sub(elapsed_ms)
+        };
         if remaining == 0 {
             continue;
         }
@@ -176,7 +180,10 @@ mod xp_boost_tests {
             xp_boost_lines(&active[1..], 1_000_000),
             "- Daily Reward XP boost: +25% (0:14 h remaining)\n"
         );
-        assert_eq!(xp_boost_lines(&active, 7_200_000), "");
+        assert_eq!(
+            xp_boost_lines(&active, 7_200_000),
+            "- Store XP boost: +50% (2:00 h remaining)\n"
+        );
     }
 }
 

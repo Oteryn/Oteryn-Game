@@ -67,7 +67,9 @@ pub(super) async fn grant(
             None => (0, None),
         };
         let requested = i16::from(reward.prey_wildcards);
-        let credited = requested.min(52 - before);
+        let credited: i16 = sqlx::query_scalar("SELECT game_prey_wildcard_daily_credit($1::text::uuid,encode($2,'hex')::uuid,$3,$4)")
+            .bind(&account).bind(world.as_bytes().as_slice()).bind(before).bind(requested)
+            .fetch_one(&mut ***tx).await?;
         sqlx::query("INSERT INTO public.game_account_prey_wildcard_entries(claim_id,account_id,world_id,previous_claim_id,kind,requested,credited,balance_before,balance_after) VALUES(encode($1,'hex')::uuid,$2::text::uuid,encode($3,'hex')::uuid,$4::text::uuid,'DAILY_REWARD',$5,$6,$7,$8)")
             .bind(claim).bind(&account).bind(world.as_bytes().as_slice()).bind(last)
             .bind(requested).bind(credited).bind(before).bind(before+credited).execute(&mut ***tx).await?;

@@ -14,7 +14,7 @@ use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::durability::character_inbox::{RewardClaimInboxMintOutput, RewardClaimInboxMintRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState,StoreBlessingDelivery,StorePurchaseHistoryEntry};
+use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState,StoreBlessingDelivery,StoreHuntingDelivery,StoreHuntingPurchase,StorePurchaseHistoryEntry};
 use crate::foundation::{CommandId, CommandRef};
 use crate::native_admission_source::store::{ProtocolError, PurchaseResult, PurchaseStoreOffer, StoreClient};
 use oteryn_gameplay_economy::store as rules;
@@ -35,6 +35,8 @@ pub(super) mod receipt_outbox;
 pub use receipt_outbox::{run_retained_store_reconciliation, run_store_receipt_outbox};
 #[path = "store/hireling.rs"]
 mod hireling;
+#[path = "store/hunting_offers.rs"]
+mod hunting_offers;
 #[path = "store/inbox.rs"]
 mod inbox;
 use catalogue::{RuntimeCatalogue, currency_text};
@@ -456,8 +458,12 @@ async fn catalogue_page(
     let after = (!request.page_cursor.is_empty()).then_some(request.page_cursor.as_str());
     let mut rows = catalogue
         .rules
-        .offers_in_category(&request.category, after, wire::MAX_STORE_PAGE_ENTRIES + 1)
+        .offers_in_category(&request.category, after, wire::MAX_STORE_PAGE_ENTRIES + 1 + hunting_offers::HIDDEN_XP_TIERS)
         .ok()?;
+    if rows.iter().any(|offer| hunting_offers::xp_tier(&offer.key).is_some()) {
+        let tier = hunting_offers::current_tier(owner, admitted).await;
+        rows.retain(|offer| hunting_offers::visible(&offer.key, tier));
+    }
     let next_page_cursor = if rows.len() > wire::MAX_STORE_PAGE_ENTRIES {
         rows.truncate(wire::MAX_STORE_PAGE_ENTRIES);
         rows.last().map(|offer| offer.key.clone()).unwrap_or_default()
@@ -842,6 +848,7 @@ async fn purchase_retained_or_new(
         &catalogue.rules.offer(&binding.offer_key)?.delivery,
         rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::CHARM_EXPANSION_UNLOCK
     );
+    let hunting_offer = hunting_offers::is_offer(&binding.offer_key);
     let hireling_purchase=hireling_action.as_ref().map(|action|HirelingStorePurchase {purchase_request_id:request.purchase_request_id,origin_channel:*admitted.channel_id.as_bytes(),action:action.clone()});
     let request_state=if let Some(action)=hireling_action {
         let current=gameplay_fence(owner,admitted).await?;
@@ -894,6 +901,17 @@ async fn purchase_retained_or_new(
                 owner.root.reserve_charm_expansion_purchase(
                     owner.character, owner.holder, fence, journal.clone()
                 ).await.ok()?
+            } else if hunting_offer {
+                let fence = gameplay_fence(owner, admitted).await?;
+                owner.root.reserve_store_hunting_purchase(
+                    owner.character, owner.holder, fence,
+                    StoreHuntingPurchase {
+                        request: journal.clone(),
+                        offer_key: binding.offer_key.clone(),
+                        allow_new: owner.store_purchases == StorePurchaseMode::Enabled && !stale_quote,
+                    },
+                    &super::prey::Premium(owner.premium_coordinator),
+                ).await.ok()?
             } else { true };
             let answer = if reserved {
                 purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
@@ -938,10 +956,14 @@ async fn purchase_retained_or_new(
             owner.root.release_refused_prey_expansion_purchase(owner.character, journal).await.ok()?;
         } else if charm_expansion {
             owner.root.release_refused_charm_expansion_purchase(owner.character, journal).await.ok()?;
+        } else if hunting_offer {
+            owner.root.release_refused_store_hunting_purchase(
+                owner.character, journal.purchase_request_id,
+            ).await.ok()?;
         }
         return Some(refusal(code));
     }
-    if prey_expansion || charm_expansion || binding.offer_key.starts_with(catalogue::BLESSING_OFFER_PREFIX) {
+    if prey_expansion || charm_expansion || hunting_offer || binding.offer_key.starts_with(catalogue::BLESSING_OFFER_PREFIX) {
         // Each of these offers has exactly one effect, so validate the retained order
         // before committing its entitlement.
         prey_retry::delivery_ids(&answer)?;
@@ -1018,6 +1040,26 @@ async fn deliver(
             let fence = gameplay_fence(owner, admitted).await?;
             owner.root.grant_charm_expansion(owner.character, owner.holder, fence, operation_id,
                 DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }).await.ok()?
+        } else if hunting_offers::is_offer(unlock_key) {
+            if intent.operation_id != operation
+                || intent.unit_kind != "COSMETIC"
+                || intent.grant_key.as_deref() != Some(unlock_key)
+                || intent.grant_revision.as_deref() != Some("1")
+            {
+                return None;
+            }
+            let _slot = owner.revision_sequencer.acquire(binding.character_id).await;
+            let fence = gameplay_fence(owner, admitted).await?;
+            owner.root.grant_store_hunting_offer(owner.character, owner.holder, fence,
+                StoreHuntingDelivery {
+                    operation_id,
+                    purchase_request_id: *binding.purchase_request_id.as_bytes(),
+                    identity: DeliveryIdentity {
+                        account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone(),
+                    },
+                    offer_key: unlock_key.clone(),
+                },
+            ).await.ok()?
         } else if let Some(blessing_key) = catalogue::blessing_storage_key(unlock_key) {
             let fence = gameplay_fence(owner, admitted).await?;
             owner.root.grant_store_blessing(

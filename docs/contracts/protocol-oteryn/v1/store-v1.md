@@ -56,6 +56,15 @@ retries retain their native attempt, and an already committed operation returns 
 Store receipt before preparing any more native work. Ordinary item deliveries also use a native
 attempt ID per command and preserve the original Platform operation across retries.
 
+Store XP Boost quotes show the next purchasable tier for the admitted character. The
+Platform catalogue holds five fixed-price keys, at 30, 45, 90, 180 and 360 Tibia Coins,
+and Game selects the tier under the latest committed world server save. Game reserves
+the tier before requesting a debit. An active boost blocks another purchase. Prey slot
+and wildcard effects also reserve before debit. The accepted delivery, effect and
+outbox commit together, and retry uses the original quote and operation. In [XP Boost](https://tibia.fandom.com/wiki/XP_Boost),
+“Between two server saves, every character can purchase up to five XP Boosts” and
+“the price for the XP Boost increases with every purchase.”
+
 ## StorePurchaseResultV1
 
 Command 185 has exactly six results: `ACCEPTED`, `STALE_QUOTE`, `OFFER_UNAVAILABLE`, `PURCHASE_DISABLED`, `INSUFFICIENT_BALANCE`, and `ACCOUNT_RESTRICTED`. Only `ACCEPTED` carries required Platform order and operation UUIDv7 values.

@@ -164,6 +164,7 @@ impl RuntimeCatalogue {
             }
             let unlock_key = if !is_item && hireling.is_none() {
                 if !matches!(grant, PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK)
+                    && !(key == grant && super::hunting_offers::is_offer(key))
                     && !crate::content::store_cosmetics::offer(key)
                         .is_some_and(|offer| offer.unlock_key == grant)
                 {
@@ -262,6 +263,18 @@ impl RuntimeCatalogue {
                                 .is_some_and(|suffix| {
                                     offer.key.strip_prefix(BLESSING_OFFER_PREFIX) == Some(suffix)
                                 }) =>
+                    {
+                        (
+                            rules::OfferKind::Service,
+                            rules::DeliveryKind::Unlock {
+                                unlock_key: unlock_key.clone(),
+                            },
+                            rules::Eligibility::default(),
+                        )
+                    }
+                    (None, Some(unlock_key))
+                        if unlock_key == &offer.key
+                            && super::hunting_offers::is_offer(unlock_key) =>
                     {
                         (
                             rules::OfferKind::Service,

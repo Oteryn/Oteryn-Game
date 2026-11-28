@@ -28,6 +28,7 @@ CANARY_COMMIT = "52550d5e"
 SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
 CATEGORY = "consumables.exercise-weapons"
 PREY_EXPANSION = ROOT / "rulesets/economy/store/prey-list-expansion.json"
+HUNTING_OFFERS = STORE / "hunting-offers.json"
 BLESSINGS = ROOT / "rulesets/character/blessings/catalogue.json"
 CRYSTAL_CHARGED = Path(__file__).with_name("crystal-charged-offers.json")
 CONVERTER_VARIANTS = {"25719", "28526"}
@@ -78,6 +79,13 @@ def with_expansion(catalogue: dict) -> dict:
     offers.append(offer)
     offers.sort(key=lambda row: row["key"])
     return catalogue | {"offers": offers}
+
+
+def with_hunting_offers(catalogue: dict) -> dict:
+    authored = json.loads(HUNTING_OFFERS.read_bytes())
+    keys = {row["key"] for row in authored}
+    offers = [row for row in catalogue["offers"] if row["key"] not in keys]
+    return catalogue | {"offers": sorted(offers + authored, key=lambda row: row["key"])}
 
 
 def crystal_converter_ids(extract: dict) -> set[str]:
@@ -257,7 +265,7 @@ def build(lua: str) -> dict:
                 "source_line": offer["line"],
             }
         )
-    return with_expansion(catalogue)
+    return with_hunting_offers(with_expansion(catalogue))
 
 
 def platform_catalogue(catalogue: dict, platform_base: dict | None = None) -> bytes:
@@ -367,6 +375,9 @@ def check(platform_base: dict | None = None) -> list[str]:
     expected = with_expansion(catalogue)
     if catalogue != expected:
         errors.append("Prey expansion offer needs regeneration")
+    if catalogue != with_hunting_offers(catalogue):
+        errors.append("Store hunting offers need regeneration")
+    hunting_keys = {row["key"] for row in json.loads(HUNTING_OFFERS.read_bytes())}
     if catalogue != with_crystal_charged(catalogue, items):
         errors.append("Crystal charged offers need regeneration")
     extract = json.loads(CRYSTAL_CHARGED.read_bytes())
@@ -386,7 +397,7 @@ def check(platform_base: dict | None = None) -> list[str]:
     for offer in catalogue["offers"]:
         if offer.get("unlock_key") == "prey-list-expansion":
             continue
-        if offer.get("unlock_key") == "charm-expansion":
+        if offer.get("unlock_key") == "charm-expansion" or offer["key"] in hunting_keys:
             if offer.get("item") is not None:
                 errors.append(f"{offer['key']}: entitlement cannot deliver an item")
         else:
@@ -424,7 +435,7 @@ def main() -> int:
         OUT.write_text(json.dumps(build(lua), indent=2) + "\n", encoding="utf-8")
     if args.refresh_owner_offers:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
-        catalogue = with_crystal_charged(with_expansion(catalogue), admitted_items())
+        catalogue = with_crystal_charged(with_hunting_offers(with_expansion(catalogue)), admitted_items())
         OUT.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
     platform_base = (
         json.loads(args.platform_base.read_bytes()) if args.platform_base else None

@@ -32,7 +32,7 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
     }
     offers
 }
-struct Premium<'a>(Option<&'a super::spell_premium_coordinator::SpellPremiumCoordinator>);
+pub(super) struct Premium<'a>(pub(super) Option<&'a super::spell_premium_coordinator::SpellPremiumCoordinator>);
 impl WheelPremiumGate for Premium<'_> {
     async fn allocation_permitted(
         &self,

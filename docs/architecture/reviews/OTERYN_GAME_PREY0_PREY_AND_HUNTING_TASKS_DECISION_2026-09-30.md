@@ -190,13 +190,17 @@ admitted as value sources only by the owner?
   A13; `PARITY_PENDING` for Dawnport specifics). Else `NOT_ELIGIBLE`.
 - Slot 1: every eligible character. Slot 2: Premium current at use, or `PREY_SLOT_PERMANENT
   {slot 2}` of the character's Account on its World; until PREM-1 is live, open to all (ruling
-  R2). Slot 3: `PREY_SLOT_PERMANENT {slot 3}` of the Account on that World only (Y2).
-- **Permanent slot claim (architect ruling, Global order):** a `PreyStoreClaim` for a permanent
-  slot binds its target slot in the claim and the receipt: the lowest of slots 2 and 3 that has no
-  `PREY_SLOT_PERMANENT` fact for the Account on the claiming character's World, chosen at claim
-  time under the Account row lock (§10) and stored. A claim when both facts exist is
-  refused `ALREADY_UNLOCKED` and writes nothing; the delivery stays unclaimed for Platform's refund
-  path (gap register §32). A replay returns the stored target.
+  R2). Slot 3: a purchased character entitlement or a legacy `PREY_SLOT_PERMANENT {slot 3}` of the Account on that World (Y2). A purchased slot 2 also satisfies the slot 2 entitlement check.
+- **Permanent Store slot:** for 900 Tibia Coins, the purchase reserves its target under the
+  Account row lock before debit. A Premium character can buy slot 3. A Free character can buy
+  the lowest unowned slot of 2 and 3. Legacy Account-wide facts still count as owned. A replay
+  returns the stored target. [Prey System](https://tibia.fandom.com/wiki/Prey_System) says
+  “The third slot is a Permanent Prey Slot and can be bought in the Store” and “Free account
+  players can buy two permanent prey slots.”
+- **Store wildcards:** the same Account-and-World wildcard ledger accepts Store packs of one
+  or five. The purchase reserves capacity up to a balance of 50, as [Prey Wildcard](https://tibia.fandom.com/wiki/Prey_Wildcard)
+  specifies: “You can buy Prey Wildcards in the Store up to a maximum of 50.”
+  Outstanding Store reservations count toward the existing Daily Reward cap.
 - A slot that loses its unlock (Premium lapses) keeps its durable row, applies no bonus, spends no
   time and refuses commands with `SLOT_LOCKED` until the unlock returns (`PARITY_PENDING`).
 
@@ -545,8 +549,9 @@ kept); b) as a), plus a free Game ration of wildcards (for example 5 a week) unt
 exists: a new value source; c) wildcards as an account balance shared by the account's characters.
 Owner answer (2026-10-01, D251): 14c (Account-wide) — Prey Wildcards, the permanent Prey slot and
 the Weekly Task Expansion form an Account-wide balance shared by all the Account's characters (on
-each World, §4.2). Until the Store delivery contract exists they have no production source. This is
-a declared difference from Tibia, where all three are per-character Store products (Prey Wildcard,
+each World, §4.2). The 2026-11-28 Store purchase amendment in §5.1 changes the permanent slot
+to character scope for new purchases. The other Account-wide holdings are
+a declared difference from Tibia, where these are per-character Store products (Prey Wildcard,
 at most 52 owned; "Unlock additional character prey slot"; "+3 Kill Tasks and +3 Delivery Tasks for
 character": `docs/reference/tibia-manual/products.md` §Useful Things, capture 2026-09-28).
 

@@ -54,10 +54,17 @@ pub(super) async fn execute(
     if admitted.continuity.selected_capabilities.contains(250) {
         catalogues.push(HIRELING_CATALOGUE.as_ref()?);
     }
+    let tier = if !recent && matches!(q.category.as_str(), "featured" | "boosts") {
+        hunting_offers::current_tier(owner, admitted).await
+    } else {
+        None
+    };
     let mut products = Vec::new();
     for catalogue in catalogues {
         for offer in catalogue.entries() {
-            if recent && !recently_added(catalogue.preview(&offer.key)) {
+            if !hunting_offers::visible(&offer.key, tier)
+                || (recent && !recently_added(catalogue.preview(&offer.key)))
+            {
                 continue;
             }
             let Some(artwork) = native.and_then(|native| artwork(native, catalogue, offer)) else {

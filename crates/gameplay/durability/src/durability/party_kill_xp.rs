@@ -303,6 +303,8 @@ pub async fn commit_in_transaction<const N: usize>(
             input.died_at_unix_ms,
         )
         .await?;
+    let hunt_at_ms = i64::try_from(input.died_at_unix_ms)
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
@@ -368,12 +370,9 @@ pub async fn commit_in_transaction<const N: usize>(
                 ForgeDustOutcome::AlreadyWritten(_) => bounty_dust_key = None,
             }
         }
-        let mut modifiers =
-            hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
-                .await?;
-        if let Some(live) = member.live_stamina {
-            modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
-        }
+        let modifiers = hunting_xp::read_in_transaction(
+            tx, &member.fence, &input.creature, member.premium, member.live_stamina, hunt_at_ms,
+        ).await?;
         let raw = member.request.amount.get();
         // Crystal world_bonus.lua:5-9 rounds the bonus on the incoming share.
         // Player::addExperience invokes this callback before the hunting modifiers.
@@ -417,12 +416,13 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
-        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,bounty_dust_key) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15)")
+        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,bounty_dust_key,store_hunt_at_ms,store_hunt_session) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,encode($17,'hex')::uuid)")
             .bind(input.death_key.as_slice()).bind(member.fence.character_id.as_bytes().as_slice())
             .bind(xp.as_ref().map(|_|request.occurrence.as_bytes().as_slice()))
             .bind(member.shared).bind(member.party_id.as_ref().map(|id|id.as_slice())).bind(member.party_revision.map(|r|r.to_string()))
             .bind(raw).bind(modifiers.prey_slot).bind(modifiers.prey_epoch).bind(modifiers.prey_grade)
             .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent).bind(bounty_dust_key.as_ref().map(|key| key.as_slice()))
+            .bind(hunt_at_ms).bind(member.fence.game_session_id.as_bytes().as_slice())
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
             raw: input.base_xp,

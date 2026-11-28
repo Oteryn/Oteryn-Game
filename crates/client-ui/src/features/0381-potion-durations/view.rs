@@ -23,7 +23,11 @@ pub fn panel_text_at(panel: &PotionDurationsPanel, now: Instant) -> String {
     }
     let mut shown = 0;
     for entry in &snapshot.active {
-        let remaining = entry.remaining_ms.saturating_sub(elapsed_ms);
+        let remaining = if entry.source == 3 {
+            entry.remaining_ms
+        } else {
+            entry.remaining_ms.saturating_sub(elapsed_ms)
+        };
         if remaining == 0 {
             continue;
         }

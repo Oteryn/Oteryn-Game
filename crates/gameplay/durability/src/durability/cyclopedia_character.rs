@@ -70,7 +70,7 @@ const APPEARANCES_SQL: &str = "SELECT (SELECT count(*) FROM game_account_appeara
 
 const STORE_SUMMARY_SQL: &str = "WITH me AS (SELECT account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) SELECT \
  ARRAY(SELECT blessing_key FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY blessing_key) AS blessings, \
- (SELECT count(*) FROM game_account_prey_unlocks u JOIN me ON me.account_id=u.account_id AND me.world_id=u.world_id) AS prey_slots, \
+ (SELECT count(*) FROM game_character_permanent_prey_slots WHERE character_id=encode($1,'hex')::uuid) AS prey_slots, \
  COALESCE((SELECT w.balance FROM game_account_prey_wildcards w JOIN me ON me.account_id=w.account_id AND me.world_id=w.world_id),0)::bigint AS wildcards, \
  (SELECT count(*) FROM game_house_hirelings WHERE owner_character_id=encode($1,'hex')::uuid) AS hirelings";
 

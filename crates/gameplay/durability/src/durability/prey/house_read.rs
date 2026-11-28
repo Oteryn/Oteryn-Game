@@ -42,15 +42,8 @@ impl DurabilityRoot {
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::text::uuid FOR UPDATE")
                 .bind(&account).fetch_one(&mut **tx).await?;
             let world = fence.runtime_scope.world_id();
-            let mut permanent = [false; 3];
-            for target in sqlx::query_scalar::<_, i16>(
-                "SELECT u.target FROM game_account_prey_unlocks u JOIN game_character_roots r ON r.character_id=u.claiming_character_id WHERE u.account_id=$1::text::uuid AND u.world_id=encode($2,'hex')::uuid AND u.account_id=r.account_id AND u.world_id=r.world_id AND u.unlock_kind='PREY_SLOT_PERMANENT' ORDER BY u.target LIMIT 2",
-            ).bind(&account).bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await? {
-                let index = usize::try_from(target).ok().and_then(|value| value.checked_sub(1))
-                    .filter(|value| *value < permanent.len()).ok_or(DurabilityError::InvalidStoredState)?;
-                permanent[index] = true;
-            }
             let character = fence.character_id.as_bytes();
+            let permanent = super::storage::permanent_slots(&mut tx, character).await?;
             let vocation: Option<String> = sqlx::query_scalar(
                 "SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid",
             ).bind(character.as_slice()).fetch_optional(&mut **tx).await?;

@@ -95,9 +95,7 @@ impl DurabilityRoot {
                 sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-delivery:'||encode($1,'hex'),0))")
                     .bind(d.operation_id.as_slice()).execute(&mut **tx).await?;
             }
-            let mut permanent = [false; 3];
-            for target in sqlx::query_scalar::<_, i16>("SELECT u.target FROM game_account_prey_unlocks u JOIN game_character_roots r ON r.character_id=u.claiming_character_id WHERE u.account_id=$1::text::uuid AND u.world_id=encode($2,'hex')::uuid AND u.account_id=r.account_id AND u.world_id=r.world_id AND u.unlock_kind='PREY_SLOT_PERMANENT' ORDER BY u.target LIMIT 2")
-                .bind(&account).bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await? { permanent[target as usize - 1] = true; }
+            let permanent = super::storage::permanent_slots(&mut tx, character).await?;
             let readonly = matches!(&mutation, PreyMutation::Command(Request::Query | Request::OfferedToday { .. }));
             if !readonly && let Some(row) = sqlx::query("SELECT request_sha256,result FROM game_character_prey_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence=encode($2,'hex')::uuid")
                 .bind(character.as_slice()).bind(occurrence.as_slice()).fetch_optional(&mut **tx).await? {

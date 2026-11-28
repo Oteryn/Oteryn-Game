@@ -9,6 +9,7 @@ mod hireling_capacity;
 mod hireling_delivery;
 mod hireling_model;
 mod hireling_reservation;
+mod hunting_offers;
 mod outbox;
 pub use outbox::StoreClaimSource;
 pub(in crate::durability) use outbox::claim_source_in_transaction;
@@ -26,6 +27,7 @@ pub use hireling_model::{
     HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase,
     canonical_hireling_name,
 };
+pub use hunting_offers::{StoreHuntingDelivery, StoreHuntingOffer, StoreHuntingPurchase};
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};

@@ -24,6 +24,8 @@ pub(super) async fn read_in_transaction(
     fence: &CurrentCharacterGameplayFence,
     creature: &str,
     premium: bool,
+    live_stamina: Option<u16>,
+    died_at_unix_ms: i64,
 ) -> Result<HuntingXpModifiers, DurabilityError> {
     let stamina: Option<i32> = sqlx::query_scalar(
         "SELECT stamina_minutes FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -33,6 +35,8 @@ pub(super) async fn read_in_transaction(
     let level: Option<i64> = sqlx::query_scalar(
         "SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let stamina = stamina.unwrap_or(2520);
+    let stamina = live_stamina.map_or(stamina, |live| stamina.min(i32::from(live)));
     // OFFLINE-0 §3 defines this absent-build-row seed. Reading it never creates a build
     // row or invents a hunting tick; build/stamina writers own that lifecycle.
     let mut result = HuntingXpModifiers {
@@ -44,10 +48,11 @@ pub(super) async fn read_in_transaction(
             tx,
             fence.character_id.as_bytes().as_slice(),
             fence.runtime_scope.world_id().as_bytes().as_slice(),
+            Some((died_at_unix_ms, stamina)),
         )
         .await?
         .percent(),
-        stamina_minutes: stamina.unwrap_or(2520),
+        stamina_minutes: stamina,
         level: level
             .map(u32::try_from)
             .transpose()
@@ -57,11 +62,10 @@ pub(super) async fn read_in_transaction(
     let rows = sqlx::query(
         "SELECT p.slot,p.slot_epoch,p.grade,p.bonus_type,p.bonus_percent,p.state,\
          p.creature_key,p.creature_list,p.option,p.free_reroll_at,p.hunting_s_left FROM game_character_prey_slots p \
-         JOIN game_character_roots r USING(character_id) \
          WHERE p.character_id=encode($1,'hex')::uuid AND p.creature_key=$2 \
          AND p.state='ACTIVE' AND p.bonus_type='XP' AND p.hunting_s_left>0 \
-         AND (p.slot=1 OR (p.slot=2 AND $3) OR EXISTS(SELECT 1 FROM game_account_prey_unlocks u JOIN game_character_roots claim ON claim.character_id=u.claiming_character_id \
-         WHERE claim.account_id=u.account_id AND claim.world_id=u.world_id AND u.account_id=r.account_id AND u.world_id=r.world_id AND u.unlock_kind='PREY_SLOT_PERMANENT' AND u.target=p.slot)) \
+         AND (p.slot=1 OR (p.slot=2 AND $3) OR EXISTS(SELECT 1 FROM game_character_permanent_prey_slots u \
+         WHERE u.character_id=p.character_id AND u.target=p.slot)) \
          ORDER BY p.slot LIMIT 3",
     )
     .bind(fence.character_id.as_bytes().as_slice())
@@ -83,12 +87,13 @@ pub(super) async fn read_in_transaction(
 }
 
 /// Winter Update 2026 (thread 565): the Daily Reward and Store XP boosts are separate
-/// lines whose percentages add; only the newest Daily Reward grant counts. Both lines run
-/// on the daily effect clock. Reads at most two daily grants and eight Store grants.
+/// lines whose percentages add. Daily and legacy Store grants use the effect clock.
+/// Purchased Store boosts use the remaining hunting time from committed kill awards.
 pub(super) async fn xp_boost_lines(
     connection: &mut PgConnection,
     character: &[u8],
     world: &[u8],
+    hunt: Option<(i64, i32)>,
 ) -> Result<XpBoostLines, DurabilityError> {
     let rows = sqlx::query(
         "WITH instant AS MATERIALIZED (SELECT public.game_daily_effect_now() AS at) \
@@ -108,11 +113,19 @@ pub(super) async fn xp_boost_lines(
             FROM public.game_character_store_xp_boosts s,instant \
             WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid \
               AND s.starts_at<=instant.at AND s.expires_at>instant.at \
-            ORDER BY s.expires_at DESC LIMIT 8)) lines \
+            ORDER BY s.expires_at DESC LIMIT 8) \
+           UNION ALL \
+           SELECT 3,0::bigint,50::smallint,0::bigint,b.remaining_ms \
+           FROM public.game_character_store_hunting_boosts b \
+           WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid \
+             AND b.remaining_ms>0 AND ($3::bigint IS NULL OR b.started_at_ms<=$3) \
+             AND ($4::integer IS NULL OR $4>=840)) lines \
          ORDER BY source,rank",
     )
     .bind(character)
     .bind(world)
+    .bind(hunt.map(|(at, _)| at))
+    .bind(hunt.map(|(_, stamina)| stamina))
     .fetch_all(connection)
     .await?;
     let (mut daily, mut store) = (Vec::with_capacity(2), Vec::with_capacity(8));
