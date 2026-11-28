@@ -572,7 +572,9 @@ fn tick_inner(
         return rejected();
     }
     let mut staged = state.clone();
-    super::food_regeneration::step_due(&mut staged, now, facts.in_protection_zone);
+    // Regeneration schedules its next credit from the sampled millisecond.
+    let regeneration_now = now - now % 1_000;
+    super::food_regeneration::step_due(&mut staged, regeneration_now, facts.in_protection_zone);
     let mut combat = Vec::new();
     let ticks = staged
         .conditions

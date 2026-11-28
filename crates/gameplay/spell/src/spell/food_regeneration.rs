@@ -526,6 +526,46 @@ mod tests {
     }
 
     #[test]
+    fn periodic_owner_credits_regeneration_when_the_submillisecond_phase_moves_earlier() {
+        use super::super::actor_conditions::stage_source_owner_cycle;
+        use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+
+        for in_protection_zone in [false, true] {
+            let mut state = actor(Vocation::Knight);
+            state.set_resting_streak(3);
+            eat_food(&mut state, 30, 0).expect("eat");
+            state.install_equipped_regeneration(vec![(
+                8,
+                EquipmentRegeneration {
+                    health_gain: 6,
+                    health_ticks_ms: 2_000,
+                    mana_gain: 24,
+                    mana_ticks_ms: 2_000,
+                },
+            )]);
+            let facts = Some(TickFacts {
+                in_protection_zone,
+                standing_on_field: None,
+            });
+            for now in [1_000_800, 2_000_200] {
+                state = stage_source_owner_cycle(
+                    &state,
+                    SemanticTimeMicros::from_micros(now),
+                    facts,
+                    None,
+                )
+                .expect("periodic owner cycle")
+                .expect("periodic owner successor")
+                .next;
+            }
+
+            assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 2_000));
+            assert_eq!((state.health, state.mana), (106, 124));
+        }
+    }
+
+    #[test]
     fn source_condition_clock_is_idempotent_at_the_same_now() {
         use oteryn_simulation_determinism::SemanticTimeMicros;
 
