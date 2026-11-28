@@ -731,9 +731,17 @@ psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
+-- Provision the relay login as specified by migration 0122. Table grants are inherited.
+GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
+    log_statement, log_min_duration_statement TO nb_runtime;
 SQL
 secret_to() { # owner source destination
   install_owned "$1" -m 0600 "$2" "$3"
+}
+stage_chat_relay_key_ring() { # node secrets directory
+  # One immediately active, disposable key per World. Keep its bytes off the command line.
+  { printf '1 0 '; openssl rand -base64 32; } |
+    secret_to "$SERVICE_UID" /dev/stdin "$1/chat-relay.keys"
 }
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -746,6 +754,7 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
+stage_chat_relay_key_ring "$BASE/node/secrets"
 
 cat > "$WORK/ops.toml" <<TOML
 [operator]
@@ -891,7 +900,9 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NODE_NPC_ARGS[@]}"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" \
+      OTERYN_CHAT_RELAY_KEYS_FILE="${2%/*}/secrets/chat-relay.keys" "$BASE/bin/oteryn-game-server" \
+      serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1143,6 +1154,58 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+# Give the journey runner the same parsed range used by the fixture and verifier.
+node_boot_row_selection() { # batch|w19a|required
+  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
+import os
+import re
+import struct
+import sys
+
+def env_text(value, default):
+    try:
+        return os.fsencode(value).decode("utf-8")
+    except UnicodeDecodeError:
+        # Rust env::var treats non-Unicode values as unset at this caller.
+        return default
+
+mode, raw_batch, raw_groups = sys.argv[1:]
+batch = env_text(raw_batch, "0:15")
+usize_max = (1 << (8 * struct.calcsize("P"))) - 1
+if batch == "all":
+    start, length = 0, usize_max
+else:
+    # Match Rust's unsigned decimal parser, including one optional leading +.
+    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+    if not match:
+        sys.exit(0)
+    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
+    if any(len(part) > len(str(usize_max)) for part in digits):
+        sys.exit(0)
+    start, length = map(int, digits)
+    if max(start, length) > usize_max:
+        sys.exit(0)
+
+if mode == "batch":
+    print(batch if batch == "all" else f"{start}:{length}")
+else:
+    groups = env_text(raw_groups, "").strip()
+    if not groups or "rows" in (group.strip() for group in groups.split(",")):
+        # Indices passed to e2e_row_selected in the Rust journeys.
+        rows = [(12, "W19a.full"), (216, "W19a.client")]
+        if mode == "required":
+            rows.append((42, "S04c.full"))
+        for index, row in rows:
+            if index >= start and index - start < length:
+                print(row)
+PY_ROW_SELECTION
+}
+
+w19a_rows() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
+  node_boot_row_selection w19a
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1188,6 +1251,18 @@ stage() { # name prerequisite... -- function
       # Keep the failing incarnation before later probes truncate the live log.
       [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]]; then
+      local row expected required_rows
+      required_rows="$(node_boot_row_selection required)"
+      for row in $required_rows; do
+        # S04c.full must open World successfully through the live CHAT command.
+        case "$row" in W19a.client) expected=CAPTURED ;; *) expected=PASS ;; esac
+        if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
+          STATUS[$name]="FAIL(rows)"
+          echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
+        fi
+      done
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
@@ -1703,6 +1778,8 @@ pvp_world_ready() {
   install_owned root:root -d -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
   install_owned root:root -d -m 0700 "$PVP_BASE/ops"
   install_owned "$SERVICE_UID" -d -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
+  install_owned "$SERVICE_UID" -d -m 0700 "$PVP_BASE/node/secrets"
+  stage_chat_relay_key_ring "$PVP_BASE/node/secrets"
   sed -e "s|^state_directory = .*|state_directory = \"$PVP_BASE/state\"|" \
     -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
     -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
