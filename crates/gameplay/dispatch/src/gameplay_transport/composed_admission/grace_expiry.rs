@@ -291,7 +291,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
-            if !self.save_conditions_at_actor_end(actor, session).await {
+            if !matches!(
+                self.save_conditions_at_actor_end(actor, session).await,
+                Ok(true)
+            ) {
                 pending("condition_save");
                 deferred(DeferReason::ConditionsSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;

@@ -431,6 +431,22 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT
+                if decode_logout_intent(command.payload).is_ok() =>
+            {
+                Dispatch::Logout(oteryn_protocol_oteryn::logout::LogoutResult::Busy)
+            }
+            oteryn_protocol_oteryn::forge_preview::COMMAND_TYPE_FORGE_PREVIEW => {
+                match oteryn_protocol_oteryn::forge_preview::Request::decode(command.payload) {
+                    Some(request) => {
+                        let payload =
+                            crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
+                                .ok_or(ServeEnd::Disconnected)?;
+                        Dispatch::Reply(crate::foundation::CommandStatus::Rejected, payload)
+                    }
+                    None => Dispatch::Unregistered,
+                }
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?

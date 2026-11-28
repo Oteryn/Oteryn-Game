@@ -1190,7 +1190,8 @@ impl FenceHolders {
     /// it over instead of counting the same release again. A hold another lifecycle of the
     /// session kept stays beside it, each counted once.
     fn keep(&self, hold: FenceHold) {
-        if hold.held {
+        let counts = self.counts();
+        if hold.held && counts.contains_key(&(hold.session, hold.token)) {
             self.kept().entry(hold.session).or_default().push(hold);
         }
     }
@@ -1228,8 +1229,6 @@ impl FenceHolders {
 
 /// One attempt of a terminal release.
 enum ReleaseAttempt {
-    /// A step before the durable transaction had no outcome; nothing was sent.
-    Retry(&'static str),
     /// The transaction's outcome, or its settle, is unknown: the fence and the kill mark stay.
     Unknown,
     /// The release settled.
