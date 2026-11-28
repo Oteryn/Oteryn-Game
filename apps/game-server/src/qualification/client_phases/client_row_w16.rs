@@ -35,33 +35,22 @@ async fn talk(
         text: text.into(),
     })
     .map_err(|error| format!("step={text} encode: {error:?}"))?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let reply = loop {
-        let reply = client
-            .session_mut()
-            .gated_command(
-                wire::CAPABILITY_NPC_SERVICE_V1,
-                wire::COMMAND_TYPE_NPC_TALK_INTENT,
-                &payload,
-            )
-            .await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("step={text} command status {:?}", reply.status).into());
-        }
-        let disposition = wire::decode_npc_intent_result(&reply.payload)
-            .map_err(|error| format!("step={text} result: {error:?}"))?;
-        if disposition == wire::NpcIntentDisposition::RateLimited
-            && tokio::time::Instant::now() < deadline
-        {
-            client.service_liveness(Duration::from_millis(50)).await?;
-            client.take_events();
-            continue;
-        }
-        if disposition != wire::NpcIntentDisposition::Ok {
-            return Err(format!("step={text} observed {disposition:?}").into());
-        }
-        break reply;
-    };
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step={text} command status {:?}", reply.status).into());
+    }
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("step={text} result: {error:?}"))?;
+    if disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!("step={text} observed {disposition:?}").into());
+    }
     let delta = loop {
         let delta = client
             .session_mut()
@@ -111,9 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     };
     let mut client = connect_world(clients, 0x89).await?;
     let walk = client.session_mut().target_walk(target).await?;
-    if walk.status != CommandStatus::Accepted {
-        return Err(format!("step=target-walk status={:?}", walk.status).into());
-    }
+    super::full_row_w16::require_target_walk(NPC, walk.status, &walk.payload)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
         let at = client.world_spatial().actor_position;

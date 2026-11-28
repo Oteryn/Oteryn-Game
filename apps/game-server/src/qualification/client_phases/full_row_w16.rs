@@ -73,16 +73,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
     let before = client.world_spatial().actor_position;
     let start = tile(before)?;
-    let direction = [StepDirection::East, StepDirection::North, StepDirection::West, StepDirection::South]
-        .into_iter()
-        .find(|direction| destination(world, start, *direction).is_some())
-        .ok_or("step=initial-step observed=no-compiled-landing")?;
-    let step = client.step_retrying(direction).await?;
+    let expected = destination(world, start, StepDirection::East)
+        .ok_or("step=initial-step observed=no-compiled-east-landing")?;
+    let step = client.step(StepDirection::East).await?;
     if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() {
         return Err(format!("step=initial-step observed={step:?}").into());
     }
-    if client.world_spatial().actor_position == before {
-        return Err("step=initial-step observed=accepted-without-position-delta".into());
+    let after = tile(client.world_spatial().actor_position)?;
+    if after != expected || after == start {
+        return Err(format!("step=initial-step expected={expected:?} observed={after:?}").into());
     }
 
     let mut reached = [0usize; 2];
@@ -101,13 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 floor: -i16::from(placement.floor),
             };
             let reply = client.session_mut().target_walk(target).await?;
-            if reply.status != CommandStatus::Accepted {
-                return Err(format!(
-                    "step=target-walk-{key} observed=status-{:?}-payload-{:?}",
-                    reply.status, reply.payload
-                )
-                .into());
-            }
+            require_target_walk(key, reply.status, &reply.payload)?;
             wait_for_destination(&mut client, target, key).await?;
             reached[index] += 1;
             talk(&mut client, key, target).await?;
@@ -166,6 +159,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=final-logout observed=refused".into());
     }
     Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
+}
+
+pub(super) fn require_target_walk(
+    key: &str,
+    status: CommandStatus,
+    payload: &[u8],
+) -> TestResult {
+    // TARGET-MOVE-1 uses an Accepted envelope for both Queued and NoRoute.
+    let disposition = match (status, payload) {
+        (CommandStatus::Accepted, [8, 1]) => return Ok(()),
+        (CommandStatus::Accepted, [8, 2]) => "no-route",
+        (CommandStatus::Rejected, [8, 3]) => "refused",
+        _ => "unexpected-reply",
+    };
+    Err(format!("step=target-walk-{key} observed={disposition} status={status:?} payload={payload:?}").into())
 }
 
 async fn wait_for_destination(
@@ -262,6 +270,21 @@ fn evidence_token(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn target_walk_requires_queued_wire_disposition() {
+        use super::{CommandStatus, require_target_walk};
+        assert!(require_target_walk("npc", CommandStatus::Accepted, &[8, 1]).is_ok());
+        for (status, payload, expected) in [
+            (CommandStatus::Accepted, [8, 2], "no-route"),
+            (CommandStatus::Rejected, [8, 3], "refused"),
+            (CommandStatus::Rejected, [8, 1], "unexpected-reply"),
+            (CommandStatus::Accepted, [8, 9], "unexpected-reply"),
+        ] {
+            assert!(require_target_walk("npc", status, &payload)
+                .is_err_and(|error| error.to_string().contains(expected)));
+        }
+    }
+
     #[test]
     fn review_regression_population_plan_excludes_encounter_bosses() {
         assert_eq!(super::SUMMER_ACTORS.len(), 6);
