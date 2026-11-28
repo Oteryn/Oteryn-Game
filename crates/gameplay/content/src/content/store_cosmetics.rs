@@ -154,6 +154,7 @@ mod tests {
             ("blade-dancer", 1745, 1746, 750),
             ("breezy-garb", 1245, 1246, 600),
             ("celestial-avenger", 1725, 1726, 870),
+            ("ceremonial-garb", 695, 694, 750),
             ("darklight-evoker", 1675, 1676, 1500),
             ("doom-knight", 1713, 1714, 600),
             ("dragon-knight", 1444, 1445, 870),
@@ -222,22 +223,40 @@ mod tests {
                 assert_eq!(owned.addon(&outfit_key, addon), UnlockFact::Compatible);
             }
         }
+        for (slug, male, female) in [
+            ("retro-citizen", 974, 975),
+            ("retro-hunter", 972, 973),
+            ("retro-knight", 970, 971),
+            ("retro-mage", 968, 969),
+        ] {
+            let offer_key = format!("store:outfit:{slug}");
+            let outfit_key = format!("oteryn:outfit.{}", slug.replace('-', "_"));
+            let offer = offer(&offer_key).ok_or_else(|| format!("missing {offer_key}"))?;
+            assert_eq!(
+                (offer.unlock_key.as_str(), offer.price),
+                (outfit_key.as_str(), 870)
+            );
+            assert_eq!(cosmetics.look_type(&outfit_key, Sex::Male), Some(male));
+            assert_eq!(cosmetics.look_type(&outfit_key, Sex::Female), Some(female));
+            assert_eq!(cosmetics.outfit_addon_count(&outfit_key), Some(0));
+            assert!(compatible(&cosmetics, offer));
+        }
         let offers = offers().ok_or("catalogue")?;
         assert_eq!(
             offers
                 .iter()
                 .filter(|offer| offer.category == "cosmetics.outfits")
                 .count(),
-            expected.len() + 3
+            expected.len() + 7
         );
         assert_eq!(
             offers
                 .iter()
                 .filter(|offer| offer.category == "cosmetics.mounts")
                 .count(),
-            16
+            19
         );
-        assert_eq!(offers.len(), expected.len() + 3 + 16);
+        assert_eq!(offers.len(), expected.len() + 7 + 19);
         Ok(())
     }
 
