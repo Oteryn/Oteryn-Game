@@ -6,15 +6,16 @@ use super::serve::{PROCESS, emit};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
-    CalendarRaidScheduleCandidate, LuaRaidScheduleCandidate, RaidScheduleCandidate,
-    RaidSchedulerCheck,
+    CalendarRaidScheduleCandidate, CalendarRaidTiming, LuaRaidScheduleCandidate,
+    RaidScheduleCandidate, RaidSchedulerCheck, RaidSchedulerOutcome,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{ChannelId, ChannelRuntimeV1, ScopeOwnershipGeneration, WorldId};
 use oteryn_error_codes::{FieldValue, Level, Line};
 use oteryn_foundation::CancellationToken;
 use oteryn_gameplay_encounter_rules::raid::{
-    CHECK_INTERVAL_MS, CatalogueRaid, CatalogueSchedule, LuaRaidPolicy, RaidCatalogue, RaidError,
+    CHECK_INTERVAL_MS, CatalogueCalendarAnchor, CatalogueRaid, CatalogueSchedule, LuaRaidPolicy,
+    RaidCatalogue, RaidError,
 };
 use sha2::{Digest, Sha256};
 use std::time::Duration;
@@ -34,6 +35,29 @@ pub(super) struct RaidScheduler<'a, 'f, 's> {
     pub bundle_digest: Option<[u8; 32]>,
     pub active_layers_epoch: Option<u64>,
     pub active_layers: Vec<String>,
+}
+
+impl RaidScheduler<'_, '_, '_> {
+    fn tick(
+        &self,
+        generation: ScopeOwnershipGeneration,
+        now_ms: i64,
+        bundle_digest: [u8; 32],
+    ) -> RaidScheduleTick {
+        RaidScheduleTick {
+            world: self.world,
+            channel: self.channel,
+            generation,
+            reset_epoch: self.reset_epoch,
+            now_ms,
+            bundle_digest,
+        }
+    }
+
+    fn current_layers(&self) -> Option<&[String]> {
+        (self.active_layers_epoch == Some(self.reset_epoch))
+            .then_some(self.active_layers.as_slice())
+    }
 }
 
 /// Read only the actual composed movement map, never exit-only compatibility choices.
@@ -92,18 +116,16 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
 
 fn candidates(
     catalogue: &RaidCatalogue,
-    scheduler: &RaidScheduler<'_, '_, '_>,
-    now_ms: i64,
-    bundle: [u8; 32],
+    tick: &RaidScheduleTick,
+    active_layers: Option<&[String]>,
 ) -> Result<Vec<RaidScheduleCandidate>, RaidError> {
     let mut records = catalogue.active().collect::<Vec<_>>();
     records.sort_by_key(|raid| source_order(raid));
     records
         .into_iter()
         .map(|raid| {
-            let firing_id =
-                firing_identity(scheduler.world, &raid.key, scheduler.reset_epoch, now_ms)?;
-            let selected = raid.select(bundle, firing_id)?;
+            let firing_id = firing_identity(tick.world, &raid.key, tick.reset_epoch, tick.now_ms)?;
+            let selected = raid.select(tick.bundle_digest, firing_id)?;
             let mut candidate = RaidScheduleCandidate {
                 key: raid.production_key()?,
                 definition: selected.definition,
@@ -114,8 +136,7 @@ fn candidates(
                     if required.key == "grimvale" && raid.key == "raid:edron.feroxa" {
                         return true;
                     }
-                    scheduler.active_layers_epoch == Some(scheduler.reset_epoch)
-                        && required.satisfied_by(&scheduler.active_layers)
+                    active_layers.is_some_and(|layers| required.satisfied_by(layers))
                 }),
                 calendar: None,
                 firing_id,
@@ -157,12 +178,21 @@ fn candidates(
                 CatalogueSchedule::Calendar {
                     window,
                     interval_ms,
+                    anchor,
                     repeat,
                 } => {
+                    let timing = match anchor {
+                        Some(CatalogueCalendarAnchor::ImmediatePostSave) => {
+                            CalendarRaidTiming::ImmediatePostSave
+                        }
+                        None => CalendarRaidTiming::Interval {
+                            interval_ms: interval_ms.ok_or(RaidError::InvalidCalendar)?,
+                            repeat: *repeat,
+                        },
+                    };
                     candidate.calendar_window = Some(CalendarRaidScheduleCandidate {
                         window: window.ok_or(RaidError::InvalidCalendar)?.window(),
-                        interval_ms: interval_ms.ok_or(RaidError::InvalidCalendar)?,
-                        repeat: *repeat,
+                        timing,
                     });
                 }
                 CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
@@ -170,6 +200,47 @@ fn candidates(
             Ok(candidate)
         })
         .collect()
+}
+
+/// The node's current owner and clock facts for one catalogue pass.
+pub struct RaidScheduleTick {
+    pub world: WorldId,
+    pub channel: ChannelId,
+    pub generation: ScopeOwnershipGeneration,
+    pub reset_epoch: u64,
+    pub now_ms: i64,
+    pub bundle_digest: [u8; 32],
+}
+
+impl RaidScheduleTick {
+    fn request(
+        &self,
+        catalogue: &RaidCatalogue,
+        active_layers: Option<&[String]>,
+    ) -> Result<RaidSchedulerCheck, RaidError> {
+        Ok(RaidSchedulerCheck {
+            world: self.world,
+            channel: self.channel,
+            generation: self.generation,
+            reset_epoch: self.reset_epoch,
+            now_ms: self.now_ms,
+            bundle_digest: self.bundle_digest,
+            candidates: candidates(catalogue, self, active_layers)?,
+        })
+    }
+}
+
+/// Compose and submit one active-catalogue pass through the fenced raid owner.
+pub async fn check_raid_tick(
+    root: &DurabilityRoot,
+    character: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    catalogue: &RaidCatalogue,
+    tick: &RaidScheduleTick,
+    active_layers: Option<&[String]>,
+) -> Result<Result<RaidSchedulerOutcome, DurabilityError>, RaidError> {
+    let request = tick.request(catalogue, active_layers)?;
+    Ok(root.check_raid_schedules(character, node, request).await)
 }
 
 pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &CancellationToken) {
@@ -217,34 +288,27 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
                     return;
                 }
             };
-            match candidates(&catalogue, &scheduler, now_ms, bundle_digest) {
+            let tick = scheduler.tick(generation, now_ms, bundle_digest);
+            match check_raid_tick(
+                scheduler.root,
+                scheduler.character,
+                scheduler.node,
+                &catalogue,
+                &tick,
+                scheduler.current_layers(),
+            )
+            .await
+            {
                 Err(error) => eprintln!("event=raid_catalogue state=refused error={error}"),
-                Ok(candidates) => {
-                    let request = RaidSchedulerCheck {
-                        world: scheduler.world,
-                        channel: scheduler.channel,
-                        generation,
-                        reset_epoch: scheduler.reset_epoch,
-                        now_ms,
-                        bundle_digest,
-                        candidates,
-                    };
-                    match scheduler
-                        .root
-                        .check_raid_schedules(scheduler.character, scheduler.node, request)
-                        .await
-                    {
-                        Ok(outcome) => {
-                            next_check = now_ms.saturating_add(if outcome.retry_activity {
-                                1_000
-                            } else {
-                                CHECK_INTERVAL_MS
-                            });
-                            for (_, key) in outcome.firings {
-                                eprintln!("event=raid_firing key={} state=admitted", key.as_str());
-                            }
-                        }
-                        Err(error) => eprintln!("event=raid_schedule state=retry error={error}"),
+                Ok(Err(error)) => eprintln!("event=raid_schedule state=retry error={error}"),
+                Ok(Ok(outcome)) => {
+                    next_check = now_ms.saturating_add(if outcome.retry_activity {
+                        1_000
+                    } else {
+                        CHECK_INTERVAL_MS
+                    });
+                    for (_, key) in outcome.firings {
+                        eprintln!("event=raid_firing key={} state=admitted", key.as_str());
                     }
                 }
             }
@@ -476,6 +540,7 @@ mod tests {
             .world_changes(world, current)
             .await?
             .ok_or("current Fury day")?;
+        let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
         // Yesterday's boot still has an active Fury, but independently current epoch2 rejects it.
         for now_ms in [0, 60_000] {
             let request = RaidSchedulerCheck {
@@ -485,7 +550,12 @@ mod tests {
                 reset_epoch: previous,
                 now_ms,
                 bundle_digest: bundle,
-                candidates: candidates(&catalogue, &scheduler, now_ms, bundle).map_err(debug)?,
+                candidates: candidates(
+                    &catalogue,
+                    &scheduler.tick(generation, now_ms, bundle),
+                    scheduler.current_layers(),
+                )
+                .map_err(debug)?,
             };
             assert!(
                 h.root
@@ -501,14 +571,25 @@ mod tests {
         assert_eq!(count, 0, "stale boot cannot create schedule state");
         scheduler.reset_epoch = current;
         assert!(
-            !candidates(&catalogue, &scheduler, 120_000, bundle).map_err(debug)?[0].eligible,
+            !candidates(
+                &catalogue,
+                &scheduler.tick(generation, 120_000, bundle),
+                scheduler.current_layers()
+            )
+            .map_err(debug)?[0]
+                .eligible,
             "old geometry cannot be rebound to the new epoch"
         );
         let (offday, off_digest) = furyosa_test_cells(world, channel, Some(current), false)?;
         assert_eq!(off_digest, bundle);
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&offday);
         for now_ms in [120_000, 180_000] {
-            let proposals = candidates(&catalogue, &scheduler, now_ms, bundle).map_err(debug)?;
+            let proposals = candidates(
+                &catalogue,
+                &scheduler.tick(generation, now_ms, bundle),
+                scheduler.current_layers(),
+            )
+            .map_err(debug)?;
             assert!(
                 !proposals[0].eligible,
                 "exit-only metadata never admits Furyosa"
@@ -532,10 +613,23 @@ mod tests {
         }
         let (undated, _) = furyosa_test_cells(world, channel, None, true)?;
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&undated);
-        assert!(!candidates(&catalogue, &scheduler, 240_000, bundle).map_err(debug)?[0].eligible);
+        assert!(
+            !candidates(
+                &catalogue,
+                &scheduler.tick(generation, 240_000, bundle),
+                scheduler.current_layers()
+            )
+            .map_err(debug)?[0]
+                .eligible
+        );
         let (active, _) = furyosa_test_cells(world, channel, Some(current), true)?;
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&active);
-        let proposals = candidates(&catalogue, &scheduler, 240_000, bundle).map_err(debug)?;
+        let proposals = candidates(
+            &catalogue,
+            &scheduler.tick(generation, 240_000, bundle),
+            scheduler.current_layers(),
+        )
+        .map_err(debug)?;
         assert!(proposals[0].eligible);
         let request = RaidSchedulerCheck {
             world,

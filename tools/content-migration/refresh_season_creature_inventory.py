@@ -319,13 +319,15 @@ def generated(root):
         raise ValueError("Regenerate the source-qualified raid index first")
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])["records"]
     active = sum(row["active"] for row in raids)
-    held = raid_catalogue.GLOBAL_RAID_HOLDS.keys() | raid_catalogue.HALLOWEEN.keys()
+    hare = raid_catalogue.HALLOWEEN_HARE_KEY
+    held = raid_catalogue.GLOBAL_RAID_HOLDS.keys() | (raid_catalogue.HALLOWEEN.keys() - {hare})
     inactive = {row["key"] for row in raids if not row["active"]}
     backpack_raid = [row for row in raids if row["key"] == "raid:venore.orcsambackpack"]
     if (
         len(raids) != 239 + 1
-        or active != 136 + 1 + 1
+        or active != 136 + 1 + 1 + 1
         or not held <= inactive
+        or hare in inactive
         or len(backpack_raid) != 1
         or not backpack_raid[0]["active"]
     ):

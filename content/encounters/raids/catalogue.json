@@ -666,19 +666,18 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "calendar_firing_anchor_unbound:immediate_post_save"
-      ],
+      "inactive_reasons": [],
       "key": "oteryn:raid.kazordoon_raids.the_halloween_hare",
       "kind": "calendar",
       "name": "The Halloween Hare",
       "schedule": {
+        "anchor": "immediate_post_save",
         "interval_ms": null,
         "kind": "calendar",
         "observations": {
@@ -50883,7 +50882,7 @@
       "total": 88
     },
     "calendar": {
-      "active": 2,
+      "active": 3,
       "total": 6
     },
     "city": {

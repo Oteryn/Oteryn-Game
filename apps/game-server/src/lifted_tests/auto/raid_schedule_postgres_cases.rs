@@ -558,7 +558,7 @@ fn source_schedule_case(case: SourceScheduleCase) -> TestResult {
 async fn exercise_source_schedule(h: &Harness, case: SourceScheduleCase) -> TestResult {
     use crate::bestiary_postgres_harness::CHANNEL;
     use crate::durability::raid_schedule::{
-        CalendarRaidScheduleCandidate, LuaRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
+        CalendarRaidScheduleCandidate, CalendarRaidTiming, LuaRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
     };
     use crate::foundation::{ChannelId, ScopeOwnershipGeneration};
     use oteryn_gameplay_encounter_rules::raid::{LuaRaidPolicy, LuaRaidState, RaidCalendarWindow};
@@ -592,8 +592,10 @@ async fn exercise_source_schedule(h: &Harness, case: SourceScheduleCase) -> Test
             calendar_window: match case {
                 SourceScheduleCase::Calendar => Some(CalendarRaidScheduleCandidate {
                     window: RaidCalendarWindow { start_month: 1, start_day: 2, end_month: 1, end_day: 2 },
-                    interval_ms: 120_000,
+                    timing: CalendarRaidTiming::Interval {
+interval_ms: 120_000,
                     repeat: false,
+},
                 }),
                 SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance => None,
             },

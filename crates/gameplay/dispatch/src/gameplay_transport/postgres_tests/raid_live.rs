@@ -16,6 +16,16 @@ use oteryn_gameplay_encounter_rules::raid::{RaidCatalogue, RaidPosition, Selecte
 use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+const HALLOWEEN_HARE: &str = "oteryn:raid.kazordoon_raids.the_halloween_hare";
+
+#[test]
+fn w05d_hare_dispatch_announces_and_places_one_kazordoon_actor_on_replay() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case_with_admin(admin, "w05d_hare_dispatch", HALLOWEEN_HARE, 1, false)
+}
+
 #[test]
 fn world_src_postgres_flower_month_places_canonical_dryads_and_replays_once() -> TestResult {
     run_case(
@@ -66,6 +76,16 @@ fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) 
         eprintln!("RAIDS_GLOBAL POSTGRES_CASE_COMPLETED {name} route_less=true");
         return Ok(());
     };
+    run_case_with_admin(admin, name, key, expected, boss)
+}
+
+fn run_case_with_admin(
+    admin: String,
+    name: &'static str,
+    key: &'static str,
+    expected: usize,
+    boss: bool,
+) -> TestResult {
     let result = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -157,6 +177,7 @@ async fn scenario(
     let key = ProductionKey::new(key).map_err(debug)?;
     let phased_boss = key.as_str() == "raid:venore.dracola";
     let token_raid = key.as_str() == "raid:svargrond.zushuka";
+    let hare = key.as_str() == HALLOWEEN_HARE;
     let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
     let catalogue = RaidCatalogue::embedded().map_err(debug)?;
     let selected = catalogue
@@ -197,10 +218,10 @@ async fn scenario(
         assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
         assert_eq!(selected.definition.announcements[0].text,
             "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
-    } else {
+    } else if !hare {
         assert!(selected.definition.announcements.is_empty());
     }
-    let margin = i32::from(token_raid);
+    let margin = i32::from(token_raid || hare);
     let from = (u16::try_from(area.from.x - margin)?, u16::try_from(area.from.y - margin)?);
     let to = (u16::try_from(area.to.x + margin)?, u16::try_from(area.to.y + margin)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
@@ -278,6 +299,54 @@ async fn scenario(
     }
     owner.reset_epoch = 1;
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
+    if hare {
+        let session = deps.admitted.game_session_id;
+        let messages = &owner.states.server_messages;
+        assert!(messages.join(session, 1));
+        let mut progress = crate::gameplay_transport::raid_live::RaidEffectProgress::default();
+        owner
+            .drive_raid_firing(firing, &key, &catalogue, bundle_digest, 0, &mut progress)
+            .await
+            .map_err(|_| "Hare effects at the save tick")?;
+        assert_eq!(
+            messages.take(session, 1),
+            Some(oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(
+                "Beware, beware the halloween hare.".into(),
+            )),
+        );
+        let mut retry = crate::gameplay_transport::raid_live::RaidEffectProgress::default();
+        owner
+            .drive_raid_firing(firing, &key, &catalogue, bundle_digest, 60_000, &mut retry)
+            .await
+            .map_err(|_| "Hare effects on replay")?;
+        assert_eq!(messages.take(session, 1), None);
+        let runtime = deps.runtime.lock().await;
+        let actors = runtime.raid_creatures(firing).map_err(debug)?;
+        let [status] = actors.as_slice() else {
+            return Err("expected exactly one Hare spawn".into());
+        };
+        let RaidSpawnOutcome::Placed(actor) = status.outcome else {
+            return Err("Hare placement refused".into());
+        };
+        assert!(status.alive);
+        let at = runtime.read_actor_position(actor).map_err(debug)?.position();
+        assert_eq!(
+            RaidPosition { x: at.x, y: at.y, floor: at.floor },
+            first_area.from,
+        );
+        assert_eq!(
+            runtime.companion_snapshot(actor).map_err(debug)?.state.policy.definition_key,
+            selected.definition.waves[0].entries[0].creature.as_str(),
+        );
+        drop(runtime);
+        let placed: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_world_raid_creature_placements WHERE placed",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(placed, 1);
+        return Ok(());
+    }
     if contention {
         use crate::durability::DurabilityRoot;
         let foreground = harness.root.foreground_demand()?;
