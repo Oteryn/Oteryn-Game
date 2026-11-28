@@ -204,7 +204,14 @@ impl FreshAdmissionStore {
             self.maximum_operation_bytes,
         )?;
         let mirrors: serde_json::Value = row.try_get("mirrors")?;
-        if operation.authorization.facts.replay_key().to_bytes().as_slice() != replay {
+        if operation
+            .authorization
+            .facts
+            .replay_key()
+            .to_bytes()
+            .as_slice()
+            != replay
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         Self::restore_receipt(operation, mirrors).map(Some)
@@ -237,7 +244,9 @@ impl FreshAdmissionStore {
         if mirrors != expected {
             return Err(DurabilityError::InvalidStoredState);
         }
-        checked(FreshAdmissionCommitReceiptV1::restore(operation, decided_at))
+        checked(FreshAdmissionCommitReceiptV1::restore(
+            operation, decided_at,
+        ))
     }
 
     /// Fixture-only raw write. Production enters through the composed owner,
@@ -259,7 +268,8 @@ impl FreshAdmissionStore {
         revalidate: Option<OwnerRevalidation>,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
         let issued = self.guards.backend.try_issue_root()?;
-        self.commit_revalidated_with_pass(request, revalidate, issued).await
+        self.commit_revalidated_with_pass(request, revalidate, issued)
+            .await
     }
 
     pub(in crate::durability) async fn commit_revalidated_with_pass(

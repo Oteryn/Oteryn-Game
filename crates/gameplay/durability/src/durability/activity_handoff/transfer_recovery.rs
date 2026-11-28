@@ -108,7 +108,8 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         transport: AuthenticatedTransportRefV1,
     ) -> Result<()> {
-        self.note_transfer_input_until(node, fence, transport, None).await
+        self.note_transfer_input_until(node, fence, transport, None)
+            .await
     }
 
     pub async fn note_transfer_input_until(

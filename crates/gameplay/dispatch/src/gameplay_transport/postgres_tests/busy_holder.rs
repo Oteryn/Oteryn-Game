@@ -176,7 +176,11 @@ fn quest_callback_resume_waits_for_the_grizzly_lookup_postgres() -> TestResult {
             .await?;
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             let dependencies = Dependencies::new()?;
             let owner = dependencies.owner(&h, &authority);
             let mut admitted = dependencies.admitted;
@@ -185,7 +189,10 @@ fn quest_callback_resume_waits_for_the_grizzly_lookup_postgres() -> TestResult {
             let playable = owner.prepare_quest_callback_resume(&mut admitted).await;
 
             busy.await??;
-            assert!(playable, "a returning holder must allow the first Grizzly visit lookup");
+            assert!(
+                playable,
+                "a returning holder must allow the first Grizzly visit lookup"
+            );
             drop(owner);
             drop(seal);
             h.cleanup().await
@@ -267,9 +274,9 @@ async fn holder_return_in_final_retry_interval(
 ) -> TestResult<bool> {
     use std::task::Poll;
     let held = root.issue_ready_semantic_pass().await?;
-    let mut operation = std::pin::pin!(
-        crate::durability::DurabilityRoot::with_holder_owner(operation)
-    );
+    let mut operation = std::pin::pin!(crate::durability::DurabilityRoot::with_holder_owner(
+        operation
+    ));
     tokio::time::pause();
     let mut result = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
     for _ in 0..4 {
@@ -327,16 +334,21 @@ fn hold_holder(
     })))
 }
 
-
 #[test]
 fn ground_projection_waits_for_a_busy_holder_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ground-projection-busy-holder", || {
         run(async |admin| {
-            let h = Harness::create_with_admission_seed(admin, "ground_projection_busy", true, false).await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "ground_projection_busy", true, false)
+                    .await?;
             let fence = super::fixture::fence(1)?;
             let read = crate::gameplay_transport::loop_move::projection_read(
                 &h.root,
-                async || h.root.read_item_loop_ground_for_scope(fence.runtime_scope).await,
+                async || {
+                    h.root
+                        .read_item_loop_ground_for_scope(fence.runtime_scope)
+                        .await
+                },
                 crate::gameplay_transport::root_holder_busy,
             );
             assert!(priority_handoff(&h.root, async { read.await.is_some() }).await?);
@@ -348,7 +360,8 @@ fn ground_projection_waits_for_a_busy_holder_postgres() -> TestResult {
                     Err::<(), _>(crate::durability::DurabilityError::CommitRejected)
                 },
                 crate::gameplay_transport::root_holder_busy,
-            ).await;
+            )
+            .await;
             assert!(rejected.is_none());
             assert_eq!(attempts.get(), 1);
             h.cleanup().await

@@ -155,7 +155,8 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character_id: CharacterId,
     ) -> Result<CharacterAuthorityRecord> {
-        self.read_current_character_until(authority, character_id, None).await
+        self.read_current_character_until(authority, character_id, None)
+            .await
     }
 
     pub async fn read_current_character_until(
@@ -170,15 +171,20 @@ impl DurabilityRoot {
             Some(deadline) => self.issue_foreground_pass_until(deadline).await?,
             None => self.try_issue_semantic_pass()?,
         };
-        pass.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
-                return Ok(Err(CharacterAuthorityError::Rejected));
-            };
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(record))
-        })).await?
+        pass.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                let Some(record) =
+                    read_current_character_in_transaction(&mut tx, character).await?
+                else {
+                    return Ok(Err(CharacterAuthorityError::Rejected));
+                };
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(record))
+            })
+        })
+        .await?
     }
 
     /// Read a live session and its current Character revision in one fenced pass.
@@ -189,7 +195,8 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         session: crate::foundation::GameSessionId,
     ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
-        self.read_gameplay_fence(authority, session, false, true).await
+        self.read_gameplay_fence(authority, session, false, true)
+            .await
     }
 
     /// Current session and Character revision for advisory projections.
@@ -199,7 +206,8 @@ impl DurabilityRoot {
         session: crate::foundation::GameSessionId,
         reconnectable: bool,
     ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
-        self.read_gameplay_fence(authority, session, true, reconnectable).await
+        self.read_gameplay_fence(authority, session, true, reconnectable)
+            .await
     }
 
     async fn read_gameplay_fence(
@@ -635,7 +643,11 @@ async fn check_recovery_fence(
             .await?;
     }
     let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
-    let sql = if lock { sql } else { sql.trim_end_matches(" FOR SHARE") };
+    let sql = if lock {
+        sql
+    } else {
+        sql.trim_end_matches(" FOR SHARE")
+    };
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
         .await?
@@ -925,8 +937,7 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
 
 // Migration 0539 corrects declaration metadata without rewriting immutable receipts.
 // Accept only its exact historical-to-current pair; live writers still require equality.
-const DECLARATION_REVISION_MATCH_SQL: &str =
-    "(x.declaration_revision = s.declaration_revision \
+const DECLARATION_REVISION_MATCH_SQL: &str = "(x.declaration_revision = s.declaration_revision \
       OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
           AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf'))";
 
@@ -1271,9 +1282,9 @@ async fn verify_character_integrity(
     // receipt remains bound to initial revision 1.
     observe_character_authority_check(
         CharacterAuthorityCheck::RevisionChain,
-        verify_revision_chain(tx).await.and_then(|violation| {
-            violation.map_or(Ok(()), |_| Err(DurabilityError::Unavailable))
-        }),
+        verify_revision_chain(tx)
+            .await
+            .and_then(|violation| violation.map_or(Ok(()), |_| Err(DurabilityError::Unavailable))),
     )?;
     observe_character_authority_check(
         CharacterAuthorityCheck::Appearance,
