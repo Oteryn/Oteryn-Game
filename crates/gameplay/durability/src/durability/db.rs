@@ -2271,6 +2271,18 @@ pub async fn commit_semantic_transaction(
     commit_semantic_transaction_by(deadline, || transaction.commit()).await
 }
 
+/// Finish a semantic pass whose transaction did not mutate durable state.
+/// An unacknowledged read commit carries no write outcome to reconcile.
+pub(super) async fn commit_semantic_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Instant,
+) -> Result<(), DurabilityError> {
+    match commit_semantic_transaction(transaction, deadline).await {
+        Err(DurabilityError::CommitOutcomeUnknown) => Err(DurabilityError::RootUnavailable),
+        result => result,
+    }
+}
+
 async fn commit_semantic_transaction_by<F, Fut>(
     deadline: Instant,
     commit: F,
