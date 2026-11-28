@@ -11,10 +11,11 @@ fn passive_rotten_charge_advances_after_twenty_seconds() -> TestResult {
 }
 
 #[test]
-fn bakragore_admission_opens_a_twenty_minute_fight() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+fn bakragore_admission_opens_a_twenty_five_minute_fight() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     super::srx3_rotten_advanced_fixtures::bakragore_deadline_case()
 }
 

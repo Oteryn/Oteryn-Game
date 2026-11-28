@@ -450,6 +450,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 server_artifact_digest: runtime.content_pin().server_artifact_digest(),
             }
         };
+        let time_limit_ms = definition.fight_time_limit_ms();
         let request = ActivityEnterRequest {
             handoff_id: *SecureIdentifiers.game_session_id()?.as_bytes(),
             command_id: id,
@@ -461,7 +462,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             destination_generation: allocation.generation,
             destination_assignment_source_revision: allocation.source_revision,
             destination_content,
-            time_limit_ms: definition.policy.time_limit_ms,
+            time_limit_ms,
             participants,
         };
         use sha2::Digest;

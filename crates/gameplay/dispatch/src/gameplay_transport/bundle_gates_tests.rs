@@ -1205,6 +1205,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/w11_published_soul_war_lever.rs",
         1,
     ),
+    ("gameplay_transport/postgres_tests/w11_world_journeys.rs", 1),
     // Wheel socket/unsocket fixtures add two explicit empty-room overrides;
     // the production qualified-room construction remains unchanged.
     ("gameplay_transport/postgres_tests/wheel_allocation.rs", 5),

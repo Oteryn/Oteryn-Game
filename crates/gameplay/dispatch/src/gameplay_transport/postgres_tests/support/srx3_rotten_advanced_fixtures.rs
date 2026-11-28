@@ -362,16 +362,24 @@ pub(super) fn scenario_with_step(
                 let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
                     return Err("actual Bakragore Instance".into());
                 };
-                let fight_ms: i64 = sqlx::query_scalar(
-                    "SELECT deadline - opened_at FROM game_boss_room_activities
-                     WHERE instance_id=encode($1,'hex')::uuid AND boss_key=$2",
+                let (fight_ms, room_deadline, entry_deadline): (i64, i64, i64) = sqlx::query_as(
+                    "SELECT a.deadline - a.opened_at, a.deadline, e.deadline
+                     FROM game_boss_room_activities a
+                     JOIN game_activity_runtime_entries e ON e.handoff_id=a.admission
+                     WHERE a.instance_id=encode($1,'hex')::uuid AND a.boss_key=$2",
                 )
                 .bind(instance_id.as_slice())
                 .bind("oteryn:boss.bakragore")
                 .fetch_one(&h.pool)
                 .await?;
-                // Crystal 201189f8 config.lua.dist:659 sets the default fight duration.
-                assert_eq!(fight_ms, 1_200_000);
+                // Tibia Fandom archive, Rotten Blood Quest/Spoiler #Bakragore.
+                assert_eq!(fight_ms, 1_500_000);
+                assert_eq!(room_deadline, entry_deadline);
+                assert!(matches!(
+                    reply,
+                    wire::BossActivityReply::Accepted { deadline_unix_ms: Some(deadline), .. }
+                        if i64::try_from(deadline) == Ok(room_deadline)
+                ));
                 drop(owner);
                 drop(authority);
                 drop(seal);

@@ -28,6 +28,24 @@ pub struct BossRoomDefinition {
     pub after_kill_ms: u64,
 }
 
+impl BossRoomDefinition {
+    /// The pinned donor publication retains its literal duration. Apply the
+    /// Global rule when opening a new fight without rewriting that publication
+    /// or changing a deadline already committed to an admitted group.
+    pub fn fight_time_limit_ms(&self) -> u64 {
+        if self.boss_key == "oteryn:boss.bakragore"
+            && self.boss_creature_key == "oteryn:creature.bakragore"
+            && self.room_template_key == "oteryn:room.rotten-blood-bakragore-source"
+            && self.template_revision == "crystal-201189f"
+        {
+            // "Players have 25 minutes to finish this fight."
+            // https://tibia.fandom.com/wiki/Rotten_Blood_Quest/Spoiler#Bakragore
+            return 25 * 60 * 1_000;
+        }
+        self.policy.time_limit_ms
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivityReadyAllocation {
     pub scope: RuntimeScopeRefV1,
@@ -482,7 +500,7 @@ pub(super) async fn prepare_in_transaction<
     };
     if definition.content_revision != r.content_revision
         || definition.template_revision != r.template_revision
-        || definition.policy.time_limit_ms != r.time_limit_ms
+        || definition.fight_time_limit_ms() != r.time_limit_ms
     {
         return Ok(Err(ActivityRefusal::ContentChanged));
     }
@@ -674,10 +692,16 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     if death == [0; 16] || minted < 0 {
         return Ok(BossRoomDefeatDecision::Conflict);
     }
+    use oteryn_gameplay_quests::quest::soul_war::SoulWarBoss;
+    // The lever binds the initial Purple profile. A native death in either
+    // vulnerable profile still settles that exact Megalomania room.
+    let megalomania_terminal =
+        SoulWarBoss::from_creature(boss_key) == Some(SoulWarBoss::Megalomania);
     let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
         JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid \
-          AND g.ownership_generation=$3::text::numeric AND g.state=2 AND (a.boss_creature_key=$4 OR a.boss_key=$4) FOR UPDATE OF a")
-        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.get().to_string()).bind(boss_key).fetch_optional(&mut **tx).await?;
+          AND g.ownership_generation=$3::text::numeric AND g.state=2 AND (a.boss_creature_key=$4 OR a.boss_key=$4 \
+            OR ($5 AND a.boss_key='oteryn:boss.goshnar_s_megalomania' AND a.boss_creature_key='oteryn:creature.goshnar_s_megalomania_purple')) FOR UPDATE OF a")
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.get().to_string()).bind(boss_key).bind(megalomania_terminal).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(BossRoomDefeatDecision::Unrelated);
     };
