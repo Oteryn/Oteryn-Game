@@ -25,6 +25,8 @@ const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
 const CYCLOPS: &str = "oteryn:npc.a_sweaty_cyclops";
 
 pub(super) const SWITCH: Position = at(33281, 32447, -8);
+const CRYPT_GATE: Position = at(33271, 32418, -12);
+const STAGING: Position = at(33271, 32419, -12);
 const NPC: Position = at(32699, 31674, -3);
 const DOOR: Position = at(33269, 32446, -12);
 const LEGS: Position = at(33261, 32444, -12);
@@ -103,9 +105,9 @@ pub(super) fn world(
             map_revision: map_revision(&base),
             bundle: pins,
             start: TilePos {
-                x: SWITCH.x - 1,
-                y: SWITCH.y,
-                floor: SWITCH.floor,
+                x: STAGING.x,
+                y: STAGING.y,
+                floor: STAGING.floor,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
@@ -327,7 +329,7 @@ async fn seal(
     let current = *admitted;
     let (end, result) = tokio::join!(
         async move { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await },
-        seal_client(client, amulet, body.position, generation, command),
+        seal_client(client, amulet, (body.position, body.identity), current.continuity.selected_capabilities.as_slice(), generation, command),
     );
     match end {
         ConnectionEnd::AdmittedThenDisconnected(next) => *admitted = next,
@@ -340,13 +342,14 @@ async fn seal(
 async fn seal_client(
     mut client: tokio::io::DuplexStream,
     amulet: std::num::NonZeroU32,
-    body: crate::foundation::MovementLocalPosition,
+    (position, identity): (crate::foundation::MovementLocalPosition, [u8; 16]),
+    capabilities: &[u32],
     generation: u64,
     command: u64,
 ) -> TestResult<UseDisposition> {
     use oteryn_protocol_oteryn::{self as wire, MessageType, item_view, world_map};
     use tokio::io::AsyncWriteExt;
-    let (mut source, mut target) = (None, None);
+    let (mut source, mut target, mut spatial_target) = (None, None, None);
     loop {
         let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
         let frame = wire::decode_wire_envelope(&raw)?;
@@ -362,6 +365,13 @@ async fn seal_client(
                             .iter()
                             .find(|entry| entry.item_definition_ref == amulet)
                             .map(|entry| entry.handle);
+                    } else if domain.domain_id == wire::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                        use wire::world_spatial_entities::{EntityDetail, EntityFields, decode_world_spatial_entities_snapshot_with_fields};
+                        let (snapshot, _) = decode_world_spatial_entities_snapshot_with_fields(domain.payload, EntityFields::selected(capabilities)).map_err(debug)?;
+                        spatial_target = snapshot.entities.iter().find(|entity| entity.entity.identity == identity).and_then(|entity| match entity.detail {
+                            EntityDetail::Object {item_handle, ..} | EntityDetail::ObjectWithAppearance {item_handle, ..} => item_handle,
+                            _ => None,
+                        }).or(spatial_target);
                     } else if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
                         let map =
                             world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
@@ -370,7 +380,7 @@ async fn seal_client(
                             .iter()
                             .filter(|tile| {
                                 (tile.position.x, tile.position.y, tile.position.floor)
-                                    == (body.x, body.y, body.floor)
+                                    == (position.x, position.y, position.floor)
                             })
                             .flat_map(|tile| &tile.items)
                             .find_map(|item| match item.origin {
@@ -389,11 +399,14 @@ async fn seal_client(
             _ => continue,
         }
     }
+    let map_handle = target.ok_or("projected map corpse handle")?;
+    let spatial_handle = spatial_target.ok_or("projected spatial corpse handle")?;
+    assert_ne!(map_handle, spatial_handle);
     let payload = use_wire::encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(source.ok_or("projected amulet handle")?),
         use_with: None,
         use_with_map_item: Some(MapUseTarget::Item(
-            target.ok_or("projected fresh corpse handle")?,
+            spatial_handle,
         )),
         use_with_position: None,
     })
@@ -607,9 +620,14 @@ pub(super) async fn exercise(
         .await?;
     }
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
-    let switch = target(owner, SWITCH, 1)?;
+    let sundial = target(owner, SWITCH, 1)?;
+    let refused = use_next(owner, admitted, &sundial).await?;
+    assert_ne!(refused, UseDisposition::Committed, "the unsolved sundial cannot admit a boss encounter");
+    assert_eq!(State::read(h).await?, expected);
+    move_to(owner, admitted, STAGING).await?;
+    let gate = target(owner, CRYPT_GATE, 1)?;
     assert_eq!(
-        use_next(owner, admitted, &switch).await?,
+        use_next(owner, admitted, &gate).await?,
         UseDisposition::Committed
     );
     expected.mission[2] = 1;
@@ -639,9 +657,9 @@ pub(super) async fn exercise(
     let stage = super::quest_world_callbacks_fixtures::local(member.from);
     assert_eq!(owner.home_temple(session).await, Some(stage));
     move_to(owner, admitted, member.from).await?;
-    let switch = target(owner, SWITCH, 1)?;
+    let gate = target(owner, CRYPT_GATE, 1)?;
     assert_eq!(
-        use_next(owner, admitted, &switch).await?,
+        use_next(owner, admitted, &gate).await?,
         UseDisposition::Occupied,
         "a live visit still owns the native defender"
     );
@@ -706,9 +724,9 @@ pub(super) async fn exercise(
             "the ambient boss survives the player's death"
         );
     }
-    let switch = target(owner, SWITCH, 1)?;
+    let gate = target(owner, CRYPT_GATE, 1)?;
     assert_eq!(
-        use_next(owner, admitted, &switch).await?,
+        use_next(owner, admitted, &gate).await?,
         UseDisposition::Committed,
         "the new life can claim the same native defender through framed USE"
     );

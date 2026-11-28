@@ -207,6 +207,15 @@ fn plain_use_editor_assignment_sends_direct_item_use() -> Result<(), Box<dyn std
         matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command)
         if command.target == Target::Item(std::num::NonZeroU64::MIN) && command.action == Action::Use && command.selection.is_none())
     );
+    outbox.targeting_initialize(true);
+    outbox.inventory_initialize(Some(Default::default()), true);
+    crate::play::mailbox::lock(&link.mailbox).world_context.pending = false;
+    link.cast_spell_slot(std::num::NonZeroU32::MIN);
+    let crate::combat_input::PlayCommand::WorldContext(command) = commands.try_recv()? else {
+        return Err("closed-container shortcut did not send Use".into());
+    };
+    assert_eq!(command.target, Target::Definition(256u32.try_into()?));
+    assert_eq!(command.action, Action::Use);
     Ok(())
 }
 

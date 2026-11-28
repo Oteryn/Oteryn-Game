@@ -22,7 +22,7 @@ impl Outbox {
     pub(in crate::play) fn inventory_end(&self) {
         self.equipment_initialize(false);
         let mut mailbox = lock(&self.0);
-        mailbox.world_context.targeting = None;
+        mailbox.world_context.clear_targeting();
         mailbox.use_with_pending = false;
         mailbox.inventory = Default::default();
         mailbox.item_movement = Default::default();

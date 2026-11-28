@@ -1830,11 +1830,15 @@ const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
 
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
-    // These changes preserve every track default.
+    // Keep published quest snapshots readable after the dialogue and selector changes.
     for (quest, hash) in [
         (
             "oteryn:quest.authored.top_of_the_city_quest",
             super::published_quest_pins::hash(b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf"),
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            super::published_quest_pins::hash(b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887"),
         ),
         (
             "oteryn:quest.sinatuki_quest",
@@ -1876,7 +1880,11 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
         if !predecessors.iter().any(|entry| entry.hash == hash) {
             predecessors.push(super::NpcDefinitionPredecessor {
                 hash,
-                defaults: BTreeMap::new(),
+                defaults: if quest == "oteryn:quest.sinatuki_quest" {
+                    BTreeMap::from([(sinatuki::CONTRIBUTION.into(), 0)])
+                } else {
+                    BTreeMap::new()
+                },
             });
         }
     }

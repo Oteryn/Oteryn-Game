@@ -125,6 +125,23 @@ fn world_context_live_map_target_dispatch_and_stale_dismissal() -> Result<(), Ba
 }
 
 #[test]
+fn koshei_corpse_menu_offers_use_without_open() -> Result<(), BatchError> {
+    let mut view = view()?;
+    let mut map = super::feature_local_world_view::live_snapshot(101);
+    map.tiles[0].items[0].appearance_id = 7535;
+    map.tiles[0].items[0].origin =
+        oteryn_session::world_map::MapOrigin::Handle(std::num::NonZeroU64::MIN);
+    view.set_live_map(&map)?;
+    let (link, _, outbox) = play_channel();
+    outbox.world_context_initialize(true, true);
+    let menu = view.world_context(TileCoord::new(101, 200), &link).ok_or(BatchError::InvalidView)?;
+    assert!(menu.entries.iter().any(|(_, action)| *action == Action::Use));
+    assert!(!menu.entries.iter().any(|(_, action)| *action == Action::Open));
+    assert!(!view.world_context_choose(&link, &menu, Action::Open));
+    Ok(())
+}
+
+#[test]
 fn world_context_own_tile_item_and_reset_binding() -> Result<(), BatchError> {
     let mut view = view()?;
     let mut map = super::feature_local_world_view::live_snapshot(100);

@@ -83,6 +83,7 @@ pub fn context_entries(
 #[derive(Debug, Default)]
 pub struct State {
     pub targeting: Option<oteryn_client_runtime::inventory::ItemHandle>,
+    pub targeting_definition: Option<std::num::NonZeroU32>,
     pub rune_targeting: bool,
     pub use_with: bool,
     pub look: bool,
@@ -102,9 +103,7 @@ impl State {
             now.saturating_duration_since(at) < std::time::Duration::from_secs(10)
         });
         if !fresh {
-            return self
-                .targeting
-                .map(|_| crate::item_use::view::targeting_hint());
+            return self.targeting_action().map(|_| crate::item_use::view::targeting_hint());
         }
         // Both the HUD and its window-title projection are bounded, single-line text.
         self.feedback.as_ref().map(|text| {

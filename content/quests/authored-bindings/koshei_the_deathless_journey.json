@@ -66,18 +66,18 @@
               "failure_message": null,
               "selector": {
                 "position": {
-                  "x": 33281,
-                  "y": 32447,
-                  "floor": -8
+                  "x": 33271,
+                  "y": 32418,
+                  "floor": -12
                 },
-                "appearance": 7534,
+                "appearance": 5120,
                 "native": {
                   "position": {
-                    "x": 33281,
-                    "y": 32447,
-                    "floor": -8
+                    "x": 33271,
+                    "y": 32418,
+                    "floor": -12
                   },
-                  "appearance": 7534,
+                  "appearance": 5120,
                   "ordinal": 1
                 }
               },
@@ -126,9 +126,9 @@
                   "players": [
                     {
                       "from": {
-                        "x": 33280,
-                        "y": 32447,
-                        "floor": -8
+                        "x": 33271,
+                        "y": 32419,
+                        "floor": -12
                       },
                       "to": {
                         "x": 33270,

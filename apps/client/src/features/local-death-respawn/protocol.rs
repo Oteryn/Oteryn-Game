@@ -80,7 +80,7 @@ impl Mailbox {
         self.containers.bulk = Default::default();
         self.browse_field.pending = false;
         self.world_context.pending = false;
-        self.world_context.targeting = None;
+        self.world_context.clear_targeting();
         self.world_context.rune_targeting = false;
     }
 

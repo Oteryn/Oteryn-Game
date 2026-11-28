@@ -36,7 +36,7 @@ pub(super) fn use_item(
         return;
     }
     let source = item_source(mailbox, definition, sub_type).map(|item| item.handle);
-    let Some(source) = source else {
+    if source.is_none() && (!mailbox.world_context.use_with || sub_type.unwrap_or(0) != 0) {
         mailbox.spell_bar.feedback =
             "That item is not visible in inventory or an open container".into();
         return;
@@ -44,13 +44,13 @@ pub(super) fn use_item(
     if mode == ItemUseMode::Cursor
         || (mode == ItemUseMode::Target && item_target(mailbox, mode).is_none())
     {
-        mailbox.world_context.begin_targeting(source);
+        mailbox.world_context.begin_shortcut_targeting(source, source.is_none().then_some(definition));
         mailbox.world_context.rune_targeting = false;
         return;
     }
     let command = if mode == ItemUseMode::Use {
         Command {
-            target: Target::Item(source),
+            target: source.map(Target::Item).unwrap_or(Target::Definition(definition)),
             action: Action::Use,
             selection: None,
         }
@@ -65,7 +65,7 @@ pub(super) fn use_item(
         };
         Command {
             target,
-            action: Action::UseOn(source),
+            action: source.map(Action::UseOn).unwrap_or(Action::UseDefinitionOn(definition)),
             selection: Some(selection),
         }
     } else {
@@ -75,7 +75,7 @@ pub(super) fn use_item(
         };
         Command {
             target: Target::Creature(target.entity),
-            action: Action::UseOn(source),
+            action: source.map(Action::UseOn).unwrap_or(Action::UseDefinitionOn(definition)),
             selection: Some(Selection {
                 position: target.position,
                 binding: None,

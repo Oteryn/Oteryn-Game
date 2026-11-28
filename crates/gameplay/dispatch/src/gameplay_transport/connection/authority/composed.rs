@@ -1382,6 +1382,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
                 Some(id)
             }
+            Some(item_view::ItemKey::Entity(identity)) if intent.use_with_map_item.is_some() => {
+                self.runtime.lock().await.bound_corpse(identity)
+                    .map(|corpse| corpse.item.item_instance_id)
+            }
             _ => None,
         };
         if corpse.is_some() || matches!(source, Some(item_view::ItemKey::Instance(_))) {

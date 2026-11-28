@@ -9,6 +9,7 @@ use world_object::WorldObjectTarget;
 pub enum Target {
     Position(oteryn_session::ActorPosition),
     Item(ItemHandle),
+    Definition(std::num::NonZeroU32),
     Creature(oteryn_session::EntityRef),
     Object(WorldObjectTarget),
 }
@@ -17,6 +18,7 @@ pub enum Action {
     UseWith,
     UseRune,
     UseOn(ItemHandle),
+    UseDefinitionOn(std::num::NonZeroU32),
     Look,
     Use,
     Open,
@@ -37,7 +39,7 @@ pub struct Command {
 
 pub fn look_payload(target: &Target) -> Result<Vec<u8>, SessionError> {
     let target = match target {
-        Target::Position(_) => return Err(SessionError::SessionUnusable),
+        Target::Position(_) | Target::Definition(_) => return Err(SessionError::SessionUnusable),
         Target::Item(handle) => ItemLookTarget::Item(*handle),
         Target::Creature(entity) => ItemLookTarget::Creature(*entity),
         Target::Object(object) => ItemLookTarget::WorldObject(object.clone()),
@@ -104,14 +106,14 @@ pub async fn send_framed<S: SessionStream>(
         return Ok("Target changed".into());
     }
     let label = match command.action {
-        Action::UseWith | Action::UseRune | Action::UseOn(_) => "Use with",
+        Action::UseWith | Action::UseRune | Action::UseOn(_) | Action::UseDefinitionOn(_) => "Use with",
         Action::Look => "Look",
         Action::Use => "Use",
         Action::Open => "Open",
         Action::BedInteract | Action::Bed(_) => "Bed",
     };
     let result = match (&command.target, command.action) {
-        (_, Action::UseOn(source)) => {
+        (_, Action::UseOn(_) | Action::UseDefinitionOn(_)) => {
             if !session.is_selected(15)
                 || matches!(command.target, Target::Position(_)) && !session.is_selected(22)
                 || matches!(command.target, Target::Item(_) | Target::Object(_))
@@ -123,7 +125,12 @@ pub async fn send_framed<S: SessionStream>(
                 Target::Position(position) if raw_wire => Target::Position(wire_floor(position)),
                 ref other => other.clone(),
             };
-            let Ok(payload) = use_with_payload(source, &target) else {
+            let source = match command.action {
+                Action::UseOn(handle) => world_object::UseTarget::Item(handle),
+                Action::UseDefinitionOn(definition) => world_object::UseTarget::ItemByDefinition(definition),
+                _ => return Ok("Use with unavailable".into()),
+            };
+            let Ok(payload) = crate::item_use::shortcut_payload(source, Some(&target)) else {
                 return Ok("Use with: invalid target".into());
             };
             session.world_context_use(&payload).await?
@@ -133,6 +140,10 @@ pub async fn send_framed<S: SessionStream>(
                 return Ok("Look unavailable".into());
             };
             session.gated_command(28, 30, &payload).await?
+        }
+        (Target::Definition(definition), Action::Use) if session.is_selected(15) => {
+            let source = world_object::UseTarget::ItemByDefinition(*definition);
+            session.world_context_use(&crate::item_use::shortcut_payload(source, None)?).await?
         }
         (Target::Item(handle), Action::Use | Action::Open | Action::BedInteract) => {
             if !session.is_selected(4) {
@@ -262,7 +273,7 @@ mod tests {
             assert_eq!(
                 decoded.target,
                 match target {
-                    Target::Position(_) => return Err(SessionError::SessionUnusable),
+                    Target::Position(_) | Target::Definition(_) => return Err(SessionError::SessionUnusable),
                     Target::Item(handle) => ItemLookTarget::Item(handle),
                     Target::Creature(entity) => ItemLookTarget::Creature(entity),
                     Target::Object(object) => ItemLookTarget::WorldObject(object),

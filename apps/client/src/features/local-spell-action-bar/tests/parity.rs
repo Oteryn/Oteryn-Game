@@ -525,7 +525,7 @@ fn native_battle_key_uses_hovered_entity_generation_without_crosshair()
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::WorldContext(command) if command.target == Target::Creature(target))
     );
-    assert!(mailbox.world_context.targeting.is_none());
+    assert!(mailbox.world_context.targeting_action().is_none());
     mailbox.world_context.pending = false;
     assert!(
         crate::play::feature_local_spell_action_bar::view::native_key(
