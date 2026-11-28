@@ -1,6 +1,7 @@
 //! Depot uses the existing typed session exchange, including its inventory commit barrier.
 pub use oteryn_session::{
-    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, ItemEntry, ItemHandle,
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, DepotRequest, ItemEntry,
+    ItemHandle,
 };
 
 pub use container_tree::ContainerViewOutcome;

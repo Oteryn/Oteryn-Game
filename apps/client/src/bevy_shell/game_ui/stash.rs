@@ -130,11 +130,10 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
             }
         }
         Kind::Stow(row) if state.amount.is_none() => {
-            if let Some(panel) = &state.panel
-                && let Some(intent) =
-                    oteryn_client_ui::stash::carried_intent(panel, &panel.carried, row)
-            {
-                play.link.stash_request_bound(panel, intent);
+            if let Some(panel) = &state.panel {
+                play.link.stash_stow_selected(panel, row, |appearance| {
+                    play.view.scene().stackable_flag(appearance)
+                });
             }
         }
         Kind::Reverse if state.amount.is_none() => play.link.stash_reverse(),

@@ -28,7 +28,7 @@ type Fixture = (
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
-    outbox.bevy_depot_initialize(true);
+    outbox.bevy_depot_initialize(true, false);
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -75,7 +75,12 @@ fn click(app: &mut App, kind: Kind) -> TestResult {
 #[test]
 fn depot_shortcut_projects_seventeen_boxes_and_pages_confirmed_contents() -> TestResult {
     let (mut app, mut commands, outbox) = fixture()?;
-    let PlayCommand::Depot(initial, None) = commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: initial,
+        slot: None,
+        cross_town: false,
+    }) = commands.try_recv()?
+    else {
         return Err("missing initial browse".into());
     };
     assert_eq!(
@@ -119,7 +124,12 @@ fn depot_shortcut_projects_seventeen_boxes_and_pages_confirmed_contents() -> Tes
             page: 1,
         }),
     )?;
-    let PlayCommand::Depot(next, None) = commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: next,
+        slot: None,
+        cross_town: false,
+    }) = commands.try_recv()?
+    else {
         return Err("missing next page".into());
     };
     assert_eq!((next.box_number, next.page, next.town), (17, 1, Some(2)));
@@ -164,7 +174,12 @@ fn depot_withdraw_uses_displayed_ordinal_and_rejects_changed_snapshot() -> TestR
     assert!(commands.try_recv().is_err());
     app.update();
     click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
-    let PlayCommand::Depot(withdraw, None) = commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: withdraw,
+        slot: None,
+        cross_town: false,
+    }) = commands.try_recv()?
+    else {
         return Err("missing withdrawal".into());
     };
     assert_eq!(withdraw.action, DepotAction::Withdraw(82));
@@ -201,7 +216,7 @@ fn depot_withdraw_rejects_replacement_session_with_the_same_snapshot() -> TestRe
 
     let (replacement, mut replacement_commands, replacement_outbox) = play_channel();
     replacement.use_shared_frontend();
-    replacement_outbox.bevy_depot_initialize(true);
+    replacement_outbox.bevy_depot_initialize(true, false);
     replacement.open_depot();
     let initial = replacement_commands.try_recv()?;
     assert!(matches!(initial, PlayCommand::Depot(..)));
@@ -219,7 +234,12 @@ fn depot_withdraw_rejects_replacement_session_with_the_same_snapshot() -> TestRe
     assert!(commands.try_recv().is_err());
     app.update();
     click(&mut app, kind)?;
-    let PlayCommand::Depot(withdraw, None) = replacement_commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: withdraw,
+        slot: None,
+        cross_town: false,
+    }) = replacement_commands.try_recv()?
+    else {
         return Err("missing withdrawal from replacement session".into());
     };
     assert_eq!(withdraw.action, DepotAction::Withdraw(81));
@@ -249,7 +269,12 @@ fn manual_sort_mode_deposits_at_the_clicked_depot_row_slot() -> TestResult {
     app.update();
     // Without the mode a deposit goes out at once, at the first slot.
     click(&mut app, Kind::Request(Intent::Deposit(handle)))?;
-    let PlayCommand::Depot(plain, None) = commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: plain,
+        slot: None,
+        cross_town: false,
+    }) = commands.try_recv()?
+    else {
         return Err("missing plain deposit".into());
     };
     assert_eq!(plain.action, DepotAction::Deposit(handle));
@@ -275,7 +300,12 @@ fn manual_sort_mode_deposits_at_the_clicked_depot_row_slot() -> TestResult {
             .any(|t| t.0.contains("Item 9 ×3 — place here"))
     );
     click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
-    let PlayCommand::Depot(slotted, Some(slot)) = commands.try_recv()? else {
+    let PlayCommand::Depot(oteryn_session::DepotRequest {
+        intent: slotted,
+        slot: Some(slot),
+        cross_town: false,
+    }) = commands.try_recv()?
+    else {
         return Err("missing slotted deposit".into());
     };
     assert_eq!(
@@ -347,7 +377,27 @@ fn turning_manual_sort_off_drops_the_held_depot_deposit() -> TestResult {
     assert!(rows(&mut app, "Item 9 ×3 — withdraw stack"));
     click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
     assert!(
-        matches!(commands.try_recv()?, PlayCommand::Depot(intent, None) if matches!(intent.action, DepotAction::Withdraw(_)))
+        matches!(commands.try_recv()?, PlayCommand::Depot(oteryn_session::DepotRequest { intent, slot: None, cross_town: false }) if matches!(intent.action, DepotAction::Withdraw(_)))
     );
+    Ok(())
+}
+
+#[test]
+fn depot_town_picker_projects_and_enqueues_named_towns() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    let carlin = Kind::Request(Intent::SelectTown(Some(6)));
+    assert!(control(&mut app, carlin).is_err());
+    commands.try_recv()?;
+    outbox.bevy_depot_initialize(true, true);
+    outbox.bevy_depot_result(Some(reply()));
+    app.update();
+    control(&mut app, Kind::Request(Intent::SelectTown(None)))?;
+    click(&mut app, carlin)?;
+    let PlayCommand::Depot(request) = commands.try_recv()? else {
+        return Err("missing town browse".into());
+    };
+    assert!(request.cross_town);
+    assert_eq!(request.intent.town, Some(6));
+    assert_eq!(request.intent.action, DepotAction::Browse);
     Ok(())
 }

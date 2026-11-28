@@ -1,9 +1,11 @@
 use crate::play::{Outbox, Stepper, mailbox::lock};
-use oteryn_client_runtime::depot::{DepotIntent, DepotReply};
+use oteryn_client_runtime::depot::{DepotReply, DepotRequest};
 use oteryn_session::SessionError;
 impl Outbox {
-    pub(in crate::play) fn depot_initialize(&self, selected: bool) {
-        lock(&self.0).depot.selected = selected;
+    pub(in crate::play) fn depot_initialize(&self, selected: bool, cross_town_selected: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.depot.selected = selected;
+        mailbox.depot.cross_town_selected = selected && cross_town_selected;
     }
     pub(in crate::play) fn depot_result(&self, reply: Option<DepotReply>) {
         oteryn_client_ui::depot::apply_result(&mut lock(&self.0).depot, reply);
@@ -26,10 +28,9 @@ impl Outbox {
     pub(in crate::play) async fn depot_run(
         &self,
         session: &mut impl Stepper,
-        intent: DepotIntent,
-        slot: Option<u32>,
+        request: DepotRequest,
     ) -> Result<(), SessionError> {
-        let reply = session.depot(intent, slot).await?;
+        let reply = session.depot(request).await?;
         self.depot_publish(session);
         self.depot_result(reply);
         Ok(())
@@ -44,7 +45,7 @@ macro_rules! session_trait {
                 async { Ok(None) }
             }
             fn depot_items(&self) -> oteryn_client_runtime::depot::Items { Default::default() }
-            fn depot(&mut self, _intent: oteryn_session::DepotIntent, _slot: Option<u32>) -> impl std::future::Future<Output = Result<Option<oteryn_session::DepotReply>, oteryn_session::SessionError>> + Send {
+            fn depot(&mut self, _request: oteryn_session::DepotRequest) -> impl std::future::Future<Output = Result<Option<oteryn_session::DepotReply>, oteryn_session::SessionError>> + Send {
                 async { Ok(None) }
             }
         }
@@ -61,8 +62,8 @@ macro_rules! dispatch {
                     Err(error) => error,
                 }
             }
-            Ok(crate::combat_input::PlayCommand::Depot(intent, slot)) => {
-                match $outbox.depot_run(&mut $session, intent, slot).await {
+            Ok(crate::combat_input::PlayCommand::Depot(request)) => {
+                match $outbox.depot_run(&mut $session, request).await {
                     Ok(()) => { $publish(&mut $session, &$outbox, &mut $held); continue; }
                     Err(error) => error,
                 }
@@ -75,8 +76,8 @@ pub(in crate::play) use dispatch;
 
 #[cfg(all(test, bevy_shell))]
 impl Outbox {
-    pub(crate) fn bevy_depot_initialize(&self, selected: bool) {
-        self.depot_initialize(selected);
+    pub(crate) fn bevy_depot_initialize(&self, selected: bool, cross_town_selected: bool) {
+        self.depot_initialize(selected, cross_town_selected);
     }
     pub(crate) fn bevy_depot_result(&self, reply: Option<DepotReply>) {
         self.depot_result(reply);

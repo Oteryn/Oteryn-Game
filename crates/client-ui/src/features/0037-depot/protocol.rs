@@ -7,24 +7,51 @@ pub fn request(p: &mut DepotPanel, intent: Intent) -> Option<DepotIntent> {
     if p.pending {
         return None;
     }
-    let town = p.reply.as_ref().and_then(|r| r.town);
-    let (box_number, page, action) = match intent {
-        Intent::Browse { box_number, page } if (1..=17).contains(&box_number) && page <= 468 => {
-            (box_number, page, DepotAction::Browse)
-        }
+    let reply_town = p.reply.as_ref().and_then(|r| r.town);
+    let selected_town = p.selected_town.filter(|_| p.cross_town_selected);
+    let (town, box_number, page, action) = match intent {
+        Intent::Browse { box_number, page } if (1..=17).contains(&box_number) && page <= 468 => (
+            selected_town.or(reply_town),
+            box_number,
+            page,
+            DepotAction::Browse,
+        ),
         Intent::Browse { .. } => return None,
+        Intent::SelectTown(town) => {
+            let box_number = p.reply.as_ref().map_or(1, |r| r.box_number);
+            if p.cross_town_selected {
+                p.selected_town = town;
+                p.held = None;
+            }
+            (
+                if p.cross_town_selected {
+                    town
+                } else {
+                    reply_town
+                },
+                box_number,
+                0,
+                DepotAction::Browse,
+            )
+        }
         Intent::Deposit(handle) => {
-            town?;
+            reply_town?;
             if !deposit_items(p).iter().any(|item| item.handle == handle) {
                 return None;
             }
             let r = p.reply.as_ref()?;
-            (r.box_number, r.page, DepotAction::Deposit(handle))
+            (
+                reply_town,
+                r.box_number,
+                r.page,
+                DepotAction::Deposit(handle),
+            )
         }
         Intent::Withdraw(index) => {
-            town?;
+            reply_town?;
             let r = p.reply.as_ref()?;
             (
+                reply_town,
                 r.box_number,
                 r.page,
                 DepotAction::Withdraw(r.entries.get(index)?.ordinal),

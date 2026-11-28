@@ -8,6 +8,7 @@
   ],
   "command_types": [],
   "state_domains": [],
+  "extends_capability_commands": [36],
   "offered": false,
   "offer_gate": "Bundle Worlds only. Enables the optional cross_town field of DEPOT_INTENT (36). The named town must have an authored depot binding and the character must still reach a locker."
 }

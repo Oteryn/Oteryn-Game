@@ -5,7 +5,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{Intent, apply_result, carried_intent, request};
+pub use protocol::{Intent, apply_result, carried_intent, request, request_stow};
 pub use state::{Sort, StashPanel};
 pub use view::{panel_text, row_label, visible_rows, visible_withdraw};
 #[cfg(test)]

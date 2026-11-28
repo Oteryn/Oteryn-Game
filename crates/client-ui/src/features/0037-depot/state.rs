@@ -2,6 +2,8 @@ use super::{DepotReply, ItemHandle, Items};
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DepotPanel {
     pub selected: bool,
+    pub cross_town_selected: bool,
+    pub selected_town: Option<u16>,
     pub open: bool,
     pub pending: bool,
     pub reply: Option<DepotReply>,
@@ -39,6 +41,7 @@ impl DepotPanel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Browse { box_number: u8, page: u32 },
+    SelectTown(Option<u16>),
     Deposit(ItemHandle),
     Withdraw(usize),
 }

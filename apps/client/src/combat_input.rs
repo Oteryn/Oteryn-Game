@@ -19,7 +19,7 @@ pub enum PlayCommand {
     SkillsCombat(oteryn_client_runtime::cyclopedia_character::CharacterTab),
     BrowseFieldMove(oteryn_session::ItemMoveIntent),
     /// A depot request and, for a deposit in Manual Sort Mode, its box slot.
-    Depot(oteryn_session::DepotIntent, Option<u32>),
+    Depot(oteryn_session::DepotRequest),
     DepotContainer(oteryn_session::ItemHandle),
     AccountAchievements(u32),
     Animus(Vec<u8>),

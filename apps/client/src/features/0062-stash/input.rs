@@ -53,21 +53,19 @@ impl PlayLink {
 
     pub fn stash_stow_selected(
         &self,
-        displayed: &[oteryn_client_runtime::depot::ItemEntry],
+        expected: &oteryn_client_ui::stash::StashPanel,
         row: usize,
+        stackable: impl FnOnce(u16) -> Option<bool>,
     ) {
-        Self::stash_enqueue_selected(&mut lock(&self.mailbox), &self.commands, displayed, row);
-    }
-    pub(in crate::play) fn stash_enqueue_selected(
-        mailbox: &mut Mailbox,
-        commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
-        displayed: &[oteryn_client_runtime::depot::ItemEntry],
-        row: usize,
-    ) {
-        if let Some(intent) =
-            oteryn_client_ui::stash::carried_intent(&mailbox.stash, displayed, row)
-            && let Some(command) = request(&mut mailbox.stash, intent)
-            && commands.send(PlayCommand::Stash(command)).is_err()
+        let mut mailbox = lock(&self.mailbox);
+        if &mailbox.stash != expected || !mailbox.stash.open {
+            return;
+        }
+        if let Some(Intent::Stow(handle)) =
+            oteryn_client_ui::stash::carried_intent(&mailbox.stash, &expected.carried, row)
+            && let Some(command) =
+                oteryn_client_ui::stash::request_stow(&mut mailbox.stash, handle, stackable)
+            && self.commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
             mailbox.stash.feedback = Some(tr!("The session has ended").into());

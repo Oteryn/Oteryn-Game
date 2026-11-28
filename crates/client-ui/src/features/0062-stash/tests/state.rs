@@ -80,7 +80,7 @@ fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
         ..Default::default()
     };
     let handle = panel.carried[0].handle;
-    let command = request(&mut panel, Intent::Stow(handle)).ok_or("stow command")?;
+    let command = request_stow(&mut panel, handle, |_| Some(true)).ok_or("stow command")?;
     assert_eq!(
         stash::decode_stash_query(&command.payload)
             .map_err(|_| "payload")?
@@ -88,14 +88,14 @@ fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
             .action,
         stash::StashAction::Stow(item.handle)
     );
-    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    assert!(request_stow(&mut panel, item.handle, |_| Some(true)).is_none());
     apply_result(&mut panel, &reply(stash::StashOutcome::Unsupported));
     assert!(panel_text(&panel).contains("cannot be stowed"));
     panel.carried.clear();
-    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    assert!(request_stow(&mut panel, item.handle, |_| Some(true)).is_none());
     panel.selected = false;
     panel.carried.push(item);
-    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    assert!(request_stow(&mut panel, item.handle, |_| Some(true)).is_none());
     Ok(())
 }
 

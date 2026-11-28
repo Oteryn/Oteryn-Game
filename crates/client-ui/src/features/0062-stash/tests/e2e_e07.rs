@@ -109,7 +109,7 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
         carried_intent(&panel, &[item], 0),
         Some(Intent::Stow(item.handle))
     );
-    request(&mut panel, Intent::Stow(item.handle)).ok_or("stow")?;
+    request_stow(&mut panel, item.handle, |_| Some(true)).ok_or("stow")?;
     assert!(panel.pending);
     apply_result(&mut panel, &response(&data.stow)?);
     assert!(!panel.pending);

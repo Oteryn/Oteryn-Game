@@ -12,6 +12,22 @@ pub enum Intent {
 }
 
 pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
+    request_with_stackability(panel, intent, |_| None)
+}
+
+pub fn request_stow(
+    panel: &mut StashPanel,
+    handle: ItemHandle,
+    stackable: impl FnOnce(u16) -> Option<bool>,
+) -> Option<StashCommand> {
+    request_with_stackability(panel, Intent::Stow(handle), stackable)
+}
+
+fn request_with_stackability(
+    panel: &mut StashPanel,
+    intent: Intent,
+    stackable: impl FnOnce(u16) -> Option<bool>,
+) -> Option<StashCommand> {
     if !panel.selected || panel.pending {
         return None;
     }
@@ -21,8 +37,16 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
         Intent::Previous if panel.page > 0 => (panel.page - 1, stash::StashAction::Browse),
         Intent::Next if panel.has_more => (panel.page + 1, stash::StashAction::Browse),
         Intent::Stow(handle) => {
-            if !panel.carried.iter().any(|item| item.handle == handle) {
+            let Some(item) = panel.carried.iter().find(|item| item.handle == handle) else {
                 panel.feedback = Some(tr!("The item changed; select a carried item again").into());
+                return None;
+            };
+            // Without appearance facts, only a visible multi-unit stack proves eligibility.
+            let eligible = stackable(item.appearance_id).unwrap_or_else(|| item.count.get() > 1);
+            if !eligible {
+                panel.outcome = Some(stash::StashOutcome::Unsupported);
+                panel.feedback =
+                    Some("Only stackable items can be stowed in the Supply Stash.".into());
                 return None;
             }
             (panel.page, stash::StashAction::Stow(handle))
@@ -48,6 +72,7 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
         return None;
     };
     panel.pending = true;
+    panel.outcome = None;
     panel.feedback = None;
     Some(command)
 }
@@ -55,6 +80,7 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
 pub fn apply_result(panel: &mut StashPanel, response: &StashResponse) {
     panel.pending = false;
     panel.server_filtered = true;
+    panel.outcome = Some(response.reply.outcome);
     panel.page = response.reply.page;
     panel.has_more = response.reply.has_more;
     panel.rows.clone_from(&response.reply.rows);

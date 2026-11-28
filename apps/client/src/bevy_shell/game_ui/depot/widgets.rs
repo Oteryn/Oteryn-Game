@@ -73,6 +73,42 @@ impl Widgets<'_, '_, '_> {
             self.skins.font.clone(),
         );
         let enabled = panel.selected && !panel.pending;
+        if panel.cross_town_selected {
+            let towns = crate::play::feature_0037_depot::view::depot_towns();
+            let caption = panel
+                .reply
+                .as_ref()
+                .and_then(|reply| reply.town)
+                .map_or_else(
+                    || "Depot town".into(),
+                    |town_id| {
+                        towns
+                            .iter()
+                            .find(|town| town.town_id == town_id)
+                            .map_or_else(
+                                || format!("Depot town · {town_id}"),
+                                |town| format!("Depot town · {}", town.name),
+                            )
+                    },
+                );
+            self.label(root, caption);
+            let scroll = self.scroll(root);
+            let choices = self.line(scroll);
+            self.button(
+                choices,
+                Kind::Request(Intent::SelectTown(None)),
+                "Nearby locker",
+                enabled,
+            );
+            for town in towns {
+                self.button(
+                    choices,
+                    Kind::Request(Intent::SelectTown(Some(town.town_id))),
+                    &town.name,
+                    enabled,
+                );
+            }
+        }
         let boxes = self.line(root);
         for box_number in 1..=17 {
             self.button(

@@ -419,3 +419,65 @@ async fn reversed_withdrawal_preserves_receipt_on_failed_page_probe() -> Result<
     assert_eq!(response.reply.transaction, Some([9; 16]));
     Ok(())
 }
+
+#[test]
+fn supply_stash_refuses_non_stackable_stow_as_unsupported() -> Result<(), Error> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::depot::ItemEntry;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.stash_initialize(true);
+    // Both entries have a count of one. Appearance 3031 is gold, 3272 is a sword.
+    let sword = ItemEntry {
+        appearance_id: 3272,
+        handle: 1u64.try_into()?,
+        item_definition_ref: 3272u32.try_into()?,
+        count: 1u32.try_into()?,
+        sub_type: 0,
+    };
+    let gold = ItemEntry {
+        appearance_id: 3031,
+        handle: 2u64.try_into()?,
+        item_definition_ref: 3031u32.try_into()?,
+        ..sword
+    };
+    {
+        let mut mailbox = crate::play::mailbox::lock(&outbox.0);
+        mailbox.stash.open = true;
+        mailbox.stash.carried = vec![sword, gold];
+    }
+    use oteryn_client_assets::{
+        AppearanceIndex, AssetStore, Catalog,
+        world::{MANIFEST_PATH, MANIFEST_SHA256},
+    };
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let appearances = AppearanceIndex::load(&store, &Catalog::load(&store)?)?;
+    let stackable = |appearance| {
+        appearances
+            .get(u32::from(appearance))
+            .map(|item| item.stackable)
+    };
+    assert_eq!(stackable(sword.appearance_id), Some(false));
+    assert_eq!(stackable(gold.appearance_id), Some(true));
+    link.stash_stow_selected(&link.stash_panel(), 0, stackable);
+    let panel = link.stash_panel();
+    assert_eq!(panel.outcome, Some(stash::StashOutcome::Unsupported));
+    assert!(panel_text(&panel).contains("Only stackable items"));
+    assert!(!panel.pending);
+    assert!(matches!(
+        commands.try_recv(),
+        Err(tokio::sync::mpsc::error::TryRecvError::Empty)
+    ));
+
+    link.stash_stow_selected(&panel, 1, stackable);
+    let PlayCommand::Stash(command) = commands.try_recv()? else {
+        return Err("stackable stow missing".into());
+    };
+    assert_eq!(command.intent.action, stash::StashAction::Stow(gold.handle));
+    assert!(link.stash_panel().pending);
+    Ok(())
+}

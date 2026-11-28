@@ -35,3 +35,31 @@ impl PlayLink {
         }
     }
 }
+
+#[cfg(bevy_shell)]
+#[derive(serde::Deserialize)]
+pub(crate) struct DepotTown {
+    pub town_id: u16,
+    pub name: String,
+}
+
+#[cfg(bevy_shell)]
+pub(crate) fn depot_towns() -> &'static [DepotTown] {
+    #[derive(serde::Deserialize)]
+    struct TownCatalogue {
+        towns: Vec<DepotTown>,
+    }
+
+    static TOWNS: std::sync::OnceLock<Vec<DepotTown>> = std::sync::OnceLock::new();
+    TOWNS.get_or_init(|| {
+        let source = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json"
+        ));
+        let Ok(TownCatalogue { mut towns }) = serde_json::from_str(source) else {
+            return Vec::new();
+        };
+        towns.sort_by(|left, right| left.name.cmp(&right.name));
+        towns
+    })
+}

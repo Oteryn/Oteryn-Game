@@ -280,3 +280,40 @@ fn session_transport_handler_requires_actual_async_session_symbol_and_preserves_
     );
     Ok(())
 }
+
+#[test]
+fn capability_command_extension_requires_a_prerequisite_owner() -> Result<(), String> {
+    let f = Fixture::structure()?;
+    f.json(
+        "crates/protocol-oteryn/capabilities/0627-cross-town-depot-v1.json",
+        &json!({"id":627,"name":"CROSS_TOWN_DEPOT_V1","commands":[],"requires":[37]}),
+    )?;
+    let feature = "crates/client-ui/src/features/0627-cross-town-depot";
+    f.write(&format!("{feature}/protocol.rs"), "fn handle() {}")?;
+    f.write(&format!("{feature}/tests.rs"), "fn proves_profile() {}")?;
+    f.json(
+        "docs/contracts/protocol-oteryn/v1/registry/capabilities/0627-cross-town-depot-v1.json",
+        &json!({"id":627,"extends_capability_commands":[36]}),
+    )?;
+    let descriptor =
+        "docs/contracts/protocol-oteryn/v1/registry/command_types/0036-depot-intent.json";
+    let entry = json!({"mechanic":"0627-cross-town-depot","kind":"handlers","id":"depot-extension",
+        "status":"supported","commands":[],"capability":627,"direction":"client_to_server",
+        "shared_commands":[36],"entry":"protocol.rs::handle","test":"tests.rs::proves_profile",
+        "not_applicable":{"state":"shared depot","view":"shared depot","input":"shared depot","settings":"shared depot"}});
+    f.json(&format!("{feature}/registrations/handlers.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    f.json(descriptor, &json!({"id":36,"capability":37}))?;
+    client_fragments::scan(&f.0)?;
+    for owner in [json!(null), json!(4), json!(627)] {
+        f.json(descriptor, &json!({"id":36,"capability":owner}))?;
+        let error = client_fragments::scan(&f.0)
+            .err()
+            .ok_or("unexpected command owner admitted")?;
+        assert!(error.contains("extension target is not owned by a prerequisite capability"));
+    }
+    Ok(())
+}

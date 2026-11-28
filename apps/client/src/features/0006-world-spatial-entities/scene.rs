@@ -9,6 +9,11 @@ impl Scene {
     }
 
     #[cfg(bevy_shell)]
+    pub(crate) fn stackable_flag(&self, appearance: u16) -> Option<bool> {
+        self.cache.stackable_flag(appearance)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn smart_item_action(
         &self,
         id: u16,

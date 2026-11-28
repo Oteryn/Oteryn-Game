@@ -65,7 +65,7 @@ pub(super) fn validate(
         }
         if status == "supported" && commands.is_empty() {
             if entry["direction"] == "client_to_server" {
-                validate_core_extension(root, feature, entry, fact)?;
+                validate_command_extension(root, feature, entry, fact)?;
             } else {
                 if entry["direction"] != "server_to_client" {
                     return Err("invalid commandless handler direction".into());
@@ -292,9 +292,8 @@ pub(super) fn parents(entries: &[Value]) -> Result<(), String> {
     Ok(())
 }
 
-/// A negotiated grammar extension does not acquire ownership of the core
-/// command. Its contract must explicitly name every extended core command.
-fn validate_core_extension(
+/// The capability contract names the grammar extension without taking over command ownership.
+fn validate_command_extension(
     root: &Path,
     feature: &Path,
     entry: &Value,
@@ -321,7 +320,18 @@ fn validate_core_extension(
         }
     }
     let contract = contract.ok_or("core extension contract missing")?;
-    if contract["extends_core_commands"].as_array() != Some(commands)
+    let (declared, core) = match (
+        contract["extends_core_commands"].as_array(),
+        contract["extends_capability_commands"].as_array(),
+    ) {
+        (Some(declared), None) => (declared, true),
+        (None, Some(declared)) => (declared, false),
+        (None, None) => return Err("core extension differs from contract".into()),
+        (Some(_), Some(_)) => {
+            return Err("command extension must declare exactly one ownership kind".into());
+        }
+    };
+    if declared != commands
         || commands
             .windows(2)
             .any(|p| p[0].as_u64().is_none() || p[0].as_u64() >= p[1].as_u64())
@@ -340,8 +350,19 @@ fn validate_core_extension(
             if path.extension().is_some_and(|e| e == "json") {
                 let descriptor = read(&path)?;
                 if descriptor["id"] == id {
-                    if !descriptor["capability"].is_null() {
+                    let owner = &descriptor["capability"];
+                    if core && !owner.is_null() {
                         return Err("extension target is not a core command".into());
+                    }
+                    if !core
+                        && (owner.as_u64().is_none()
+                            || !fact["requires"]
+                                .as_array()
+                                .is_some_and(|ids| ids.contains(owner)))
+                    {
+                        return Err(
+                            "extension target is not owned by a prerequisite capability".into()
+                        );
                     }
                     found = true;
                 }

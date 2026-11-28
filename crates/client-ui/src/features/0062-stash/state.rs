@@ -21,6 +21,7 @@ pub struct StashPanel {
     pub carried: Vec<oteryn_client_runtime::depot::ItemEntry>,
     pub pending: bool,
     pub feedback: Option<String>,
+    pub outcome: Option<stash::StashOutcome>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

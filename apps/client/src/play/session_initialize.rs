@@ -178,7 +178,7 @@ pub(super) fn initialize<T: Stepper>(
     );
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
-    outbox.depot_initialize(session.feature_selected(37));
+    outbox.depot_initialize(session.feature_selected(37), session.feature_selected(627));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
     Ok(())
