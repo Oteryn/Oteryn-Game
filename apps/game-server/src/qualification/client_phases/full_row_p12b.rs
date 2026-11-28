@@ -99,6 +99,16 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         &unqualified_stored,
     )?;
 
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let vocation: String = sqlx::query_scalar(
+        "SELECT vocation FROM game_character_build_state
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    expect(vocation == "knight", "bootstrap-vocation", &vocation)?;
+
     character_prep::declare_seeded(
         "P12b.full",
         "knight-level-501",
@@ -111,7 +121,6 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         "p12b-knight".into(),
     )
     .await?;
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let progression: (i64, i64) = sqlx::query_as(
         "SELECT level, total_experience FROM game_character_progression_state
          WHERE character_id=encode($1,'hex')::uuid",
@@ -143,8 +152,7 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         "reply-vs-durable",
         &awarded,
     )?;
-    logout(&mut client).await?;
-    wait_character_released(clients, 0).await?;
+    logout(clients, &mut client).await?;
     let offline = stored_badges(clients).await?;
     expect(
         offline == awarded,
@@ -172,8 +180,7 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         "durable-after-relog",
         (&awarded, &reread),
     )?;
-    logout(&mut fresh).await?;
-    wait_character_released(clients, 0).await?;
+    logout(clients, &mut fresh).await?;
     let released = stored_badges(clients).await?;
     expect(
         released == awarded,
@@ -227,9 +234,24 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(clients: &SeamClients<'_>, client: &mut DevClientSession) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
     let (result, detail, _, _) = logout_once(client).await?;
-    expect(result == Some(LogoutResult::Accepted), "logout", detail)
+    expect(result == Some(LogoutResult::Accepted), "logout", detail)?;
+
+    // Accepted is sent after the release transaction. Inspect that exact session
+    // immediately, while the client is still in scope. A loss/grace release
+    // retains its control-loss epoch and cannot satisfy this check.
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let release: (i16, bool, bool) = sqlx::query_as(
+        "SELECT session_state, current_transport_ref IS NULL, control_loss_epoch IS NULL
+         FROM game_durability_reconnect_sessions
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    expect(release == (3, true, true), "explicit-terminal-logout", release)
 }
 
 #[cfg(test)]
