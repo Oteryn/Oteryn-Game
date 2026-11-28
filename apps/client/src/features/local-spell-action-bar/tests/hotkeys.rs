@@ -209,7 +209,9 @@ fn plain_use_editor_assignment_sends_direct_item_use() -> Result<(), Box<dyn std
     );
     outbox.targeting_initialize(true);
     outbox.inventory_initialize(Some(Default::default()), true);
-    crate::play::mailbox::lock(&link.mailbox).world_context.pending = false;
+    crate::play::mailbox::lock(&link.mailbox)
+        .world_context
+        .pending = false;
     link.cast_spell_slot(std::num::NonZeroU32::MIN);
     let crate::combat_input::PlayCommand::WorldContext(command) = commands.try_recv()? else {
         return Err("closed-container shortcut did not send Use".into());

@@ -313,12 +313,20 @@ fn current_target_object_hotkey_without_target_arms_cursor()
     assert!(commands.try_recv().is_err());
     outbox.inventory_end();
     assert!(!link.custom_hotkey_action(&play, &action));
+    let (link, _commands, outbox) = play_channel();
     outbox.inventory_initialize(Some(Default::default()), false);
     outbox.targeting_initialize(true);
-    let closed = CustomAction::Object { definition: 900, sub_type: 0, target: ObjectTarget::Cursor };
+    let closed = CustomAction::Object {
+        definition: 900,
+        sub_type: 0,
+        target: ObjectTarget::Cursor,
+    };
     assert!(link.custom_hotkey_action(&play, &closed));
-    assert_eq!(crate::play::mailbox::lock(&link.mailbox).world_context.targeting_action(), Some(
-        oteryn_client_runtime::world_interaction::Action::UseDefinitionOn(900u32.try_into()?)
-    ));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .world_context
+            .targeting_action(),
+        Some(oteryn_client_runtime::world_interaction::Action::UseDefinitionOn(900u32.try_into()?))
+    );
     Ok(())
 }

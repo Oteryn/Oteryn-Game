@@ -134,9 +134,20 @@ fn koshei_corpse_menu_offers_use_without_open() -> Result<(), BatchError> {
     view.set_live_map(&map)?;
     let (link, _, outbox) = play_channel();
     outbox.world_context_initialize(true, true);
-    let menu = view.world_context(TileCoord::new(101, 200), &link).ok_or(BatchError::InvalidView)?;
-    assert!(menu.entries.iter().any(|(_, action)| *action == Action::Use));
-    assert!(!menu.entries.iter().any(|(_, action)| *action == Action::Open));
+    let menu = view
+        .world_context(TileCoord::new(101, 200), &link)
+        .ok_or(BatchError::InvalidView)?;
+    assert!(
+        menu.entries
+            .iter()
+            .any(|(_, action)| *action == Action::Use)
+    );
+    assert!(
+        !menu
+            .entries
+            .iter()
+            .any(|(_, action)| *action == Action::Open)
+    );
     assert!(!view.world_context_choose(&link, &menu, Action::Open));
     Ok(())
 }

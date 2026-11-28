@@ -754,6 +754,55 @@ async fn top_of_the_city(
         owner,
         admitted,
         jimmy,
+        "hi",
+        NpcIntentDisposition::Ok,
+        Some("Get him!!"),
+    )
+    .await?;
+    let assassins = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
+    assert_eq!(assassins.len(), 3);
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "hi",
+        NpcIntentDisposition::Ok,
+        Some("Get him!!"),
+    )
+    .await?;
+    assert_eq!(
+        owner.states.npc_conversations.jimmy_roster_for_fixture()?,
+        assassins
+    );
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "iriana",
+        NpcIntentDisposition::Rejected,
+        None,
+    )
+    .await?;
+    for (i, assassin) in assassins.into_iter().enumerate() {
+        super::engworldchg_journals_fixtures::kill_actor(
+            owner,
+            admitted,
+            assassin,
+            8000 + u64::try_from(i)?,
+        )
+        .await?;
+        assert_eq!(
+            track(h, oteryn_gameplay_quests::quest::top_of_the_city::ASSASSINS).await?,
+            i64::try_from(i + 1)?
+        );
+    }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
         "iriana",
         NpcIntentDisposition::Ok,
         None,

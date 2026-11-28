@@ -40,8 +40,11 @@ class SeasonalItemProfiles(unittest.TestCase):
             28484,
             28485,
             28486,
+            21953,
+            21954,
+            21955,
         }
-        self.assertEqual(len(profiles), 52)
+        self.assertEqual(len(profiles), 55)
         for item in expected:
             profile = profiles[f"oteryn:item.tibia.i{item}"]
             self.assertEqual(profile["production_binding"]["disposition"], "EXACT")

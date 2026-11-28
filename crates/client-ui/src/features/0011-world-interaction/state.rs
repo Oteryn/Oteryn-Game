@@ -103,7 +103,9 @@ impl State {
             now.saturating_duration_since(at) < std::time::Duration::from_secs(10)
         });
         if !fresh {
-            return self.targeting_action().map(|_| crate::item_use::view::targeting_hint());
+            return self
+                .targeting_action()
+                .map(|_| crate::item_use::view::targeting_hint());
         }
         // Both the HUD and its window-title projection are bounded, single-line text.
         self.feedback.as_ref().map(|text| {

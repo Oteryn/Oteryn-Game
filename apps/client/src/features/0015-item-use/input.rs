@@ -7,7 +7,10 @@ use oteryn_renderer::TileCoord;
 impl PlayLink {
     /// Whether an item is waiting for a use-with target.
     pub fn use_with_armed(&self) -> bool {
-        lock(&self.mailbox).world_context.targeting_action().is_some()
+        lock(&self.mailbox)
+            .world_context
+            .targeting_action()
+            .is_some()
     }
 
     pub fn inventory_use_rune(&self) -> bool {

@@ -22,6 +22,7 @@ pub enum TravelRefusal {
     ArrivalPending,
     StaleQuote,
     InsufficientFunds,
+    TransferRestricted,
 }
 
 pub trait NpcTravelGate: Sync {
@@ -64,6 +65,18 @@ async fn quote(
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if route.is_transfer_platform() {
+        // Game-owned checks run both when Sharon offers the platform and when the
+        // player accepts. Platform separately owns purchase, destination and cooldown.
+        let blocked: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND skull IN (1,2) AND skull_until>clock_timestamp())
+                 OR EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid AND rank_level=1)
+                 OR EXISTS(SELECT 1 FROM game_coin_market_offers WHERE character_id=encode($1,'hex')::uuid AND state IN (0,1,2) AND remaining>0)",
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+        if blocked {
+            return Ok(Err(TravelRefusal::TransferRestricted));
+        }
     }
     if let Some(requirement) = &route.return_origin {
         let last =
@@ -141,7 +154,11 @@ async fn quote(
     if let Some(requirement) = &route.ticket
         && !ticket::permitted(tx, fence.character_id, requirement).await?
     {
-        if route.route.key != "travora" || base_fare != 0 || requirement.track != "oteryn:quest-progress/travora/ticket_purchased" || requirement.valid_for_seconds != 86_400 {
+        if route.route.key != "travora"
+            || base_fare != 0
+            || requirement.track != "oteryn:quest-progress/travora/ticket_purchased"
+            || requirement.valid_for_seconds != 86_400
+        {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
         base_fare = 1000;
@@ -176,11 +193,7 @@ async fn quote(
     } else {
         false
     };
-    Ok(Ok(base_fare.saturating_sub(if discount {
-        10
-    } else {
-        0
-    })))
+    Ok(Ok(base_fare.saturating_sub(if discount { 10 } else { 0 })))
 }
 
 impl DurabilityRoot {

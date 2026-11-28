@@ -326,7 +326,9 @@ impl PlayLink {
                     *target
                 };
                 let target = match &target_mode {
-                    ObjectTarget::Use => handle.map(Target::Item).unwrap_or(Target::Definition(definition_id)),
+                    ObjectTarget::Use => handle
+                        .map(Target::Item)
+                        .unwrap_or(Target::Definition(definition_id)),
                     ObjectTarget::CursorPosition => {
                         let Some((target, cursor)) = mailbox.bar_actions.cursor.clone() else {
                             mailbox.custom_hotkey_feedback =
@@ -343,7 +345,10 @@ impl PlayLink {
                             .entries()
                             .iter()
                             .any(|entry| entry.rune_item == Some(*definition));
-                        mailbox.world_context.begin_shortcut_targeting(handle, handle.is_none().then_some(definition_id));
+                        mailbox.world_context.begin_shortcut_targeting(
+                            handle,
+                            handle.is_none().then_some(definition_id),
+                        );
                         mailbox.world_context.rune_targeting = rune;
                         return true;
                     }
@@ -375,7 +380,9 @@ impl PlayLink {
                     ) {
                         Action::Use
                     } else {
-                        handle.map(Action::UseOn).unwrap_or(Action::UseDefinitionOn(definition_id))
+                        handle
+                            .map(Action::UseOn)
+                            .unwrap_or(Action::UseDefinitionOn(definition_id))
                     },
                     selection,
                 };

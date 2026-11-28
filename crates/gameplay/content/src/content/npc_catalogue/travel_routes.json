@@ -3328,6 +3328,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.sharon/departure_platform",
+    "keyword": "check",
+    "price": 0,
+    "premium": false,
+    "x": 32062,
+    "y": 32367,
+    "floor": 5,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.svenson/senja",
     "keyword": "senja",
     "price": 10,

@@ -126,6 +126,10 @@ fn corrections() -> &'static [Correction] {
 }
 
 impl TravelRoute {
+    pub fn is_transfer_platform(&self) -> bool {
+        self.service == "oteryn:service.travel.sharon" && self.route.key == "departure_platform"
+    }
+
     /// The before and after Postman stages for the exact route settled by paid travel.
     pub fn postman_tour_passage(&self) -> Option<(i64, i64)> {
         match (self.service.as_str(), self.route.key.as_str()) {
@@ -617,7 +621,13 @@ mod tests {
             ("captain_seagull", "ab_dendriel", 32_734, 31_668, 6),
             ("captain_seahorse", "edron", 33_175, 31_764, 6),
             ("captain_sinbeard", "ankrahmun", 33_092, 32_883, 6),
-            ("captain_waverider", "liberty_bay_waverider", 32_349, 32_856, 7),
+            (
+                "captain_waverider",
+                "liberty_bay_waverider",
+                32_349,
+                32_856,
+                7,
+            ),
             ("charles", "port_hope", 32_527, 32_784, 6),
             ("jack_fate", "liberty_bay", 32_285, 32_892, 6),
             ("karith", "yalahar", 32_816, 31_272, 6),
@@ -663,9 +673,23 @@ mod tests {
                 }),
             );
         }
+        let platform = corrections
+            .iter()
+            .find(|row| row.key == "oteryn:service.travel.sharon/departure_platform")
+            .ok_or("Sharon platform")?;
+        assert_eq!(
+            (
+                platform.keyword.as_str(),
+                platform.price,
+                platform.x,
+                platform.y,
+                platform.floor
+            ),
+            ("check", 0, 32062, 32367, 5)
+        );
         assert_eq!(
             corrections.len() - corrected.len(),
-            60 + 2 * travora_ports.len()
+            61 + 2 * travora_ports.len()
         );
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);

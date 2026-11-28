@@ -106,7 +106,9 @@ pub async fn send_framed<S: SessionStream>(
         return Ok("Target changed".into());
     }
     let label = match command.action {
-        Action::UseWith | Action::UseRune | Action::UseOn(_) | Action::UseDefinitionOn(_) => "Use with",
+        Action::UseWith | Action::UseRune | Action::UseOn(_) | Action::UseDefinitionOn(_) => {
+            "Use with"
+        }
         Action::Look => "Look",
         Action::Use => "Use",
         Action::Open => "Open",
@@ -127,7 +129,9 @@ pub async fn send_framed<S: SessionStream>(
             };
             let source = match command.action {
                 Action::UseOn(handle) => world_object::UseTarget::Item(handle),
-                Action::UseDefinitionOn(definition) => world_object::UseTarget::ItemByDefinition(definition),
+                Action::UseDefinitionOn(definition) => {
+                    world_object::UseTarget::ItemByDefinition(definition)
+                }
                 _ => return Ok("Use with unavailable".into()),
             };
             let Ok(payload) = crate::item_use::shortcut_payload(source, Some(&target)) else {
@@ -143,7 +147,9 @@ pub async fn send_framed<S: SessionStream>(
         }
         (Target::Definition(definition), Action::Use) if session.is_selected(15) => {
             let source = world_object::UseTarget::ItemByDefinition(*definition);
-            session.world_context_use(&crate::item_use::shortcut_payload(source, None)?).await?
+            session
+                .world_context_use(&crate::item_use::shortcut_payload(source, None)?)
+                .await?
         }
         (Target::Item(handle), Action::Use | Action::Open | Action::BedInteract) => {
             if !session.is_selected(4) {
@@ -273,7 +279,8 @@ mod tests {
             assert_eq!(
                 decoded.target,
                 match target {
-                    Target::Position(_) | Target::Definition(_) => return Err(SessionError::SessionUnusable),
+                    Target::Position(_) | Target::Definition(_) =>
+                        return Err(SessionError::SessionUnusable),
                     Target::Item(handle) => ItemLookTarget::Item(handle),
                     Target::Creature(entity) => ItemLookTarget::Creature(entity),
                     Target::Object(object) => ItemLookTarget::WorldObject(object),

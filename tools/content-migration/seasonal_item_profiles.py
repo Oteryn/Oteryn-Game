@@ -74,12 +74,15 @@ RUPRECHT_BLOB = "6718df2ef51872c95a8fe2036add77d2623141bb"
 # 17894-17897, 17954-17957, and 17977-17980. The Lua shop's package row
 # names the item at line 59, but its 10208 points to the snowman (XML:26680).
 MESSENGER_ITEMS = {2812, 6488, 6504, 6509}
+# Crystal 201189f8 data-global/npc/valentina.lua and items.xml:43573-43584.
+VALENTINA_GIFTS = {21953, 21954, 21955}
 IDS = (
     {6510, 2992, 12141, 2886, 2887}
     | CAKE_REWARDS
     | CAKE_MAP
     | RUPRECHT_ITEMS
     | MESSENGER_ITEMS
+    | VALENTINA_GIFTS
 )
 BRUTUS = "data-global/npc/brutus_the_baker.lua"
 CAKE_CONFIG = "data-global/scripts/lib/a_piece_of_cake_config.lua"

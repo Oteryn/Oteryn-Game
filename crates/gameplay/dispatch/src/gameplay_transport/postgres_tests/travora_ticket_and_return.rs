@@ -321,5 +321,30 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     .await?;
     assert_eq!((balance, paid), (0, 1000));
     assert!(renewed >= stamp);
+    sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+    let [sharon] =
+        super::classic_quests_fixtures::install(&owner, &deps.admitted, ["oteryn:npc.sharon"])
+            .await?;
+    talk(&mut owner, &deps.admitted, sharon, 48108, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, sharon, 48109, "check").await?;
+    assert!(
+        offer
+            .iter()
+            .any(|line| line.contains("in-game requirements"))
+    );
+    let arrival = talk(&mut owner, &deps.admitted, sharon, 48110, "yes").await?;
+    assert!(
+        arrival
+            .iter()
+            .any(|line| line.contains("departure platform"))
+    );
+    let placed = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!((placed.x, placed.y, placed.floor), (32062, 32367, 5));
     Ok(())
 }

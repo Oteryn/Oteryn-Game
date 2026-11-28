@@ -329,7 +329,14 @@ async fn seal(
     let current = *admitted;
     let (end, result) = tokio::join!(
         async move { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await },
-        seal_client(client, amulet, (body.position, body.identity), current.continuity.selected_capabilities.as_slice(), generation, command),
+        seal_client(
+            client,
+            amulet,
+            (body.position, body.identity),
+            current.continuity.selected_capabilities.as_slice(),
+            generation,
+            command
+        ),
     );
     match end {
         ConnectionEnd::AdmittedThenDisconnected(next) => *admitted = next,
@@ -365,13 +372,30 @@ async fn seal_client(
                             .iter()
                             .find(|entry| entry.item_definition_ref == amulet)
                             .map(|entry| entry.handle);
-                    } else if domain.domain_id == wire::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
-                        use wire::world_spatial_entities::{EntityDetail, EntityFields, decode_world_spatial_entities_snapshot_with_fields};
-                        let (snapshot, _) = decode_world_spatial_entities_snapshot_with_fields(domain.payload, EntityFields::selected(capabilities)).map_err(debug)?;
-                        spatial_target = snapshot.entities.iter().find(|entity| entity.entity.identity == identity).and_then(|entity| match entity.detail {
-                            EntityDetail::Object {item_handle, ..} | EntityDetail::ObjectWithAppearance {item_handle, ..} => item_handle,
-                            _ => None,
-                        }).or(spatial_target);
+                    } else if domain.domain_id
+                        == wire::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+                    {
+                        use wire::world_spatial_entities::{
+                            EntityDetail, EntityFields,
+                            decode_world_spatial_entities_snapshot_with_fields,
+                        };
+                        let (snapshot, _) = decode_world_spatial_entities_snapshot_with_fields(
+                            domain.payload,
+                            EntityFields::selected(capabilities),
+                        )
+                        .map_err(debug)?;
+                        spatial_target = snapshot
+                            .entities
+                            .iter()
+                            .find(|entity| entity.entity.identity == identity)
+                            .and_then(|entity| match entity.detail {
+                                EntityDetail::Object { item_handle, .. }
+                                | EntityDetail::ObjectWithAppearance { item_handle, .. } => {
+                                    item_handle
+                                }
+                                _ => None,
+                            })
+                            .or(spatial_target);
                     } else if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
                         let map =
                             world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
@@ -405,9 +429,7 @@ async fn seal_client(
     let payload = use_wire::encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(source.ok_or("projected amulet handle")?),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(
-            spatial_handle,
-        )),
+        use_with_map_item: Some(MapUseTarget::Item(spatial_handle)),
         use_with_position: None,
     })
     .map_err(debug)?;
@@ -622,7 +644,11 @@ pub(super) async fn exercise(
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
     let sundial = target(owner, SWITCH, 1)?;
     let refused = use_next(owner, admitted, &sundial).await?;
-    assert_ne!(refused, UseDisposition::Committed, "the unsolved sundial cannot admit a boss encounter");
+    assert_ne!(
+        refused,
+        UseDisposition::Committed,
+        "the unsolved sundial cannot admit a boss encounter"
+    );
     assert_eq!(State::read(h).await?, expected);
     move_to(owner, admitted, STAGING).await?;
     let gate = target(owner, CRYPT_GATE, 1)?;

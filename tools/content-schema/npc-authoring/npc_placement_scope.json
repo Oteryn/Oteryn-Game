@@ -683,6 +683,7 @@
     "oteryn:npc.shalmar",
     "oteryn:npc.shanar",
     "oteryn:npc.sharai",
+    "oteryn:npc.sharon",
     "oteryn:npc.shauna",
     "oteryn:npc.sherry_mcronald",
     "oteryn:npc.shiantis",
@@ -9832,6 +9833,13 @@
     }
   },
   "wiki_br_contacts": {
+    "oteryn:npc.sharon": {
+      "pageid": 12328,
+      "cells": [[32056, 32368, 6]],
+      "adjacent_cells": [[32055, 32368, 6]],
+      "direction": "SOUTH",
+      "basis": "Beside Captain Tiberius on the transfer ship. The retained marker is occupied by the captain and the eastern tile is the passenger arrival."
+    },
     "oteryn:npc.a_frog": {
       "pageid": 10877,
       "cells": [

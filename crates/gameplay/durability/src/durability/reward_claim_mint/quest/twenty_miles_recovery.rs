@@ -18,7 +18,11 @@ pub(super) async fn missing(
         "oteryn:item.tibia.i21746" => &[(NPC, "guardian-skulls-laid")],
         "oteryn:item.tibia.i21745" => &[(WORLD, "ring-chest")],
         "oteryn:item.tibia.i21753" => &[(WORLD, "shipwreck-chest"), (NPC, "guardian-third-slab")],
-        "oteryn:item.tibia.i21861" => &[(WORLD, "shrine-chest"), (NPC, "guardian-third-slab"), (NPC, "guardian-second-slab-back")],
+        "oteryn:item.tibia.i21861" => &[
+            (WORLD, "shrine-chest"),
+            (NPC, "guardian-third-slab"),
+            (NPC, "guardian-second-slab-back"),
+        ],
         "oteryn:item.tibia.i21862" => &[(NPC, "yeo-slab")],
         "oteryn:item.tibia.i21754" => &[(WORLD, "sea-ear-shell")],
         "oteryn:item.tibia.i21795" => &[(WORLD, "sundial")],

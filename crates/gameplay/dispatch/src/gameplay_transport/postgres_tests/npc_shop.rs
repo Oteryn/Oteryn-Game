@@ -74,3 +74,13 @@ fn npc_shop_postgres_sell_all_can_include_equipped_items() -> TestResult {
         scenario_for(ShopScenario::EquippedSale)
     })
 }
+
+#[test]
+fn seasonal_merchant_offers_support_buy_and_look() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seasonal-shops", || {
+        scenario_for(ShopScenario::Seasonal)
+    })
+}

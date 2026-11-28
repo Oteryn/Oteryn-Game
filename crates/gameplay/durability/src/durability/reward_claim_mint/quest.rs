@@ -139,7 +139,9 @@ pub(crate) async fn apply(
         .fetch_optional(&mut **tx)
         .await?;
         if let Some(sqlx::types::Json(counter)) = state {
-            counter.validate(CounterKind::FireFeathered).map_err(|_| DurabilityError::InvalidStoredState)?;
+            counter
+                .validate(CounterKind::FireFeathered)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
             if counter.stage == 3 && !counter.condition {
                 return Ok(false);
             }

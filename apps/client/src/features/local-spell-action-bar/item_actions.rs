@@ -44,13 +44,17 @@ pub(super) fn use_item(
     if mode == ItemUseMode::Cursor
         || (mode == ItemUseMode::Target && item_target(mailbox, mode).is_none())
     {
-        mailbox.world_context.begin_shortcut_targeting(source, source.is_none().then_some(definition));
+        mailbox
+            .world_context
+            .begin_shortcut_targeting(source, source.is_none().then_some(definition));
         mailbox.world_context.rune_targeting = false;
         return;
     }
     let command = if mode == ItemUseMode::Use {
         Command {
-            target: source.map(Target::Item).unwrap_or(Target::Definition(definition)),
+            target: source
+                .map(Target::Item)
+                .unwrap_or(Target::Definition(definition)),
             action: Action::Use,
             selection: None,
         }
@@ -65,7 +69,9 @@ pub(super) fn use_item(
         };
         Command {
             target,
-            action: source.map(Action::UseOn).unwrap_or(Action::UseDefinitionOn(definition)),
+            action: source
+                .map(Action::UseOn)
+                .unwrap_or(Action::UseDefinitionOn(definition)),
             selection: Some(selection),
         }
     } else {
@@ -75,7 +81,9 @@ pub(super) fn use_item(
         };
         Command {
             target: Target::Creature(target.entity),
-            action: source.map(Action::UseOn).unwrap_or(Action::UseDefinitionOn(definition)),
+            action: source
+                .map(Action::UseOn)
+                .unwrap_or(Action::UseDefinitionOn(definition)),
             selection: Some(Selection {
                 position: target.position,
                 binding: None,

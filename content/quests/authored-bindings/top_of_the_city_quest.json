@@ -25,6 +25,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 11
+        },
+        {
+          "key": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
         }
       ],
       "stages": [
@@ -781,6 +787,33 @@
           }
         },
         {
+          "key": "jimmy-ambush",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/top-of-the-city-assassins",
+              "creature": "oteryn:creature.assassin",
+              "track": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+              "gate": "oteryn:quest-progress/authored/top-of-the-city/pursuit",
+              "gate_value": 10,
+              "maximum": 3,
+              "death_area": {
+                "minimum": [
+                  32856,
+                  31374,
+                  6
+                ],
+                "maximum": [
+                  32859,
+                  31385,
+                  6
+                ]
+              }
+            }
+          }
+        },
+        {
           "key": "s2",
           "completes": false,
           "trigger": {
@@ -806,6 +839,13 @@
                   "minimum": 10,
                   "maximum": 10,
                   "set": 10,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 3,
                   "preserve": true
                 }
               ],

@@ -56,6 +56,7 @@ mod hero_of_bounac;
 pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
+mod jimmy;
 mod liquid_black;
 mod magic_effects;
 mod marriage;
@@ -138,6 +139,7 @@ pub struct PendingBank {
 /// an await and is taken after the runtime lock.
 #[derive(Default)]
 pub struct NpcConversations {
+    jimmy_assassins: Mutex<Vec<ExactActorRef>>,
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
     #[cfg(test)]
     fixture_callback_rows:
@@ -1041,6 +1043,17 @@ pub(super) async fn npc_bank_talk(
         reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime);
     let context =
         conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent);
+    if context
+        .as_ref()
+        .is_some_and(|context| context.2 == "oteryn:npc.jimmy")
+        && matches!(
+            intent.text.trim().to_ascii_lowercase().as_str(),
+            "hi" | "hello"
+        )
+        && let Some(outcome) = jimmy::greet(admission, &mut runtime, session, &intent)
+    {
+        return outcome;
+    }
     let alternate_opening = context
         .as_ref()
         .zip(admission.quest_catalogue.as_deref())

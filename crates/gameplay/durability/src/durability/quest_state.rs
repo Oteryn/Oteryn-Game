@@ -780,9 +780,9 @@ mod tests;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
-pub(super) mod travora;
 mod owned_cosmetics;
 mod owned_items;
+pub(super) mod travora;
 mod world_access;
 mod writer;
 use storage::*;

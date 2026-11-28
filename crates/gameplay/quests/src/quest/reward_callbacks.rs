@@ -911,8 +911,13 @@ fn embedded_document() -> Result<Document, String> {
     let first = sinatuki::feeding_rows(&document.callbacks)?;
     let template = first.first().ok_or("empty Sinatuki feeding catalogue")?;
     document.tracks.push(TrackDeclaration {
-        key: sinatuki::CONTRIBUTION.into(), quest: template.quest.clone(),
-        initial: 0, min: 0, max: 99, writable: true, sources: template.sources.clone(),
+        key: sinatuki::CONTRIBUTION.into(),
+        quest: template.quest.clone(),
+        initial: 0,
+        min: 0,
+        max: 99,
+        writable: true,
+        sources: template.sources.clone(),
     });
     document.callbacks.extend(first);
     document
@@ -1834,23 +1839,33 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
     for (quest, hash) in [
         (
             "oteryn:quest.authored.top_of_the_city_quest",
-            super::published_quest_pins::hash(b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf"),
+            super::published_quest_pins::hash(
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+            ),
         ),
         (
             "oteryn:quest.koshei_the_deathless_quest",
-            super::published_quest_pins::hash(b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887"),
+            super::published_quest_pins::hash(
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+            ),
         ),
         (
             "oteryn:quest.sinatuki_quest",
-            super::published_quest_pins::hash(b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423"),
+            super::published_quest_pins::hash(
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+            ),
         ),
         (
             "oteryn:quest.twenty_miles_beneath_the_sea_quest",
-            super::published_quest_pins::hash(b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee"),
+            super::published_quest_pins::hash(
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+            ),
         ),
         (
             "oteryn:quest.travora_ticket",
-            super::published_quest_pins::hash(b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec"),
+            super::published_quest_pins::hash(
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+            ),
         ),
         (
             "oteryn:quest.citizen_outfits_quest_on_rook",
@@ -3485,16 +3500,38 @@ mod tests {
             let mut progress = BTreeMap::new();
             let mut stage = -1;
             while held.values().sum::<u64>() > 0 {
-                let rows: Vec<_> = callbacks.iter().filter(|row| row.npc == "oteryn:npc.sinatuki"
-                    && (row.storage[0].minimum..=row.storage[0].maximum).contains(&stage)
-                    && row.inventory.iter().all(|rule| rule.holds(&held))
-                    && row.state_ops.iter().all(|op| op.advisory_holds(loaded.catalogue(), &progress))).collect();
-                let [first] = rows.as_slice() else { return Err(format!("ambiguous feeding for {trout} trout: {}", rows.len())); };
+                let rows: Vec<_> = callbacks
+                    .iter()
+                    .filter(|row| {
+                        row.npc == "oteryn:npc.sinatuki"
+                            && (row.storage[0].minimum..=row.storage[0].maximum).contains(&stage)
+                            && row.inventory.iter().all(|rule| rule.holds(&held))
+                            && row
+                                .state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(loaded.catalogue(), &progress))
+                    })
+                    .collect();
+                let [first] = rows.as_slice() else {
+                    return Err(format!(
+                        "ambiguous feeding for {trout} trout: {}",
+                        rows.len()
+                    ));
+                };
                 assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
                 let cost = &first.take[0];
                 *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
-                let changes = loaded.catalogue().evaluate(loaded.catalogue().transition(&first.key).ok_or("payment")?, &progress, 1).map_err(|e| format!("{e:?}"))?;
-                for change in changes { progress.insert(change.track, change.after); }
+                let changes = loaded
+                    .catalogue()
+                    .evaluate(
+                        loaded.catalogue().transition(&first.key).ok_or("payment")?,
+                        &progress,
+                        1,
+                    )
+                    .map_err(|e| format!("{e:?}"))?;
+                for change in changes {
+                    progress.insert(change.track, change.after);
+                }
                 stage = first.storage[0].set;
             }
             assert_eq!(stage, 1);
@@ -3502,10 +3539,17 @@ mod tests {
         }
         for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
             let held = BTreeMap::from([(item.to_owned(), 1)]);
-            let rows: Vec<_> = callbacks.iter().filter(|row| row.npc == "oteryn:npc.sinatuki"
-                && row.storage[0].minimum == 1
-                && row.inventory.iter().all(|rule| rule.holds(&held))).collect();
-            let [last] = rows.as_slice() else { return Err(format!("missing final feeding for {item}")); };
+            let rows: Vec<_> = callbacks
+                .iter()
+                .filter(|row| {
+                    row.npc == "oteryn:npc.sinatuki"
+                        && row.storage[0].minimum == 1
+                        && row.inventory.iter().all(|rule| rule.holds(&held))
+                })
+                .collect();
+            let [last] = rows.as_slice() else {
+                return Err(format!("missing final feeding for {item}"));
+            };
             assert_eq!(last.take[0].count, 1);
             assert_eq!(last.give.as_ref().ok_or("missing shards")?.count, 5);
             assert!(last.completes && last.achievement.is_some());
@@ -3519,9 +3563,10 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         let callbacks = super::offered_for(lowered.catalogue())?;
         let historical = load_for(lowered.catalogue())?;
-        for row in historical.iter().filter(|row| {
-            row.npc == "oteryn:npc.sinatuki" && row.key.ends_with("-repeat")
-        }) {
+        for row in historical
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki" && row.key.ends_with("-repeat"))
+        {
             assert!(row.is_paid_exchange());
             assert!(matches!(row.take.as_slice(), [cost] if matches!(cost.count, 99 | 100)));
             assert!(row.give.as_ref().is_some_and(|reward| {

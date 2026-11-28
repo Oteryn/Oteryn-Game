@@ -6,13 +6,19 @@ impl State {
     }
     pub fn targeting_action(&self) -> Option<oteryn_client_runtime::world_interaction::Action> {
         use oteryn_client_runtime::world_interaction::Action;
-        self.targeting.map(Action::UseOn).or_else(|| self.targeting_definition.map(Action::UseDefinitionOn))
+        self.targeting
+            .map(Action::UseOn)
+            .or_else(|| self.targeting_definition.map(Action::UseDefinitionOn))
     }
     pub fn clear_targeting(&mut self) {
         self.targeting = None;
         self.targeting_definition = None;
     }
-    pub fn begin_shortcut_targeting(&mut self, handle: Option<oteryn_client_runtime::inventory::ItemHandle>, definition: Option<std::num::NonZeroU32>) {
+    pub fn begin_shortcut_targeting(
+        &mut self,
+        handle: Option<oteryn_client_runtime::inventory::ItemHandle>,
+        definition: Option<std::num::NonZeroU32>,
+    ) {
         self.targeting = handle;
         self.targeting_definition = definition;
         self.rune_targeting = false;

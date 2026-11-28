@@ -272,7 +272,8 @@ fn scenario(name: &str, case: Case) -> TestResult {
         assert_inventory(&h, [0, 0, 5]).await?;
         assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
 
-        let satisfied: &[&str] = &["Quatu, quata jusipa. Nguraka suq! <seems pleased and doesn't need anything else>"];
+        let satisfied: &[&str] =
+            &["Quatu, quata jusipa. Nguraka suq! <seems pleased and doesn't need anything else>"];
         add_item(&h, 204, fish, 100, 4).await?;
         talk(&mut owner, &mut admitted, npc, "nupi", Some(satisfied)).await?;
         assert_eq!(carried(&h, fish).await?, 100);
