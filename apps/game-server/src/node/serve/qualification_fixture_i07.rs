@@ -183,7 +183,8 @@ pub(super) async fn seed(
                         corpse_ref: [transaction_id.as_slice(), &death_slot.to_be_bytes()].concat(),
                         map_revision: "qualification-v1".into(),
                         content_revision: inventory.content_revision.clone(),
-                        native_room_placement_context: transaction_id.to_vec(),
+                        // The same physical tile remains in use across both admissions.
+                        native_room_placement_context: character.as_bytes().to_vec(),
                     },
                     content_revision: inventory.content_revision.clone(),
                     ruleset_revision: inventory.ruleset_revision.clone(),
