@@ -275,6 +275,25 @@ MAP_REVISION=map-s3b-1
             sql = Path(work, 'epoch.sql').read_text()
             self.assertEqual(sql.count("NULL, 'map-s3b-1');"), 2, sql)
 
+    def test_g36_town_bundle_includes_the_authored_soulpit_region(self):
+        profile = section('NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"',
+                          'readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS')
+        for group, batch, expected in [
+            ('rows', '268:1', True),
+            ('rows', '267:2', True),
+            ('rows', 'all', True),
+            ('rows', '267:1', False),
+            ('rows', '268:0', False),
+            ('rows', 'invalid', False),
+            ('core', '268:1', False),
+        ]:
+            with self.subTest(group=group, batch=batch):
+                result = bash('set -Eeuo pipefail\n' + profile + '\nprintf "%s\\n" "$WORLD_REGIONS"\n',
+                              {'GAME_SOURCE': str(HERE.parents[2]),
+                               'NODE_BOOT_E2E_ONLY': group, 'OTERYN_E2E_ROW_BATCH': batch})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual('126,121' in result.stdout.strip().split(';'), expected)
+
     def test_only_the_disposable_town_profile_selects_the_m03_portal(self):
         compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
         setup = r'''set -Eeuo pipefail

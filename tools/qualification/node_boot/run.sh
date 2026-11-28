@@ -168,6 +168,25 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
     selected_groups="${NODE_BOOT_E2E_ONLY:-}"
     case ",${selected_groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        # Keep the authored Soul Pit region in the bundle when the batch includes G36.full.
+        if python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_G36_REGION'
+import re
+import sys
+
+batch = sys.argv[1]
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if batch == "all":
+    sys.exit(0)
+if match is None:
+    sys.exit(1)
+start, length = map(int, match.groups())
+sys.exit(not (0 <= start <= 268 and 268 - start < length < 2**64))
+PY_G36_REGION
+        then
+          WORLD_REGIONS+=";126,121"
+        fi
+        ;;&
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
     ;;
