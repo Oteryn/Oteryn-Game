@@ -1,7 +1,9 @@
 //! Qualification-only playback of the original server frames for one position cast.
 
 use super::*;
-use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTargetPosition};
+use oteryn_protocol_oteryn::actor_spell::{
+    SpellCastDisposition, SpellCastIntent, SpellTargetPosition, decode_spell_cast_intent,
+};
 use oteryn_protocol_oteryn::presentation::{
     PresentationEvent, PresentationEventKind, PresentationSource,
 };
@@ -67,6 +69,7 @@ impl<S: AsyncWrite + Unpin> AsyncWrite for IncomingCapture<S> {
 
 struct Playback {
     bytes: Cursor<Vec<u8>>,
+    writes: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
 impl AsyncRead for Playback {
@@ -88,6 +91,16 @@ impl AsyncWrite for Playback {
         _: &mut Context<'_>,
         bytes: &[u8],
     ) -> Poll<io::Result<usize>> {
+        let mut captured = self
+            .writes
+            .lock()
+            .map_err(|_| io::Error::other("cast replay lock poisoned"))?;
+        if let Some(captured) = captured.as_mut() {
+            if bytes.len() > MAX_CAPTURE_BYTES - captured.len() {
+                return Poll::Ready(Err(io::Error::other("cast replay write bound exceeded")));
+            }
+            captured.extend_from_slice(bytes);
+        }
         Poll::Ready(Ok(bytes.len()))
     }
     fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
@@ -173,8 +186,10 @@ pub async fn replay_live_position_cast(
         }
         options.open(capture_path)?.write_all(&capture)?;
     }
+    let writes = Arc::new(Mutex::new(None));
     let playback = Playback {
         bytes: Cursor::new(std::fs::read(capture_path)?),
+        writes: Arc::clone(&writes),
     };
     let mut replay = Session::admit(playback, admission()).await?;
     if replay.join_snapshot().game_session_id != session
@@ -182,6 +197,7 @@ pub async fn replay_live_position_cast(
     {
         return Err("C18b replay admission differs from the live cast session".into());
     }
+    *writes.lock().map_err(|_| "C18b replay lock poisoned")? = Some(Vec::new());
     let replay_result = replay
         .cast_spell(spell, SpellTarget::Position(target), false)
         .await?;
@@ -193,6 +209,35 @@ pub async fn replay_live_position_cast(
         return Err(
             "C18b replay cast result or applied vitals differ from the live session".into(),
         );
+    }
+    let mut emitted = Cursor::new(
+        writes
+            .lock()
+            .map_err(|_| "C18b replay lock poisoned")?
+            .take()
+            .ok_or("C18b replay emitted no cast transcript")?,
+    );
+    let mut casts = 0;
+    while emitted.position() < emitted.get_ref().len() as u64 {
+        let frame = oteryn_session::read_frame(&mut emitted).await?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+        if envelope.message_type() == oteryn_protocol_oteryn::MessageType::ClientCommand {
+            let command = envelope.client_command(envelope.connection_generation())?;
+            if command.command_id != result.command_id
+                || decode_spell_cast_intent(command.payload)?
+                    != (SpellCastIntent {
+                        spell,
+                        target: SpellTarget::Position(target),
+                        aim_at_target: false,
+                    })
+            {
+                return Err("C18b replay emitted a different cursor command".into());
+            }
+            casts += 1;
+        }
+    }
+    if casts != 1 {
+        return Err(format!("C18b replay emitted {casts} cursor commands").into());
     }
     let grace = tokio::time::Instant::now() + Duration::from_secs(60);
     while live
