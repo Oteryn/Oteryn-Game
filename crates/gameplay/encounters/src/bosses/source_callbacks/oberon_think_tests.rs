@@ -29,7 +29,7 @@ fn oberon_remains_vulnerable_after_the_third_correct_reply() -> Result<(), Obero
         assert_eq!(phase.map(|phase| phase.taunt), Some(OBERON_DEBATE[index].0));
         assert_eq!(owner.think(1, 3000, 30000, |n| n), Ok(None));
         assert_eq!(owner.reply(OBERON_DEBATE[index].1), Some("GRRRAAANNGH!"));
-        assert_eq!(owner.think(sequence, 3000, |n| n), Ok(None));
+        assert_eq!(owner.think(sequence, 3000, 30000, |n| n), Ok(None));
     }
     assert_eq!(owner.think(1, 3000, 30000, |n| n), Ok(None));
     assert_eq!(owner.limit_damage(3000, 30000, 5000), 5000);
