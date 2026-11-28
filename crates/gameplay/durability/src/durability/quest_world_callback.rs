@@ -373,6 +373,7 @@ pub(super) async fn consume_reward_inputs(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
+    selected_fish: Option<[u8; 16]>,
 ) -> Result<bool, DurabilityError> {
     match request.cause {
         super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
@@ -391,7 +392,7 @@ pub(super) async fn consume_reward_inputs(
     }
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
+    let mut rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
         AND (i.definition_production_key<>'oteryn:item.tibia.i4837'
              OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p
                 WHERE p.item_instance_id=i.item_instance_id
@@ -431,12 +432,14 @@ pub(super) async fn consume_reward_inputs(
             return Ok(false);
         }
     }
-    let inventory_rows = if callback.consumes_fish_stack() {
-        &rows[..rows.len().min(1)]
-    } else {
-        &rows
-    };
-    if !reward_inventory::holds(inventory_rows, &callback.inventory)? {
+    if callback.consumes_fish_stack() {
+        let Some(selected) = selected_fish else {
+            return Ok(false);
+        };
+        let selected = sqlx::types::Uuid::from_bytes(selected).to_string();
+        rows.retain(|row| row.get::<&str, _>("item") == selected);
+    }
+    if !reward_inventory::holds(&rows, &callback.inventory)? {
         return Ok(false);
     }
     if callback.exact_take {

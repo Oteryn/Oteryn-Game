@@ -81,6 +81,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         cause: QuestCause::Command(super::engitem_reward_text::command(13200)?),
     };
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

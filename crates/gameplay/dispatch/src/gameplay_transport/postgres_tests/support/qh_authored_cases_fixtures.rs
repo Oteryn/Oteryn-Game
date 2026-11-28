@@ -491,7 +491,7 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        let greeting = (!matches!(text, "hi" | "hello Jimmy")).then_some("hi");
+        let greeting = (!matches!(text, "hi" | "Hi, Iriana!" | "hello Jimmy")).then_some("hi");
         for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
             let command_id = first + u64::try_from(offset)?;
             let payload = encode_npc_talk_intent(&NpcTalkIntent {
@@ -744,6 +744,7 @@ async fn top_of_the_city(
         Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
     )
     .await?;
+    assert_eq!(track(h, PURSUIT).await?, 0);
     city_route::roof_to_door(owner, admitted, deadline).await?;
     assert_eq!(
         track(h, PURSUIT).await?,

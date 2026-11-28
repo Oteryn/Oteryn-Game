@@ -164,6 +164,7 @@ pub(super) async fn allow_access(
             },
             catalogue,
             QuestRewardAdmission {
+                selected_fish: None,
                 native,
                 weights: &weights,
                 fee_payment: None,

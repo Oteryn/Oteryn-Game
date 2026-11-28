@@ -97,6 +97,7 @@ pub(super) fn use_item(
         .is_ok()
     {
         mailbox.world_context.pending = true;
+        mailbox.use_with_pending = mode != ItemUseMode::Use;
     } else {
         mailbox.spell_bar.feedback = "Session unavailable".into();
     }
