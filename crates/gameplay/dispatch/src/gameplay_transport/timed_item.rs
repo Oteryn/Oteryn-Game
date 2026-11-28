@@ -205,11 +205,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(TimedDisposition::Rejected);
         };
         if intent.action == TimedAction::Use
-            && definition
-                .production_key
-                .strip_prefix("oteryn:item.tibia.i")
-                .and_then(|id| id.parse().ok())
-                .is_some_and(oteryn_gameplay_items::remaining_consumables::is_dispenser)
+            && (definition.production_key == crate::durability::item_craft::CRUSHER_KEY
+                || definition
+                    .production_key
+                    .strip_prefix("oteryn:item.tibia.i")
+                    .and_then(|id| id.parse().ok())
+                    .is_some_and(oteryn_gameplay_items::remaining_consumables::is_dispenser))
         {
             return refusal(TimedDisposition::Rejected);
         }

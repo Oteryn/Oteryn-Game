@@ -4,7 +4,9 @@ use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
 use super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
 use crate::durability::DurabilityError;
-use crate::durability::item_craft::{GroundSculpture, ItemCraftRequest, SculptureGroundTarget};
+use crate::durability::item_craft::{
+    CRUSHER_KEY, GroundSculpture, ItemCraftRequest, SculptureGroundTarget,
+};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_use::ItemUseError;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
@@ -303,7 +305,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
                 .find(|entry| entry.item.item_instance_id == ingredient);
-            if let Some(entry) = entry {
+            let crusher = inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| &bag.entries)
+                .find(|entry| {
+                    entry.item.item_instance_id == source
+                        && entry.item.definition.production_key == CRUSHER_KEY
+                });
+            if let Some(crusher) = crusher {
+                if !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+                    || intent.use_with.is_some()
+                    || intent.use_with_position.is_some()
+                {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                if entry.is_none() {
+                    return disposition(UseDisposition::StaleState);
+                }
+                request.source = ingredient;
+                request.tool = Some(source);
+                request.station = Some(crusher.item.definition.clone());
+            } else if let Some(entry) = entry {
                 request.ingredient = Some(ingredient);
                 request.station = Some(entry.item.definition.clone());
             } else {

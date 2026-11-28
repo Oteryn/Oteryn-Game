@@ -29,6 +29,7 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 pub(crate) mod audit;
+mod crusher;
 mod elemental_energy;
 mod enchanting;
 mod event_containers;
@@ -37,6 +38,7 @@ pub(crate) mod marriage;
 mod sculpture;
 mod skinning;
 pub mod soulpit;
+pub use crusher::CRUSHER_KEY;
 pub use enchanting::EnchantingCraft;
 pub use event_containers::{BLUE_PRESENT, EventContainerReplaySource, REWARD_BAG_INSTANCE_INTENT_TAG};
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
@@ -421,7 +423,18 @@ async fn write<C: ItemLoopContent>(
     let mut ingredient_consumed = None;
     let mut carried_attempt = None;
     let mut ingredient_location: Option<Value> = None;
-    let conversion = if let Some(prepared) = &skinning {
+    let mut crusher_charge = None;
+    let conversion = if request.station.as_ref().is_some_and(|station| station.production_key == CRUSHER_KEY)
+        && request.tool.is_some()
+    {
+        match crusher::prepare(tx, fence, request, native, &definition).await? {
+            Ok((charge, conversion)) => {
+                crusher_charge = Some(charge);
+                Some(conversion)
+            }
+            Err(disposition) => return Ok(disposition),
+        }
+    } else if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
             outputs: prepared.conversion.outputs.clone(),
@@ -661,6 +674,7 @@ async fn write<C: ItemLoopContent>(
     };
     let retires_source = consumes_source && quantity == consumed_quantity;
     let frees_output_slot = retires_source && nested_source.is_none();
+    let retires_crusher = crusher_charge.as_ref().is_some_and(crusher::Charge::retires);
     let retires_ingredient = ingredient_consumed
         .as_ref()
         .is_some_and(|(_, retires)| *retires);
@@ -692,6 +706,7 @@ async fn write<C: ItemLoopContent>(
     let tree_full = tree_count + output_count
         - i64::from(retires_source)
         - i64::from(retired_carried_ingredient)
+        - i64::from(retires_crusher)
         > 500;
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(&parent).fetch_one(&mut ***tx).await?;
@@ -707,6 +722,7 @@ async fn write<C: ItemLoopContent>(
         .min(20);
     let bag_full = occupied + output_count
         - i64::from(frees_output_slot)
+        - i64::from(retires_crusher)
         - i64::from(retired_carried_ingredient && ingredient_location.is_none())
         > i64::from(capacity);
     let nested_destination = if marble_yield
@@ -784,6 +800,14 @@ async fn write<C: ItemLoopContent>(
             _ => 0,
         };
         let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+        let crusher_weight = if retires_crusher {
+            let Some(weight) = request.station.as_ref().and_then(|definition| content.loop_facts(definition)).and_then(|facts| facts.weight) else {
+                return Ok(UseDisposition::NotPossible);
+            };
+            u64::from(weight)
+        } else {
+            0
+        };
         carried
             .checked_sub(if consumes_source {
                 u64::from(used_weight)
@@ -792,7 +816,7 @@ async fn write<C: ItemLoopContent>(
             } else {
                 0
             })
-            .and_then(|w| w.checked_sub(ingredient_weight))
+            .and_then(|w| w.checked_sub(ingredient_weight + crusher_weight))
             .and_then(|w| w.checked_add(output_weight))
             .is_none_or(|w| w > capacity)
     } else {
@@ -877,7 +901,15 @@ async fn write<C: ItemLoopContent>(
         None => None,
     };
     let tuple = tx.tuple();
-    let envelope = if let Some(prepared) = &skinning {
+    let envelope = if let Some(charge) = &crusher_charge {
+        let proof = serde_json::to_vec(&json!({
+            "recipe": conversion.recipe, "intent": request.intent, "character": fence.character_id.as_bytes(),
+            "before": before, "crusher": charge.proof(), "outputs": outputs,
+            "content_digest": native.source_digest(), "scope_generation": fence.scope_ownership_generation.get(),
+            "lease_generation": fence.character_lease_generation,
+        })).map_err(|_| DurabilityError::InvalidStoredState)?;
+        audit::encode_proof(fence, request.command, proof, &transaction, &event, occurred, tuple.tuple())?
+    } else if let Some(prepared) = &skinning {
         audit::encode_map_harvest(
             fence,
             request.command,
@@ -958,6 +990,9 @@ async fn write<C: ItemLoopContent>(
             .bind(request.source.as_slice())
             .execute(&mut ***tx)
             .await?;
+    }
+    if let Some(charge) = crusher_charge {
+        charge.spend(tx, fence, occurred).await?;
     }
     let gathering_award = request
         .gathering

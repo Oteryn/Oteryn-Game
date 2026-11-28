@@ -59,7 +59,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .strip_prefix("oteryn:item.tibia.i")?
                 .parse()
                 .ok()?;
-            if oteryn_gameplay_items::remaining_consumables::is_dispenser(tibia_id) {
+            if definition.production_key == crate::durability::item_craft::CRUSHER_KEY
+                || oteryn_gameplay_items::remaining_consumables::is_dispenser(tibia_id)
+            {
                 return None;
             }
             facts(native, definition)?.0.full.charges()?;

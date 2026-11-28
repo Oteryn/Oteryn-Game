@@ -1917,6 +1917,16 @@ these shapes only:
   `DUR03-RL-06-CRAFT` row, registered as its two halves), `DUR03-RL-07-CRAFT-EVENTS` (1),
   `DUR03-RL-07-CRAFT-PAYLOAD-BYTES` (42,138 B) and `DUR03-RL-07-CRAFT-ENVELOPE-BYTES` (42,452 B);
   `DUR03-RL-03` and `DUR03-RL-05` stay 0.
+- **Crusher (GEM-CRUSH-1).** `GemAtelierCause::Crush {occurrence}` admits one unrevealed gem
+  unit BURN, one Crusher charge checkpoint or last-charge expiry, and one carried fragment MINT
+  in a single fenced PostgreSQL transaction without advancing `CharacterRevision`. The existing
+  craft receipt binds the original item-target USE to the outcome and links its audited draw and
+  operands to the timed write. The timed writer retains its own expiry evidence. An exact replay
+  returns the receipt and a refusal leaves all three effects uncommitted. The Global ranges
+  for unrevealed lesser, regular, and greater gems are 1–4 lesser, 2–8 lesser, and 1–4 greater
+  fragments respectively. Equipment shopkeepers sell the 10-charge tool for 500 gold.
+  [Archived Wheel of Destiny](https://web.archive.org/web/20260113183017/https://tibia.fandom.com/wiki/Wheel_of_Destiny)
+  [Archived Crusher](https://web.archive.org/web/20260217153304/https://tibia.fandom.com/wiki/Crusher)
 - **NPC exchange.** One item-only transaction on the NPC service amendment's trade writer, side
   `EXCHANGE` under `NpcTradeCause {npc, offer, side: EXCHANGE, occurrence}`: up to 3 take BURN lines
   from direct entries of the main backpack (§11.1, §11.5) and up to 3 give MINTs into new direct

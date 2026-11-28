@@ -98,7 +98,7 @@ pub(in crate::durability) fn encode_map_harvest(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn encode_proof(
+pub(super) fn encode_proof(
     fence: CurrentCharacterItemFence,
     command: CommandRef,
     proof: Vec<u8>,
