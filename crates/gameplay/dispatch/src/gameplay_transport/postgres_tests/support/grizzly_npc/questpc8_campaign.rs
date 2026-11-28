@@ -60,7 +60,6 @@ pub(super) async fn exercise(
     .find(|(race, _)| race.key() == "oteryn:creature.bane_of_light")
     .ok_or("Bane of Light Bestiary entry")?;
     assert_eq!(race.kill_thresholds(), [2, 3, 5]);
-    command += 1;
     hunt_with_decay(
         owner,
         admitted,
