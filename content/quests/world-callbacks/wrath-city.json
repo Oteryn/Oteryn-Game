@@ -289,7 +289,7 @@
         "contents": []
       },
       "requires_world_admission": true,
-      "state_ops": [
+      "state_operations": [
         {
           "track": "oteryn:quest-progress/wrath-city/crate-collected-at",
           "from": {
@@ -359,7 +359,7 @@
         "contents": []
       },
       "requires_world_admission": true,
-      "state_ops": [
+      "state_operations": [
         {
           "track": "oteryn:quest-progress/wrath-city/fish-collected-at",
           "from": {

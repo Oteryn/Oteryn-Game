@@ -1361,6 +1361,11 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
         let key = format!("oteryn:quest-callback/authored-wrath-city-{action}");
         let callback = world.iter().find(|c| c.key == key).ok_or(key)?;
         assert!(callback.selector.native.is_some());
+        if matches!(action, "supply-crate" | "supply-fish") {
+            assert!(callback.has_repeating_clock());
+            assert_eq!(callback.state_operations.len(), 1);
+            assert!(callback.state_ops.is_empty());
+        }
         if callback.teleport.is_some() {
             assert!(callback.is_read_only());
             assert!(callback.return_on_failure);

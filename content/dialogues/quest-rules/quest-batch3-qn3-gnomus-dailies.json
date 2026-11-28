@@ -25,7 +25,7 @@
     {
       "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
       "quest": "oteryn:quest.dangerous_depths_quest",
-      "initial": -1,
+      "initial": 0,
       "min": -1,
       "max": 2147483647,
       "sources": [
@@ -420,6 +420,15 @@
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 100
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "effects": [
@@ -504,6 +513,15 @@
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
           "op": "ge",
           "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 100
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "effects": [
@@ -838,6 +856,15 @@
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 100
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "effects": [
@@ -927,6 +954,15 @@
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
           "op": "ge",
           "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 100
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "effects": [

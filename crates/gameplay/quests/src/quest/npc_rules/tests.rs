@@ -987,7 +987,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
     // Paradox adds three source-backed Riddler tracks, also starting absent at -1.
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 222), (0, 102)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 220), (0, 104)]));
     let postman = runtime
         .program("oteryn:quest.the_postman_missions_quest")
         .ok_or("Postman programme")?;
@@ -1383,7 +1383,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 222), (0, 102)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 220), (0, 104)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -1852,8 +1852,14 @@ fn subterranean_life_accepts_reports_and_restarts() -> Result<(), NpcRuleError> 
     let offer = catalogue
         .plan(&facts.input(npc, "subterraneans", 0))?
         .ok_or_else(|| NpcRuleError::Invalid("missing Subterranean Life offer".into()))?;
+    let mut confirm = facts.input(npc, "yes", offer.next_topic);
+    assert!(catalogue.plan(&confirm)?.is_none());
+    confirm.premium_current = true;
+    confirm.level = 99;
+    assert!(catalogue.plan(&confirm)?.is_none());
+    confirm.level = 100;
     let accept = catalogue
-        .plan(&facts.input(npc, "yes", offer.next_topic))?
+        .plan(&confirm)?
         .ok_or_else(|| NpcRuleError::Invalid("missing Subterranean Life acceptance".into()))?;
     for change in accept.track_changes {
         facts.tracks.insert(change.key, change.after);
@@ -1870,7 +1876,7 @@ fn subterranean_life_accepts_reports_and_restarts() -> Result<(), NpcRuleError> 
         facts.tracks.insert(change.key, change.after);
     }
     assert_eq!(facts.tracks.get(&format!("{prefix}subterranean")), Some(&2));
-    assert_eq!(facts.tracks.get(&format!("{prefix}points")), Some(&0));
+    assert_eq!(facts.tracks.get(&format!("{prefix}points")), Some(&1));
     let mut input = facts.input(npc, "subterraneans", report.next_topic);
     input.now_epoch_seconds += 71_999;
     let cooldown = catalogue
@@ -2058,8 +2064,14 @@ fn dangerous_depths_offers_reset_the_distinct_survey_flags() -> Result<(), NpcRu
         let offer = catalogue
             .plan(&facts.input(npc, name, 0))?
             .ok_or_else(|| NpcRuleError::Invalid(format!("missing {name} offer")))?;
+        let mut confirm = facts.input(npc, "yes", offer.next_topic);
+        assert!(catalogue.plan(&confirm)?.is_none());
+        confirm.premium_current = true;
+        confirm.level = 99;
+        assert!(catalogue.plan(&confirm)?.is_none());
+        confirm.level = 100;
         let accepted = catalogue
-            .plan(&facts.input(npc, "yes", offer.next_topic))?
+            .plan(&confirm)?
             .ok_or_else(|| NpcRuleError::Invalid(format!("missing {name} acceptance")))?;
         for (key, expected) in [(name, 1), (counter, 0), (source, 1)]
             .into_iter()
@@ -2086,6 +2098,9 @@ fn gnomus_charting_bonus_plans_two_separate_jar_outputs() -> Result<(), NpcRuleE
     let report = catalogue
         .plan(&facts.input("oteryn:npc.gnomus", "charting", 0))?
         .ok_or_else(|| NpcRuleError::Invalid("missing charting report".into()))?;
+    assert!(report.track_changes.iter().any(|change| {
+        change.key == format!("{prefix}points") && change.before == 0 && change.after == 2
+    }));
     let gifts: Vec<_> = report
         .effects
         .iter()
