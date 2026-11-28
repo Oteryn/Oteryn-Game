@@ -327,67 +327,101 @@ mod tests {
         result
     }
 
+    fn press_built(app: &mut App, id: &str) -> TestResult {
+        let world = app.world_mut();
+        let button = world
+            .query::<(Entity, &Name)>()
+            .iter(world)
+            .find_map(|(entity, name)| (name.as_str() == id).then_some(entity))
+            .ok_or("production transfer button missing")?;
+        world.trigger(Activate { entity: button });
+        Ok(())
+    }
+
+    fn finish_transfer(app: &mut App) -> TestResult {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        assert!(owner.settings.preference_transfer_pending());
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while owner.settings.preference_transfer_pending() {
+            if std::time::Instant::now() >= deadline {
+                return Err("background preferences transfer did not complete".into());
+            }
+            owner.poll([800, 600]);
+            std::thread::yield_now();
+        }
+        Ok(())
+    }
+
     #[test]
     fn transfer_exports_resets_imports_and_restores_the_saved_options() -> TestResult {
+        bevy_tasks::IoTaskPool::get_or_init(|| {
+            bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+        });
         let fixture = tempfile::tempdir()?;
         let path = fixture.path().join("preferences.json");
         let export = fixture.path().join("export.json");
-        let result = (|| -> TestResult {
-            let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
-            app.world_mut()
-                .non_send_mut::<HostOwner>()
-                .edit_preferences(|draft| draft.audio_device = "Headset".into());
-            app.world_mut().non_send_mut::<HostOwner>().apply(true);
-            app.world_mut().non_send_mut::<HostOwner>().open_graphics();
-            let field = app
-                .world_mut()
-                .spawn((PathField, EditableText::new("")))
-                .id();
-            press(&mut app, Action::Export);
-            assert_eq!(
-                app.world().non_send::<HostOwner>().settings.feedback,
-                "Enter a file path"
-            );
-            app.world_mut()
-                .get_mut::<EditableText>(field)
-                .ok_or("field")?
-                .editor_mut()
-                .set_text(export.to_str().ok_or("export path")?);
-            press(&mut app, Action::Export);
-            assert_eq!(
-                PreferenceStore::read_transfer(&export)?.audio_device,
-                "Headset"
-            );
-            press(&mut app, Action::Defaults);
-            assert_eq!(device(&app)?, (String::new(), String::new()));
-            assert!(
-                SettingsState::new(Some(path.clone()))
-                    .preferences
-                    .audio_device
-                    .is_empty()
-            );
-            press(&mut app, Action::Import);
-            assert_eq!(device(&app)?, ("Headset".into(), "Headset".into()));
-            assert_eq!(
-                SettingsState::new(Some(path.clone()))
-                    .preferences
-                    .audio_device,
-                "Headset"
-            );
-            // The backup holds the options the import replaced.
-            press(&mut app, Action::Restore);
-            assert_eq!(device(&app)?, (String::new(), String::new()));
-            assert!(
-                SettingsState::new(Some(path.clone()))
-                    .preferences
-                    .audio_device
-                    .is_empty()
-            );
-            Ok(())
-        })();
-        let _ = std::fs::remove_file(&path);
-        let _ = std::fs::remove_file(&export);
-        let _ = std::fs::remove_file(path.with_extension("backup.json"));
-        result
+        let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
+        assert_eq!(device(&app)?, (String::new(), String::new()));
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.edit_preferences(|draft| draft.audio_device = "Headset".into());
+            owner.apply(true);
+            owner.open_graphics();
+            owner.settings.use_background_preferences();
+        }
+        let world = app.world_mut();
+        let parent = world.spawn_empty().id();
+        let skins = Skins {
+            buttons: oteryn_client_ui_bevy::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        };
+        let mut queue = bevy::ecs::world::CommandQueue::default();
+        build(&mut Commands::new(&mut queue, world), parent, &skins);
+        queue.apply(world);
+        let field = world
+            .query_filtered::<Entity, With<PathField>>()
+            .single(world)?;
+        let mut editor = world
+            .get_mut::<EditableText>(field)
+            .ok_or("production path field")?;
+        editor.editor_mut().set_text("");
+        press_built(&mut app, "misc.transfer.export")?;
+        assert_eq!(
+            app.world().non_send::<HostOwner>().settings.feedback,
+            "Enter a file path"
+        );
+        assert!(!export.exists());
+
+        app.world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("production path field")?
+            .editor_mut()
+            .set_text(export.to_str().ok_or("export path")?);
+        press_built(&mut app, "misc.transfer.export")?;
+        assert_eq!(
+            PreferenceStore::read_transfer(&export)?.audio_device,
+            "Headset"
+        );
+
+        for (button, expected) in [
+            ("misc.transfer.defaults", ""),
+            ("misc.transfer.import", "Headset"),
+            ("misc.transfer.restore", ""),
+        ] {
+            assert_ne!(device(&app)?.1, expected);
+            press_built(&mut app, button)?;
+            finish_transfer(&mut app)?;
+            assert_eq!(device(&app)?, (expected.into(), expected.into()));
+            let reopened = HostOwner::new(Some(path.clone()))?;
+            assert_eq!(reopened.settings.preferences.audio_device, expected);
+        }
+        Ok(())
     }
 }

@@ -1091,7 +1091,14 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) = if groups.runs("rows")
+        && e2e_row_batch(std::env::var("OTERYN_E2E_ROW_BATCH").ok().as_deref()) == Some((237, 1))
+    {
+        let outcome = client.session_mut().logout().await?;
+        (outcome.result, format!("{outcome:?}"), 1, false)
+    } else {
+        logout_retrying_busy(&mut client).await?
+    };
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
