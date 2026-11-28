@@ -80,7 +80,10 @@ fn select(
     }
     let mut random = None;
     if draw.below("cyclopedia-rapid-respawn-chance", 100)? < RANDOM_CHANCE_PERCENT {
-        let remaining: Vec<_> = eligible.into_iter().filter(|area| Some(*area) != donation).collect();
+        let remaining: Vec<_> = eligible
+            .into_iter()
+            .filter(|area| Some(*area) != donation)
+            .collect();
         random = draw.pick("cyclopedia-rapid-respawn-area", &remaining)?;
     }
     Ok(Selection { donation, random })
@@ -129,13 +132,23 @@ pub(super) async fn prepare(
             .bind(world.as_bytes().as_slice()).execute(&mut ***tx).await?;
         current = read_epoch(tx, world, epoch, &area_ids, Some(&bundle)).await?;
         if current.len() != area_ids.len() {
-            settle(tx, world, bundle, epoch, &area_ids, i64::from(legacy_area), &mut current)
-                .await?;
+            settle(
+                tx,
+                world,
+                bundle,
+                epoch,
+                &area_ids,
+                i64::from(legacy_area),
+                &mut current,
+            )
+            .await?;
         }
     }
-    Ok(current.into_iter().filter_map(|(area, improved)| improved.then_some(area as u32)).collect())
+    Ok(current
+        .into_iter()
+        .filter_map(|(area, improved)| improved.then_some(area as u32))
+        .collect())
 }
-
 
 async fn settle(
     tx: &mut Type2Transaction<'_>,
@@ -186,7 +199,9 @@ async fn settle(
             previous = read_epoch(tx, world, prior_epoch, area_ids, None).await?;
             if imported
                 && let Entry::Vacant(entry) = previous.entry(legacy_area)
-                && let Some(improved) = read_epoch(tx, world, prior_epoch, &[0], None).await?.remove(&0)
+                && let Some(improved) = read_epoch(tx, world, prior_epoch, &[0], None)
+                    .await?
+                    .remove(&0)
             {
                 entry.insert(improved);
             }
@@ -220,8 +235,13 @@ async fn settle(
     ).bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&new_areas)
         .bind(&boosts).bind(&donation_winners).bind(&pools_before).execute(&mut ***tx).await?;
     if let Some(winner) = selection.donation {
-        sqlx::query("UPDATE game_world_cyclopedia SET pool=pool-$3 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2")
-            .bind(world.as_bytes().as_slice()).bind(winner).bind(DONATION_GOAL as i64).execute(&mut ***tx).await?;
+        sqlx::query(
+            "UPDATE game_world_cyclopedia SET pool=0 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(winner)
+        .execute(&mut ***tx)
+        .await?;
     }
     Ok(())
 }
@@ -233,8 +253,9 @@ mod tests {
     use super::*;
 
     fn draw(epoch: u64) -> Draw {
-        let world = WorldId::decode(&[42, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 42])
-            .expect("fixture World ID");
+        let world =
+            WorldId::decode(&[42, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 42])
+                .expect("fixture World ID");
         Draw::new(world, epoch)
     }
 
@@ -244,20 +265,37 @@ mod tests {
         let no_previous = BTreeMap::new();
         let miss = draw(3);
         let hit = draw(7);
-        assert_eq!(miss.below("cyclopedia-rapid-respawn-chance", 100).unwrap(), 33);
-        assert_eq!(select(&miss, &pools, &no_previous).unwrap(), Selection::default());
+        assert_eq!(
+            miss.below("cyclopedia-rapid-respawn-chance", 100).unwrap(),
+            33
+        );
+        assert_eq!(
+            select(&miss, &pools, &no_previous).unwrap(),
+            Selection::default()
+        );
         assert_eq!(select(&hit, &pools, &no_previous).unwrap().random, Some(1));
-        assert_eq!(select(&hit, &pools, &[(1, true)].into()).unwrap(), Selection::default());
+        assert_eq!(
+            select(&hit, &pools, &[(1, true)].into()).unwrap(),
+            Selection::default()
+        );
     }
 
     #[test]
     fn rapid_respawn_replays_ties_and_picks_a_distinct_area() {
-        let pools = [(3, DONATION_GOAL), (1, DONATION_GOAL), (2, DONATION_GOAL - 1)].into();
+        let pools = [
+            (3, DONATION_GOAL),
+            (1, DONATION_GOAL),
+            (2, DONATION_GOAL - 1),
+        ]
+        .into();
         let hit = draw(7);
         for _ in 0..2 {
             assert_eq!(
                 select(&hit, &pools, &BTreeMap::new()).unwrap(),
-                Selection { donation: Some(1), random: Some(2) }
+                Selection {
+                    donation: Some(1),
+                    random: Some(2)
+                }
             );
         }
     }
