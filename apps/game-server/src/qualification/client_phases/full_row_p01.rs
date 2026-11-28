@@ -502,6 +502,7 @@ pub(super) async fn hunt_exact_creature(
     let mut kills = Vec::new();
     let mut fire_damage = false;
     let mut hunt_lock = false;
+    let mut target_health_fell = false;
     let mut enflame_log_count = 0;
     let mut experience = Vec::new();
     let (corpse, raw_xp, gained_xp) = loop {
@@ -534,6 +535,15 @@ pub(super) async fn hunt_exact_creature(
                         .find(|entry| entry.entity == target.entity)
                     {
                         last_position = updated.position;
+                        target_health_fell |= match (target.detail, updated.detail) {
+                            (
+                                oteryn_dev_client::EntityDetail::Actor { health_percent: initial, .. }
+                                | oteryn_dev_client::EntityDetail::ActorWithIcons { health_percent: initial, .. },
+                                oteryn_dev_client::EntityDetail::Actor { health_percent: current, .. }
+                                | oteryn_dev_client::EntityDetail::ActorWithIcons { health_percent: current, .. },
+                            ) => current < initial,
+                            _ => false,
+                        };
                     }
                     continue;
                 }
@@ -666,6 +676,9 @@ pub(super) async fn hunt_exact_creature(
             return Err("Enflame Server Log did not match an attributed impact".into());
         }
         if fire_damage {
+            if !target_health_fell {
+                return Err("attributed Enflame target never showed lower wire health".into());
+            }
             evidence(
                 "P01_CHECK enflame-server-log PASS A troll loses 1 hitpoint due to your attack. (enflame charm)",
             );
@@ -1012,7 +1025,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let race = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("Rat race index")?;
     if rat.final_kill_threshold() != 250
         || *rat_points != 5
-        || count(&initial, race) != 249
+        || !initial.bestiary.iter().any(|entry| {
+            entry.race == race && entry.kill_count == 249
+                && entry.kill_thresholds == [10, 100, 250] && !entry.is_complete()
+        })
         || initial.charms.charm_points_available != 400
     {
         return Err(format!(
@@ -1047,6 +1063,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if first_kill.race != race
         || first_kill.raw_xp != 5
         || first_kill.fire_damage
+        || !current.bestiary.iter().any(|entry| {
+            entry.race == race && entry.kill_count == 250
+                && entry.kill_thresholds == [10, 100, 250] && entry.is_complete()
+        })
         || current != expected_mastery
     {
         return Err(format!(
@@ -1187,6 +1207,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("Troll fixture must be mastered before the Enflame assignment".into());
     }
     let troll_corpse = provisioning::item_reference(&provisioning::item_index()?, 5960)?.get();
+    let assigned_wallet = refusal_wallet(&client, clients).await?;
     let assigned = client_row_p01::send(
         &mut client,
         CharmProgressionAction::Assign { charm, race },
@@ -1201,7 +1222,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if assigned != expected_assigned {
         return Err(format!("ASSIGN reply/delta mismatch: {assigned:?}").into());
     }
-    evidence("P01_CHECK assign-unlocked PASS assignment-and-active-hook");
+    let assigned_readback = query(&mut client, "p01-full-assigned-readback.json", &mut frames).await?;
+    let mut assigned_query = expected_assigned.clone();
+    assigned_query.outcome = CharmProgressionOutcome::Query;
+    if assigned_readback != assigned_query || refusal_wallet(&client, clients).await? != assigned_wallet {
+        return Err("successful assignment changed wallet or disagreed with independent readback".into());
+    }
+    evidence("P01_CHECK assign-unlocked PASS assignment-and-active-hook zero-wallet-debit");
 
     row.at("assigned-combat-hook");
     if client.inventory().is_none_or(|inventory| {

@@ -468,6 +468,7 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
             troll,
             Assign(CharmAssignDisposition::Assigned),
         ),
+        ("assigned-readback", Intent::Query, troll, Query),
         ("after-hook", Intent::Query, troll, Query),
         ("durable", Intent::Query, troll, Query),
     ] {
@@ -501,7 +502,8 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
                 reply
                     .bestiary
                     .iter()
-                    .any(|entry| entry.race == rat && entry.kill_count == 249)
+                    .any(|entry| entry.race == rat && entry.kill_count == 249
+                        && entry.kill_thresholds == [10, 100, 250] && !entry.is_complete())
             );
             assert!(
                 reply
@@ -522,6 +524,9 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
         state.outcome = outcome;
         match suffix {
             "mastery" => {
+                assert!(reply.bestiary.iter().any(|entry| entry.race == rat
+                    && entry.kill_count == 250 && entry.kill_thresholds == [10, 100, 250]
+                    && entry.is_complete()));
                 state.charms.charm_points_available = 405;
                 state
                     .bestiary

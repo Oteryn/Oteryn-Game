@@ -136,7 +136,8 @@ def replay_targets():
         {"p01-full-initial.json", "p01-full-mastery.json", "p01-full-locked.json",
          "p01-full-unlocked.json", "p01-full-incomplete.json", "p01-full-assigned.json",
          "p01-full-after-hook.json", "p01-full-durable.json", "p01-full-expected.txt",
-         "p01-full-locked-readback.json", "p01-full-incomplete-readback.json"},
+         "p01-full-locked-readback.json", "p01-full-incomplete-readback.json",
+         "p01-full-assigned-readback.json"},
     )]
     return targets
 
