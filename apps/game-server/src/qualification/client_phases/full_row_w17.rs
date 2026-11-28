@@ -241,10 +241,17 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
     let modes = FightModes { fight_mode: FightMode::Offensive, chase: ChaseMode::Chase, secure: true };
     let fight_mode = client.session_mut().set_fight_modes(&modes).await?;
-    if fight_mode.disposition != AttackIntentDisposition::Ok
-        || client.session_mut().combat_state().is_none_or(|combat| combat.modes != modes)
-    {
+    if fight_mode.disposition != AttackIntentDisposition::Ok {
         return Err(format!("W17 offensive chase setup refused: {fight_mode:?}").into());
+    }
+    let modes_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client.session_mut().combat_state().is_none_or(|combat| combat.modes != modes) {
+        if tokio::time::Instant::now() >= modes_deadline {
+            let observed = client.session_mut().combat_state();
+            return Err(format!("W17 offensive chase state missing after result={fight_mode:?}: {observed:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
     }
     let ready = command(&mut client, ArenaAction::Status).await?;
     if ready != initial {
@@ -252,7 +259,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     let entered = command(&mut client, ArenaAction::Enter).await?;
     check_pit(entered, 1)?;
-    assert_position(&client, pit_position(1))?;
+    confirm_position(&mut client, pit_position(1)).await?;
     if count(&client, platinum)? != 0 {
         return Err("W17 first entry did not consume exactly ten platinum coins".into());
     }
@@ -269,7 +276,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         let next = command(&mut client, ArenaAction::Advance).await?;
         if pit < 10 {
             check_pit(next, pit + 1)?;
-            assert_position(&client, pit_position(pit + 1))?;
+            confirm_position(&mut client, pit_position(pit + 1)).await?;
         } else {
             if next.disposition != ArenaDisposition::Applied
                 || (next.state.completed_rank, next.state.active_rank, next.state.pit, next.state.phase)
@@ -277,7 +284,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             {
                 return Err(format!("W17 final Advance did not complete Greenhorn: {next:?}").into());
             }
-            assert_position(&client, REWARD_ROOM)?;
+            confirm_position(&mut client, REWARD_ROOM).await?;
         }
         evidence(&format!("W17_PIT pit={pit} credited=true next={:?}", next.state));
         verdict::Harness::global().progress("W17 pit credited");
@@ -304,7 +311,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("W17 Leave did not preserve completion and claim: {left:?}").into());
     }
-    assert_position(&client, ENTRANCE)?;
+    confirm_position(&mut client, ENTRANCE).await?;
     journey.pass(6, left)?;
     journey.pass(7, drome_enter)?;
 
@@ -346,6 +353,17 @@ fn assert_position(client: &DevClientSession, expected: (i32, i32, i32)) -> Test
         return Err(format!("W17 position expected={expected:?} observed={actual:?}").into());
     }
     Ok(())
+}
+
+async fn confirm_position(client: &mut DevClientSession, expected: (i32, i32, i32)) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        match assert_position(client, expected) {
+            Ok(()) => return Ok(()),
+            Err(error) if tokio::time::Instant::now() >= deadline => return Err(error),
+            Err(_) => client.service_liveness(Duration::from_millis(25)).await?,
+        }
+    }
 }
 
 async fn place_at_entrance(clients: &SeamClients<'_>) -> TestResult {
