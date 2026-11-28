@@ -148,6 +148,14 @@
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
+      "event": "reward_chest_holder_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["purpose", "owner", "held_ms", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Bounded holder checkout before issuing a reward chest mint or reading its receipt after an unknown commit."
+    },
+    {
       "event": "wheel_reset_refused",
       "level": "warn",
       "span": false,

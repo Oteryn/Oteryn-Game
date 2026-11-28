@@ -458,29 +458,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if quest_transition.is_some() {
                     self.schedule_quest_refresh(command.game_session_id);
                 }
-                let result = async {
-                    let mut candidate = self
-                        .root
-                        .freeze_reward_claim_mint_weighted(
-                            self.character,
-                            self.holder,
-                            fence,
-                            request,
-                            &NativeItemWeights(native),
-                        )
-                        .await?;
-                    self.root
-                        .commit_reward_claim_mint_weighted_noticed(
-                            self.character,
-                            self.holder,
-                            fence,
-                            &mut candidate,
-                            Some(self.achievements.len()),
-                            &NativeItemWeights(native),
-                        )
-                        .await
-                }
-                .await;
+                #[cfg(test)]
+                hold_reward_mint_checkout_for_test(self.root).await;
+                let result = self
+                    .root
+                    .mint_bundle_chest_reward(
+                        self.character,
+                        self.holder,
+                        fence,
+                        request,
+                        self.achievements.len(),
+                        &NativeItemWeights(native),
+                    )
+                    .await;
                 drop(permit);
                 // The mint owns the atomic obligation insert. The quest owner applies
                 // it in its revision slot; admission/cadence resumes an unacknowledged
@@ -537,4 +527,47 @@ fn mint_refusal(command: UseCommand, error: RewardClaimMintError) -> UseOutcome 
         command.command_id,
     ));
     outcome(chest_use_disposition(&ChestUseError::Mint(error)))
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    static REWARD_MINT_HOLDER: std::cell::Cell<(Option<std::time::Duration>, bool)>;
+}
+
+#[cfg(test)]
+pub(super) async fn with_busy_reward_mint_holder<F: std::future::Future>(
+    duration: std::time::Duration,
+    operation: F,
+) -> (F::Output, bool) {
+    REWARD_MINT_HOLDER
+        .scope(std::cell::Cell::new((Some(duration), false)), async {
+            let result = operation.await;
+            (result, REWARD_MINT_HOLDER.with(|state| state.get().1))
+        })
+        .await
+}
+
+#[cfg(test)]
+async fn hold_reward_mint_checkout_for_test(root: &crate::durability::DurabilityRoot) {
+    let Ok(Some(duration)) = REWARD_MINT_HOLDER.try_with(|state| {
+        let (duration, held) = state.get();
+        state.set((None, held));
+        duration
+    }) else {
+        return;
+    };
+    let Ok(holder) = root.try_issue_semantic_pass() else {
+        return;
+    };
+    REWARD_MINT_HOLDER.with(|state| state.set((None, true)));
+    tokio::spawn(async move {
+        holder
+            .run(move |_, _| {
+                Box::pin(async move {
+                    tokio::time::sleep(duration).await;
+                    Ok(())
+                })
+            })
+            .await
+    });
 }

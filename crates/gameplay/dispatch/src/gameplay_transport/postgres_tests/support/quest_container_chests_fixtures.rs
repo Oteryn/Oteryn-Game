@@ -31,6 +31,7 @@ pub(super) use forgemaster::AccessPolicy as ForgemasterAccessPolicy;
 pub(super) enum Case {
     TreasureOccurrence,
     Authored,
+    MintContention(super::reward_chest_holder::Scenario),
     Bear,
     Key,
     Choice,
@@ -74,7 +75,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
-fn scenario(case: Case) -> TestResult {
+pub(super) fn scenario(case: Case) -> TestResult {
     scenario_case(case, None, None, None)
 }
 
@@ -137,7 +138,7 @@ fn scenario_case(
             "oteryn:item.tibia.i49530",
             vec![],
         ),
-        Case::Authored | Case::Forgemaster => (
+        Case::Authored | Case::MintContention(_) | Case::Forgemaster => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
             if matches!(case, Case::Forgemaster) {
@@ -352,7 +353,7 @@ fn scenario_case(
             )?;
             authored_shard = Some(shard);
             report
-        } else if matches!(case, Case::Authored | Case::Forgemaster) {
+        } else if matches!(case, Case::Authored | Case::MintContention(_) | Case::Forgemaster) {
             // Exercise an authored selector on a real map without borrowing a source UID.
             let mut definition = None;
             for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
@@ -992,6 +993,13 @@ fn scenario_case(
                 super::source_quest_rewards_fixtures::admit_reward_character(&owner, &admitted, claim)
                     .await?;
                 phase("owner_admission");
+                if let Case::MintContention(scenario) = case {
+                    super::reward_chest_holder::exercise(
+                        scenario, &harness, &owner, admitted, &target, claim, root_key,
+                    )
+                    .await?;
+                    break;
+                }
                 if matches!(case, Case::TreasureOccurrence) {
                     use super::cyclopedia_fixtures::support::exchange;
                     use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
