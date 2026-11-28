@@ -185,7 +185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 WheelAllocationReply::Unavailable
             };
         };
-        if let Some(actor) = admitted.runtime_actor {
+        if !refused && let Some(actor) = admitted.runtime_actor {
             self.refresh_wheel_vitals(actor, session).await;
         }
         // Old allocation clients receive the exact original reply shape. A vessel-aware
