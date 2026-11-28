@@ -16,6 +16,7 @@ import pegasus_feather_item_profile
 import qengine_reward_item_profiles as qengine
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -222,9 +223,11 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(
                 by_key[key]["production_binding"], row["production_binding"]
             )
-            self.assertEqual(by_key[key]["semantics"], row["semantics"])
-            for field, value in row["attributes"].items():
-                self.assertEqual(by_key[key]["attributes"][field], value, (key, field))
+            expected = compact_item_record(copy.deepcopy(row))
+            registered = compact_item_record(copy.deepcopy(by_key[key]))
+            self.assertEqual(registered["semantics"], expected["semantics"], key)
+            for field, value in expected["attributes"].items():
+                self.assertEqual(registered["attributes"][field], value, (key, field))
         self.assertIn("tools/content-schema/native-gameplay/loot-tables.json", actual)
         self.assertIn("content/items/authored-static-admissions.json", actual)
         for cohort in ("marsh", "slug"):

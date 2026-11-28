@@ -45,19 +45,18 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
+    super::classic_quests_fixtures::talk(owner, admitted, npc, 9099, "hi").await?;
+    let unavailable = super::classic_quests_fixtures::talk(owner, admitted, npc, 9100, "cape").await?;
+    assert!(!unavailable.iter().any(|line| line.contains("old cape")));
     let initial = counts(h).await?;
-    // Move one cell to the leftmost native box, before accepting its request.
-    step(
-        owner,
-        admitted,
-        oteryn_protocol_oteryn::world_spatial::StepDirection::West,
-    )
-    .await?;
+    // The first object is present even before the Crone authorizes the pickup.
+    relocate(owner, admitted, FIRST_APPROACH).await?;
     assert_eq!(
-        use_source(owner, admitted, 33079, 31158, 1, 0).await?,
+        use_source(owner, admitted, FIRST, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
     );
     assert_eq!(counts(h).await?, initial);
+    relocate(owner, admitted, CRONE_APPROACH).await?;
     let (outcome, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, accepted, false).await?;
     assert_eq!(
@@ -82,9 +81,10 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
     );
     assert_eq!(counts(h).await?, accepted_counts);
+    relocate(owner, admitted, FIRST_APPROACH).await?;
     let premium = owner.premium_coordinator.take();
     assert_eq!(
-        use_source(owner, admitted, 33079, 31158, 1, 0).await?,
+        use_source(owner, admitted, FIRST, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
     );
     assert_eq!(
@@ -121,7 +121,7 @@ pub(super) async fn exercise(
     }
     let full = counts(h).await?;
     assert_eq!(
-        use_source(owner, admitted, 33079, 31158, 1, 0).await?,
+        use_source(owner, admitted, FIRST, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
     );
     assert_eq!(
@@ -142,33 +142,23 @@ pub(super) async fn exercise(
         .await?;
     }
     assert_eq!(
-        use_source(owner, admitted, 33079, 31158, 1, 0).await?,
+        use_source(owner, admitted, FIRST, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     );
     let first = counts(h).await?;
-    // A second object in the same pile must share the once flag.
+    // The exact source cannot mint a second copy.
     assert_eq!(
-        use_source(owner, admitted, 33079, 31158, 2, 0).await?,
+        use_source(owner, admitted, FIRST, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
     );
     assert_eq!(counts(h).await?, first);
-    step(
-        owner,
-        admitted,
-        oteryn_protocol_oteryn::world_spatial::StepDirection::East,
-    )
-    .await?;
-    step(
-        owner,
-        admitted,
-        oteryn_protocol_oteryn::world_spatial::StepDirection::East,
-    )
-    .await?;
+    relocate(owner, admitted, SECOND_APPROACH).await?;
     assert_eq!(
-        use_source(owner, admitted, 33083, 31158, 1, 0).await?,
+        use_source(owner, admitted, SECOND, 2).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     );
     let two = counts(h).await?;
+    relocate(owner, admitted, CRONE_APPROACH).await?;
     let (outcome, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, final_callback, false).await?;
     assert_eq!(
@@ -176,8 +166,9 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
     );
     assert_eq!(counts(h).await?, two);
+    relocate(owner, admitted, THIRD_APPROACH).await?;
     assert_eq!(
-        use_source(owner, admitted, 33083, 31159, 1, 0).await?,
+        use_source(owner, admitted, THIRD, 1).await?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     );
     let wills: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i11544'").fetch_one(&h.pool).await?;
@@ -187,6 +178,7 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(receipts_before, 3);
+    relocate(owner, admitted, CRONE_APPROACH).await?;
     let premium = owner.premium_coordinator.take();
     let no_premium = counts(h).await?;
     let (outcome, _, _) =
@@ -245,7 +237,15 @@ pub(super) async fn exercise(
     let same_tx:bool=sqlx::query_scalar("SELECT s.xmin=r.xmin AND r.xmin=q.xmin FROM game_quest_reward_sources s JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key) JOIN game_character_quest_states q ON q.character_id=s.character_id AND q.quest_key=r.quest_key WHERE s.transition_key='oteryn:quest-reward/l6-spirit-confession'").fetch_one(&h.pool).await?;
     assert!(same_tx);
     let final_counts = counts(h).await?;
-    let lines = super::classic_quests_fixtures::talk(owner, admitted, npc, 9200, "confession").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, npc, 9200, "hi").await?;
+    for (command, word, item) in [(9201, "cape", "old cape"), (9204, "hat", "sedge hat")] {
+        let offer = super::classic_quests_fixtures::talk(owner, admitted, npc, command, word).await?;
+        assert!(offer.iter().any(|line| line.contains(item)), "{word}: {offer:?}");
+        super::classic_quests_fixtures::talk(owner, admitted, npc, command + 1, "bye").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, npc, command + 2, "hi").await?;
+    }
+
+    let lines = super::classic_quests_fixtures::talk(owner, admitted, npc, 9207, "confession").await?;
     assert!(
         lines
             .iter()
@@ -316,12 +316,21 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+const CRONE_APPROACH: Position = Position { x: 33081, y: 31159, floor: -8 };
+const FIRST: Position = Position { x: 33177, y: 31021, floor: -5 };
+const FIRST_APPROACH: Position = Position { y: 31022, ..FIRST };
+const SECOND: Position = Position { x: 33161, y: 31056, floor: -4 };
+const SECOND_APPROACH: Position = Position { x: 33160, y: 31057, ..SECOND };
+const THIRD: Position = Position { x: 33166, y: 31056, floor: -6 };
+const THIRD_APPROACH: Position = Position { y: 31057, ..THIRD };
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_crop};
-    native_crop(
-        native,
+    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
+    let crops = vec![
         NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -330,63 +339,87 @@ pub(super) fn world(
             region: (8, 129, 121),
             bounds: (33077, 31157, 33085, 31162),
             start: (33081, 31159),
-            expected: vec![
-                ExpectedTile {
-                    position: (33079, 31158),
-                    ids: vec![11002, 2473, 2473, 2473],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (33083, 31158),
-                    ids: vec![11000, 2469, 2469],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (33083, 31159),
-                    ids: vec![10999, 2472],
-                    counted_entry: None,
-                },
-            ],
+            expected: vec![],
         },
-    )
+        NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z05-x129-y121.b3"
+            )),
+            region: (5, 129, 121),
+            bounds: (33177, 31021, 33178, 31023),
+            start: (33081, 31159),
+            expected: vec![ExpectedTile {
+                position: (FIRST.x, FIRST.y),
+                ids: vec![9929, 6373, 2473],
+                counted_entry: None,
+            }],
+        },
+        NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z04-x129-y121.b3"
+            )),
+            region: (4, 129, 121),
+            bounds: (33161, 31056, 33162, 31057),
+            start: (33081, 31159),
+            expected: vec![ExpectedTile {
+                position: (SECOND.x, SECOND.y),
+                ids: vec![10534, 8696, 2469],
+                counted_entry: None,
+            }],
+        },
+        NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z04-x129-y121.b3"
+            )),
+            region: (4, 129, 121),
+            bounds: (33160, 31057, 33161, 31058),
+            start: (33081, 31159),
+            expected: vec![ExpectedTile {
+                position: (SECOND_APPROACH.x, SECOND_APPROACH.y),
+                ids: vec![10534, 8703],
+                counted_entry: None,
+            }],
+        },
+        NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z06-x129-y121.b3"
+            )),
+            region: (6, 129, 121),
+            bounds: (33166, 31056, 33167, 31058),
+            start: (33081, 31159),
+            expected: vec![ExpectedTile {
+                position: (THIRD.x, THIRD.y),
+                ids: vec![9856, 2472],
+                counted_entry: None,
+            }],
+        },
+    ];
+    native_scene(native, crops, &[])
 }
 
 async fn counts(h: &Harness) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('instances',(SELECT count(*) FROM game_item_instances),'mints',(SELECT count(*) FROM game_reward_claim_mint_receipts),'consumes',(SELECT count(*) FROM game_quest_callback_consumptions),'audits',(SELECT count(*) FROM game_item_audit_outbox),'quest_receipts',(SELECT count(*) FROM game_character_quest_receipts),'sources',(SELECT count(*) FROM game_quest_reward_sources),'roots',(SELECT jsonb_agg(to_jsonb(r)) FROM game_character_roots r),'tracks',(SELECT jsonb_agg(to_jsonb(t)) FROM game_character_quest_tracks t))").fetch_one(&h.pool).await?)
 }
 
-async fn step(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
+async fn relocate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    at: Position,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::world_spatial::*;
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(2))
-        .ok_or("clock")?;
-    let reply = super::quest_world_callbacks_fixtures::wire(
-        owner,
-        admitted,
-        admitted.continuity.next_command_id,
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(direction),
-    )
-    .await?;
-    assert_eq!(
-        decode_step_result(&reply).map_err(debug)?,
-        StepDisposition::Moved
-    );
-    Ok(())
+    super::l6_native_signs_fixtures::relocate(
+        owner, admitted.runtime_actor.ok_or("actor")?, admitted.game_session_id, at,
+    ).await
 }
 
 async fn use_source(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    x: u16,
-    y: u16,
+    source: Position,
     ordinal: u8,
-    revision: u64,
 ) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
     use oteryn_protocol_oteryn::world_object::*;
     owner.clock_origin = owner
@@ -401,13 +434,13 @@ async fn use_source(
         .digest()
         .to_vec();
     placement.extend_from_slice(
-        &oteryn_world_bundle::bundle::placement_key(-8, x, y, ordinal)
+        &oteryn_world_bundle::bundle::placement_key(source.floor, source.x, source.y, ordinal)
             .ok_or("source key")?
             .to_be_bytes(),
     );
     let payload = encode_use_intent(&WorldObjectTarget {
         placement,
-        expected_revision: revision,
+        expected_revision: 0,
     })
     .map_err(debug)?;
     let reply = super::quest_world_callbacks_fixtures::wire(

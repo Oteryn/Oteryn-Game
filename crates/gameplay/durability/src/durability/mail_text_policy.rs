@@ -331,6 +331,74 @@ mod tests {
     }
 
     #[test]
+    fn crystal_carried_rewrites_use_pinned_text_limits()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+
+        let world = crate::foundation::WorldId::decode(&crate::bestiary_postgres_harness::id(42))?;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("production gameplay activation missing")?;
+        let cohorts: &[(u32, &[u32])] = &[
+            (64, &[9614]),
+            (
+                99,
+                &[
+                    5785, 5799, 5805, 5806, 5807, 8150, 8151, 8156, 8737, 9538, 15276, 21445,
+                    31266, 31268,
+                ],
+            ),
+            (149, &[9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223]),
+            (
+                199,
+                &[
+                    4100, 8155, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214, 9224, 19074,
+                ],
+            ),
+            (511, &[347]),
+            (
+                1023,
+                &[
+                    173, 174, 175, 176, 177, 178, 179, 401, 635, 636, 2827, 2833, 2835, 2842, 3212,
+                    5956, 6386, 6533, 6538, 51977,
+                ],
+            ),
+            (1500, &[27932, 27933, 27934]),
+            (3997, &[28572]),
+        ];
+        for &(limit, ids) in cohorts {
+            for id in ids {
+                let document = TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: format!("oteryn:item.tibia.i{id}"),
+                    revision_ref: "definition-r1".into(),
+                };
+                let policy = native
+                    .mail_text_policy(&document)
+                    .map_err(|error| format!("Crystal writable item {id}: {error:?}"))?;
+                assert_eq!(policy.write_once_target, None, "{id}");
+                let record = native
+                    .item_policy(&document.production_key, &document.revision_ref)
+                    .ok_or("document profile")?
+                    .record();
+                assert_eq!(
+                    qualified_profile(
+                        &record.production_definition,
+                        &record.admission,
+                        &record.semantics,
+                        &document
+                    )?,
+                    limit,
+                    "{id}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn write_profile_current_production_content_admits_only_qualified_rewrites()
     -> std::result::Result<(), Box<dyn std::error::Error>> {
         use crate::content::native_gameplay::test_support::activated_with_loot_tables;
@@ -361,6 +429,7 @@ mod tests {
             (2818, 1023, Some(2834)),
             (2839, 1023, Some(2824)),
             (7879, 1023, None),
+            (8747, 511, Some(8748)),
         ] {
             let document = TypedDefinitionRef {
                 production_key: format!("oteryn:item.tibia.i{id}"),
@@ -389,8 +458,8 @@ mod tests {
             );
         }
         for id in [
-            173, 177, 637, 639, 641, 2598, 2605, 2816, 2819, 2824, 2834, 2837, 3506, 6386, 6533,
-            6538, 8747, 27932, 27933, 27934,
+            637, 639, 641, 2598, 2605, 2816, 2819, 2820, 2821, 2822, 2824, 2825, 2826, 2828, 2829,
+            2830, 2831, 2832, 2834, 2837, 3506, 6387, 8117, 15633, 19072, 19073, 21413, 28461,
         ] {
             let other = TypedDefinitionRef {
                 production_key: format!("oteryn:item.tibia.i{id}"),

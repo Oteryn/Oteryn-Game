@@ -106,7 +106,57 @@ class NativeWorldCompletion(unittest.TestCase):
             ),
         )
         self.write(self.world / "unmanaged/sentinel", b"retain caller sibling\n")
+        authoring = Path(__file__).resolve().parents[2] / (
+            "content/services/trade/crystal-npc-trade.authoring.json"
+        )
+        shops = json.loads(authoring.read_bytes())["shops"]
+        self.write(
+            self.repo / "content/services/trade/crystal-npc-trade.authoring.json",
+            encode({"shops": [shop for shop in shops if shop["npc"] == "gamon"]}),
+        )
+        self.add_gamon()
         self.original = canonical.read_documents(self.world)
+
+    def add_gamon(self):
+        from questpc7_world_seal import refresh
+
+        path = self.world / "definitions/declarations.json"
+        document = json.loads(path.read_bytes())
+        document["records"].append(
+            {
+                "kind": "NPC",
+                "identity": {"key": "oteryn:npc.gamon", "revision": "definition-r1"},
+                "services": [
+                    {
+                        "family": "Service",
+                        "key": "oteryn:service.trade.gamon",
+                        "revision": "definition-r1",
+                    }
+                ],
+            }
+        )
+        document["records"].append(
+            {
+                "kind": "Service",
+                "identity": {
+                    "key": "oteryn:service.trade.gamon",
+                    "revision": "definition-r1",
+                },
+                "offers": [
+                    {
+                        "item": {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2998",
+                            "revision": "definition-r1",
+                        },
+                        "direction": "SellToPlayer",
+                        "unit_price": 25,
+                    }
+                ],
+            }
+        )
+        self.write(path, encode(document))
+        refresh(self.repo, self.world)
 
     @staticmethod
     def write(path, raw):
@@ -165,6 +215,7 @@ class NativeWorldCompletion(unittest.TestCase):
 
     def test_predecessor_materializer_uses_output_first(self):
         materializer = self.repo / "materialize_content_world_project_v2"
+        self.write(materializer, b"fixture executable")
 
         def native(command, *, cwd, check):
             self.assertEqual(cwd, self.repo)
@@ -200,6 +251,35 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
+    def test_qualification_installs_buddel_before_native_serialization(self):
+        def native(command, **kwargs):
+            staging = Path(command[command.index("--input-root") + 1])
+            install_buddel.assert_called_once_with(self.repo, staging)
+            prices.assert_called_once_with(self.repo, staging)
+            dialogue.assert_called_once_with(self.repo, staging)
+            return self.native_output(command, **kwargs)
+
+        argv = [
+            "native_world_canonicalization.py",
+            "--repo-root",
+            str(self.repo),
+            "--input-root",
+            str(self.world),
+        ]
+        with (
+            patch.object(sys, "argv", argv),
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes"),
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
+            canonical.main()
+        self.assertEqual(len(self.calls), 1)
+
     def test_qualification_installs_travel_and_trades_before_native_serialization(self):
         item = {
             "family": "Item",
@@ -208,26 +288,23 @@ class NativeWorldCompletion(unittest.TestCase):
         }
         service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
         offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
-        self.write(
-            self.world / "definitions/reference.json",
-            encode({"records": [{"kind": "Item", "identity": item}]}),
-        )
-        self.write(
-            self.world / "definitions/declarations.json",
-            encode(
+        reference_path = self.world / "definitions/reference.json"
+        reference = json.loads(reference_path.read_bytes())
+        reference["records"].append({"kind": "Item", "identity": item})
+        self.write(reference_path, encode(reference))
+        declarations_path = self.world / "definitions/declarations.json"
+        initial = json.loads(declarations_path.read_bytes())
+        initial["records"].extend(
+            [
+                {"kind": "Service", "identity": service, "offers": [offer]},
                 {
-                    "records": [
-                        {"kind": "Service", "identity": service, "offers": [offer]},
-                        {
-                            "kind": "NPC",
-                            "identity": {"key": "oteryn:npc.dixi"},
-                            "services": [service],
-                        },
-                    ],
-                    "authoring_profiles": [],
-                }
-            ),
+                    "kind": "NPC",
+                    "identity": {"key": "oteryn:npc.dixi"},
+                    "services": [service],
+                },
+            ]
         )
+        self.write(declarations_path, encode(initial))
 
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
@@ -238,9 +315,23 @@ class NativeWorldCompletion(unittest.TestCase):
             dialogue.assert_called_once_with(self.repo, staging)
             locator = "definitions/declarations.json"
             declarations = (staging / locator).read_bytes()
+            dixi = next(
+                row for row in json.loads(declarations)["records"]
+                if row["identity"]["key"] == service["key"]
+            )
+            self.assertEqual(dixi["offers"], [dict(offer, unit_price=25)])
+            trade_document = json.loads(
+                (staging / "definitions/declarations.json").read_bytes()
+            )
+            records = {row["identity"]["key"]: row for row in trade_document["records"]}
+            gamon = records["oteryn:npc.gamon"]
+            linked_offers = [records[ref["key"]]["offers"] for ref in gamon["services"]]
             self.assertEqual(
-                json.loads(declarations)["records"][0]["offers"],
-                [dict(offer, unit_price=25)],
+                [
+                    [(offer["item"]["key"], offer["unit_price"]) for offer in offers]
+                    for offers in linked_offers
+                ],
+                [[("oteryn:item.tibia.i2800", 30)], [("oteryn:item.tibia.i2797", 50)]],
             )
             manifest = json.loads((staging / "manifest.json").read_bytes())
             (seal,) = [
@@ -271,72 +362,165 @@ class NativeWorldCompletion(unittest.TestCase):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
 
+    def test_staged_admissions_precede_writer_and_do_not_rewrite_checkout(self):
+        import crystal_creature_parity as parity
+        import crystal_spawn_creatures as spawn
+
+        self.write(self.repo / parity.PACKET, b"fixture")
+        self.write(self.repo / spawn.PATH, b"fixture")
+        paths = [
+            "crates/gameplay/content/src/content/npc_catalogue.rs",
+            regenerate.PIN_PATH,
+            "apps/game-server/tests/content_npc_catalogue.rs",
+        ]
+        for path in paths:
+            self.write(self.repo / path, b"keep checkout untouched")
+
+        def native(command, **kwargs):
+            staged = Path(command[command.index("--input-root") + 1])
+            install_spawn.assert_called_once_with(self.repo, staged)
+            install_buddel.assert_called_once_with(self.repo, staged)
+            install_parity.assert_called_once_with(self.repo, staged)
+            prices.assert_called_once_with(self.repo, staged)
+            dialogue.assert_called_once_with(self.repo, staged)
+            self.native_output(command, **kwargs)
+            raise subprocess.CalledProcessError(1, command)
+
+        with (
+            patch.object(spawn, "install") as install_spawn,
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes"),
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
+            patch.object(parity, "install_documents") as install_parity,
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                canonical.complete_world_project(self.repo, self.world, include_world_successors=True)
+        self.assertEqual(canonical.read_documents(self.world), self.original)
+        for path in paths:
+            self.assertEqual((self.repo / path).read_bytes(), b"keep checkout untouched")
+
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
-        self.write(
-            self.repo
-            / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json",
-            encode([]),
-        )
-        shutil.copytree(self.world, self.repo / "content/world")
+        world = self.repo / "content/world"
+        shutil.copytree(self.world, world)
+        index = self.repo / "content/items/index.json"
+        shard = "content/items/definitions/items-00000-00000.json"
+        self.write(index, encode({
+            "schema": "OTERYN_FAMILY_INDEX/v1", "family": "Item", "record_count": 0,
+        }))
+        self.write(self.repo / shard, encode({
+            "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
+            "family": "Item",
+            "source_legacy_role": "content/world/definitions/reference.json",
+            "shard": {"index": 0, "start": 0, "end": 0, "count": 1},
+            "records": [{"definition": {"kind": "Item", "identity": {
+                "family": "Item", "key": "oteryn:item.fixture", "revision": "fixture-r1",
+            }}}],
+        }))
+        producer = self.repo / "materialize_content_world_project_v2"
+        self.write(producer, b"fixture executable")
+        canonical_outputs = []
 
         class Completed(Exception):
             pass
 
-        canonical_outputs = []
-
-        def canonical_writer(command):
-            if "--canonicalize-root" not in command:
-                return
-            self.assertEqual(
-                command[:8],
-                [
-                    "cargo",
-                    "run",
-                    "--locked",
-                    "-p",
-                    "oteryn-game-server",
-                    "--example",
-                    "materialize_content_world_project_v2",
-                    "--",
-                ],
-            )
+        def canonical_writer(command, *, cwd, check):
+            self.assertEqual(command[0], str(producer))
+            self.assertEqual(cwd, self.repo)
+            self.assertTrue(check)
             source = Path(command[command.index("--canonicalize-root") + 1])
             output = Path(command[command.index("--output-root") + 1])
-            self.assertEqual(source, self.repo / "content/world")
+            self.assertNotEqual(source, world)
             install_buddel.assert_called_once_with(self.repo, source)
+            project_routes.assert_called_once_with(self.repo, source)
             prices.assert_called_once_with(self.repo, source)
             dialogue.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
-            # The real writer emits exactly the managed package, not the caller's
-            # unmanaged sibling. Keep production's strict output-set assertion live.
             for locator in canonical.DOCUMENTS:
                 self.write(output / locator, (source / locator).read_bytes())
             canonical_outputs.append(output)
 
+        def materialize():
+            inventory = json.loads(index.read_bytes())
+            self.assertEqual(inventory["record_count"], 1)
+            self.assertEqual(inventory["shards"], [shard])
+            canonical.complete_world_project(
+                self.repo, world, include_world_successors=True,
+                materializer=producer,
+            )
+
         def measured():
-            self.assertEqual(len(self.calls), 1)
             self.assertEqual(len(canonical_outputs), 1)
+            self.assertNotEqual(canonical.read_documents(world), self.original)
             raise Completed
 
         with (
             patch.object(sys, "argv", ["regenerate_content.py"]),
             patch.object(regenerate, "ROOT", self.repo),
-            patch.object(regenerate, "WORLD", self.repo / "content/world"),
-            patch.object(regenerate, "run", side_effect=canonical_writer),
+            patch.object(regenerate, "WORLD", world),
+            patch.object(regenerate, "run"),
             patch.object(regenerate, "refresh_quest_callback_proof"),
-            patch.object(regenerate, "materialize_world"),
+            patch.object(regenerate, "materialize_world", side_effect=materialize),
             patch("regional_npc_prices.install") as prices,
             patch("regional_npc_dialogue.install") as dialogue,
             patch("buddel_travel.install_buddel") as install_buddel,
-            patch.object(
-                regenerate, "refresh_source_cohort_extent", side_effect=measured
-            ),
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
+            patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured),
             patch.object(regenerate, "repin_rust_inventory") as repin,
-            patch.object(canonical.subprocess, "run", side_effect=self.native_output),
+            patch.object(canonical.subprocess, "run", side_effect=canonical_writer),
             self.assertRaises(Completed),
         ):
             regenerate.main()
         repin.assert_not_called()
+
+    def test_world_canonicalizer_copies_only_a_complete_document_inventory(self):
+        producer = self.repo / "materialize_content_world_project_v2"
+        self.write(producer, b"fixture executable")
+        world = self.repo / "content/world"
+        for scenario in ("complete", "missing", "unexpected", "refused"):
+            with self.subTest(scenario=scenario):
+                shutil.copytree(self.world, world)
+
+                def writer(command, *, cwd, check):
+                    self.assertEqual(command[0], str(producer))
+                    self.assertEqual(cwd, self.repo)
+                    self.assertTrue(check)
+                    source = Path(command[command.index("--canonicalize-root") + 1])
+                    output = Path(command[command.index("--output-root") + 1])
+                    self.assertFalse(output.exists())
+                    if scenario == "refused":
+                        raise subprocess.CalledProcessError(1, command)
+                    shutil.copytree(source, output)
+                    if scenario == "missing":
+                        (output / "definitions/reference.json").unlink()
+                    if scenario == "unexpected":
+                        self.write(output / "unexpected.json", b"unexpected\n")
+
+                with patch.object(canonical.subprocess, "run", side_effect=writer):
+                    if scenario == "complete":
+                        canonical.complete_world_project(
+                            self.repo, world, materializer=producer
+                        )
+                        actual = canonical.read_documents(world)
+                        changed = {key for key in actual if actual[key] != self.original[key]}
+                        self.assertEqual(changed, canonical.OWNED_DOCUMENTS)
+                    else:
+                        with self.assertRaises((ValueError, subprocess.CalledProcessError)):
+                            canonical.complete_world_project(
+                                self.repo, world, materializer=producer
+                            )
+                        self.assertEqual(canonical.read_documents(world), self.original)
+                self.assertEqual(
+                    (world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n"
+                )
+                shutil.rmtree(world)
 
     def test_missing_extra_or_changed_unowned_output_refuses_every_replacement(self):
         def missing(output):

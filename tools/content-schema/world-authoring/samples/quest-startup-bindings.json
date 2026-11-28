@@ -156,6 +156,18 @@
     },
     {
       "position": [
+        32190,
+        32432,
+        8
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3940,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 148
+    },
+    {
+      "position": [
         32209,
         32292,
         6
@@ -177,6 +189,42 @@
       "action": 4253,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 5
+    },
+    {
+      "position": [
+        32212,
+        32435,
+        10
+      ],
+      "item": 1648,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32234,
+        32140,
+        9
+      ],
+      "item": 6262,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32277,
+        32420,
+        10
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3980,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 153
     },
     {
       "position": [
@@ -228,6 +276,18 @@
     },
     {
       "position": [
+        32554,
+        32860,
+        9
+      ],
+      "item": 5291,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
         32573,
         32121,
         7
@@ -240,6 +300,30 @@
     },
     {
       "position": [
+        32602,
+        31975,
+        14
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "action": 3802,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 130
+    },
+    {
+      "position": [
+        32614,
+        32175,
+        9
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3303,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 214
+    },
+    {
+      "position": [
         32774,
         32289,
         10
@@ -249,6 +333,54 @@
       "action": 101,
       "source": "data-global/startup/tables/tile_pick.lua",
       "line": 6
+    },
+    {
+      "position": [
+        32874,
+        31974,
+        12
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32875,
+        31974,
+        12
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32909,
+        31074,
+        7
+      ],
+      "item": 1680,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
+    },
+    {
+      "position": [
+        32910,
+        31088,
+        7
+      ],
+      "item": 1678,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
     },
     {
       "position": [
@@ -529,6 +661,18 @@
     {
       "position": [
         33290,
+        31715,
+        12
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "action": 30009,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 799
+    },
+    {
+      "position": [
+        33290,
         31785,
         13
       ],
@@ -777,6 +921,18 @@
       "action": 35020,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 596
+    },
+    {
+      "position": [
+        33775,
+        31699,
+        8
+      ],
+      "item": 9565,
+      "attribute": "action",
+      "action": 1050,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 116
     }
   ]
 }

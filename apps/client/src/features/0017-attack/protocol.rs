@@ -1,4 +1,4 @@
-use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
+use crate::combat_input::{BarFallback, CombatCommand, CombatReport, PlayCommand};
 use crate::play::PlayView;
 
 impl PlayView {
@@ -29,10 +29,38 @@ impl crate::play::Outbox {
             }
             _ => return Err(oteryn_session::SessionError::SessionUnusable),
         };
+        self.battle_execute(session, command, panel_command).await?;
+        Ok(())
+    }
+
+    pub(in crate::play) async fn bar_cast_run<T: crate::play::Stepper>(
+        &self,
+        session: &mut T,
+        command: CombatCommand,
+        fallback: BarFallback,
+    ) -> Result<Option<BarFallback>, oteryn_session::SessionError> {
+        use crate::play::feature_local_spell_action_bar::view::bar_cast_current;
+        if !bar_cast_current(&crate::play::mailbox::lock(&self.0), &fallback) {
+            return Ok(None);
+        }
+        let report = self.battle_execute(session, command, None).await?;
+        Ok(matches!(
+            report,
+            CombatReport::Cast(oteryn_session::SpellCastDisposition::CoolingDown)
+        )
+        .then_some(fallback))
+    }
+
+    async fn battle_execute<T: crate::play::Stepper>(
+        &self,
+        session: &mut T,
+        command: CombatCommand,
+        panel_command: Option<CombatCommand>,
+    ) -> Result<CombatReport, oteryn_session::SessionError> {
         let wire = crate::play::mailbox::lock(&self.0).wire_combat(command);
         let report = session.combat(wire).await?;
         self.battle_result(report, session.battle_state(), panel_command);
-        Ok(())
+        Ok(report)
     }
 
     pub(in crate::play) fn battle_result(

@@ -1,0 +1,2816 @@
+{
+  "items_xml_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+  "records": {
+    "10200": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "10201": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "11688": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "11692": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "11693": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "14768": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "16110": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "16112": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "16161": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 1
+    },
+    "16162": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "16175": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "27449": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "27450": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 3
+    },
+    "27451": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "27452": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 3
+    },
+    "27453": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "27454": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 3
+    },
+    "27455": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "27456": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "27457": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "27458": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "27647": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "27648": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3"
+      },
+      "slot_count": 2
+    },
+    "27650": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "28714": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "28715": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_MAGIC_LEVEL": "2",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "28716": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "28717": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "28718": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "28719": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "28721": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "28722": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "28723": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "28825": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "28826": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "28829": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "28830": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "28831": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "28832": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "29417": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "29418": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "29420": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "29423": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "29424": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "29425": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "29426": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "29427": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "29430": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "29431": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "30393": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "30394": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "30397": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "30398": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "30399": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "30400": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "3101": {
+      "families": {},
+      "slot_count": 1
+    },
+    "31577": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "31578": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "31579": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3"
+      },
+      "slot_count": 1
+    },
+    "31581": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "31582": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "31583": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "31617": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "32619": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "32628": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "3295": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "3303": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "3309": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "3312": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "3365": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "3393": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "3394": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "3396": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "3399": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 3
+    },
+    "34088": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "34089": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "34150": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "34151": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "34152": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "34153": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "34154": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "34156": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_MAGIC_LEVEL": "2",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "34157": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "3422": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "3437": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "3444": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "35514": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "35515": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 1
+    },
+    "35518": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "35519": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "35520": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "35521": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "35522": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "3555": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "36656": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "36661": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "36662": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "36663": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "36664": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "36665": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "36668": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "36669": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "36670": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "36671": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "36672": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "36673": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "36674": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "36675": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "37608": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "37609": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "39157": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "39158": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "39159": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "39161": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "39162": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "39163": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "39164": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "39165": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "40588": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_MAGIC_LEVEL": "2",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "40591": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "40592": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "40593": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "40594": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "43877": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "43878": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "43879": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "43880": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "44621": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "44622": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "44623": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "44624": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "47368": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "47369": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "47370": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "47371": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "47372": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "47373": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "47374": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "47375": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "47376": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "47377": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "49520": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "49522": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "49523": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "49524": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "49525": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "49526": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "49527": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "49528": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "49529": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "49530": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "49531": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "49532": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49533": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "49534": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "49858": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49859": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49860": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49861": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49862": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49863": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 2
+    },
+    "49864": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49865": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49866": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49867": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49868": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49869": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49870": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49871": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49872": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49873": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49874": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49875": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "49876": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49877": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49878": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49879": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49880": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49881": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "49882": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "49883": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "49884": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "49885": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "49886": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "49887": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "50158": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 3
+    },
+    "50160": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50161": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50162": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50164": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "50165": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50167": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50168": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 3
+    },
+    "50169": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50170": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50176": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50189": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50190": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50193": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "50250": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50251": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "50252": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "50253": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "50254": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3"
+      },
+      "slot_count": 2
+    },
+    "50255": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "50257": {
+      "families": {
+        "LIFE_LEECH": "3"
+      },
+      "slot_count": 1
+    },
+    "50260": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "50261": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "50262": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "50264": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "50266": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "50270": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 2
+    },
+    "50276": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "50289": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "50290": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "51260": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "51261": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 1
+    },
+    "51268": {
+      "families": {
+        "INCREASE_SPEED": "3"
+      },
+      "slot_count": 1
+    },
+    "51666": {
+      "families": {},
+      "slot_count": 2
+    },
+    "52332": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "52333": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 3
+    },
+    "52334": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 3
+    },
+    "52335": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 3
+    },
+    "52336": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "52337": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 2
+    },
+    "52338": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 3
+    },
+    "52348": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_MAGIC_LEVEL": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "52349": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "52350": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "52352": {
+      "families": {
+        "INCREASE_SPEED": "2"
+      },
+      "slot_count": 1
+    },
+    "52353": {
+      "families": {
+        "INCREASE_SPEED": "3"
+      },
+      "slot_count": 1
+    },
+    "52354": {
+      "families": {
+        "INCREASE_SPEED": "3"
+      },
+      "slot_count": 1
+    },
+    "52355": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "52356": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "52357": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "52649": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "53207": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "53208": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "53209": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 3
+    },
+    "53210": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 3
+    },
+    "53211": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "53212": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "53213": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 3
+    },
+    "53214": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 3
+    },
+    "53215": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "53216": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "53217": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 3
+    },
+    "53218": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 3
+    },
+    "53219": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53220": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53221": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53222": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53223": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 3
+    },
+    "53224": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_FIST": "3"
+      },
+      "slot_count": 3
+    },
+    "53225": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "53226": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "53227": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "53228": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "53229": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53230": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53231": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53232": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "53233": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3"
+      },
+      "slot_count": 2
+    },
+    "6390": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "6432": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "7405": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 3
+    },
+    "7417": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "7423": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "7431": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "7435": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "7453": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "7455": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "7458": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "8023": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "8024": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "8025": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "8026": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "8029": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "8060": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 1
+    },
+    "8096": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 1
+    },
+    "8097": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 1
+    },
+    "8098": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3"
+      },
+      "slot_count": 2
+    },
+    "8100": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 1
+    },
+    "8101": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_CLUB": "3"
+      },
+      "slot_count": 2
+    },
+    "8102": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "8103": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 1
+    },
+    "8864": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_MAGIC_LEVEL": "3"
+      },
+      "slot_count": 1
+    },
+    "9372": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "9374": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "9377": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "9378": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    },
+    "9379": {
+      "families": {
+        "LIFE_LEECH": "3",
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3"
+      },
+      "slot_count": 2
+    },
+    "9380": {
+      "families": {
+        "PROTECTION_DEATH": "3",
+        "PROTECTION_EARTH": "3",
+        "PROTECTION_ENERGY": "3",
+        "PROTECTION_FIRE": "3",
+        "PROTECTION_HOLY": "3",
+        "PROTECTION_ICE": "3",
+        "SKILL_SHIELDING": "3"
+      },
+      "slot_count": 1
+    },
+    "9381": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "9382": {
+      "families": {
+        "MANA_LEECH": "3",
+        "SKILL_AXE": "3",
+        "SKILL_CLUB": "3",
+        "SKILL_DISTANCE": "3",
+        "SKILL_SHIELDING": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    }
+  },
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "schema": "OTERYN_CRYSTAL_EQUIPMENT_AUDIT_IMBUEMENTS/v1"
+}

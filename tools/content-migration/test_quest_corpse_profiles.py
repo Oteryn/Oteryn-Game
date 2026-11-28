@@ -1,17 +1,41 @@
 """Bounded source qualification, exact capacities and preserved accepted Item owners."""
+
 import copy
 import json
-from pathlib import Path
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from unittest.mock import patch
 
 import quest_corpse_profiles as corpse
 
-UNKNOWN_CLASSIFICATION_ITEMS = {f'oteryn:item.tibia.i{number}' for number in [
-    3987, 3989, 3991, 3992, 4007, 4008, 4009, 4137, 4139, 4291, 4292,
-    4293, 4299, 4300, 5960, 5962, 5968, 5975, 17449, 17450, 30272]}
+UNKNOWN_CLASSIFICATION_ITEMS = {
+    f"oteryn:item.tibia.i{number}"
+    for number in [
+        3987,
+        3989,
+        3991,
+        3992,
+        4007,
+        4008,
+        4009,
+        4137,
+        4139,
+        4291,
+        4292,
+        4293,
+        4299,
+        4300,
+        5960,
+        5962,
+        5968,
+        5975,
+        17449,
+        17450,
+        30272,
+    ]
+}
 
 
 class CorpseQualification(unittest.TestCase):
@@ -22,19 +46,38 @@ class CorpseQualification(unittest.TestCase):
         cls.xml = corpse.grizzly.source.xml_index(raw)
         client = (corpse.ROOT / corpse.custody.CLIENT).read_bytes()
         cls.appearances = corpse.grizzly.source.engine_items.load_appearance_objects(client)
-        selected = {int(key.rsplit('i', 1)[1]) for key in cls.plan.records} | corpse.RAT_STAGES.keys()
-        cls.policies = {row['server_item_id']: row for row in corpse.grizzly.source.policies(
-            client, raw, selected)}
+        cls.policies = {
+            row["server_item_id"]: row
+            for row in corpse.grizzly.source.policies(
+                client, raw, {int(key.rsplit("i", 1)[1]) for key in cls.plan.records} | corpse.RAT_STAGES.keys()
+            )
+        }
         cls.definitions = corpse.definitions(corpse.ROOT, cls.policies)
         cls.world = corpse.world_objects(corpse.ROOT, cls.policies)
         cls.bindings = corpse.grizzly.source.binding_index(
-            (corpse.ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())
+            (corpse.ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
+        )
 
-    def qualify(self, number, *, definition=None, world=None, appearance=None, bindings=None, fresh=True):
-        return corpse.qualify(number, definition or self.definitions[f'oteryn:item.tibia.i{number}'],
-                              self.world.get(number) if world is None else world,
-                              self.xml[number], appearance or self.appearances[number], self.policies[number],
-                              bindings or self.bindings, fresh)
+    def qualify(
+        self,
+        number,
+        *,
+        definition=None,
+        world=None,
+        appearance=None,
+        bindings=None,
+        fresh=True,
+    ):
+        return corpse.qualify(
+            number,
+            definition or self.definitions[f"oteryn:item.tibia.i{number}"],
+            self.world.get(number) if world is None else world,
+            self.xml[number],
+            appearance or self.appearances[number],
+            self.policies[number],
+            bindings or self.bindings,
+            fresh,
+        )
 
     def test_rat_decay_stages_qualify_global_physical_and_container_facts(self):
         known = corpse.grizzly.source.K
@@ -49,83 +92,247 @@ class CorpseQualification(unittest.TestCase):
 
     def test_native_goal_decay_tail_retains_its_non_container_policy(self):
         row = self.qualify(4027, fresh=False)
-        self.assertEqual(row['semantics']['container'], corpse.grizzly.source.NA)
+        self.assertEqual(row["semantics"]["container"], corpse.grizzly.source.NA)
         node = copy.deepcopy(self.xml[4027])
-        ET.SubElement(node, 'attribute', {'key': 'containerSize', 'value': '8'})
-        with self.assertRaisesRegex(ValueError, 'QUEST_CORPSE_CANONICAL_CONTAINER'):
-            corpse.qualify(4027, self.definitions['oteryn:item.tibia.i4027'],
-                           self.world[4027], node, self.appearances[4027],
-                           self.policies[4027], self.bindings, False)
+        ET.SubElement(node, "attribute", {"key": "containerSize", "value": "8"})
+        with self.assertRaisesRegex(ValueError, "QUEST_CORPSE_CANONICAL_CONTAINER"):
+            corpse.qualify(
+                4027,
+                self.definitions["oteryn:item.tibia.i4027"],
+                self.world[4027],
+                node,
+                self.appearances[4027],
+                self.policies[4027],
+                self.bindings,
+                False,
+            )
 
     def test_native_corym_corpse_keeps_exact_source_decay_and_capacity(self):
-        root = self.plan.records['oteryn:item.tibia.i17449']
-        terminal = self.plan.records['oteryn:item.tibia.i17450']
-        self.assertEqual(root['semantics']['container'], corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(5)}))
-        self.assertEqual(root['semantics']['temporal']['value']['duration'], corpse.grizzly.source.K(300000))
-        self.assertEqual(terminal['semantics']['temporal']['value']['duration'], corpse.grizzly.source.K(60000))
-        self.assertEqual(root['admission']['legal_destinations'], ['Ground'])
+        root = self.plan.records["oteryn:item.tibia.i17449"]
+        terminal = self.plan.records["oteryn:item.tibia.i17450"]
+        self.assertEqual(
+            root["semantics"]["container"],
+            corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(5)}),
+        )
+        self.assertEqual(
+            root["semantics"]["temporal"]["value"]["duration"],
+            corpse.grizzly.source.K(300000),
+        )
+        self.assertEqual(
+            terminal["semantics"]["temporal"]["value"]["duration"],
+            corpse.grizzly.source.K(60000),
+        )
+        self.assertEqual(root["admission"]["legal_destinations"], ["Ground"])
 
     def test_published_loot_admission_matches_requested_corpse_roots(self):
-        section = json.loads((corpse.ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
-        facts = {row['item']['key']: row for row in section['items']}
+        section = json.loads(
+            (corpse.ROOT / "tools/content-schema/native-gameplay/loot-tables.json").read_bytes()
+        )
+        facts = {row["item"]["key"]: row for row in section["items"]}
         for number in self.plan.roots:
-            key = f'oteryn:item.tibia.i{number}'
-            expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
-            self.assertTrue(facts[key]['materializable'], key)
-            self.assertEqual(facts[key]['container_capacity'], expected, key)
-        for number in (5967, 5999, 6031, 25814):
-            self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
+            key = f"oteryn:item.tibia.i{number}"
+            policy = self.plan.records[key]["semantics"]["container"]
+            if number in (4991, 4992, 4993):
+                self.assertEqual(policy, corpse.grizzly.source.NA, key)
+                expected = None
+            else:
+                expected = policy["value"]["capacity"]["value"]
+            self.assertTrue(facts[key]["materializable"], key)
+            self.assertEqual(facts[key]["container_capacity"], expected, key)
+        for number in (5967, 5999, 6031, 18030, 18038, 18110, 18186, 25814):
+            self.assertTrue(facts[f"oteryn:item.tibia.i{number}"]["ordinary_corpse_only"])
         for key in self.plan.projected_source_capacities:
-            self.assertTrue(facts[key]['ordinary_corpse_only'], key)
+            self.assertTrue(facts[key]["ordinary_corpse_only"], key)
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         # Letter 3505 finding: the Dwarfs share the 6007 root and three later stages.
         baseline_roots = {
-            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6007, 6017, 6025, 6030, 6031, 6044,
-            6048, 6055, 6072, 6078, 8109, 8909, 11675, 17445, 17446,
-            17449, 17454, 18099, 18953, 20972, 21910, 22010, 22066, 22067, 25085,
-            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029}
+            4991,
+            4992,
+            4993,
+            5960,
+            5962,
+            5966,
+            5967,
+            5968,
+            5973,
+            5975,
+            5995,
+            5999,
+            6006,
+            6007,
+            6017,
+            6025,
+            6030,
+            6031,
+            6044,
+            6048,
+            6055,
+            6072,
+            6078,
+            7763,
+            8109,
+            8909,
+            11675,
+            17445,
+            17446,
+            17449,
+            17454,
+            18030,
+            18038,
+            18099,
+            18110,
+            18186,
+            18953,
+            20972,
+            21910,
+            22010,
+            22066,
+            22067,
+            25085,
+            25815,
+            27714,
+            27718,
+            30272,
+            31453,
+            31599,
+            31611,
+            33821,
+            50029,
+        }
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
-        projected_roots = {int(row['item'].rsplit('i', 1)[1]) for row in packet['capacity_projections']}
-        self.assertEqual(self.plan.roots, baseline_roots | projected_roots)
-        new_stages = set()
-        for number in projected_roots - baseline_roots:
-            while number:
-                new_stages.add(number)
-                number = int(corpse.grizzly.source.attrs(self.xml[number])['decayto'])
-        new_keys = {f'oteryn:item.tibia.i{number}' for number in new_stages}
-        self.assertTrue(new_keys <= self.plan.records.keys())
-        self.assertEqual(len(self.plan.records.keys() - new_keys), 156)
-        for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
-                                         (4302, 300000, 4303), (50029, 60000, 50028),
-                                         (50028, 60000, 50027)]:
-            row = self.plan.records[f'oteryn:item.tibia.i{number}']
-            temporal = row['semantics']['temporal']['value']
-            self.assertEqual(temporal['duration'], corpse.grizzly.source.K(duration))
-            self.assertEqual(temporal['decay_target'], corpse.grizzly.source.K(
-                {'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'}))
-        for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
-                                         (5967, 10, 4266), (5968, 5, 4007), (5975, 20, 4291),
-                                         (8109, 10, 8110), (18953, 15, 18954)]:
-            row = self.plan.records[f'oteryn:item.tibia.i{number}']
-            self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
-            self.assertEqual(row['semantics']['container'], corpse.grizzly.source.K(
-                {'capacity': corpse.grizzly.source.K(capacity)}))
-            temporal = row['semantics']['temporal']['value']
-            self.assertEqual(temporal['duration'], corpse.grizzly.source.K(10000))
-            self.assertEqual(temporal['decay_target'], corpse.grizzly.source.K(
-                {'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'}))
-            self.assertIn(f'oteryn:item.tibia.i{target}', self.plan.records)
+        projected_roots = {
+            int(row["item"].rsplit("i", 1)[1]) for row in packet["capacity_projections"]
+        }
+        expected_roots = baseline_roots | projected_roots
+        self.assertEqual(self.plan.roots, expected_roots)
+        expected_stages = set()
+        for number in expected_roots:
+            while number and number not in expected_stages:
+                expected_stages.add(number)
+                attributes = corpse.grizzly.source.attrs(self.xml[number])
+                number = int(attributes.get("decayto", 0))
+        self.assertEqual(
+            self.plan.records.keys(),
+            {f"oteryn:item.tibia.i{number}" for number in expected_stages},
+        )
+        for number in (4991, 4992, 4993):
+            row = self.plan.records[f"oteryn:item.tibia.i{number}"]
+            self.assertEqual(row["admission"]["legal_destinations"], ["Ground"])
+            self.assertEqual(row["semantics"]["container"], corpse.grizzly.source.NA)
+            temporal = row["semantics"]["temporal"]["value"]
+            self.assertEqual(temporal["duration"], corpse.grizzly.source.K(60000))
+            self.assertEqual(
+                temporal["decay_target"],
+                corpse.grizzly.source.K(
+                    {"key": "oteryn:item.tibia.i4378", "revision": "definition-r1"}
+                ),
+            )
+        remains = self.plan.records["oteryn:item.tibia.i4378"]
+        self.assertEqual(remains["semantics"]["temporal"], corpse.grizzly.source.NA)
+        for number, duration, target in [
+            (6017, 10000, 4301),
+            (4301, 300000, 4302),
+            (4302, 300000, 4303),
+            (50029, 60000, 50028),
+            (50028, 60000, 50027),
+            (18030, 300000, 18031),
+            (18038, 300000, 18039),
+            (18110, 10000, 18111),
+            (18186, 300000, 18187),
+        ]:
+            row = self.plan.records[f"oteryn:item.tibia.i{number}"]
+            temporal = row["semantics"]["temporal"]["value"]
+            self.assertEqual(temporal["duration"], corpse.grizzly.source.K(duration))
+            self.assertEqual(
+                temporal["decay_target"],
+                corpse.grizzly.source.K(
+                    {"key": f"oteryn:item.tibia.i{target}", "revision": "definition-r1"}
+                ),
+            )
+        for number, capacity, target in [
+            (5960, 7, 3987),
+            (5962, 30, 3989),
+            (5966, 10, 4001),
+            (5967, 10, 4266),
+            (5968, 5, 4007),
+            (5975, 20, 4291),
+            (8109, 10, 8110),
+            (18953, 15, 18954),
+        ]:
+            row = self.plan.records[f"oteryn:item.tibia.i{number}"]
+            self.assertEqual(row["admission"]["legal_destinations"], ["Ground"])
+            self.assertEqual(
+                row["semantics"]["container"],
+                corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(capacity)}),
+            )
+            temporal = row["semantics"]["temporal"]["value"]
+            self.assertEqual(temporal["duration"], corpse.grizzly.source.K(10000))
+            self.assertEqual(
+                temporal["decay_target"],
+                corpse.grizzly.source.K(
+                    {"key": f"oteryn:item.tibia.i{target}", "revision": "definition-r1"}
+                ),
+            )
+            self.assertIn(f"oteryn:item.tibia.i{target}", self.plan.records)
         # These are distinct source facts, not a clone of the Rat or a capacity30 template.
-        self.assertEqual(self.plan.records['oteryn:item.tibia.i4009']['semantics']['container'],
-                         corpse.grizzly.source.NA)
-        self.assertEqual(self.plan.records['oteryn:item.tibia.i4292']['semantics']['container'],
-                         corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
+        self.assertEqual(
+            self.plan.records["oteryn:item.tibia.i4009"]["semantics"]["container"],
+            corpse.grizzly.source.NA,
+        )
+        self.assertEqual(
+            self.plan.records["oteryn:item.tibia.i4292"]["semantics"]["container"],
+            corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(20)}),
+        )
+        bones = self.plan.records["oteryn:item.tibia.i4317"]
+        self.assertEqual(
+            bones["semantics"]["physical"]["value"]["weight"], corpse.grizzly.source.K(10000)
+        )
+        self.assertEqual(bones["semantics"]["container"], corpse.grizzly.source.NA)
+        with self.assertRaisesRegex(ValueError, "QUEST_CORPSE_CLIENT_KIND"):
+            self.qualify(4317, fresh=True)
         for number in (50029, 50028):
-            self.assertEqual(self.plan.records[f'oteryn:item.tibia.i{number}']['semantics']['container'],
-                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(8)}))
-        self.assertEqual(self.plan.records['oteryn:item.tibia.i50027']['semantics']['container'],
-                         corpse.grizzly.source.NA)
+            self.assertEqual(
+                self.plan.records[f"oteryn:item.tibia.i{number}"]["semantics"]["container"],
+                corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(8)}),
+            )
+        self.assertEqual(
+            self.plan.records["oteryn:item.tibia.i50027"]["semantics"]["container"],
+            corpse.grizzly.source.NA,
+        )
+
+    def test_cockroach_corpse_exposes_the_tutorial_leg_drop(self):
+        section = json.loads(
+            (corpse.ROOT / "tools/content-schema/native-gameplay/loot-tables.json").read_bytes()
+        )
+        creature = next(
+            row
+            for row in section["creature_loot"]
+            if row["creature"]["key"] == "oteryn:creature.cockroach"
+        )
+        table = next(row for row in section["tables"] if row["identity"] == creature["loot"])
+        self.assertEqual(
+            table["entries"],
+            [
+                {
+                    "item": {
+                        "family": "Item",
+                        "key": "oteryn:item.tibia.i7882",
+                        "revision": "definition-r1",
+                    },
+                    "max_count": 1,
+                    "min_count": 1,
+                    "probability_ppm": 1_000_000,
+                }
+            ],
+        )
+        key = "oteryn:item.tibia.i7763"
+        facts = next(row for row in section["items"] if row["item"]["key"] == key)
+        self.assertTrue(facts["materializable"])
+        self.assertEqual(facts["container_capacity"], 8)
+        temporal = self.plan.records[key]["semantics"]["temporal"]["value"]
+        self.assertEqual(temporal["duration"], corpse.grizzly.source.K(90_000))
+        self.assertEqual(temporal["decay_target"], corpse.grizzly.source.NA)
 
     def test_dwarf_corpse_keeps_the_complete_source_decay_chain(self):
         source = corpse.grizzly.source
@@ -150,263 +357,439 @@ class CorpseQualification(unittest.TestCase):
 
     def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.
-        key = 'oteryn:item.tibia.i30272'
-        self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
-        self.assertEqual(self.plan.records[key]['semantics']['container'],
-                         corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(40)}))
+        key = "oteryn:item.tibia.i30272"
+        self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])["containersize"], "40")
+        projections = {
+            "oteryn:item.tibia.i5999": 50,
+            "oteryn:item.tibia.i7091": 50,
+            "oteryn:item.tibia.i7344": 52,
+            "oteryn:item.tibia.i7893": 60,
+            "oteryn:item.tibia.i15868": 50,
+            "oteryn:item.tibia.i15872": 50,
+            "oteryn:item.tibia.i15911": 50,
+            "oteryn:item.tibia.i15991": 50,
+            "oteryn:item.tibia.i16071": 50,
+            "oteryn:item.tibia.i16083": 50,
+            "oteryn:item.tibia.i18030": 50,
+            "oteryn:item.tibia.i18070": 50,
+            "oteryn:item.tibia.i18110": 60,
+            "oteryn:item.tibia.i18134": 60,
+            "oteryn:item.tibia.i18142": 50,
+            "oteryn:item.tibia.i18190": 50,
+            "oteryn:item.tibia.i18194": 50,
+            "oteryn:item.tibia.i18198": 50,
+            "oteryn:item.tibia.i18202": 50,
+            "oteryn:item.tibia.i18210": 50,
+            "oteryn:item.tibia.i18230": 50,
+            "oteryn:item.tibia.i18281": 50,
+            "oteryn:item.tibia.i20996": 50,
+            "oteryn:item.tibia.i21004": 50,
+        }
+        self.assertEqual(self.plan.projected_source_capacities, projections)
+        self.assertEqual(
+            self.plan.records[key]["semantics"]["container"],
+            corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(40)}),
+        )
         packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
-        self.assertIn('oteryn:item.tibia.i5999', self.plan.projected_source_capacities)
-        self.assertEqual(self.plan.projected_source_capacities, {
-            row['item']: int(corpse.grizzly.source.attrs(
-                self.xml[int(row['item'].rsplit('i', 1)[1])])['containersize'])
-            for row in packet['capacity_projections']
-        })
-        record = {'item': key, 'source_capacity': 40, 'native_capacity': 48,
-                  'sources': ['imports/canary/items-xml/items.xml#30272']}
+        self.assertIn("oteryn:item.tibia.i5999", self.plan.projected_source_capacities)
+        self.assertEqual(
+            self.plan.projected_source_capacities,
+            {
+                row["item"]: int(
+                    corpse.grizzly.source.attrs(self.xml[int(row["item"].rsplit("i", 1)[1])])[
+                        "containersize"
+                    ]
+                )
+                for row in packet["capacity_projections"]
+            },
+        )
+        record = {
+            "item": key,
+            "source_capacity": 40,
+            "native_capacity": 48,
+            "sources": ["imports/canary/items-xml/items.xml#30272"],
+        }
         # A projection of a corpse that fits 48, or to any other native bound, is refused.
-        for field, value in [(None, None), ('native_capacity', 30), ('source_capacity', 49)]:
+        for field, value in [
+            (None, None),
+            ("native_capacity", 30),
+            ("source_capacity", 49),
+        ]:
             bad = copy.deepcopy(packet)
-            bad['capacity_projections'] = [dict(record, **({field: value} if field else {}))]
-            with patch.object(Path, 'read_bytes', return_value=json.dumps(bad).encode()):
-                with self.assertRaisesRegex(ValueError, 'PROJECTION_BINDING'):
-                    corpse.projection_limits(corpse.ROOT, self.plan.roots, self.xml)
+            bad["capacity_projections"] = [dict(record, **({field: value} if field else {}))]
+            with (
+                patch.object(Path, "read_bytes", return_value=json.dumps(bad).encode()),
+                self.assertRaisesRegex(ValueError, "PROJECTION_BINDING"),
+            ):
+                corpse.projection_limits(corpse.ROOT, self.plan.roots, self.xml)
 
     def test_preserves_canonical_data_and_every_unrelated_semantic_group(self):
         before = copy.deepcopy(self.definitions)
         row = self.qualify(5960)
         self.assertEqual(before, self.definitions)
-        definition = self.definitions['oteryn:item.tibia.i5960']
-        self.assertFalse(definition['materializable'])
-        for group in set(row['semantics']) - set(corpse.GROUPS):
-            self.assertEqual(row['semantics'][group], definition.get('semantics', {}).get(
-                group, corpse.grizzly.source.U))
+        definition = self.definitions["oteryn:item.tibia.i5960"]
+        self.assertFalse(definition["materializable"])
+        for group in set(row["semantics"]) - set(corpse.GROUPS):
+            self.assertEqual(
+                row["semantics"][group],
+                definition.get("semantics", {}).get(group, corpse.grizzly.source.U),
+            )
 
     def test_rejects_source_kind_binding_and_accepted_fact_substitutions(self):
-        for mutation in ['corpse', 'player', 'container', 'pointer', 'movable', 'binding', 'capacity', 'classification', 'stack']:
+        for mutation in [
+            "corpse",
+            "player",
+            "container",
+            "pointer",
+            "movable",
+            "binding",
+            "capacity",
+            "classification",
+            "stack",
+        ]:
             world = copy.deepcopy(self.world[5960])
             appearance = copy.deepcopy(self.appearances[5960])
-            definition = copy.deepcopy(self.definitions['oteryn:item.tibia.i5960'])
+            definition = copy.deepcopy(self.definitions["oteryn:item.tibia.i5960"])
             bindings = copy.deepcopy(self.bindings)
-            if mutation == 'corpse':
-                appearance['flags']['flags.corpse'] = False
-            elif mutation == 'player':
-                appearance['flags']['flags.player_corpse'] = True
-            elif mutation == 'container':
-                appearance['flags']['flags.container'] = False
-            elif mutation == 'pointer':
-                world['provenance']['item_pointer']['revision'] = 'definition-r2'
-            elif mutation == 'movable':
-                world['movable'] = corpse.grizzly.source.K(True)
-            elif mutation == 'binding':
-                bindings['5960']['disposition'] = 'HYPOTHESIS'
-            elif mutation == 'capacity':
-                definition.setdefault('semantics', {})['container'] = corpse.grizzly.source.K(
-                    {'capacity': corpse.grizzly.source.K(30)})
-            elif mutation == 'classification':
-                definition.setdefault('semantics', {})['classification'] = corpse.grizzly.source.K({
-                    'item_type': corpse.grizzly.source.K('BED'),
-                    'capabilities': corpse.grizzly.source.U})
+            if mutation == "corpse":
+                appearance["flags"]["flags.corpse"] = False
+            elif mutation == "player":
+                appearance["flags"]["flags.player_corpse"] = True
+            elif mutation == "container":
+                appearance["flags"]["flags.container"] = False
+            elif mutation == "pointer":
+                world["provenance"]["item_pointer"]["revision"] = "definition-r2"
+            elif mutation == "movable":
+                world["movable"] = corpse.grizzly.source.K(True)
+            elif mutation == "binding":
+                bindings["5960"]["disposition"] = "HYPOTHESIS"
+            elif mutation == "capacity":
+                definition.setdefault("semantics", {})["container"] = corpse.grizzly.source.K(
+                    {"capacity": corpse.grizzly.source.K(30)}
+                )
+            elif mutation == "classification":
+                definition.setdefault("semantics", {})["classification"] = corpse.grizzly.source.K(
+                    {
+                        "item_type": corpse.grizzly.source.K("BED"),
+                        "capabilities": corpse.grizzly.source.U,
+                    }
+                )
             else:
-                definition['stack_class'] = 'StackCapable'
+                definition["stack_class"] = "StackCapable"
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
-                self.qualify(5960, definition=definition, world=world,
-                             appearance=appearance, bindings=bindings)
+                self.qualify(
+                    5960,
+                    definition=definition,
+                    world=world,
+                    appearance=appearance,
+                    bindings=bindings,
+                )
 
-    def test_only_exact_preexisting_item_containers_may_bridge_missing_decay_worldobjects(self):
+    def test_only_exact_preexisting_item_containers_may_bridge_missing_decay_worldobjects(
+        self,
+    ):
         self.assertNotIn(4291, self.world)
         self.qualify(4291, fresh=False)
         with self.assertRaises(ValueError):
             self.qualify(4291, fresh=True)
-        altered = copy.deepcopy(self.definitions['oteryn:item.tibia.i4291'])
-        altered['semantics']['container'] = corpse.grizzly.source.U
+        altered = copy.deepcopy(self.definitions["oteryn:item.tibia.i4291"])
+        altered["semantics"]["container"] = corpse.grizzly.source.U
         with self.assertRaises(ValueError):
             self.qualify(4291, definition=altered, fresh=False)
 
     def test_xml_pin_cycle_and_unowned_source_system_fail_closed(self):
         original = Path.read_bytes
-        with patch.object(Path, 'read_bytes', lambda path: b'<items/>' if path == corpse.ROOT / corpse.XML
-                          else original(path)), self.assertRaisesRegex(ValueError, 'XML_PIN'):
+        with (
+            patch.object(
+                Path,
+                "read_bytes",
+                lambda path: b"<items/>" if path == corpse.ROOT / corpse.XML else original(path),
+            ),
+            self.assertRaisesRegex(ValueError, "XML_PIN"),
+        ):
             corpse.qualifications()
         xml = copy.deepcopy(self.xml)
         for attribute in xml[5960]:
-            if attribute.get('key').lower() == 'decayto':
-                attribute.set('value', '5960')
-        with self.assertRaisesRegex(ValueError, 'DECAY_CLOSURE'):
+            if attribute.get("key").lower() == "decayto":
+                attribute.set("value", "5960")
+        with self.assertRaisesRegex(ValueError, "DECAY_CLOSURE"):
             corpse.decay_closure({5960}, xml)
         xml = copy.deepcopy(self.xml)
-        ET.SubElement(xml[5960], 'attribute', {'key': 'charges', 'value': '1'})
-        with self.assertRaisesRegex(ValueError, 'UNSUPPORTED_SOURCE_SYSTEM'):
+        ET.SubElement(xml[5960], "attribute", {"key": "charges", "value": "1"})
+        with self.assertRaisesRegex(ValueError, "UNSUPPORTED_SOURCE_SYSTEM"):
             corpse.decay_closure({5960}, xml)
 
     def test_loot_projection_has_exact_capacities_and_is_atomic_on_conflict(self):
-        facts = {key: {'item': {'family': row['production_definition']['family'],
-                                     'key': row['production_definition']['production_key'],
-                                     'revision': row['production_definition']['revision_ref']}, 'materializable': False,
-                       'container_capacity': None} for key, row in self.plan.records.items()}
-        with patch.object(corpse, 'qualifications', return_value=self.plan):
+        facts = {
+            key: {
+                "item": {
+                    "family": row["production_definition"]["family"],
+                    "key": row["production_definition"]["production_key"],
+                    "revision": row["production_definition"]["revision_ref"],
+                },
+                "materializable": False,
+                "container_capacity": None,
+            }
+            for key, row in self.plan.records.items()
+        }
+        with patch.object(corpse, "qualifications", return_value=self.plan):
             corpse.apply_loot_facts(facts)
             for key, row in self.plan.records.items():
-                self.assertTrue(facts[key]['materializable'])
-                container = row['semantics']['container']
-                self.assertEqual(facts[key]['container_capacity'],
-                                 container['value']['capacity']['value'] if container['state'] == 'KNOWN' else None)
-            invalid = {key: {'item': {'family': row['production_definition']['family'],
-                                       'key': row['production_definition']['production_key'],
-                                       'revision': row['production_definition']['revision_ref']}, 'materializable': False,
-                             'container_capacity': None} for key, row in self.plan.records.items()}
-            invalid['oteryn:item.tibia.i5975']['container_capacity'] = 30
+                self.assertTrue(facts[key]["materializable"])
+                container = row["semantics"]["container"]
+                self.assertEqual(
+                    facts[key]["container_capacity"],
+                    container["value"]["capacity"]["value"]
+                    if container["state"] == "KNOWN"
+                    else None,
+                )
+            invalid = {
+                key: {
+                    "item": {
+                        "family": row["production_definition"]["family"],
+                        "key": row["production_definition"]["production_key"],
+                        "revision": row["production_definition"]["revision_ref"],
+                    },
+                    "materializable": False,
+                    "container_capacity": None,
+                }
+                for key, row in self.plan.records.items()
+            }
+            invalid["oteryn:item.tibia.i5975"]["container_capacity"] = 30
             before = copy.deepcopy(invalid)
-            with self.assertRaisesRegex(ValueError, 'CAPACITY_CONFLICT'):
+            with self.assertRaisesRegex(ValueError, "CAPACITY_CONFLICT"):
                 corpse.apply_loot_facts(invalid)
             self.assertEqual(invalid, before)
 
-    def test_real_loot_generator_facts_use_canonical_identity_not_candidate_provenance(self):
+    def test_real_loot_generator_facts_use_canonical_identity_not_candidate_provenance(
+        self,
+    ):
         import build_full_spell_artifact
+
         # Exercise the actual production item-fact builder and qualifier together.
         # Candidate authoring refs are source provenance, never canonical Item identities.
         facts = build_full_spell_artifact.item_facts()
         for key, row in self.plan.records.items():
-            definition = row['production_definition']
-            expected = {'family': definition['family'], 'key': definition['production_key'],
-                        'revision': definition['revision_ref']}
-            self.assertEqual(facts[key]['item'], expected)
-            self.assertNotEqual(facts[key]['item'], row['authoring']['item'])
+            definition = row["production_definition"]
+            expected = {
+                "family": definition["family"],
+                "key": definition["production_key"],
+                "revision": definition["revision_ref"],
+            }
+            self.assertEqual(facts[key]["item"], expected)
+            self.assertNotEqual(facts[key]["item"], row["authoring"]["item"])
         before = copy.deepcopy(facts)
         corpse.apply_loot_facts(facts)
         for key, row in self.plan.records.items():
-            self.assertEqual(facts[key]['item'], before[key]['item'])
-            self.assertTrue(facts[key]['materializable'])
-            container = row['semantics']['container']
-            expected = container['value']['capacity']['value'] if container['state'] == 'KNOWN' else None
-            self.assertEqual(facts[key]['container_capacity'], expected)
-        self.assertEqual({key: value for key, value in facts.items() if key not in self.plan.records},
-                         {key: value for key, value in before.items() if key not in self.plan.records})
+            self.assertEqual(facts[key]["item"], before[key]["item"])
+            self.assertTrue(facts[key]["materializable"])
+            container = row["semantics"]["container"]
+            expected = (
+                container["value"]["capacity"]["value"] if container["state"] == "KNOWN" else None
+            )
+            self.assertEqual(facts[key]["container_capacity"], expected)
+        self.assertEqual(
+            {key: value for key, value in facts.items() if key not in self.plan.records},
+            {key: value for key, value in before.items() if key not in self.plan.records},
+        )
 
     def test_native_overlay_is_idempotent_and_preserves_existing_profiles(self):
-        profile = 'content/items/definitions/spell-native-profiles.json'
-        manifest = 'content/spells.manifest.json'
-        generated = {profile: (corpse.ROOT / profile).read_bytes(),
-                     manifest: (corpse.ROOT / manifest).read_bytes()}
-        before = {row['production_definition']['production_key']: row
-                  for row in json.loads(generated[profile])['records']}
+        profile = "content/items/definitions/spell-native-profiles.json"
+        manifest = "content/spells.manifest.json"
+        generated = {
+            profile: (corpse.ROOT / profile).read_bytes(),
+            manifest: (corpse.ROOT / manifest).read_bytes(),
+        }
+        before = {
+            row["production_definition"]["production_key"]: row
+            for row in json.loads(generated[profile])["records"]
+        }
         canonical = lambda value: json.dumps(value, sort_keys=True).encode()
-        with patch.object(corpse, 'qualifications', return_value=self.plan):
-            corpse.admit(corpse.ROOT, generated, profile, manifest,
-                         lambda row: row['production_definition']['production_key'], canonical)
+        with patch.object(corpse, "qualifications", return_value=self.plan):
+            corpse.admit(
+                corpse.ROOT,
+                generated,
+                profile,
+                manifest,
+                lambda row: row["production_definition"]["production_key"],
+                canonical,
+            )
             once = copy.deepcopy(generated)
-            corpse.admit(corpse.ROOT, generated, profile, manifest,
-                         lambda row: row['production_definition']['production_key'], canonical)
+            corpse.admit(
+                corpse.ROOT,
+                generated,
+                profile,
+                manifest,
+                lambda row: row["production_definition"]["production_key"],
+                canonical,
+            )
         self.assertEqual(generated, once)
-        after = {row['production_definition']['production_key']: row
-                 for row in json.loads(generated[profile])['records']}
+        after = {
+            row["production_definition"]["production_key"]: row
+            for row in json.loads(generated[profile])["records"]
+        }
         expected = copy.deepcopy(before)
         for key, row in expected.items():
-            if (key in self.plan.records
-                    and row['semantics']['classification'] == corpse.grizzly.source.U):
-                classification = self.plan.records[key]['semantics']['classification']
-                self.assertEqual(classification['state'], 'KNOWN', key)
-                row['semantics']['classification'] = classification
+            if (
+                key in self.plan.records
+                and row["semantics"]["classification"] == corpse.grizzly.source.U
+            ):
+                classification = self.plan.records[key]["semantics"]["classification"]
+                self.assertEqual(classification["state"], "KNOWN", key)
+                row["semantics"]["classification"] = classification
         # Only existing UNKNOWN fields may gain their qualified source facts.
         # Every known classification and every other policy field stays equal.
         self.assertEqual({key: after[key] for key in before}, expected)
         self.assertEqual(set(after) - set(before), set(self.plan.records) - set(before))
         for key, record in self.plan.records.items():
-            self.assertEqual(record['semantics']['classification']['state'], 'KNOWN', key)
-            self.assertEqual(after[key]['semantics']['classification'],
-                             record['semantics']['classification'], key)
+            self.assertEqual(record["semantics"]["classification"]["state"], "KNOWN", key)
+            self.assertEqual(
+                after[key]["semantics"]["classification"],
+                record["semantics"]["classification"],
+                key,
+            )
 
         conflict = copy.deepcopy(generated)
         document = json.loads(conflict[profile])
-        native = next(row for row in document['records']
-                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i17449')
-        native['semantics']['classification'] = corpse.grizzly.source.K({
-            'item_type': corpse.grizzly.source.K('BED'),
-            'capabilities': corpse.grizzly.source.U})
+        native = next(
+            row
+            for row in document["records"]
+            if row["production_definition"]["production_key"] == "oteryn:item.tibia.i17449"
+        )
+        native["semantics"]["classification"] = corpse.grizzly.source.K(
+            {
+                "item_type": corpse.grizzly.source.K("BED"),
+                "capabilities": corpse.grizzly.source.U,
+            }
+        )
         conflict[profile] = canonical(document)
         refused = copy.deepcopy(conflict)
-        with patch.object(corpse, 'qualifications', return_value=self.plan):
-            with self.assertRaisesRegex(ValueError, 'QUEST_CORPSE_EXISTING_NATIVE_CONFLICT'):
-                corpse.admit(corpse.ROOT, conflict, profile, manifest,
-                             lambda row: row['production_definition']['production_key'], canonical)
+        with (
+            patch.object(corpse, "qualifications", return_value=self.plan),
+            self.assertRaisesRegex(ValueError, "QUEST_CORPSE_EXISTING_NATIVE_CONFLICT"),
+        ):
+            corpse.admit(
+                corpse.ROOT,
+                conflict,
+                profile,
+                manifest,
+                lambda row: row["production_definition"]["production_key"],
+                canonical,
+            )
         self.assertEqual(conflict, refused)
 
     def test_native_overlay_completes_exact_owned_unknown_classifications(self):
-        profile = 'content/items/definitions/spell-native-profiles.json'
-        manifest = 'content/spells.manifest.json'
+        profile = "content/items/definitions/spell-native-profiles.json"
+        manifest = "content/spells.manifest.json"
         document = json.loads((corpse.ROOT / profile).read_bytes())
-        before = {row['production_definition']['production_key']: row
-                  for row in document['records']}
+        before = {
+            row["production_definition"]["production_key"]: row for row in document["records"]
+        }
         self.assertEqual(len(UNKNOWN_CLASSIFICATION_ITEMS), 21)
         self.assertTrue(UNKNOWN_CLASSIFICATION_ITEMS <= before.keys())
         self.assertTrue(UNKNOWN_CLASSIFICATION_ITEMS <= self.plan.records.keys())
         for key in UNKNOWN_CLASSIFICATION_ITEMS:
             # An explicitly owned prior-state fixture is independent of whether
             # the published provider already contains the source completion.
-            before[key]['semantics']['classification'] = copy.deepcopy(corpse.grizzly.source.U)
+            before[key]["semantics"]["classification"] = copy.deepcopy(corpse.grizzly.source.U)
         expected = copy.deepcopy(before)
         for key in UNKNOWN_CLASSIFICATION_ITEMS:
-            classification = self.plan.records[key]['semantics']['classification']
-            self.assertEqual(classification['state'], 'KNOWN', key)
-            expected[key]['semantics']['classification'] = classification
-        generated = {profile: json.dumps(document).encode(),
-                     manifest: (corpse.ROOT / manifest).read_bytes()}
+            classification = self.plan.records[key]["semantics"]["classification"]
+            self.assertEqual(classification["state"], "KNOWN", key)
+            expected[key]["semantics"]["classification"] = classification
+        generated = {
+            profile: json.dumps(document).encode(),
+            manifest: (corpse.ROOT / manifest).read_bytes(),
+        }
         canonical = lambda value: json.dumps(value, sort_keys=True).encode()
-        with patch.object(corpse, 'qualifications', return_value=self.plan):
-            corpse.admit(corpse.ROOT, generated, profile, manifest,
-                         lambda row: row['production_definition']['production_key'], canonical)
+        with patch.object(corpse, "qualifications", return_value=self.plan):
+            corpse.admit(
+                corpse.ROOT,
+                generated,
+                profile,
+                manifest,
+                lambda row: row["production_definition"]["production_key"],
+                canonical,
+            )
             once = copy.deepcopy(generated)
-            corpse.admit(corpse.ROOT, generated, profile, manifest,
-                         lambda row: row['production_definition']['production_key'], canonical)
+            corpse.admit(
+                corpse.ROOT,
+                generated,
+                profile,
+                manifest,
+                lambda row: row["production_definition"]["production_key"],
+                canonical,
+            )
         self.assertEqual(generated, once)
-        after = {row['production_definition']['production_key']: row
-                 for row in json.loads(generated[profile])['records']}
+        after = {
+            row["production_definition"]["production_key"]: row
+            for row in json.loads(generated[profile])["records"]
+        }
         self.assertEqual({key: after[key] for key in before}, expected)
-        self.assertEqual({key for key in before if after[key] != before[key]},
-                         UNKNOWN_CLASSIFICATION_ITEMS)
+        self.assertEqual(
+            {key for key in before if after[key] != before[key]},
+            UNKNOWN_CLASSIFICATION_ITEMS,
+        )
         self.assertEqual(set(after) - set(before), set(self.plan.records) - set(before))
+
 
 class BossQuestAdmission(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.plan = corpse.qualifications()
 
-    def test_boss_then_quest_admission_preserves_the_qualified_terminal_and_replays(self):
+    def test_boss_then_quest_admission_preserves_the_qualified_terminal_and_replays(
+        self,
+    ):
         import boss_corpse_profiles as boss
-        generated = {'profiles': boss.encode({'records': []}),
-                     'manifest': boss.encode({'item_profiles': {}})}
-        order = lambda row: row['production_definition']['production_key']
+
+        generated = {
+            "profiles": boss.encode({"records": []}),
+            "manifest": boss.encode({"item_profiles": {}}),
+        }
+        order = lambda row: row["production_definition"]["production_key"]
 
         def admit(generated):
             # Reuse this class's actual source-qualified plan at the admission
             # seam; parsing the same immutable inputs again is not the assertion.
-            with patch.object(corpse, 'qualifications', return_value=self.plan):
-                corpse.admit(corpse.ROOT, generated, 'profiles', 'manifest', order, boss.encode)
+            with patch.object(corpse, "qualifications", return_value=self.plan):
+                corpse.admit(corpse.ROOT, generated, "profiles", "manifest", order, boss.encode)
 
-        boss.admit(corpse.ROOT, generated, 'profiles', 'manifest', order, boss.encode)
-        before = {row['production_definition']['production_key']: row
-                  for row in json.loads(generated['profiles'])['records']}
+        boss.admit(corpse.ROOT, generated, "profiles", "manifest", order, boss.encode)
+        before = {
+            row["production_definition"]["production_key"]: row
+            for row in json.loads(generated["profiles"])["records"]
+        }
         admit(generated)
         once = copy.deepcopy(generated)
         admit(generated)
         self.assertEqual(generated, once)
-        after = {row['production_definition']['production_key']: row
-                 for row in json.loads(generated['profiles'])['records']}
+        after = {
+            row["production_definition"]["production_key"]: row
+            for row in json.loads(generated["profiles"])["records"]
+        }
         self.assertEqual({key: after[key] for key in before}, before)
         self.assertEqual(set(after), set(before) | set(self.plan.records))
-        self.assertEqual(after['oteryn:item.tibia.i4027']['semantics']['container'],
-                         {'state': 'NOT_APPLICABLE'})
+        self.assertEqual(
+            after["oteryn:item.tibia.i4027"]["semantics"]["container"],
+            {"state": "NOT_APPLICABLE"},
+        )
 
         # The later owner still rejects a real disagreement without publishing
         # any partial profile or manifest change.
         conflict = copy.deepcopy(generated)
-        document = json.loads(conflict['profiles'])
-        terminal = next(row for row in document['records']
-                        if row['production_definition']['production_key'] == 'oteryn:item.tibia.i4027')
-        terminal['semantics']['container'] = corpse.grizzly.source.K(
-            {'capacity': corpse.grizzly.source.K(8)})
-        conflict['profiles'] = boss.encode(document)
+        document = json.loads(conflict["profiles"])
+        terminal = next(
+            row
+            for row in document["records"]
+            if row["production_definition"]["production_key"] == "oteryn:item.tibia.i4027"
+        )
+        terminal["semantics"]["container"] = corpse.grizzly.source.K(
+            {"capacity": corpse.grizzly.source.K(8)}
+        )
+        conflict["profiles"] = boss.encode(document)
         refused = copy.deepcopy(conflict)
-        with self.assertRaisesRegex(ValueError, 'QUEST_CORPSE_EXISTING_NATIVE_CONFLICT'):
+        with self.assertRaisesRegex(ValueError, "QUEST_CORPSE_EXISTING_NATIVE_CONFLICT"):
             admit(conflict)
         self.assertEqual(conflict, refused)
 
@@ -415,54 +798,110 @@ class SelectionBounds(unittest.TestCase):
     def test_active_rule_objective_creature_join_and_bound(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'content/quests').mkdir(parents=True)
+            (root / "content/quests").mkdir(parents=True)
             (root / corpse.REQUIREMENTS).parent.mkdir(parents=True)
-            (root / corpse.REQUIREMENTS).write_text(json.dumps({'schema': 1, 'objectives': [], 'sources': []}))
-            objectives = {'schema': 1, 'objectives': [{'key': 'oteryn:quest-death/animal',
-                                                     'creature': 'oteryn:creature.troll'}]}
-            rules = {'schema': 1, 'rules': [{'objective': 'oteryn:quest-death/animal'}]}
+            (root / corpse.REQUIREMENTS).write_text(
+                json.dumps({"schema": 1, "objectives": [], "sources": []})
+            )
+            objectives = {
+                "schema": 1,
+                "objectives": [
+                    {
+                        "key": "oteryn:quest-death/animal",
+                        "creature": "oteryn:creature.troll",
+                    }
+                ],
+            }
+            rules = {"schema": 1, "rules": [{"objective": "oteryn:quest-death/animal"}]}
             (root / corpse.OBJECTIVES).write_text(json.dumps(objectives))
             # This isolated authored-selection case still supplies a valid closed
             # QuestPC7 coverage join; that independent family contributes no root.
             import questpc7_corpse_requirements as questpc7
-            native_key = 'oteryn:quest-death/fixture-closed-troll'
-            native_corpse = {'family': 'Item', 'key': 'oteryn:item.tibia.i5960',
-                             'revision': 'definition-r1'}
-            (root / questpc7.DOCUMENT).write_text(json.dumps({
-                'schema': 1, 'objectives': [{'key': native_key,
-                                           'creature': 'oteryn:creature.troll'}]}))
-            (root / questpc7.PATH).write_text(json.dumps({
-                'schema': 1, 'objective_document': questpc7.DOCUMENT,
-                'objectives': [{'objective': native_key, 'creature': 'oteryn:creature.troll',
-                                'corpse': native_corpse, 'disposition': 'closed',
-                                'reason': 'isolated authored-selection fixture'}]}))
-            creatures = {'records': [{'profile': {'target': {'family': 'Creature',
-                          'key': 'oteryn:creature.troll', 'revision': 'definition-r1'},
-                          'data': {'profile': {'details': {'corpse_item': {'family': 'Item',
-                          'key': 'oteryn:item.tibia.i5960', 'revision': 'definition-r1'}}}}}}]}
+
+            native_key = "oteryn:quest-death/fixture-closed-troll"
+            native_corpse = {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5960",
+                "revision": "definition-r1",
+            }
+            (root / questpc7.DOCUMENT).write_text(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "objectives": [{"key": native_key, "creature": "oteryn:creature.troll"}],
+                    }
+                )
+            )
+            (root / questpc7.PATH).write_text(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "objective_document": questpc7.DOCUMENT,
+                        "objectives": [
+                            {
+                                "objective": native_key,
+                                "creature": "oteryn:creature.troll",
+                                "corpse": native_corpse,
+                                "disposition": "closed",
+                                "reason": "isolated authored-selection fixture",
+                            }
+                        ],
+                    }
+                )
+            )
+            creatures = {
+                "records": [
+                    {
+                        "profile": {
+                            "target": {
+                                "family": "Creature",
+                                "key": "oteryn:creature.troll",
+                                "revision": "definition-r1",
+                            },
+                            "data": {
+                                "profile": {
+                                    "details": {
+                                        "corpse_item": {
+                                            "family": "Item",
+                                            "key": "oteryn:item.tibia.i5960",
+                                            "revision": "definition-r1",
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    }
+                ]
+            }
             (root / corpse.RULES).write_text(json.dumps(rules))
             self.assertEqual(corpse.required(root, creatures), {5960})
             # Ordinary native rewards request the same exact objective/Creature/corpse
             # without inventing a quest-loot rule or changing its rewards.
-            (root / corpse.RULES).write_text(json.dumps({'schema': 1, 'rules': []}))
+            (root / corpse.RULES).write_text(json.dumps({"schema": 1, "rules": []}))
             self.assertEqual(corpse.required(root, creatures), set())
-            request = {'schema': 1, 'objectives': ['oteryn:quest-death/animal'], 'sources': ['fixture:bound-source']}
+            request = {
+                "schema": 1,
+                "objectives": ["oteryn:quest-death/animal"],
+                "sources": ["fixture:bound-source"],
+            }
             (root / corpse.REQUIREMENTS).write_text(json.dumps(request))
             self.assertEqual(corpse.required(root, creatures), {5960})
-            request['objectives'] = ['oteryn:quest-death/foreign']
+            request["objectives"] = ["oteryn:quest-death/foreign"]
             (root / corpse.REQUIREMENTS).write_text(json.dumps(request))
-            with self.assertRaisesRegex(ValueError, 'ORDINARY_OBJECTIVE_BINDING'):
+            with self.assertRaisesRegex(ValueError, "ORDINARY_OBJECTIVE_BINDING"):
                 corpse.required(root, creatures)
-            (root / corpse.REQUIREMENTS).write_text(json.dumps({'schema': 1, 'objectives': [], 'sources': []}))
-            rules['rules'].append(rules['rules'][0])
+            (root / corpse.REQUIREMENTS).write_text(
+                json.dumps({"schema": 1, "objectives": [], "sources": []})
+            )
+            rules["rules"].append(rules["rules"][0])
             (root / corpse.RULES).write_text(json.dumps(rules))
-            with self.assertRaisesRegex(ValueError, 'OBJECTIVE_BINDING'):
+            with self.assertRaisesRegex(ValueError, "OBJECTIVE_BINDING"):
                 corpse.required(root, creatures)
-            rules['rules'] *= 17
+            rules["rules"] *= 17
             (root / corpse.RULES).write_text(json.dumps(rules))
-            with self.assertRaisesRegex(ValueError, 'RULE_BOUNDS'):
+            with self.assertRaisesRegex(ValueError, "RULE_BOUNDS"):
                 corpse.required(root, creatures)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

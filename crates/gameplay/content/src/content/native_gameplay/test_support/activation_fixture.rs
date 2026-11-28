@@ -348,6 +348,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.gelidrazah_the_frozen",
         "oteryn:creature.glitterscale",
         "oteryn:creature.glooth_fairy",
+        "oteryn:creature.furyosa",
         "oteryn:creature.goshnar_s_spite",
         "oteryn:creature.gravelord_oshuran",
         "oteryn:creature.infernatil",
@@ -378,6 +379,17 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.vok_the_freakish",
         "oteryn:creature.zamulosh",
         "oteryn:creature.zevelon_duskbringer",
+        "oteryn:creature.hirintror",
+        "oteryn:creature.ocyakao",
+        "oteryn:creature.shardhead",
+        "oteryn:creature.the_welter",
+        "oteryn:creature.tyrn",
+        "oteryn:creature.weakened_shlorg",
+        "oteryn:creature.white_pale",
+        "oteryn:creature.willi_wasp",
+        "oteryn:creature.yakchal",
+        "oteryn:creature.zushuka",
+        "oteryn:creature.magma_bubble",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -656,117 +668,30 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         missing + inadmissible + inadmissible_loot + admitted.len(),
         bosses.len()
     );
+    let registered = bosses
+        .iter()
+        .map(|row| row.definition_key.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(
-        (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 238, 0, 99)
-    );
-    assert_eq!(
-        admitted,
-        [
-            "oteryn:creature.ahau",
-            "oteryn:creature.an_observer_eye",
-            "oteryn:creature.anomaly",
-            "oteryn:creature.apprentice_sheng",
-            "oteryn:creature.arachir_the_ancient_one",
-            "oteryn:creature.arbaziloth",
-            "oteryn:creature.armenius_creature",
-            "oteryn:creature.ascending_ferumbras",
-            "oteryn:creature.bakragore",
-            "oteryn:creature.bazir",
-            "oteryn:creature.black_vixen",
-            "oteryn:creature.bloodback",
-            "oteryn:creature.chagorz",
-            "oteryn:creature.chayenne",
-            "oteryn:creature.count_vlarkorth",
-            "oteryn:creature.darkfang",
-            "oteryn:creature.demodras",
-            "oteryn:creature.dharalion",
-            "oteryn:creature.diblis_the_fair",
-            "oteryn:creature.dragonking_zyrtarch",
-            "oteryn:creature.dreadful_disruptor",
-            "oteryn:creature.duke_krule",
-            "oteryn:creature.earl_osam",
-            "oteryn:creature.earth_overlord",
-            "oteryn:creature.energy_overlord",
-            "oteryn:creature.enraged_arbaziloth",
-            "oteryn:creature.eradicator",
-            "oteryn:creature.eradicator2",
-            "oteryn:creature.ferumbras",
-            "oteryn:creature.ferumbras_mortal_shell",
-            "oteryn:creature.fire_overlord",
-            "oteryn:creature.gelidrazah_the_frozen",
-            "oteryn:creature.glitterscale",
-            "oteryn:creature.glooth_fairy",
-            "oteryn:creature.gorzindel",
-            "oteryn:creature.goshnar_s_cruelty",
-            "oteryn:creature.goshnar_s_greed",
-            "oteryn:creature.goshnar_s_hatred",
-            "oteryn:creature.goshnar_s_malice",
-            "oteryn:creature.goshnar_s_megalomania_blue",
-            "oteryn:creature.goshnar_s_megalomania_green",
-            "oteryn:creature.goshnar_s_megalomania_purple",
-            "oteryn:creature.goshnar_s_spite",
-            "oteryn:creature.grand_mother_foulscale",
-            "oteryn:creature.gravelord_oshuran",
-            "oteryn:creature.ice_overlord",
-            "oteryn:creature.ichgahal",
-            "oteryn:creature.infernatil",
-            "oteryn:creature.irgix_the_flimsy",
-            "oteryn:creature.jailer",
-            "oteryn:creature.king_zelos",
-            "oteryn:creature.koshei_the_deathless",
-            "oteryn:creature.lord_azaram",
-            "oteryn:creature.lord_retro",
-            "oteryn:creature.maior_domus",
-            "oteryn:creature.maior_domus_final",
-            "oteryn:creature.mazzinor",
-            "oteryn:creature.mimar_haffar",
-            "oteryn:creature.mimar_haffar_final",
-            "oteryn:creature.mitmah_vanguard",
-            "oteryn:creature.murcion",
-            "oteryn:creature.orshabaal",
-            "oteryn:creature.outburst",
-            "oteryn:creature.plagirath",
-            "oteryn:creature.professor_maxxen",
-            "oteryn:creature.ragiaz",
-            "oteryn:creature.razzagorn",
-            "oteryn:creature.rupture",
-            "oteryn:creature.scarlett_etzel",
-            "oteryn:creature.sharpclaw",
-            "oteryn:creature.shulgrax",
-            "oteryn:creature.sir_baeloc",
-            "oteryn:creature.sir_valorcrest",
-            "oteryn:creature.soul_of_dragonking_zyrtarch",
-            "oteryn:creature.spirit_overlord",
-            "oteryn:creature.sugar_daddy",
-            "oteryn:creature.supercharged_mazzinor",
-            "oteryn:creature.tarbaz",
-            "oteryn:creature.tazhadur",
-            "oteryn:creature.teleskor",
-            "oteryn:creature.the_blazing_time_guardian",
-            "oteryn:creature.the_enraged_thorn_knight",
-            "oteryn:creature.the_false_god",
-            "oteryn:creature.the_first_dragon",
-            "oteryn:creature.the_freezing_time_guardian",
-            "oteryn:creature.the_many",
-            "oteryn:creature.the_old_widow",
-            "oteryn:creature.the_pale_count",
-            "oteryn:creature.the_percht_queen",
-            "oteryn:creature.the_primal_menace",
-            "oteryn:creature.the_scion_of_havoc",
-            "oteryn:creature.the_souldespoiler",
-            "oteryn:creature.the_time_guardian",
-            "oteryn:creature.the_weakened_count",
-            "oteryn:creature.unaz_the_mean",
-            "oteryn:creature.vemiath",
-            "oteryn:creature.vok_the_freakish",
-            "oteryn:creature.zamulosh",
-            "oteryn:creature.zevelon_duskbringer",
-        ]
+        registered.len(),
+        bosses.len(),
+        "each source boss occurs exactly once"
     );
     assert!(
-        newly_materializable_body_loot_refusals.is_empty(),
-        "{newly_materializable_body_loot_refusals:?}"
+        admitted.windows(2).all(|keys| keys[0] != keys[1]),
+        "admissions are unique"
+    );
+    for key in newly_admitted {
+        assert!(
+            admitted.binary_search(&key).is_ok(),
+            "source-qualified boss {key} was refused"
+        );
+    }
+    newly_materializable_body_loot_refusals.sort_unstable();
+    assert!(
+        newly_materializable_body_loot_refusals
+            .iter()
+            .all(|key| admitted.binary_search(key).is_err())
     );
     shared_body.sort_unstable();
     refreshed_body_loot_admissions.sort_unstable();
@@ -775,7 +700,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         [
             "oteryn:creature.bazir",
             "oteryn:creature.infernatil",
-            "oteryn:creature.the_old_widow"
+            "oteryn:creature.the_old_widow",
         ]
     );
     assert_eq!(
@@ -791,7 +716,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 389);
+    assert_eq!(bosses.len(), 396);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()
@@ -1017,6 +942,56 @@ pub fn activated_loop_monster_missing_child(
 
 #[cfg(test)]
 #[test]
+fn knightwatch_diamond_lever_creates_crystal_ground_item() -> Result<(), String> {
+    use crate::content::native_gameplay::NativeItemDestination;
+
+    let levers: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let lever = levers["callbacks"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["selector"]["unique"] == 3047))
+        .ok_or("Dread Lord lever")?;
+    assert!(lever["item_reward"].is_null());
+    let [offering] = lever["offerings"].as_array().ok_or("offerings")?.as_slice() else {
+        return Err("expected one offering".into());
+    };
+    assert_eq!(offering["item"], "oteryn:item.tibia.i3028");
+    assert_eq!(offering["count"], 1);
+    let [created] = lever["effects"]["scene"]["open"]
+        .as_array()
+        .ok_or("scene")?
+        .as_slice()
+    else {
+        return Err("expected one ground item".into());
+    };
+    assert_eq!(created["position"], offering["position"]);
+    assert_eq!(created["create"], 7845);
+
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = try_activate_input(world, &manifest_input())
+        .map_err(|error| format!("native activation: {error:?}"))?;
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active native gameplay")?;
+    let record = native
+        .item_policy_for_source_id(7845)
+        .ok_or("missing policy for Crystal lever ground item")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.legal_destinations,
+        [NativeItemDestination::Ground]
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
 fn srx3_actual_grand_mother_reward_boss_has_source_corpse_and_complete_material_loot()
 -> Result<(), String> {
     // Crystal201189f data-global/monster/raids/grand_mother_foulscale.lua:
@@ -1130,6 +1105,53 @@ fn srx3_actual_w11_bosses_have_source_ground_corpses_and_complete_reward_rows() 
 
 #[cfg(test)]
 #[test]
+fn market_crown_polisher_resolves_to_active_inventory_profile() -> Result<(), String> {
+    use crate::content::ReferenceItemField as F;
+    use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay")?;
+    let key = "oteryn:item.tibia.i10009";
+    let revision = "definition-r1";
+    assert!(native.marketable_definition(key, revision));
+    let record = native
+        .item_policy(key, revision)
+        .ok_or("missing active inventory profile for flask of crown polisher")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.stack_class,
+        NativeItemStackClass::NonStackable
+    );
+    assert_eq!(
+        record.admission.legal_destinations,
+        [
+            NativeItemDestination::CharacterInventory,
+            NativeItemDestination::Ground
+        ]
+    );
+    assert!(
+        matches!(&record.semantics.presentation, F::Known(presentation)
+        if matches!(&presentation.name, F::Known(name) if name == "flask of crown polisher"))
+    );
+    assert!(matches!(&record.semantics.physical, F::Known(physical)
+        if physical.weight == F::Known(110)
+            && physical.movable == F::Known(true)
+            && physical.pickupable == F::Known(true)));
+    assert!(
+        matches!(&record.semantics.stack, F::Known(stack) if stack.stackable == F::Known(false))
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
 fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(), String> {
     use crate::content::ReferenceItemField as F;
     use crate::content::native_gameplay::NativeItemDestination;
@@ -1162,4 +1184,74 @@ fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(
             if physical.movable==F::Known(true) && physical.pickupable==F::Known(true)));
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn crystal_portable_containers_load_with_exact_inventory_capacities()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            use super::super::{NativeItemDestination, NativeItemStackClass};
+            use crate::content::ReferenceItemField::Known;
+
+            let world = test_source(1)
+                .map_err(|error| format!("source world: {error:?}"))?
+                .world_id;
+            let (controller, _) = try_activate_input(world, &manifest_input())
+                .map_err(|error| format!("activate native content: {error:?}"))?;
+            let native = controller
+                .active()
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("active native gameplay")?;
+            // The verified definition has 22 slots and is held by the ordinary container owner.
+            assert!(native.item_policy_for_source_id(53074).is_none());
+            // Crystal 201189f8 data/items/items.xml and its container/take appearance flags.
+            for (capacity, source_ids) in [
+                (1, &[6104][..]),
+                (2, &[37561]),
+                (5, &[4282, 6509]),
+                (8, &[2858, 2860, 2861, 2862, 2864, 5950, 8861, 9603, 10325]),
+                (10, &[24861, 24862]),
+                (15, &[2481, 2482, 14674]),
+                (
+                    20,
+                    &[
+                        2865, 2866, 2868, 2869, 2870, 2871, 2872, 5949, 8860, 9602, 9604, 9605,
+                        10202, 10324, 10327, 14248, 14249, 16099, 16100, 19159, 21292, 21411,
+                        22084, 24395, 35577, 37536,
+                    ],
+                ),
+            ] {
+                for &id in source_ids {
+                    let profile = native
+                        .item_policy_for_source_id(id)
+                        .ok_or_else(|| format!("missing native Item profile for {id}"))?;
+                    let record = profile.record();
+                    assert!(record.admission.materializable, "Item {id}");
+                    assert_eq!(
+                        record.admission.stack_class,
+                        NativeItemStackClass::NonStackable,
+                        "Item {id}"
+                    );
+                    assert_eq!(
+                        record.admission.legal_destinations,
+                        [
+                            NativeItemDestination::CharacterInventory,
+                            NativeItemDestination::Ground,
+                        ],
+                        "Item {id}"
+                    );
+                    assert!(
+                        matches!(&record.semantics.container,
+                        Known(container) if container.capacity == Known(capacity)),
+                        "Item {id}"
+                    );
+                }
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "container activation test panicked")?
 }

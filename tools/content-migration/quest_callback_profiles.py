@@ -1,4 +1,5 @@
 """Carry already admitted quest offering and chest definitions into the native Item provider."""
+
 import copy
 import difflib
 import hashlib
@@ -10,55 +11,108 @@ import timed_item_profiles as timed
 import writable_item_profiles as writing
 from native_profile_composition import encode_native_profile
 
-SOURCE = 'imports/canary/items-xml/items.xml'
-SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
+SOURCE = "imports/canary/items-xml/items.xml"
+SOURCE_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 # Crystal201189f:data-global/startup/tables/chest.lua:799-817. These exact
 # ordinary one-Item claims already have canonical materialization, equipment and
 # physical facts. They need no new Item owner or charged-instance policy.
 DEMON_HELMET_REWARDS = {
-    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots': 'oteryn:item.tibia.i3554',
-    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet': 'oteryn:item.tibia.i3387',
-    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield': 'oteryn:item.tibia.i3420',
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "oteryn:item.tibia.i3554",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "oteryn:item.tibia.i3387",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "oteryn:item.tibia.i3420",
 }
 # These T..Z source chests carry already-admitted Item facts into the native
 # provider. No quest progress or access puzzle is inferred here.
 QUESTPC4_REWARD_QUESTS = {
-    'canary:quest/the_ape_city_quest', 'canary:quest/the_explorer_society_quest',
-    'canary:quest/the_hidden_city_of_beregar_quest',
-    'canary:quest/the_inquisition_quest', 'canary:quest/the_pits_of_inferno_quest',
-    'canary:quest/the_thieves_guild_quest', 'canary:quest/the_white_raven_monastery_quest',
-    'canary:quest/threatened_dreams_quest', 'canary:quest/throwing_star_quest',
-    'canary:quest/time_ring_quest', 'canary:quest/to_blind_the_enemy_quest',
-    'canary:quest/to_outfox_a_fox_quest', 'canary:quest/tomes_of_knowledge_quest',
-    'canary:quest/triangle_tower_quest', 'canary:quest/troll_cave_quest',
-    'canary:quest/vampire_hunter_quest', 'canary:quest/vampire_shield_quest',
-    'canary:quest/waterfall_quest', 'canary:quest/wedding_ring_quest',
-    'canary:quest/what_a_foolish_quest',
+    "canary:quest/the_ape_city_quest",
+    "canary:quest/the_explorer_society_quest",
+    "canary:quest/the_hidden_city_of_beregar_quest",
+    "canary:quest/the_inquisition_quest",
+    "canary:quest/the_pits_of_inferno_quest",
+    "canary:quest/the_thieves_guild_quest",
+    "canary:quest/the_white_raven_monastery_quest",
+    "canary:quest/threatened_dreams_quest",
+    "canary:quest/throwing_star_quest",
+    "canary:quest/time_ring_quest",
+    "canary:quest/to_blind_the_enemy_quest",
+    "canary:quest/to_outfox_a_fox_quest",
+    "canary:quest/tomes_of_knowledge_quest",
+    "canary:quest/triangle_tower_quest",
+    "canary:quest/troll_cave_quest",
+    "canary:quest/vampire_hunter_quest",
+    "canary:quest/vampire_shield_quest",
+    "canary:quest/waterfall_quest",
+    "canary:quest/wedding_ring_quest",
+    "canary:quest/what_a_foolish_quest",
 }
 
-CHEST_PROFILES = 'tools/content-schema/native-gameplay/quest-chest-item-profiles.json'
+CHEST_PROFILES = "tools/content-schema/native-gameplay/quest-chest-item-profiles.json"
 CHEST_IDS = {1777, 2436, 2438, 2473, 2474}
+EXPLORER_QUEST = "oteryn:quest.the_explorer_society_quest"
+OUTLAW_TREASURE = "oteryn:quest-callback/outlaw-camp-treasure"
+# Crystal 201189f data/items/items.xml: filled kits and samples weigh more
+# than the empty vessels. The canonical catalogue inherited the empty weights.
+EXPLORER_SAMPLE_WEIGHTS = {
+    f"oteryn:item.tibia.i{number}": weights
+    for number, weights in (
+        (4864, (700, 800)),
+        (4865, (700, 800)),
+        (4866, (700, 800)),
+        (4868, (1800, 2000)),
+        (4869, (1800, 2000)),
+        (4870, (1800, 2000)),
+    )
+}
+ICE_SAMPLE = "oteryn:item.tibia.i4837"
+EXPLORER_TRACING_SHEETS = {"oteryn:item.tibia.i4842", "oteryn:item.tibia.i4843"}
+# Orc powder already uses the world-change Item owner, later in native composition.
+EXPLORER_WORLD_CHANGE_ITEMS = {"oteryn:item.tibia.i13974"}
+
+
+def callback_items(callback):
+    effects = callback.get("effects") or {}
+    give = (
+        callback.get("give")
+        or callback.get("item_reward")
+        or effects.get("item_reward")
+    )
+    if give:
+        yield give["item"]
+        for field in ("contents", "backpack_outputs", "additional"):
+            yield from (child["item"] for child in give.get(field, []))
+    for field in ("take", "present", "offerings"):
+        yield from (item["item"] for item in callback.get(field, []))
+    yield from (item["item"] for item in effects.get("carried_inputs", []))
+    tool = callback.get("item_on_target")
+    if tool:
+        yield tool["item"]
+        if tool.get("replacement"):
+            yield tool["replacement"]
 
 
 def admit_map_carriers(root, document):
     """Retain the exact source physics for restored map chest entries."""
     overlay = json.loads((root / CHEST_PROFILES).read_bytes())
-    rows = overlay['records']
-    keys = [r['production_definition']['production_key'] for r in rows]
-    if (overlay['schema'] != 'OTERYN_NATIVE_QUEST_CHEST_ITEM_PROFILES/v1'
-            or overlay['source_revision'] != '99902524e052f37574194466c2949c576e4ab269'
-            or len(keys) != len(CHEST_IDS)
-            or set(keys) != {f'oteryn:item.tibia.i{i}' for i in CHEST_IDS}):
-        raise ValueError('QUEST_CHEST_ITEM_PROFILE_SET')
-    existing = {row['production_definition']['production_key']: row
-                for row in document['records']}
+    rows = overlay["records"]
+    keys = [r["production_definition"]["production_key"] for r in rows]
+    if (
+        overlay["schema"] != "OTERYN_NATIVE_QUEST_CHEST_ITEM_PROFILES/v1"
+        or overlay["source_revision"] != "99902524e052f37574194466c2949c576e4ab269"
+        or len(keys) != len(CHEST_IDS)
+        or set(keys) != {f"oteryn:item.tibia.i{i}" for i in CHEST_IDS}
+    ):
+        raise ValueError("QUEST_CHEST_ITEM_PROFILE_SET")
+    existing = {
+        row["production_definition"]["production_key"]: row
+        for row in document["records"]
+    }
     for row in rows:
-        key = row['production_definition']['production_key']
+        key = row["production_definition"]["production_key"]
         if key in existing:
             if existing[key] != row:
-                raise ValueError('QUEST_CHEST_ITEM_PROFILE_CONFLICT')
+                raise ValueError("QUEST_CHEST_ITEM_PROFILE_CONFLICT")
         else:
-            document['records'].append(row)
+            document["records"].append(row)
 
 
 def admit_route_scenery(root, generated, profile_path, manifest_path, order, canonical):
@@ -66,134 +120,212 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
     import qengine_reward_item_profiles as donor
 
     # The Folda corridor carries stones, bloodstains, a bone and patches of ice.
-    folda = (1854, 1855, 1856, 1857, 1858, 1865, 1866, 1867,
-             2697, 2698, 3115, 6487, 6715, 6716)
+    folda = (
+        1854,
+        1855,
+        1856,
+        1857,
+        1858,
+        1865,
+        1866,
+        1867,
+        2697,
+        2698,
+        3115,
+        6487,
+        6715,
+        6716,
+    )
     # The New Frontier ramp, Outlaw Camp debris and Ape City jar and statue states.
-    movement = {**dict.fromkeys(folda, False), 1953: False, 6484: False,
-                4850: True, 4851: True, 4995: True, 4996: True}
+    movement = {
+        **dict.fromkeys(folda, False),
+        1953: False,
+        6484: False,
+        4850: True,
+        4851: True,
+        4995: True,
+        4996: True,
+    }
+    # Crystal 201189f8 data/items/items.xml:4618-4624,7640-7647 agrees with the retained XML.
+    # The appearance flags make intact bars solid and trashed bars walkable.
+    movement.update(dict.fromkeys(range(2291, 2297), True))
+    movement.update({3145: False, 3146: False})
     # The captured Outlaw and Alawar placements use three locked doors. The
     # second Alawar door also needs its unlocked and open counterparts.
     doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
     movement.update(doors)
     document = json.loads(generated[profile_path])
-    existing = {row['production_definition']['production_key']: row
-                for row in document['records']}
+    existing = {
+        row["production_definition"]["production_key"]: row
+        for row in document["records"]
+    }
     missing = set()
     for identifier, solid in movement.items():
-        key = f'oteryn:item.tibia.i{identifier}'
+        key = f"oteryn:item.tibia.i{identifier}"
         prior = existing.get(key)
         if prior is None:
             missing.add(identifier)
             continue
         portable = identifier == 3115
-        attributes = prior['attributes']
-        physical = prior['semantics']['physical'].get('value', {})
-        motion = attributes.get('blocks_movement')
-        if (prior['production_binding']['disposition'] != 'EXACT'
-                or prior['admission']['materializable'] != portable
-                or physical.get('movable') != writing.known(portable)
-                or physical.get('pickupable') != writing.known(portable)
-                or (motion is not solid and not (portable and motion is None))
-                or (identifier in doors and attributes.get('blocks_projectile') is not solid)):
-            raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+        # The shared 6251 door already belongs to the key-door provider.
+        key_door = identifier == 6251
+        admission = prior["admission"]
+        attributes = prior["attributes"]
+        physical = prior["semantics"]["physical"].get("value", {})
+        motion = attributes.get("blocks_movement")
+        if (
+            prior["production_binding"]["disposition"] != "EXACT"
+            or admission["materializable"] != (portable or key_door)
+            or (key_door and admission["legal_destinations"] != ["Ground"])
+            or physical.get("movable") != writing.known(portable)
+            or physical.get("pickupable") != writing.known(portable)
+            or (motion is not solid and not (portable and motion is None))
+            or (
+                identifier in doors and attributes.get("blocks_projectile") is not solid
+            )
+        ):
+            raise ValueError(f"QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}")
         if portable and motion is None:
-            attributes['blocks_movement'] = False
+            attributes["blocks_movement"] = False
     if not missing:
-        write_provider(generated, profile_path, manifest_path, order, canonical, document)
+        write_provider(
+            generated, profile_path, manifest_path, order, canonical, document
+        )
         return
     source = donor.source
     xml = (root / donor.XML).read_bytes()
     appearances = (root / donor.CLIENT).read_bytes()
-    if (hashlib.sha256(xml).hexdigest() != donor.XML_SHA
-            or hashlib.sha256(appearances).hexdigest() != donor.CLIENT_SHA):
-        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_PIN')
+    if (
+        hashlib.sha256(xml).hexdigest() != donor.XML_SHA
+        or hashlib.sha256(appearances).hexdigest() != donor.CLIENT_SHA
+    ):
+        raise ValueError("QUEST_ROUTE_SCENERY_SOURCE_PIN")
     nodes = source.xml_index(xml)
     objects = source.engine_items.load_appearance_objects(appearances)
-    bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    bindings = source.binding_index(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
     definitions = authored_static_item_constructors.definitions(root)
     facts = source.policies(appearances, xml, missing)
-    if {row['server_item_id'] for row in facts} != missing:
-        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_SET')
+    if {row["server_item_id"] for row in facts} != missing:
+        raise ValueError("QUEST_ROUTE_SCENERY_SOURCE_SET")
     records = []
     for row in facts:
-        identifier = row['server_item_id']
-        key = f'oteryn:item.tibia.i{identifier}'
+        identifier = row["server_item_id"]
+        key = f"oteryn:item.tibia.i{identifier}"
         portable = identifier == 3115
-        if (row['movable'] != portable or row['pickupable'] != portable or row['ground']
-                or row['block_solid'] != movement[identifier]
-                or (identifier in doors and (row['dynamic_kind'] != 'door'
-                                             or row['block_projectile'] != doors[identifier]))
-                or definitions[key]['materializable'] != portable):
-            raise ValueError(f'QUEST_ROUTE_SCENERY_SOURCE_PHYSICS:{identifier}')
-        record = source.profile(identifier, nodes[identifier], objects[identifier], row, bindings, None)
-        record['admission']['materializable'] = portable
+        if (
+            row["movable"] != portable
+            or row["pickupable"] != portable
+            or row["ground"]
+            or row["block_solid"] != movement[identifier]
+            or (
+                identifier in doors
+                and (
+                    row["dynamic_kind"] != "door"
+                    or row["block_projectile"] != doors[identifier]
+                )
+            )
+            or definitions[key]["materializable"] != portable
+        ):
+            raise ValueError(f"QUEST_ROUTE_SCENERY_SOURCE_PHYSICS:{identifier}")
+        record = source.profile(
+            identifier, nodes[identifier], objects[identifier], row, bindings, None
+        )
+        record["admission"]["materializable"] = portable
         records.append(record)
     bound = source.bind_profiles(
-        {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
+        {"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": records},
         bindings,
         missing,
     )
-    document['records'].extend(bound['records'])
+    document["records"].extend(bound["records"])
     write_provider(generated, profile_path, manifest_path, order, canonical, document)
 
 
 def complete_native_stack(root, record, definition, binding):
     """Fill only unqualified stack facts; established native facts keep authority."""
-    identity = definition['identity']
-    expected = {'family': identity['family'], 'production_key': identity['key'],
-                'revision_ref': identity['revision']}
-    if record['production_definition'] != expected or record['production_binding'] != binding:
-        raise ValueError('QUEST_CALLBACK_NATIVE_IDENTITY')
-    admission = record['admission']
-    if (not admission['materializable']
-            or 'CharacterInventory' not in admission['legal_destinations']
-            or admission['stack_class'] != definition['stack_class']):
-        raise ValueError('QUEST_CALLBACK_NATIVE_ITEM_NOT_ADMITTED')
-    semantics = record['semantics']
-    physical = semantics['physical']
-    weight = physical.get('value', {}).get('weight', {})
-    if (physical.get('state') != 'KNOWN' or weight.get('state') != 'KNOWN'
-            or type(weight.get('value')) is not int or not 0 <= weight['value'] <= 0xffffffff
-            or any(physical['value'].get(field) != {'state': 'KNOWN', 'value': True}
-                   for field in ('movable', 'pickupable'))):
-        raise ValueError('QUEST_CALLBACK_NATIVE_PHYSICAL_INCOMPLETE')
-    if admission['stack_class'] == 'StackCapable':
-        observed, accepted = semantics['stack'], definition['semantics']['stack']
-        if observed.get('state') == 'UNKNOWN' and accepted.get('state') == 'KNOWN':
-            semantics['stack'] = copy.deepcopy(accepted)
-        elif observed.get('state') == accepted.get('state') == 'KNOWN':
-            for field in ('stackable', 'stack_max'):
-                if (observed['value'][field].get('state') == 'UNKNOWN'
-                        and accepted['value'][field].get('state') == 'KNOWN'):
-                    observed['value'][field] = copy.deepcopy(accepted['value'][field])
-        stack = semantics['stack']
-        maximum = stack.get('value', {}).get('stack_max', {})
-        if (stack.get('state') != 'KNOWN'
-                or stack['value'].get('stackable') != {'state': 'KNOWN', 'value': True}
-                or maximum.get('state') != 'KNOWN' or type(maximum.get('value')) is not int
-                or not 1 <= maximum['value'] <= 100):
-            raise ValueError('QUEST_CALLBACK_NATIVE_STACK_INCOMPLETE')
-    expected_container = definition['semantics']['container']
-    if expected_container.get('state') == 'KNOWN':
-        expected_capacity = expected_container['value']['capacity']
-        if expected_capacity.get('state') == 'KNOWN':
-            container = semantics['container']
-            if (container.get('state') != 'KNOWN'
-                    or container['value']['capacity'] != expected_capacity):
-                raise ValueError('QUEST_CALLBACK_NATIVE_CONTAINER_INCOMPLETE')
+    identity = definition["identity"]
+    expected = {
+        "family": identity["family"],
+        "production_key": identity["key"],
+        "revision_ref": identity["revision"],
+    }
+    if (
+        record["production_definition"] != expected
+        or record["production_binding"] != binding
+    ):
+        raise ValueError("QUEST_CALLBACK_NATIVE_IDENTITY")
+    admission = record["admission"]
+    if (
+        not admission["materializable"]
+        or "CharacterInventory" not in admission["legal_destinations"]
+        or admission["stack_class"] != definition["stack_class"]
+    ):
+        raise ValueError("QUEST_CALLBACK_NATIVE_ITEM_NOT_ADMITTED")
+    semantics = record["semantics"]
+    physical = semantics["physical"]
+    weight = physical.get("value", {}).get("weight", {})
+    if (
+        physical.get("state") != "KNOWN"
+        or weight.get("state") != "KNOWN"
+        or type(weight.get("value")) is not int
+        or not 0 <= weight["value"] <= 0xFFFFFFFF
+        or any(
+            physical["value"].get(field) != {"state": "KNOWN", "value": True}
+            for field in ("movable", "pickupable")
+        )
+    ):
+        raise ValueError("QUEST_CALLBACK_NATIVE_PHYSICAL_INCOMPLETE")
+    if admission["stack_class"] == "StackCapable":
+        observed, accepted = semantics["stack"], definition["semantics"]["stack"]
+        if observed.get("state") == "UNKNOWN" and accepted.get("state") == "KNOWN":
+            semantics["stack"] = copy.deepcopy(accepted)
+        elif observed.get("state") == accepted.get("state") == "KNOWN":
+            for field in ("stackable", "stack_max"):
+                if (
+                    observed["value"][field].get("state") == "UNKNOWN"
+                    and accepted["value"][field].get("state") == "KNOWN"
+                ):
+                    observed["value"][field] = copy.deepcopy(accepted["value"][field])
+        stack = semantics["stack"]
+        maximum = stack.get("value", {}).get("stack_max", {})
+        if (
+            stack.get("state") != "KNOWN"
+            or stack["value"].get("stackable") != {"state": "KNOWN", "value": True}
+            or maximum.get("state") != "KNOWN"
+            or type(maximum.get("value")) is not int
+            or not 1 <= maximum["value"] <= 100
+        ):
+            raise ValueError("QUEST_CALLBACK_NATIVE_STACK_INCOMPLETE")
+    expected_container = definition["semantics"]["container"]
+    if expected_container.get("state") == "KNOWN":
+        expected_capacity = expected_container["value"]["capacity"]
+        if expected_capacity.get("state") == "KNOWN":
+            container = semantics["container"]
+            if (
+                container.get("state") != "KNOWN"
+                or container["value"]["capacity"] != expected_capacity
+            ):
+                raise ValueError("QUEST_CALLBACK_NATIVE_CONTAINER_INCOMPLETE")
     # The merged chest cohort owns these accepted rounded weights; retain the
     # raw Trader capture, and reconcile only its exact reviewed leaf pairs.
     from hireling_item_profiles import MERGED_MAIN_NATIVE_WEIGHTS
-    decision = MERGED_MAIN_NATIVE_WEIGHTS.get(identity['key'])
+
+    decision = MERGED_MAIN_NATIVE_WEIGHTS.get(identity["key"])
     if decision is not None:
         accepted, donor, _ = decision
-        canonical_weight = definition['semantics']['physical']['value']['weight']
-        observed_weight = semantics['physical']['value']['weight']
-        if (canonical_weight != {'state': 'KNOWN', 'value': accepted}
-                or observed_weight not in ({'state': 'KNOWN', 'value': accepted},
-                                           {'state': 'KNOWN', 'value': donor})):
-            raise ValueError('QUEST_CALLBACK_SHARED_WEIGHT_DRIFT')
-        semantics['physical']['value']['weight'] = copy.deepcopy(canonical_weight)
+        canonical_weight = definition["semantics"]["physical"]["value"]["weight"]
+        observed_weight = semantics["physical"]["value"]["weight"]
+        if canonical_weight != {
+            "state": "KNOWN",
+            "value": accepted,
+        } or observed_weight not in (
+            {"state": "KNOWN", "value": accepted},
+            {"state": "KNOWN", "value": donor},
+        ):
+            raise ValueError("QUEST_CALLBACK_SHARED_WEIGHT_DRIFT")
+        semantics["physical"]["value"]["weight"] = copy.deepcopy(canonical_weight)
     # Other native cohorts may already carry this exact chest child. Retain
     # their known facts, but do not lose the canonical food/potion, protection
     # or trade policy merely because the physical Item was admitted first.
@@ -201,41 +333,53 @@ def complete_native_stack(root, record, definition, binding):
         # I05/TIMED owns these ability groups, including deliberately UNKNOWN
         # inactive forms. Filling them from canonical chest facts would add the
         # inactive bonus to the active form's bonus when the ring is worn.
-        if group == 'skill_modifiers' and identity['key'] in {
-                f'oteryn:item.tibia.i{number}' for number in timed.IDS}:
+        if group == "skill_modifiers" and identity["key"] in {
+            f"oteryn:item.tibia.i{number}" for number in timed.IDS
+        }:
             continue
-        if (fact.get('state') == 'KNOWN'
-                and semantics.get(group, {'state': 'UNKNOWN'}).get('state')
-                in ('UNKNOWN', 'NOT_APPLICABLE')):
+        if fact.get("state") == "KNOWN" and semantics.get(
+            group, {"state": "UNKNOWN"}
+        ).get("state") in ("UNKNOWN", "NOT_APPLICABLE"):
             semantics[group] = copy.deepcopy(fact)
 
 
 def grant_semantics(root, definition):
     """Carry source text facts without inventing an unqualified player-write policy."""
-    semantics = copy.deepcopy(definition['semantics'])
+    semantics = copy.deepcopy(definition["semantics"])
     # MP01: the native owner completes the equip level and vocations of 91 weapons.
     import weapon_equip_requirements
-    semantics = weapon_equip_requirements.complete_semantics(root, definition['identity']['key'], semantics)
+
+    semantics = weapon_equip_requirements.complete_semantics(
+        root, definition["identity"]["key"], semantics
+    )
     # Canary04b83b5:data/items/items.xml:16088-16091. The admitted poem
     # scroll has an unknown canonical weight, but this exact donor explicitly
     # supplies 120 centi-oz. Preserve the canonical record and known native facts.
-    if (definition['identity']['key'] == 'oteryn:item.tibia.i5952'
-            and semantics['physical'].get('state') == 'KNOWN'
-            and semantics['physical']['value'].get('weight') == {'state': 'UNKNOWN'}):
+    if (
+        definition["identity"]["key"] == "oteryn:item.tibia.i5952"
+        and semantics["physical"].get("state") == "KNOWN"
+        and semantics["physical"]["value"].get("weight") == {"state": "UNKNOWN"}
+    ):
         raw = (root / SOURCE).read_bytes()
         if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
-            raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
-        witnesses = ET.fromstring(raw).findall("item[@id='5952']/attribute[@key='weight']")
-        if len(witnesses) != 1 or witnesses[0].get('value') != '120':
-            raise ValueError('QUEST_CALLBACK_POEM_SCROLL_WEIGHT_DRIFT')
-        semantics['physical']['value']['weight'] = {'state': 'KNOWN', 'value': 120}
-    text = semantics['readable_writeable']
-    if (text.get('state') != 'KNOWN'
-            or text['value']['writeable'] != writing.known(True)):
+            raise ValueError("QUEST_CALLBACK_SOURCE_DIGEST")
+        witnesses = ET.fromstring(raw).findall(
+            "item[@id='5952']/attribute[@key='weight']"
+        )
+        if len(witnesses) != 1 or witnesses[0].get("value") != "120":
+            raise ValueError("QUEST_CALLBACK_POEM_SCROLL_WEIGHT_DRIFT")
+        semantics["physical"]["value"]["weight"] = {"state": "KNOWN", "value": 120}
+    text = semantics["readable_writeable"]
+    if text.get("state") != "KNOWN" or text["value"]["writeable"] != writing.known(
+        True
+    ):
         return semantics
-    maximum = text['value']['max_text_length']
-    if (maximum.get('state') == 'KNOWN' and type(maximum.get('value')) is int
-            and 1 <= maximum['value'] <= writing.MAX_CHARACTERS):
+    maximum = text["value"]["max_text_length"]
+    if (
+        maximum.get("state") == "KNOWN"
+        and type(maximum.get("value")) is int
+        and 1 <= maximum["value"] <= writing.MAX_CHARACTERS
+    ):
         return semantics
     # A source-writable sheet with no qualified limit is still a valid authored
     # quest-text carrier (PR2770 Q13). The existing WRITE owner classifies it as
@@ -244,18 +388,30 @@ def grant_semantics(root, definition):
     # authority and invent neither a text limit nor a write-once target.
     expected = writing.outputs(root)[writing.PATH]
     if (root / writing.PATH).read_bytes() != expected:
-        raise ValueError('QUEST_CALLBACK_WRITABLE_PROFILE_DRIFT')
-    profile = next((row for row in json.loads(expected)['records']
-                    if row['item'] == definition['identity']), None)
-    if (profile is None or profile['qualification'] != 'READ_ONLY_OR_ZERO_LIMIT'
-            or profile['max_characters'] != 0 or profile['writable'] is not True
-            or profile['readable'] is not True or profile['write_once_to'] is not None
-            or maximum != {'state': 'UNKNOWN'}
-            or text['value']['readable'] != writing.known(True)
-            or text['value']['write_once_target'] != {'state': 'UNKNOWN'}):
-        raise ValueError('QUEST_CALLBACK_WRITABLE_GRANT_UNQUALIFIED')
-    writing.owner_replace(text['value'], 'writeable', {'state': 'UNKNOWN'},
-                          [writing.known(True)])
+        raise ValueError("QUEST_CALLBACK_WRITABLE_PROFILE_DRIFT")
+    profile = next(
+        (
+            row
+            for row in json.loads(expected)["records"]
+            if row["item"] == definition["identity"]
+        ),
+        None,
+    )
+    if (
+        profile is None
+        or profile["qualification"] != "READ_ONLY_OR_ZERO_LIMIT"
+        or profile["max_characters"] != 0
+        or profile["writable"] is not True
+        or profile["readable"] is not True
+        or profile["write_once_to"] is not None
+        or maximum != {"state": "UNKNOWN"}
+        or text["value"]["readable"] != writing.known(True)
+        or text["value"]["write_once_target"] != {"state": "UNKNOWN"}
+    ):
+        raise ValueError("QUEST_CALLBACK_WRITABLE_GRANT_UNQUALIFIED")
+    writing.owner_replace(
+        text["value"], "writeable", {"state": "UNKNOWN"}, [writing.known(True)]
+    )
     return semantics
 
 
@@ -266,188 +422,265 @@ def requested_keys(root, extra_keys=()):
 
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
-    sys.path.insert(0, str((root / 'tools/content-schema/world-authoring').resolve()))
-    from quest_chest_bindings import outlaw_key_claim, panpipe_key_claim, verified_source_charges
-    sys.path.insert(0, str((root / 'tools/content-schema/reward-claim-authoring').resolve()))
-    import container_native
+    sys.path.insert(0, str(root / "tools/content-schema/world-authoring"))
+    from quest_chest_bindings import (
+        numbered_key_claim,
+        source_key_claim,
+        supported_claim,
+    )
 
-    callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
-    keys = {offering['item'] for callback in callbacks['callbacks']
-            for offering in callback['offerings']}
+    sys.path.insert(
+        0, str((root / "tools/content-schema/reward-claim-authoring").resolve())
+    )
+
+    sys.path.insert(0, str(root / "tools/content-schema/reward-claim-authoring"))
+
+    callbacks = json.loads((root / "content/quests/world-callbacks.json").read_bytes())
+    keys = {
+        offering["item"]
+        for callback in callbacks["callbacks"]
+        for offering in callback["offerings"]
+    }
     # The Ape City binding issues these portable quest Items from Crystal's
     # Hairycles exchange and Holy Ape Hair footprint. Use the existing
     # exact-identity custody qualification, without granting other item behavior.
-    authored_keys = {'oteryn:item.tibia.i4832', 'oteryn:item.tibia.i4835'}
+    authored_keys = {"oteryn:item.tibia.i4832", "oteryn:item.tibia.i4835"}
     # The pinned Shattered Isles and New Frontier bindings use these portable
     # Items for the ring, poem, pillow and bait exchanges and the rake action.
-    authored_keys.update(f'oteryn:item.tibia.i{number}'
-                         for number in (3452, 6093, 6105, 6119, 9843))
+    authored_keys.update(
+        f"oteryn:item.tibia.i{number}" for number in (3452, 6093, 6105, 6119, 9843)
+    )
     keys.update(authored_keys)
     authored_callbacks = []
+    explorer_npc = root / "content/quests/npc-callbacks/explorer-society.json"
+    quest_content = [
+        callback
+        for callback in callbacks["callbacks"]
+        if callback["quest"] == EXPLORER_QUEST or callback["key"] == OUTLAW_TREASURE
+    ]
+    if explorer_npc.is_file():
+        quest_content.extend(json.loads(explorer_npc.read_bytes())["callbacks"])
+    quest_content_items = {
+        key for callback in quest_content for key in callback_items(callback)
+    }
+    quest_content_items.difference_update(EXPLORER_WORLD_CHANGE_ITEMS)
+    keys.update(quest_content_items)
+    authored_keys.update(quest_content_items - {ICE_SAMPLE})
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
-                     'npc-callbacks/quest-contacts.json', 'world-callbacks/quest-contacts.json'):
-        path = root / 'content/quests' / relative
+    for relative in (
+        "authored-world-callbacks.json",
+        "chosen-reward-callbacks.json",
+        "npc-callbacks/quest-contacts.json",
+        "world-callbacks/quest-contacts.json",
+    ):
+        path = root / "content/quests" / relative
         if not path.is_file():
             continue
-        for callback in json.loads(path.read_bytes())['callbacks']:
+        for callback in json.loads(path.read_bytes())["callbacks"]:
             authored_callbacks.append(callback)
-            reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if (reward and callback.get('key')
-                    != 'oteryn:quest-reward/their-masters-voice-slime-gobbler'):
-                # Their Master's Voice already admits the Slime Gobbler through the
-                # World Change overlay. Its newly published NPC shares that custody.
-                authored_keys.add(reward['item'])
-                authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
-                                     for child in reward.get(field, []))
-                keys.add(reward['item'])
-                keys.update(child['item'] for field in ('contents', 'backpack_outputs')
-                            for child in reward.get(field, []))
-            carried = callback.get('effects', {}).get('carried_inputs', [])
-            authored_keys.update(item['item'] for item in carried)
-            keys.update(item['item'] for item in carried)
-            for field in ('take', 'present', 'offerings'):
-                keys.update(item['item'] for item in callback.get(field, []))
-                authored_keys.update(item['item'] for item in callback.get(field, []))
-            tool = callback.get('item_on_target')
-            if tool:
-                authored_keys.add(tool['item'])
-                keys.add(tool['item'])
-                if tool.get('replacement'):
-                    authored_keys.add(tool['replacement'])
-                    keys.add(tool['replacement'])
-    classic_pickups = root / 'content/quests/world-callbacks/cursed-crystal.json'
+            items = set(callback_items(callback))
+            # Their Master's Voice shares the existing World Change provider.
+            if (
+                callback.get("key")
+                == "oteryn:quest-reward/their-masters-voice-slime-gobbler"
+            ):
+                items.discard(callback["give"]["item"])
+            authored_keys.update(items)
+            keys.update(items)
+    classic_pickups = root / "content/quests/world-callbacks/cursed-crystal.json"
     if classic_pickups.is_file():
         keys.update(
-            reward['item']
-            for callback in json.loads(classic_pickups.read_bytes())['callbacks']
-            if (reward := callback.get('effects', {}).get('item_reward'))
+            reward["item"]
+            for callback in json.loads(classic_pickups.read_bytes())["callbacks"]
+            if (reward := callback.get("effects", {}).get("item_reward"))
         )
-    # The Outlaw Camp binding is embedded by the Quest crate. Its terminal
-    # bag and its contents use the existing canonical Item profile admission.
-    outlaw = json.loads((root / 'content/quests/authored-bindings/outlaw_camp_journey.json').read_bytes())
-    (reward,) = [stage['trigger']['callback']['effects']['item_reward']
-                 for quest in outlaw['quests'] for stage in quest['stages']
-                 if stage['completes']]
-    keys.add(reward['item'])
-    keys.update(item['item'] for item in reward['contents'])
+    # Retain the Outlaw Camp terminal bag and its native Item profiles.
+    outlaw = json.loads(
+        (
+            root / "content/quests/authored-bindings/outlaw_camp_journey.json"
+        ).read_bytes()
+    )
+    (reward,) = [
+        stage["trigger"]["callback"]["effects"]["item_reward"]
+        for quest in outlaw["quests"]
+        for stage in quest["stages"]
+        if stage["completes"]
+    ]
+    keys.add(reward["item"])
+    keys.update(item["item"] for item in reward["contents"])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
-    keys.add('oteryn:item.tibia.i32594')
+    keys.add("oteryn:item.tibia.i32594")
     # Crystal 201189f data-global/monster/quests/the_elemental_spheres/
     # ice_overlord.lua:45,69-73: this reward boss always drops flawless ice
     # crystal. Its already-admitted canonical facts must reach the native
     # inventory provider so personal reward settlement can finish the death.
-    keys.add('oteryn:item.tibia.i942')
+    keys.add("oteryn:item.tibia.i942")
     # M07's Rust-authored Lion trials need the same native physical Item owner.
     import lion_trial_item_profiles
-    keys.update(f'oteryn:item.tibia.i{i}' for i in lion_trial_item_profiles.SOURCE_RECORDS)
+
+    keys.update(
+        f"oteryn:item.tibia.i{i}" for i in lion_trial_item_profiles.SOURCE_RECORDS
+    )
     # Crystal 201189f movements_lions_rock.lua:54-108: the native STEP
     # amphora grants this canonical scroll; it is authored in Rust, not JSON.
-    keys.add('oteryn:item.tibia.i21467')
+    keys.add("oteryn:item.tibia.i21467")
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
-    keys.add('oteryn:item.tibia.i2973')
+    keys.add("oteryn:item.tibia.i2973")
     # Restored startup chest selectors must carry their exact ready reward into
     # the native provider too. Otherwise a correctly bound chest has nothing to
     # mint (notably Nightmare Teddy). This is the selected cohort, not a general
     # promotion of held source definitions.
     selected_chests = {
-        row['claim']
-        for path in sorted((root / 'tools/content-schema/world-authoring/samples/quest-chest-bindings').glob('*.json'))
-        for row in json.loads(path.read_bytes())['bindings']
+        row["claim"]
+        for path in sorted(
+            (
+                root
+                / "tools/content-schema/world-authoring/samples/quest-chest-bindings"
+            ).glob("*.json")
+        )
+        for row in json.loads(path.read_bytes())["bindings"]
     }
     keys.update(extra_keys)
-    for callback in callbacks['callbacks']:
-        item = callback.get('item_on_target')
+    for callback in callbacks["callbacks"]:
+        item = callback.get("item_on_target")
         if item:
-            keys.add(item['item'])
-            if item.get('replacement'):
-                keys.add(item['replacement'])
+            keys.add(item["item"])
+            if item.get("replacement"):
+                keys.add(item["replacement"])
     # These source chests also advance a quest track. Their Item definitions
     # already have canonical admission; retain the same proof in the native provider.
-    for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
-        for row in json.loads(path.read_bytes())['records']:
-            definition = row['definition']
-            if definition['identity']['key'] in selected_chests:
-                # Filled-container/text claims already enter through the exact
-                # W15b native projection below; selection adds only map binding.
-                if (definition.get('readiness') == 'ready' or panpipe_key_claim(definition)
-                        or outlaw_key_claim(definition)):
-                    keys.update(item['item']['key'] for placement in definition['placements']
-                                for item in placement['reward']['items'])
-                elif not verified_source_charges(definition, definition.get('native_contents', {})) and (
-                        definition.get('readiness') != 'waiting_implementation'
-                        or definition.get('data_holds') != []
-                        or definition.get('native_contents', {}).get('schema')
-                        != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
-                    raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
-                selected_chests.remove(definition['identity']['key'])
+    for path in sorted(
+        (root / "content/interactions/reward_claims").glob("reward-claim*.json")
+    ):
+        for row in json.loads(path.read_bytes())["records"]:
+            definition = row["definition"]
+            if definition["identity"]["key"] in selected_chests:
+                if not supported_claim(definition):
+                    raise ValueError("SELECTED_QUEST_CHEST_REWARD_NOT_READY")
+                # Charge, container and text recipes enter through their existing
+                # native projections below, keeping the complete reward closure.
+                if (
+                    definition.get("readiness") == "ready"
+                    or numbered_key_claim(definition) is not None
+                    or source_key_claim(definition)
+                ):
+                    keys.update(
+                        item["item"]["key"]
+                        for placement in definition["placements"]
+                        for item in placement["reward"]["items"]
+                    )
+                selected_chests.remove(definition["identity"]["key"])
             # QUEST-FINISH owner scope: retain the donor record as evidence,
             # but do not admit Dawnport's rewards into the Newhaven start path.
-            if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest':
+            if definition.get("quest", {}).get("key") == "canary:quest/dawnport_quest":
                 continue
-            demon_item = DEMON_HELMET_REWARDS.get(definition['identity']['key'])
+            demon_item = DEMON_HELMET_REWARDS.get(definition["identity"]["key"])
             if demon_item is not None:
-                placements = definition['placements']
-                expected = [{'count': 1, 'item': {'family': 'Item', 'key': demon_item,
-                                                'revision': 'definition-r1'}}]
-                if (definition.get('readiness') != 'ready' or len(placements) != 1
-                        or placements[0]['reward']['items'] != expected):
-                    raise ValueError('DEMON_HELMET_QUALIFIED_CLAIM_CHANGED')
+                placements = definition["placements"]
+                expected = [
+                    {
+                        "count": 1,
+                        "item": {
+                            "family": "Item",
+                            "key": demon_item,
+                            "revision": "definition-r1",
+                        },
+                    }
+                ]
+                if (
+                    definition.get("readiness") != "ready"
+                    or len(placements) != 1
+                    or placements[0]["reward"]["items"] != expected
+                ):
+                    raise ValueError("DEMON_HELMET_QUALIFIED_CLAIM_CHANGED")
                 keys.add(demon_item)
             # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
             # silver key3700. KEY owns its native numbered instance; the claim's
             # historical waiting_implementation flag is not an Item hold.
             # Crystal 201189f chest.lua: UID5018 is the Fanfare access key.
             # It grants a numbered key but never a canonical quest transition.
-            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3520':
-                placements = definition['placements']
-                key = 'oteryn:item.tibia.i2973'
-                expected = {'items': [{'count': 1, 'item': {
-                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
-                    'key_binding': 'canary:door-key/3520'}
-                if (len(placements) != 1 or placements[0]['reward'] != expected
-                        or placements[0].get('quest_transition') is not None
-                        or placements[0]['source_binding']['project_position'] !=
-                            {'x': 32376, 'y': 31802, 'z': 7}
-                        or {'server': 'crystalserver', 'unique_id': 5018} not in
-                            placements[0]['source_binding']['legacy_unique_ids']):
-                    raise ValueError('FANFARE_ACCESS_KEY_CLAIM_CHANGED')
+            if definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id3520":
+                placements = definition["placements"]
+                key = "oteryn:item.tibia.i2973"
+                expected = {
+                    "items": [
+                        {
+                            "count": 1,
+                            "item": {
+                                "family": "Item",
+                                "key": key,
+                                "revision": "definition-r1",
+                            },
+                        }
+                    ],
+                    "key_binding": "canary:door-key/3520",
+                }
+                if (
+                    len(placements) != 1
+                    or placements[0]["reward"] != expected
+                    or placements[0].get("quest_transition") is not None
+                    or placements[0]["source_binding"]["project_position"]
+                    != {"x": 32376, "y": 31802, "z": 7}
+                    or {"server": "crystalserver", "unique_id": 5018}
+                    not in placements[0]["source_binding"]["legacy_unique_ids"]
+                ):
+                    raise ValueError("FANFARE_ACCESS_KEY_CLAIM_CHANGED")
                 keys.add(key)
-            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
-                placements = definition['placements']
-                key = 'oteryn:item.tibia.i2971'
-                expected = {'items': [{'count': 1, 'item': {
-                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
-                    'key_binding': 'canary:door-key/3700'}
-                if len(placements) != 1 or placements[0]['reward'] != expected:
-                    raise ValueError('PITS_OF_INFERNO_KEY_CLAIM_CHANGED')
+            if definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id3700":
+                placements = definition["placements"]
+                key = "oteryn:item.tibia.i2971"
+                expected = {
+                    "items": [
+                        {
+                            "count": 1,
+                            "item": {
+                                "family": "Item",
+                                "key": key,
+                                "revision": "definition-r1",
+                            },
+                        }
+                    ],
+                    "key_binding": "canary:door-key/3700",
+                }
+                if len(placements) != 1 or placements[0]["reward"] != expected:
+                    raise ValueError("PITS_OF_INFERNO_KEY_CLAIM_CHANGED")
                 keys.add(key)
             # W15b's complete recipe already qualified the canonical root and
             # every child. Carry that whole closure into the native provider;
             # admitting only the visible chest reward would mint a partial bag.
-            for placement in definition.get('native_contents', {}).get('placements', []):
-                keys.add(placement['root']['key'])
-                keys.update(child['item']['key'] for child in placement['contents'])
-            if definition.get('readiness') == 'ready':
-                for placement in definition['placements']:
+            for placement in definition.get("native_contents", {}).get(
+                "placements", []
+            ):
+                keys.add(placement["root"]["key"])
+                keys.update(child["item"]["key"] for child in placement["contents"])
+            if definition.get("readiness") == "ready":
+                for placement in definition["placements"]:
                     # A ready source reward still needs the same exact native
                     # Item admission when it has no quest-state side effect.
-                    keys.update(item['item']['key'] for item in placement['reward']['items'])
+                    keys.update(
+                        item["item"]["key"] for item in placement["reward"]["items"]
+                    )
     # Falcon repeat owner freezes one of these exact seven source rewards.
-    keys.update(f'oteryn:item.tibia.i{number}' for number in (9081, 28821, 28823, 9058, 6299, 3052, 3035))
+    keys.update(
+        f"oteryn:item.tibia.i{number}"
+        for number in (9081, 28821, 28823, 9058, 6299, 3052, 3035)
+    )
     if selected_chests:
-        raise ValueError('SELECTED_QUEST_CHEST_MISSING')
-    grizzly_path = root / 'content/quests/killing-in-the-name-of.json'
+        raise ValueError("SELECTED_QUEST_CHEST_MISSING")
+    grizzly_path = root / "content/quests/killing-in-the-name-of.json"
     if grizzly_path.is_file():
         grizzly = json.loads(grizzly_path.read_bytes())
         # The fixed Holy Icon entitlement uses its existing canonical identity
         # and admission. Shop Items with unqualified facts are a separate input.
-        keys.update(f"oteryn:item.tibia.i{task['item']['source_id']}"
-                    for task in grizzly['tasks'] if task.get('item'))
+        keys.update(
+            f"oteryn:item.tibia.i{task['item']['source_id']}"
+            for task in grizzly["tasks"]
+            if task.get("item")
+        )
     return keys, authored_keys, authored_callbacks
 
 
@@ -455,235 +688,448 @@ def canonical_source_inputs(root):
     """Authenticate and parse the source once for an ordinary admission pass."""
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
-        raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
-    source_items = ET.fromstring(raw).findall('item')
+        raise ValueError("QUEST_CALLBACK_SOURCE_DIGEST")
+    source_items = ET.fromstring(raw).findall("item")
     return raw, source_items
+
+
+def explorer_sample_definition(definition):
+    key = definition["identity"]["key"]
+    accepted, donor = EXPLORER_SAMPLE_WEIGHTS[key]
+    source = copy.deepcopy(definition)
+    weight = source["semantics"]["physical"]["value"]["weight"]
+    if weight != {"state": "KNOWN", "value": accepted}:
+        raise ValueError("EXPLORER_SAMPLE_WEIGHT_DRIFT:" + key)
+    weight["value"] = donor
+    return source
 
 
 def complete_numbered_copper_key(record, source_items):
     # Alawar and Outlaw quest rewards mint an instance with an authored key number.
-    source = [item for item in source_items if item.get('id') == '2970']
-    if (len(source) != 1
-            or [attr.get('value') for attr in source[0].findall("attribute[@key='type']")]
-            != ['key']):
-        raise ValueError('QUEST_CALLBACK_COPPER_KEY_SOURCE')
-    semantics = record['semantics']
-    classification = semantics['classification']
-    if classification == {'state': 'UNKNOWN'}:
-        semantics['classification'] = writing.known({
-            'item_type': writing.known('KEY'), 'capabilities': {'state': 'UNKNOWN'},
-        })
-    elif classification.get('value', {}).get('item_type') != writing.known('KEY'):
-        raise ValueError('QUEST_CALLBACK_COPPER_KEY_CLASSIFICATION')
+    source = [item for item in source_items if item.get("id") == "2970"]
+    if len(source) != 1 or [
+        attr.get("value") for attr in source[0].findall("attribute[@key='type']")
+    ] != ["key"]:
+        raise ValueError("QUEST_CALLBACK_COPPER_KEY_SOURCE")
+    semantics = record["semantics"]
+    classification = semantics["classification"]
+    if classification == {"state": "UNKNOWN"}:
+        semantics["classification"] = writing.known(
+            {
+                "item_type": writing.known("KEY"),
+                "capabilities": {"state": "UNKNOWN"},
+            }
+        )
+    elif classification.get("value", {}).get("item_type") != writing.known("KEY"):
+        raise ValueError("QUEST_CALLBACK_COPPER_KEY_CLASSIFICATION")
 
 
 def canonical_native_profile(root, definition, matches, source_items):
     """Construct one ordinary profile from the caller's authenticated source inputs."""
-    identity = definition['identity']
-    key = identity['key']
-    if (not definition['materializable']
-            or definition['stack_class'] not in ('StackCapable', 'NonStackable')
-            or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'
-            or matches[0]['target'] != identity):
-        raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
-    physical = definition['semantics']['physical']
-    if (physical['state'] != 'KNOWN'
-            or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
-                   for field in ('movable', 'pickupable'))):
-        raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
-    item_id = int(matches[0]['external_id'])
-    source_matches = [item for item in source_items
-                      if int(item.get('id', item.get('fromid', '0'))) <= item_id
-                      <= int(item.get('id', item.get('toid', '0')))]
+    identity = definition["identity"]
+    key = identity["key"]
+    if (
+        not definition["materializable"]
+        or definition["stack_class"] not in ("StackCapable", "NonStackable")
+        or len(matches) != 1
+        or matches[0]["disposition"] != "EXACT"
+        or matches[0]["target"] != identity
+    ):
+        raise ValueError(f"QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}")
+    physical = definition["semantics"]["physical"]
+    if physical["state"] != "KNOWN" or any(
+        physical["value"][field] != {"state": "KNOWN", "value": True}
+        for field in ("movable", "pickupable")
+    ):
+        raise ValueError("QUEST_CALLBACK_ITEM_NOT_PORTABLE")
+    item_id = int(matches[0]["external_id"])
+    source_matches = [
+        item
+        for item in source_items
+        if int(item.get("id", item.get("fromid", "0")))
+        <= item_id
+        <= int(item.get("id", item.get("toid", "0")))
+    ]
     if len(source_matches) != 1:
-        raise ValueError('QUEST_CALLBACK_SOURCE_ITEM_MISSING')
-    speeds = [attr for attr in source_matches[0].findall('attribute')
-              if attr.get('key', '').lower() == 'speed']
+        raise ValueError("QUEST_CALLBACK_SOURCE_ITEM_MISSING")
+    speeds = [
+        attr
+        for attr in source_matches[0].findall("attribute")
+        if attr.get("key", "").lower() == "speed"
+    ]
     if len(speeds) > 1:
-        raise ValueError('QUEST_CALLBACK_DUPLICATE_SPEED')
+        raise ValueError("QUEST_CALLBACK_DUPLICATE_SPEED")
     # Canary's Abilities constructor defaults speed to zero when XML omits it.
-    speed = int(speeds[0].attrib['value']) if speeds else 0
+    speed = int(speeds[0].attrib["value"]) if speeds else 0
     record = {
-        'authoring': {'item': identity},
-        'semantics': grant_semantics(root, definition),
-        'attributes': {'speed_bonus': speed},
-        'admission': {'materializable': True, 'stack_class': definition['stack_class'],
-                      'legal_destinations': ['CharacterInventory', 'Ground']},
-        'production_definition': {'family': identity['family'], 'production_key': key,
-                                  'revision_ref': identity['revision']},
-        'production_binding': matches[0], 'production_binding_qualification': None,
+        "authoring": {"item": identity},
+        "semantics": grant_semantics(root, definition),
+        "attributes": {"speed_bonus": speed},
+        "admission": {
+            "materializable": True,
+            "stack_class": definition["stack_class"],
+            "legal_destinations": ["CharacterInventory", "Ground"],
+        },
+        "production_definition": {
+            "family": identity["family"],
+            "production_key": key,
+            "revision_ref": identity["revision"],
+        },
+        "production_binding": matches[0],
+        "production_binding_qualification": None,
     }
     complete_native_stack(root, record, definition, matches[0])
     return record
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+def admit(
+    root, generated, profile_path, manifest_path, order, canonical, extra_keys=()
+):
     keys, authored_keys, authored_callbacks = _requested_inputs(root, extra_keys)
     import container_native
     import lion_trial_item_profiles
+
     document = json.loads(generated[profile_path])
     admit_map_carriers(root, document)
-    present = {row['production_definition']['production_key']: row for row in document['records']}
-    if len(present) != len(document['records']):
-        raise ValueError('QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM')
+    present = {
+        row["production_definition"]["production_key"]: row
+        for row in document["records"]
+    }
+    if len(present) != len(document["records"]):
+        raise ValueError("QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM")
     definitions = {}
-    for path in sorted((root / 'content/items/definitions').glob('items-*.json')):
-        for row in json.loads(path.read_bytes())['records']:
-            definition = row['definition']
-            key = definition['identity']['key']
+    for path in sorted((root / "content/items/definitions").glob("items-*.json")):
+        for row in json.loads(path.read_bytes())["records"]:
+            definition = row["definition"]
+            key = definition["identity"]["key"]
             if key in keys:
                 if key in definitions:
-                    raise ValueError('QUEST_CALLBACK_DUPLICATE_ITEM')
+                    raise ValueError("QUEST_CALLBACK_DUPLICATE_ITEM")
                 definitions[key] = definition
     if set(definitions) != keys:
-        raise ValueError('QUEST_CALLBACK_ITEM_MISSING')
-    bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+        raise ValueError("QUEST_CALLBACK_ITEM_MISSING")
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )["bindings"]
     import authored_static_item_constructors
+
     authored = json.loads(generated[authored_static_item_constructors.ADMISSIONS])
-    bindings.extend(row['binding'] for row in authored['records'])
+    bindings.extend(row["binding"] for row in authored["records"])
     raw, source_items = canonical_source_inputs(root)
-    lion_keys = {f'oteryn:item.tibia.i{item}' for item in lion_trial_item_profiles.SOURCE_RECORDS}
-    top_order_keys = {key for key in lion_keys if key in present
-                      and isinstance(present[key].get('attributes'), dict)
-                      and any(field in present[key]['attributes']
-                              for field in ('always_on_top', 'always_on_top_order'))}
+    lion_keys = {
+        f"oteryn:item.tibia.i{item}" for item in lion_trial_item_profiles.SOURCE_RECORDS
+    }
+    top_order_keys = {
+        key
+        for key in lion_keys
+        if key in present
+        and isinstance(present[key].get("attributes"), dict)
+        and any(
+            field in present[key]["attributes"]
+            for field in ("always_on_top", "always_on_top_order")
+        )
+    }
     lion_records = lion_trial_item_profiles.records(
-        root, raw, definitions, top_order_keys=top_order_keys)
+        root, raw, definitions, top_order_keys=top_order_keys
+    )
     # QuickLoot may already have attached canonical navigation metadata. Keep
     # that optional owner in the expected record without borrowing its value
     # from the native row or changing the shape of newly admitted Lion Items.
-    taxonomy_keys = {key for key in lion_records if key in present
-                     and isinstance(present[key].get('authoring'), dict)
-                     and 'taxonomy' in present[key]['authoring']}
+    taxonomy_keys = {
+        key
+        for key in lion_records
+        if key in present
+        and isinstance(present[key].get("authoring"), dict)
+        and "taxonomy" in present[key]["authoring"]
+    }
     lion_taxonomy = {}
     if taxonomy_keys:
-        taxonomy = json.loads((root / 'content/items/taxonomy/items.json').read_bytes())
-        for row in taxonomy['records']:
-            key = row['target']['key']
+        taxonomy = json.loads((root / "content/items/taxonomy/items.json").read_bytes())
+        for row in taxonomy["records"]:
+            key = row["target"]["key"]
             if key in taxonomy_keys:
-                if key in lion_taxonomy or row['target'] != definitions[key]['identity']:
-                    raise ValueError('LION_TRIAL_ITEM_TAXONOMY:' + key)
-                lion_taxonomy[key] = row['source_taxonomy']
+                if (
+                    key in lion_taxonomy
+                    or row["target"] != definitions[key]["identity"]
+                ):
+                    raise ValueError("LION_TRIAL_ITEM_TAXONOMY:" + key)
+                lion_taxonomy[key] = row["source_taxonomy"]
         if lion_taxonomy.keys() != taxonomy_keys:
-            raise ValueError('LION_TRIAL_ITEM_TAXONOMY:'
-                             + ','.join(sorted(taxonomy_keys - lion_taxonomy.keys())))
+            raise ValueError(
+                "LION_TRIAL_ITEM_TAXONOMY:"
+                + ",".join(sorted(taxonomy_keys - lion_taxonomy.keys()))
+            )
     import quests_2_emperor_item_profiles
-    source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
+
+    source_packet = json.loads(
+        (root / quests_2_emperor_item_profiles.PATH).read_bytes()
+    )
     import authored_quest_item_custody
-    missing_authored = [definitions[key] for key in sorted(authored_keys - present.keys())
-                        if key in definitions]
-    custody_inputs = (authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
-                      if missing_authored else None)
+
+    tracing_ground_only = {
+        key
+        for key in authored_keys & EXPLORER_TRACING_SHEETS & present.keys()
+        if not present[key]["admission"]["materializable"]
+    }
+    require_custody = (authored_keys - present.keys()) | tracing_ground_only
+    missing_authored = [
+        definitions[key] for key in sorted(require_custody) if key in definitions
+    ]
+    custody_inputs = (
+        authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
+        if missing_authored
+        else None
+    )
     for key, definition in sorted(definitions.items()):
         if key in lion_records:
             record = lion_records[key]
             if key in present:
                 if key in lion_taxonomy:
-                    record['authoring']['taxonomy'] = copy.deepcopy(lion_taxonomy[key])
+                    record["authoring"]["taxonomy"] = copy.deepcopy(lion_taxonomy[key])
                 if present[key] != record:
-                    before = (json.dumps(present[key], ensure_ascii=False,
-                                         sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
-                    after = (json.dumps(record, ensure_ascii=False,
-                                        sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
-                    difference = ''.join(difflib.unified_diff(
-                        before, after, fromfile='existing/' + key, tofile='qualified/' + key,
-                        n=max(len(before), len(after))))
-                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT:' + key + '\n' + difference)
+                    before = (
+                        json.dumps(
+                            present[key], ensure_ascii=False, sort_keys=True, indent=2
+                        )
+                        + "\n"
+                    ).splitlines(keepends=True)
+                    after = (
+                        json.dumps(record, ensure_ascii=False, sort_keys=True, indent=2)
+                        + "\n"
+                    ).splitlines(keepends=True)
+                    difference = "".join(
+                        difflib.unified_diff(
+                            before,
+                            after,
+                            fromfile="existing/" + key,
+                            tofile="qualified/" + key,
+                            n=max(len(before), len(after)),
+                        )
+                    )
+                    raise ValueError(
+                        "LION_TRIAL_NATIVE_PROFILE_DRIFT:" + key + "\n" + difference
+                    )
             else:
-                document['records'].append(record)
+                document["records"].append(record)
             continue
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
-            source_packet, present.get(key), definition, root)
+            source_packet, present.get(key), definition, root
+        )
         import questpc8_nail_custody
-        definition = questpc8_nail_custody.callback_definition(root, present.get(key), definition)
-        if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
-            qualified = container_native.native_charge_item(definition, present.get(key))
+
+        definition = questpc8_nail_custody.callback_definition(
+            root, present.get(key), definition
+        )
+        if key in {
+            f"oteryn:item.tibia.i{item}"
+            for item in container_native.CHARGED_QUEST_CLAIMS.values()
+        }:
+            qualified = container_native.native_charge_item(
+                definition, present.get(key)
+            )
             if qualified is definition:
-                raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
+                raise ValueError(f"QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}")
             definition = qualified
-        if key == 'oteryn:item.tibia.i2874':
+        if key == "oteryn:item.tibia.i2874":
             # Only an agreeing, already-admitted native empty-vial profile closes this hold.
-            definition = container_native.native_water_vial(definition, present.get(key))
-        identity = definition['identity']
+            definition = container_native.native_water_vial(
+                definition, present.get(key)
+            )
+        identity = definition["identity"]
         if key in authored_keys and key not in present:
             import authored_quest_timed_custody
-            exact = [binding for binding in bindings if binding['target'] == identity]
-            if len(exact) != 1 or exact[0]['disposition'] != 'EXACT':
-                raise ValueError('AUTHORED_TIMED_EXACT_BINDING')
-            expiry = authored_quest_timed_custody.source_expiry(raw, int(exact[0]['external_id']))
+
+            exact = [binding for binding in bindings if binding["target"] == identity]
+            if len(exact) != 1 or exact[0]["disposition"] != "EXACT":
+                raise ValueError("AUTHORED_TIMED_EXACT_BINDING")
+            expiry = authored_quest_timed_custody.source_expiry(
+                raw, int(exact[0]["external_id"])
+            )
             if expiry is not None:
-                profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks, _inputs=custody_inputs)
-                document['records'].append(profile)
+                profile, _ = authored_quest_timed_custody.qualify(
+                    root, definition, raw, authored_callbacks, _inputs=custody_inputs
+                )
+                document["records"].append(profile)
                 continue
-        if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
+        if (
+            key in authored_keys
+            and not definition["materializable"]
+            and definition["stack_class"] == "Unknown"
+        ):
             import authored_quest_item_custody
-            if key in present:
-                authored_quest_item_custody.reuse_existing(definition, present[key], bindings)
+
+            if key in EXPLORER_SAMPLE_WEIGHTS:
+                definition = explorer_sample_definition(definition)
+            if key in present and key not in tracing_ground_only:
+                authored_quest_item_custody.reuse_existing(
+                    definition, present[key], bindings
+                )
                 continue
-            profile = authored_quest_item_custody.qualify(root, definition, raw, _inputs=custody_inputs)
-            document['records'].append(profile)
+            profile = authored_quest_item_custody.qualify(
+                root, definition, raw, _inputs=custody_inputs
+            )
+            if key in present:
+                previous = present[key]
+                # The earlier writable Item owner has already checked the exact
+                # Crystal text policy. Retain it with the upgraded physical custody.
+                profile["semantics"]["readable_writeable"] = copy.deepcopy(
+                    previous["semantics"]["readable_writeable"]
+                )
+                if (
+                    previous["admission"]["materializable"]
+                    or previous["admission"]["legal_destinations"] != ["Ground"]
+                    or previous["production_definition"]
+                    != profile["production_definition"]
+                    or previous["production_binding"] != profile["production_binding"]
+                ):
+                    raise ValueError("EXPLORER_TRACING_SHEET_ADMISSION_DRIFT:" + key)
+                document["records"].remove(previous)
+            document["records"].append(profile)
             continue
-        matches = [binding for binding in bindings if binding['target'] == identity]
-        if (not definition['materializable']
-                or definition['stack_class'] not in ('StackCapable', 'NonStackable')
-                or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'):
-            raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
-        physical = definition['semantics']['physical']
-        if (physical['state'] != 'KNOWN'
-                or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
-                       for field in ('movable', 'pickupable'))):
-            raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
-        if key == 'oteryn:item.tibia.i2992' and key not in present:
+        matches = [binding for binding in bindings if binding["target"] == identity]
+        if (
+            not definition["materializable"]
+            or definition["stack_class"] not in ("StackCapable", "NonStackable")
+            or len(matches) != 1
+            or matches[0]["disposition"] != "EXACT"
+        ):
+            raise ValueError(f"QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}")
+        physical = definition["semantics"]["physical"]
+        if physical["state"] != "KNOWN" or any(
+            physical["value"][field] != {"state": "KNOWN", "value": True}
+            for field in ("movable", "pickupable")
+        ):
+            raise ValueError("QUEST_CALLBACK_ITEM_NOT_PORTABLE")
+        if key == "oteryn:item.tibia.i2992" and key not in present:
             # Goblin Temple reuses the seasonal owner's existing Snowball.
             # Preserve its complete equipment/weapon facts before this pass.
             import seasonal_item_profiles as seasonal
+
             packet = json.loads((root / seasonal.PATH).read_bytes())
-            if (packet['schema'] != 'OTERYN_SEASONAL_ITEM_PROFILES/v1'
-                    or packet['crystal_commit'] != seasonal.PIN
-                    or len(packet['records']) != len(seasonal.IDS)
-                    or {r['production_definition']['production_key'] for r in packet['records']}
-                        != {f'oteryn:item.tibia.i{i}' for i in seasonal.IDS}):
-                raise ValueError('GOBLIN_SNOWBALL_SOURCE_DRIFT')
-            candidates = [r for r in packet['records'] if r['production_definition']['production_key'] == key]
+            if (
+                packet["schema"] != "OTERYN_SEASONAL_ITEM_PROFILES/v1"
+                or packet["crystal_commit"] != seasonal.PIN
+                or len(packet["records"]) != len(seasonal.IDS)
+                or {
+                    r["production_definition"]["production_key"]
+                    for r in packet["records"]
+                }
+                != {f"oteryn:item.tibia.i{i}" for i in seasonal.IDS}
+            ):
+                raise ValueError("GOBLIN_SNOWBALL_SOURCE_DRIFT")
+            candidates = [
+                r
+                for r in packet["records"]
+                if r["production_definition"]["production_key"] == key
+            ]
             if len(candidates) != 1:
-                raise ValueError('GOBLIN_SNOWBALL_SOURCE_ITEM')
+                raise ValueError("GOBLIN_SNOWBALL_SOURCE_ITEM")
             present[key] = copy.deepcopy(candidates[0])
-            document['records'].append(present[key])
-        if key == 'oteryn:item.tibia.i2955' and key not in present:
+            document["records"].append(present[key])
+        if key == "oteryn:item.tibia.i2955" and key not in present:
             # Fanfare already belongs to the retained House provider. Seed its
             # exact source profile before this earlier callback pass can create
             # a poorer canonical-only record that would shadow that owner.
             import house_decoration_actions as house
+
             packet = json.loads((root / house.PROFILES).read_bytes())
-            if (packet['schema'] != 'OTERYN_HOUSE_DECORATION_PROFILES/v1'
-                    or packet['crystal_commit'] != house.PIN
-                    or packet['canary_commit'] != house.CANARY
-                    or packet['catalogue_sha256'] != hashlib.sha256(
-                        (root / house.CATALOGUE).read_bytes()).hexdigest()):
-                raise ValueError('FANFARE_NATIVE_SOURCE_DRIFT')
-            candidates = [row for row in packet['records']
-                          if row['production_definition']['production_key'] == key]
+            if (
+                packet["schema"] != "OTERYN_HOUSE_DECORATION_PROFILES/v1"
+                or packet["crystal_commit"] != house.PIN
+                or packet["canary_commit"] != house.CANARY
+                or packet["catalogue_sha256"]
+                != hashlib.sha256((root / house.CATALOGUE).read_bytes()).hexdigest()
+            ):
+                raise ValueError("FANFARE_NATIVE_SOURCE_DRIFT")
+            candidates = [
+                row
+                for row in packet["records"]
+                if row["production_definition"]["production_key"] == key
+            ]
             if len(candidates) != 1:
-                raise ValueError('FANFARE_NATIVE_SOURCE_ITEM')
+                raise ValueError("FANFARE_NATIVE_SOURCE_ITEM")
             present[key] = copy.deepcopy(candidates[0])
-            document['records'].append(present[key])
+            document["records"].append(present[key])
         if key in present:
             record = present[key]
             complete_native_stack(root, record, definition, matches[0])
         else:
             record = canonical_native_profile(root, definition, matches, source_items)
-            document['records'].append(record)
-        if key == 'oteryn:item.tibia.i2970':
+            document["records"].append(record)
+        if key == ICE_SAMPLE:
+            source_id = matches[0]["external_id"]
+            expiry = [
+                field
+                for item in source_items
+                if item.get("id") == source_id
+                for field in item.findall("attribute")
+                if field.get("key") in ("duration", "decayTo", "stopduration")
+            ]
+            fields = {field.get("key"): field.get("value") for field in expiry}
+            duration = record["semantics"]["temporal"].get("value", {}).get("duration")
+            if (
+                len(expiry) != 2
+                or fields.keys() != {"duration", "decayTo"}
+                or fields["decayTo"] != "0"
+                or duration
+                != {"state": "KNOWN", "value": 1000 * int(fields["duration"])}
+            ):
+                raise ValueError("EXPLORER_ICE_SAMPLE_EXPIRY_DRIFT")
+            record["semantics"]["temporal"] = {
+                "state": "KNOWN",
+                "value": {
+                    "consumption_mode": {
+                        "state": "KNOWN",
+                        "value": "DURABLE_ABSOLUTE_DEADLINE",
+                    },
+                    "duration": duration,
+                    "stop_duration": {"state": "KNOWN", "value": False},
+                    "decay_target": {"state": "NOT_APPLICABLE"},
+                },
+            }
+        if key == "oteryn:item.tibia.i2969":
+            # A Prisoner's numbered reward uses the ordinary NPC MINT owner,
+            # which requires an explicit Key type. Fill the unknown field from
+            # the pinned Item XML without changing custody or stack policy.
+            source_id = matches[0]["external_id"]
+            types = [
+                field.get("value")
+                for item in source_items
+                if item.get("id") == source_id
+                for field in item.findall("attribute")
+                if field.get("key") == "type"
+            ]
+            semantics = record["semantics"]
+            known_key = {"state": "KNOWN", "value": "KEY"}
+            classification = semantics["classification"]
+            if (
+                source_id != "2969"
+                or types != ["key"]
+                or (
+                    classification != {"state": "UNKNOWN"}
+                    and classification.get("value", {}).get("item_type") != known_key
+                )
+            ):
+                raise ValueError("MAD_MAGE_PRISONER_KEY_SOURCE_DRIFT")
+            if classification == {"state": "UNKNOWN"}:
+                semantics["classification"] = {
+                    "state": "KNOWN",
+                    "value": {
+                        "item_type": known_key,
+                        "capabilities": {"state": "UNKNOWN"},
+                    },
+                }
+        if key == "oteryn:item.tibia.i2970":
             complete_numbered_copper_key(record, source_items)
     write_provider(generated, profile_path, manifest_path, order, canonical, document)
 
 
 def write_provider(generated, profile_path, manifest_path, order, canonical, document):
-    document['records'].sort(key=order)
+    document["records"].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
-    manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
+    manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()
     generated[manifest_path] = canonical(manifest)

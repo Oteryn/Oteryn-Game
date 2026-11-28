@@ -25,6 +25,7 @@ SPECS = (
     ("teleport.lua", "TeleportAction", 4253, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
     ("lever.lua", "LeverUnique", 30008, "unique"),
+    ("lever.lua", "LeverUnique", 30009, "unique"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
     ("lever.lua", "LeverAction", 5633, "action"),
     ("item.lua", "ItemAction", 4503, "action"),
@@ -35,8 +36,32 @@ SPECS = (
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 
+KEY_DOORS = {
+    "Storage.Quest.Key.ID3303": ([32614, 32175, 9], 1631),
+    "Storage.Quest.Key.ID3802": ([32602, 31975, 14], 7714),
+    "Storage.Quest.Key.ID3940": ([32190, 32432, 8], 1631),
+    "Storage.Quest.Key.ID3980": ([32277, 32420, 10], 1631),
+}
+
+# Crystal's false selectors resolve to the closed door on the exact source tile.
+LEVEL_FIFTY_DOORS = {
+    (32212, 32435, 10): 1648,
+    (32874, 31974, 12): 5102,
+    (32875, 31974, 12): 5102,
+    (32234, 32140, 9): 6262,
+    (32554, 32860, 9): 5291,
+    (32909, 31074, 7): 1680,
+    (32910, 31088, 7): 1678,
+    (33775, 31699, 8): 9565,
+}
+
 ADDITIONAL_ACTIONS = (
     ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3142", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3303", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3802", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3940", "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3980", "action"),
+    ("door_level.lua", "LevelDoorAction", 1050, "action"),
     ("tile_pick.lua", "TilePickAction", 101, "action"),
     *(
         ("item.lua", "ItemAction", aid, "action")
@@ -73,6 +98,13 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             == selector
         ]
         value = lua_tables.as_python(field["value"])
+        key_door = KEY_DOORS.get(selector)
+        level_fifty = (
+            LEVEL_FIFTY_DOORS.copy()
+            if (table, selector) == ("LevelDoorAction", 1050)
+            else None
+        )
+        start = len(rows)
         for group in value if isinstance(value, list) else [value]:
             if (
                 table == "ItemAction"
@@ -87,6 +119,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 cell = [position[k] for k in "xyz"]
+                if key_door is not None and cell != key_door[0]:
+                    continue
                 if table == "TilePickAction" and cell != [32774, 32289, 10]:
                     continue
                 if selector == "Storage.Quest.Key.ID3142":
@@ -109,9 +143,16 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         )
                     if node != 3142:
                         raise ValueError("Key 3142 source storage changed")
+                level_door = None
+                if level_fifty is not None:
+                    level_door = level_fifty.pop(tuple(cell), None)
+                    if level_door is None or group["itemId"] not in (False, level_door):
+                        raise ValueError(f"Level-50 door source changed at {cell}")
                 # False selectors target the existing source ground or door.
                 item = (
                     group["itemId"]
+                    or level_door
+                    or (key_door[1] if key_door is not None else None)
                     or {
                         ("ItemAction", 25018): 104,
                         ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
@@ -120,6 +161,8 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         ("TilePickAction", 101): 355,
                     }[(table, selector)]
                 )
+                if key_door is not None and item != key_door[1]:
+                    raise ValueError(f"Key door source item changed: {selector}")
                 rows.append(
                     {
                         "position": cell,
@@ -132,6 +175,12 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         "line": field["line"],
                     }
                 )
+        if key_door is not None and len(rows) != start + 1:
+            raise ValueError(f"Key door source position changed: {selector}")
+        if level_fifty:
+            raise ValueError(
+                f"Level-50 door source positions missing: {sorted(level_fifty)}"
+            )
     path = "data-global/lib/core/storages.lua"
     raw = (source / path).read_bytes()
     storage = lua_tables.as_python(
@@ -139,6 +188,11 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
     )
     if storage["Quest"]["Key"]["ID4502"] != 4502:
         raise ValueError("Alawar key storage changed")
+    for _, table, selector, _ in specs:
+        if table == "KeyDoorAction" and selector in KEY_DOORS:
+            key = selector.rsplit(".", 1)[1]
+            if storage["Quest"]["Key"][key] != int(key.removeprefix("ID")):
+                raise ValueError(f"Key door number changed: {key}")
     storage_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
     if storage_row not in sources:
         sources.append(storage_row)

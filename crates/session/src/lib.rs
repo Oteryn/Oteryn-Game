@@ -64,7 +64,7 @@ mod error;
 mod events;
 mod framing;
 mod pvp_expert;
-pub use events::SessionEvent;
+pub use events::{ActorCooldownUpdate, SessionEvent};
 /// Observer-relative guild emblems (capability 509).
 pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
@@ -396,6 +396,7 @@ pub struct Session<S> {
     last_probe_id: u64,
     selected_capabilities: Vec<u32>,
     gated_snapshots: Vec<GatedSnapshot>,
+    actor_cooldown_snapshot: Option<ActorCooldownUpdate>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
     /// `Some` exactly when capability 6 is selected.

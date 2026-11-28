@@ -1,4 +1,4 @@
-//! An annual calendar observation without exact waves must stay out of scheduling.
+//! An annual calendar observation must have both exact waves and a bound firing anchor.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::raid_schedule::{
@@ -46,6 +46,40 @@ async fn exercise(h: &Harness) -> TestResult {
     let key = crate::content::ProductionKey::new("oteryn:raid.kazordoon_raids.the_halloween_hare")
         .map_err(debug)?;
     let hare = catalogue.get(&key).ok_or("Hare calendar entry")?;
+    assert_eq!(hare.variants.len(), 1, "the source wave is retained");
+    assert_eq!(
+        hare.inactive_reasons,
+        ["calendar_firing_anchor_unbound:immediate_post_save"]
+    );
+    assert!(hare.select(bundle, id(81)).is_err());
+
+    // Retain the original missing-wave case after the production record gained its wave.
+    // Give it a complete recurring calendar rule so that the missing waves stand alone.
+    let mut missing_waves = serde_json::json!({
+        "schema": "OTERYN_RAID_CATALOGUE/v1",
+        "records": [{
+            "key": key.as_str(),
+            "kind": "calendar",
+            "active": false,
+            "inactive_reasons": ["waves_unknown"],
+            "schedule": {
+                "kind": "calendar",
+                "window": {"start_month": 10, "start_day": 31, "end_month": 10, "end_day": 31},
+                "interval_ms": 86_400_000,
+                "repeat": true
+            },
+            "variant_group": null,
+            "variants": [],
+            "end": {"kind": "until_reset"}
+        }]
+    });
+    let without_waves = RaidCatalogue::from_json(&missing_waves.to_string()).map_err(debug)?;
+    let incomplete = without_waves.get(&key).ok_or("Hare without waves")?;
+    assert!(incomplete.variants.is_empty());
+    assert!(incomplete.select(bundle, id(81)).is_err());
+    missing_waves["records"][0]["active"] = true.into();
+    missing_waves["records"][0]["inactive_reasons"] = serde_json::json!([]);
+    assert!(RaidCatalogue::from_json(&missing_waves.to_string()).is_err());
     let CatalogueSchedule::Calendar {
         window: Some(window),
         interval_ms,
@@ -56,13 +90,15 @@ async fn exercise(h: &Harness) -> TestResult {
     };
     assert_eq!((window.start_month, window.start_day), (10, 31));
     assert_eq!((window.end_month, window.end_day), (10, 31));
-    assert!(hare.variants.is_empty());
+    assert_eq!(interval_ms, None);
+    assert!(!repeat);
 
     // Apply the production scheduler's active-catalogue filter before proposing
     // a firing. Other raids are outside this case's catalogue selection.
     let firing_id = id(81);
     let candidates = catalogue
         .active()
+        .chain(without_waves.active())
         .filter(|raid| raid.key == key.as_str())
         .map(|raid| -> TestResult<_> {
             let selected = raid.select(bundle, firing_id).map_err(debug)?;

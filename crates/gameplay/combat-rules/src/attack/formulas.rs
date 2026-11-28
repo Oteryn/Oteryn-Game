@@ -37,8 +37,7 @@ fn floor(inner: Expression) -> Expression {
 /// ```
 ///
 /// The level term is the official curve (`LevelBaseDamageHealing`, equal to TibiaTools' `flat`).
-/// The attack factor is 1.0 in Offensive, the mode the fixtures bind; other modes scale `v` and
-/// stay `PARITY_PENDING`.
+/// Live swings use Crystal's fixed attack factor. The saved calculator fixtures use 1.0.
 fn player_melee_bounds(
     constants: &AttackConstants,
     attack: Expression,
@@ -95,9 +94,9 @@ pub fn player_melee_formula(constants: &AttackConstants) -> Formula {
 
 /// Monk raw auto-attack bounds: TibiaTools `fe745abf` `damage-calc/damage.ts:13-26`,
 /// called by `calc.ts:102,132`. With `v = floor(6 * attack / 5) * (skill + 4) / 28`,
-/// the monk-only base factor is 2: `[floor(L + v), floor(L + 4 * v)]` in Offensive.
+/// the monk-only base factor is 2: `[floor(L + v), floor(L + 4 * v)]` at attack factor 1.0.
 /// Fist fighting is passed in `attack_skill`; `attack_value` is the fist weapon's attack
-/// (or the unarmed fist attack). Other fight modes scale `v` and remain `PARITY_PENDING`.
+/// (or the unarmed fist attack).
 /// This includes no Harmony, stance, skill multiplier or Ascetic Mantra bonus.
 pub fn player_monk_formula(constants: &AttackConstants) -> Formula {
     player_melee_bounds(
@@ -154,8 +153,7 @@ pub enum DefenceSource {
     Creature,
 }
 
-/// The defence mode factor (`getDefenseFactor`, `player.cpp:853-872`): the fight mode's factor
-/// while the defender swung within its attack interval, 1.0 otherwise. Creatures use 1.0.
+/// Crystal's live offensive stance uses 0.5 within the last swing's interval and 1.0 otherwise.
 pub fn defence_mode_factor(
     constants: &AttackConstants,
     mode: FightMode,
@@ -213,23 +211,16 @@ pub fn defence_formula(
     }
 }
 
-/// Defence draw range when the defending skill is 0 (`player.cpp:776-818`): the fight mode's
-/// fixed defence value `v`, drawn from `[v / 2, v]`.
+/// Crystal's live offensive stance returns defence value 1 when the defending skill is 0.
 pub fn zero_skill_defence_bounds(constants: &AttackConstants, mode: FightMode) -> (u32, u32) {
     let value = constants.fight_mode(mode).zero_skill_defence;
     (value / 2, value)
 }
 
-/// Armor reduction draw range (`creature.cpp:976-982`): `[armor / 2, armor - (armor % 2 + 1)]`
-/// above the flat threshold, exactly 1 from 1 up to it, nothing at 0.
-pub fn armor_reduction_bounds(constants: &AttackConstants, armor: u32) -> (u32, u32) {
-    if armor > constants.armor.flat_reduction_max_armor {
-        (armor / 2, armor - (armor % 2 + 1))
-    } else if armor > 0 {
-        (1, 1)
-    } else {
-        (0, 0)
-    }
+/// TibiaWiki's Armor Reduction bounds, with the upper bound floored at zero.
+pub fn armor_reduction_bounds(_constants: &AttackConstants, armor: u32) -> (u32, u32) {
+    let minimum = armor / 2;
+    (minimum, (2 * minimum).saturating_sub(1))
 }
 
 #[cfg(test)]

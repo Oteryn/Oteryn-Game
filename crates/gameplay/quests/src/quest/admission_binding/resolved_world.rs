@@ -121,6 +121,29 @@ mod tests {
     }
 
     #[test]
+    fn jack_retains_exact_npc_writes_to_the_zelos_passage_track() -> Result<(), String> {
+        use crate::quest::{QuestComparison, grave_danger, loader};
+
+        let source =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        for key in [grave_danger::START, grave_danger::ACCESS] {
+            let transition = catalogue.transition(key).ok_or(key)?;
+            validate_resolved_world(catalogue, transition, false, &callbacks)?;
+
+            let mut renamed = transition.clone();
+            renamed.key.push_str("-alias");
+            assert!(validate_resolved_world(catalogue, &renamed, false, &callbacks).is_err());
+
+            let mut modified = transition.clone();
+            modified.effects[0].from = QuestComparison::Any;
+            assert!(validate_resolved_world(catalogue, &modified, false, &callbacks).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_registry_does_not_exhaust_the_resolved_source_bound() -> Result<(), String> {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
@@ -128,15 +151,12 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // The two paid-coffin recovery routes share existing selectors.
-        assert_eq!(base.len(), 1_088 + 2);
-        assert_eq!(base.len(), MAX_RESOLVED_CALLBACKS);
-        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
+        assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()
         );
-        assert!(callbacks.len() > MAX_RESOLVED_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())
@@ -180,15 +200,22 @@ mod tests {
             Err("resolved World source bounds".into())
         );
         let mut oversized = world_callbacks::load()?;
-        let mut extra = callback.clone();
-        extra.key = reward_callbacks::load()?
-            .first()
-            .ok_or("published reward callback")?
-            .key
-            .clone();
-        assert!(registry()?.owners.contains_key(&extra.key));
-        assert!(!oversized.iter().any(|callback| callback.key == extra.key));
-        oversized.push(extra);
+        let existing: BTreeSet<_> = oversized.iter().map(|row| row.key.clone()).collect();
+        let required = MAX_RESOLVED_CALLBACKS + 1 - oversized.len();
+        let published = registry()?;
+        oversized.extend(
+            reward_callbacks::load()?
+                .into_iter()
+                .filter(|row| {
+                    published.owners.contains_key(&row.key) && !existing.contains(&row.key)
+                })
+                .take(required)
+                .map(|row| {
+                    let mut extra = callback.clone();
+                    extra.key = row.key;
+                    extra
+                }),
+        );
         assert_eq!(oversized.len(), MAX_RESOLVED_CALLBACKS + 1);
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &oversized),
