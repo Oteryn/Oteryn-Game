@@ -1,13 +1,13 @@
 //! Crystal 201189f data/scripts/systems/item_tiers.lua:1-90 prices and
-//! config.lua.dist:193-204 resource costs. Canary 47dfd51 has identical prices;
-//! its standard-transfer index differs and is intentionally not followed.
+//! config.lua.dist:193-204 resource costs. Standard transfer gold uses the
+//! donor tier, matching TibiaWiki Equipment Upgrade (revision 1205481).
 
 pub const FORGE_CLASS_CAPS: [u8; 5] = [0, 1, 2, 3, 10];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForgeReferencePrice {
     pub classification: u8,
-    /// Result tier for both fusion and transfer gold (Crystal player.cpp:10843-10846).
+    /// Result tier for fusion gold, donor tier for standard transfer gold.
     pub tier: u8,
     pub gold: u64,
     /// Indexed by receiver result tier for standard transfer.
