@@ -441,6 +441,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("post-ASSIGN Query, carried coins, or bank balance changed".into());
     }
     evidence("P01_CHECK client-locked-assign PASS completed-race independent-query no-gold-debit");
+    client.service_liveness(VISIBILITY_TICK).await?;
     let (_, target) = full_row_p01::authored_target(
         &mut client,
         world,
@@ -472,6 +473,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     evidence("P01_CHECK client-second-rat-delta PASS one-to-two exact-views");
+    let relog_carried = client_row_e02::backpack_coins(&client, coins)?;
+    if full_row_e06::bank_balance(clients, 1).await? != bank {
+        return Err("P01.client bank changed before logout after the refusal".into());
+    }
     let old_session = client.join_snapshot().game_session_id;
     logout_from_protected_ground(&mut client, world, &metadata.spawns).await?;
     drop(client);
@@ -489,6 +494,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if durable != expected_after {
         return Err(format!("P01.client relog lost the changed views: {durable:?}").into());
     }
+    if client_row_e02::backpack_coins(&fresh, coins)? != relog_carried
+        || full_row_e06::bank_balance(clients, 1).await? != bank
+    {
+        return Err("P01.client refused assignment changed the wallet across relog".into());
+    }
+    evidence("P01_CHECK client-refusal-durable-wallet PASS carried-and-bank-unchanged");
     evidence("P01_CHECK client-relog PASS exact-durable-views");
     full_row_p01::close_relog_fixture(&mut fresh).await?;
     let session = uuid_text(old_session.as_bytes());

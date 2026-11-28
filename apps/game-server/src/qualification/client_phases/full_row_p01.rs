@@ -422,6 +422,11 @@ pub(super) async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult
         }
         evidence(&format!("P01_FIXTURE stowed hand={slot:?}"));
     }
+    if !client.inventory().is_some_and(|inventory| {
+        inventory.equipment.iter().all(|entry| !hands.contains(&entry.slot))
+    }) {
+        return Err("P01 final inventory did not show both hands empty".into());
+    }
     evidence("P01_CHECK unarmed-baseline PASS hands=empty");
     Ok(())
 }
@@ -429,6 +434,27 @@ pub(super) async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult
 pub(super) enum HuntEvidence<'a, 'b> {
     Principal(&'a SeamClients<'b>),
     Contacts(&'a SeamClients<'b>, &'a mut CombatContacts),
+}
+
+fn reject_late_hunt_evidence(event: &SessionEvent) -> TestResult {
+    use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact};
+    use oteryn_protocol_oteryn::damage_element::DamageElement;
+    let unexpected = |fact: &AnalyserFact| matches!(
+        fact,
+        AnalyserFact::Kill { .. } | AnalyserFact::Experience { .. }
+            | AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, .. })
+    );
+    let invalid = match event {
+        SessionEvent::AnalyserFacts(frame) => frame.value.iter().any(unexpected),
+        SessionEvent::AnalyserAttributedFacts(frame) => frame.value.iter().any(|entry| unexpected(&entry.fact)),
+        SessionEvent::ChatLine(frame) => matches!(&frame.value,
+            oteryn_protocol_oteryn::chat::ChatLine::System { text } if text.ends_with(" (enflame charm)")),
+        _ => false,
+    };
+    if invalid {
+        return Err(format!("unexpected analyser credit or fire after the selected death: {event:?}").into());
+    }
+    Ok(())
 }
 
 pub(super) async fn hunt_exact_creature(
@@ -443,6 +469,15 @@ pub(super) async fn hunt_exact_creature(
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact};
     use oteryn_protocol_oteryn::damage_element::DamageElement;
+    if key == "oteryn:creature.troll" && matches!(observations, HuntEvidence::Principal(_)) {
+        let identity = target.entity.identity.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+        request_fixture_control(
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            "--force-enflame",
+            format!("{identity} {} 0:64", target.entity.generation),
+        ).await?;
+        evidence(&format!("P01_FIXTURE forced proc rolls for unassigned target={:?}", target.entity));
+    }
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()
@@ -697,7 +732,7 @@ pub(super) async fn hunt_exact_creature(
         .is_none_or(|view| view.container_handle != Some(handle))
     {
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
+        for event in client.take_events() { reject_late_hunt_evidence(&event)?; }
         if tokio::time::Instant::now() >= deadline {
             return Err("hunt corpse container delta missing".into());
         }
@@ -776,8 +811,12 @@ pub(super) async fn hunt_exact_creature(
                 return Err("hunt loot inventory conservation failed".into());
             }
             client.service_liveness(Duration::from_millis(50)).await?;
-            client.take_events();
+            for event in client.take_events() { reject_late_hunt_evidence(&event)?; }
         }
+    }
+    client.service_liveness(client_row_p01::VISIBILITY_TICK).await?;
+    for event in client.take_events() {
+        reject_late_hunt_evidence(&event)?;
     }
     Ok(full_row_p05::KillSample {
         race,

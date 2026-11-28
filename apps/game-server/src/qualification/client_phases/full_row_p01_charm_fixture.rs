@@ -147,8 +147,9 @@ pub(super) async fn seed(clients: &SeamClients<'_>, full: bool) -> TestResult {
     }
     tx.commit().await?;
     evidence(&format!(
-        "P01_FIXTURE charm_points={points} rat_kills={}",
-        if full { 249 } else { 0 }
+        "P01_FIXTURE charm_points={points} rat_kills={} troll_kills={}",
+        if full { 249 } else { 0 },
+        if full { 250 } else { 249 }
     ));
     Ok(())
 }
