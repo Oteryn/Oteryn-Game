@@ -519,7 +519,7 @@ cleanup() {
       [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
     fi
   fi
-  if [[ -n "${OTERYN_P23C_RAW_SERVER_LOG:-}" ]]; then
+  if [[ -n "${OTERYN_P23C_RAW_SERVER_LOG:-}" && ! -f "$OTERYN_P23C_RAW_SERVER_LOG" ]]; then
     local raw_source="$node_log"
     [[ ! -f "$failed_node_log" ]] || raw_source="$failed_node_log"
     if [[ -f "$raw_source" ]]; then
@@ -1176,6 +1176,11 @@ stage() { # name prerequisite... -- function
   set +e
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
+  if [[ "$name" == seam_stages && -n "${OTERYN_P23C_RAW_SERVER_LOG:-}" ]]; then
+    if ! install -m 0600 -- "$node_log" "$OTERYN_P23C_RAW_SERVER_LOG"; then
+      rc=1
+    fi
+  fi
   stop_runtime_diagnostics
   pg_observability_dump "$name" "$rc"
   set -e

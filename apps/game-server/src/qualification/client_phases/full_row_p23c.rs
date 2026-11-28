@@ -88,6 +88,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let world = full_e2ef7::qualification_world(clients)?;
     prepare_hunt_ground(&mut client, world).await?;
+    prepare_hunt_modes(&mut client).await?;
     for current in 1..=task.required {
         credit_one_kill(&mut client, clients, &task.race).await?;
         let (progress, _) = exchange(&mut client, 4, 0).await?;
@@ -284,6 +285,34 @@ async fn prepare_hunt_ground(client: &mut DevClientSession, world: &BundleWorld)
     walk(client, world, &path).await
 }
 
+async fn prepare_hunt_modes(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::attack::{
+        AttackIntentDisposition, ChaseMode, FightMode, FightModes,
+    };
+    let modes = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let result = client.session_mut().set_fight_modes(&modes).await?;
+    if result.status != CommandStatus::Accepted || result.disposition != AttackIntentDisposition::Ok
+    {
+        return Err(format!("step=hunt-modes observed={result:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while client
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.modes != modes)
+        {
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+        TestResult::Ok(())
+    })
+    .await
+    .map_err(|_| "step=hunt-modes exact mode delta missing")?
+}
+
 async fn credit_one_kill(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -329,6 +358,10 @@ async fn credit_one_kill(
             client.service_liveness(Duration::from_millis(100)).await?;
         }
     }).await.map_err(|_| format!("step=hunt-target-delta target={target:?} observed={attack:?}"))??;
+    evidence(&format!(
+        "P23C_CHECK step=hunt-target-delta creature={creature} target={target:?}"
+    ));
+    verdict::Harness::global().bounded_wait(deadline, "p23c-exact-kill");
     let death = committed_hunt_death(
         client,
         clients,
@@ -337,7 +370,10 @@ async fn credit_one_kill(
         target,
         deadline,
     )
-    .await?;
+    .await
+    .map_err(|error| {
+        format!("step=hunt-death creature={creature} target={target:?} observed={error}")
+    })?;
     if death.shared || !death.awards.contains_key(&clients.characters[0]) {
         return Err(format!("step=hunt-death target={target:?} missing solo kill award").into());
     }
