@@ -91,7 +91,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> bool {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = store.current_session_at(session).await else {
+        let budget = AdmissionRetryBudget::for_root(&session, self.root);
+        let Ok((current, _)) = budget
+            .retry_durability("condition_logout", || store.current_session_at(session))
+            .await
+        else {
             return false;
         };
         let Some(fence) = item_fence_of(current) else {
@@ -171,14 +175,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Never retain runtime/player locks across the database await. The release
         // fence remains held, and SQL independently locks and proves the live lease.
-        match self
-            .root
-            .save_character_conditions(
-                self.character,
-                self.holder,
-                fence,
-                *self.channel_id.as_bytes(),
-                saved,
+        match budget
+            .retry_holder(
+                || {
+                    self.root.save_character_conditions(
+                        self.character,
+                        self.holder,
+                        fence,
+                        *self.channel_id.as_bytes(),
+                        saved.clone(),
+                    )
+                },
+                |error| {
+                    matches!(
+                        error,
+                        ItemUseError::Unavailable(
+                            crate::durability::DurabilityError::RootUnavailable
+                        )
+                    )
+                },
             )
             .await
         {

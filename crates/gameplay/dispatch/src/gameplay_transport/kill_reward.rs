@@ -3493,7 +3493,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Drain earlier deaths even for a non-damaging shared member before its
     /// terminal release. A prior committing mark only reconciles its own outcome.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
-        let fence = match self.current_quest_fence(session).await {
+        let fence = match super::AdmissionRetryBudget::for_root(&session, self.root)
+            .retry_durability("kill_release", || self.current_quest_fence_durable(session))
+            .await
+        {
             Ok(Some(fence)) => fence,
             Ok(None) => {
                 self.states
@@ -3504,7 +3507,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .discard_gone(session, None);
                 return KillRelease::Send(None);
             }
-            Err(()) => return KillRelease::Deferred,
+            Err(_) => return KillRelease::Deferred,
         };
         let principal = (session, fence.character_lease_generation);
         for _ in 0..=KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {

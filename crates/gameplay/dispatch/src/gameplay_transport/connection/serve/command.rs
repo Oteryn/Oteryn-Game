@@ -147,9 +147,7 @@ where
         tokio::time::Instant::now().saturating_duration_since(received_at),
     )
     .await?;
-    let mut input_permit = authority
-        .enter_input(session.admitted.game_session_id)
-        .await;
+    let mut input_permit = enter_command_input(authority, session.admitted, command).await?;
     let guard_deferred =
         input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
     if guard_deferred && !session.reconcile_original_bank {
@@ -522,16 +520,49 @@ where
     )
 }
 
+fn selected_logout(
+    admitted: AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> bool {
+    command.command_type == COMMAND_TYPE_LOGOUT_INTENT
+        && admitted
+            .continuity
+            .selected_capabilities
+            .command_selected(command.command_type)
+        && decode_logout_intent(command.payload).is_ok()
+}
+
+pub(super) async fn enter_command_input<'a, A: FreshAdmissionAuthority>(
+    authority: &'a A,
+    admitted: AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<Option<crate::gameplay_transport::input_gate::InputPermit<'a>>, ServeEnd> {
+    if selected_logout(admitted, command) {
+        return authority
+            .enter_logout_input(admitted.game_session_id)
+            .await
+            .map(Some)
+            .ok_or(ServeEnd::Disconnected);
+    }
+    Ok(authority.enter_input(admitted.game_session_id).await)
+}
+
 /// Keep holder contention distinct from lost authority in both command loops.
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &mut AdmittedSession,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Result<bool, ServeEnd> {
+    let admitted_for_guard = *admitted;
+    let logout_deadline = selected_logout(*admitted, command)
+        .then(|| tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW);
     let house_input = match admitted.continuity.house_input_pending {
         Some(false) => Ok(()),
         pending => {
-            let result = authority.house_transfer_input(*admitted).await;
+            let result = logout_command_guard(logout_deadline, || {
+                authority.house_transfer_input(admitted_for_guard)
+            })
+            .await;
             if pending == Some(true) && result.is_ok() {
                 admitted.continuity.house_input_pending = Some(false);
             }
@@ -540,11 +571,12 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
     };
     let failure = match house_input {
         Err(error) => Some(("house_transfer_input", error)),
-        Ok(()) => authority
-            .activity_transfer_input(*admitted)
-            .await
-            .err()
-            .map(|error| ("activity_transfer_input", error)),
+        Ok(()) => logout_command_guard(logout_deadline, || {
+            authority.activity_transfer_input(*admitted)
+        })
+        .await
+        .err()
+        .map(|error| ("activity_transfer_input", error)),
     };
     let Some((guard, error)) = failure else {
         return Ok(true);
@@ -564,5 +596,34 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
         "event=command_guard_deferred guard={guard} kind={kind} command_type={} command_id={}",
         command.command_type, command.command_id,
     ));
+    // A logout still needs these authority checks. On an exhausted recovery
+    // window the existing control-loss path owns the session.
+    if logout_deadline.is_some() {
+        return Err(ServeEnd::Disconnected);
+    }
     Ok(false)
+}
+
+async fn logout_command_guard<
+    F: std::future::Future<Output = Result<(), crate::durability::DurabilityError>>,
+>(
+    deadline: Option<tokio::time::Instant>,
+    mut check: impl FnMut() -> F,
+) -> Result<(), crate::durability::DurabilityError> {
+    use crate::durability::DurabilityError;
+
+    loop {
+        let result = check().await;
+        if !matches!(
+            result,
+            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded)
+        ) {
+            return result;
+        }
+        let retry_at = tokio::time::Instant::now() + crate::gameplay_transport::HOLDER_RETRY_FLOOR;
+        if deadline.is_none_or(|deadline| retry_at >= deadline) {
+            return result;
+        }
+        tokio::time::sleep_until(retry_at).await;
+    }
 }

@@ -10,6 +10,29 @@ use super::{
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOGOUT_CHECKOUT_BARRIER: (
+        std::cell::Cell<Option<&'static str>>,
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>,
+    );
+}
+
+#[cfg(test)]
+pub(super) async fn pause_logout_checkout(stage: &'static str) {
+    let barrier = LOGOUT_CHECKOUT_BARRIER.try_with(|(target, barrier)| {
+        if target.get() != Some(stage) {
+            return None;
+        }
+        target.set(None);
+        Some(barrier.clone())
+    });
+    if let Ok(Some(barrier)) = barrier {
+        barrier.0.notify_one();
+        barrier.1.notified().await;
+    }
+}
 /// What the connection does after one logout command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogoutReply {
@@ -153,14 +176,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if zones.no_logout {
             return Err(LogoutReply::NoLogout);
         }
-        if self.states.newhaven_travel.held(session) {
-            operator_event("event=logout_busy stage=newhaven_travel");
-            return Err(LogoutReply::Result(LogoutResult::Busy));
-        }
-        if !self
-            .reconcile_spells_before_control_loss(actor, session)
-            .await
-        {
+        // The retained owner reconciles its original operation, including a
+        // Newhaven travel. Let it settle before the zone and combat recheck.
+        let budget = AdmissionRetryBudget::for_root(&session, self.root);
+        while !Box::pin(self.reconcile_spells_before_control_loss(actor, session)).await {
+            if budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+            {
+                continue;
+            }
             operator_event("event=logout_busy stage=spell_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
@@ -296,9 +321,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
-    /// `BUSY`. A failure before the commit reads the durable row and settles the fence
-    /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
+    /// Retry precommit deferrals under the same fenced release. The durable
+    /// settle still decides whether a failed attempt can lift that fence.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -314,13 +338,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             store
         };
         let release = TerminalRelease::Logout(controller.transport);
-        if !self.settle_paid_quest_callbacks(session).await {
-            return Ok(LogoutReply::Result(LogoutResult::Busy));
-        }
-        // Nothing is fenced yet when no transition id can be minted.
-        let token = {
+        let budget = AdmissionRetryBudget::for_root(&session, self.root);
+        let token = loop {
+            let settled = self.settle_paid_quest_callbacks(session).await;
             let mut runtime = self.runtime.lock().await;
-            if self.has_pending_paid_quest_callback(session) {
+            if !settled || self.has_pending_paid_quest_callback(session) {
+                drop(runtime);
+                if !channel_switch
+                    && budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                {
+                    continue;
+                }
                 return Ok(LogoutReply::Result(LogoutResult::Busy));
             }
             if channel_switch
@@ -332,21 +362,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_busy stage=release_fence");
                 return Ok(LogoutReply::Result(LogoutResult::Busy));
             };
-            token
+            break token;
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
-        let step = self
-            .release_attempt(
+        let step = loop {
+            let step = Box::pin(self.release_attempt(
                 &admitted,
                 &store,
                 release,
                 &mut hold,
                 &mut settled_death,
                 &mut kills,
-            )
+            ))
             .await;
+            // Familiar and training have their own checkout retries. A familiar
+            // write with an unknown outcome must retain its original snapshot.
+            if channel_switch
+                || !matches!(step, ReleaseAttempt::Retry(stage) if stage != "release_familiar_save" && stage != "release_offline_training")
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                break step;
+            }
+            if !hold.held
+                && let Err(reply) = self.logout_preflight(admitted).await
+            {
+                return Ok(reply);
+            }
+        };
         Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)
@@ -495,6 +541,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 impl AdmissionRetryBudget<'_> {
+    pub(super) async fn retry_holder<T, E, Fut>(
+        &self,
+        mut step: impl FnMut() -> Fut,
+        is_holder_busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E>
+    where
+        Fut: std::future::Future<Output = Result<T, E>>,
+    {
+        loop {
+            let result = step().await;
+            if !result.as_ref().is_err_and(&is_holder_busy)
+                || !self
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                return result;
+            }
+        }
+    }
     /// Retry only a holder acquisition failure. Storage and ambiguous commit failures
     /// retain their original outcome; neither is evidence that replay is safe.
     /// Each attempt returns its own future, without borrowing mutable callback

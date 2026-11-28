@@ -225,10 +225,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
             return ReleaseAttempt::Retry("release_gourmet_checkpoint");
         }
+        #[cfg(test)]
+        super::super::logout::pause_logout_checkout("conditions").await;
         if !self.save_conditions_at_actor_end(actor, session).await {
             return ReleaseAttempt::Retry("release_condition_save");
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
+        #[cfg(test)]
+        super::super::logout::pause_logout_checkout("kill_rewards").await;
         *kills = match self.seal_kill_rewards(session).await {
             KillRelease::Send(mark) => mark,
             KillRelease::Deferred => return ReleaseAttempt::Retry("release_kill_rewards"),
@@ -237,6 +241,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The familiar's actor-end snapshot is the last save before the durable release, so no
         // retryable step can follow a committed logout snapshot and leave the session running
         // on it (#2127 Codex P1 4279636456).
+        #[cfg(test)]
+        super::super::logout::pause_logout_checkout("familiar").await;
         if self
             .save_familiar_at_actor_end(actor, session, logout)
             .await
@@ -255,7 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Retry("release_offline_training");
         };
         let releasing = self.journal_logout_store(releasing, admitted.world_id);
-        let outcome = AdmissionRetryBudget::for_command(self.root)
+        let outcome = AdmissionRetryBudget::for_root(&session, self.root)
             .retry_durability("release_commit", async || match release {
                 TerminalRelease::Abandoned(transport) => {
                     releasing

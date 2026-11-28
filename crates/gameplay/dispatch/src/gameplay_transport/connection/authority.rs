@@ -302,6 +302,13 @@ pub trait FreshAdmissionAuthority {
         async { Some(InputPermit::ungated()) }
     }
 
+    fn enter_logout_input(
+        &self,
+        session: GameSessionId,
+    ) -> impl Future<Output = Option<InputPermit<'_>>> {
+        self.enter_input(session)
+    }
+
     /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
     /// the registry's offered set; tests inject theirs.
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {

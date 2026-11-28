@@ -11,7 +11,7 @@ use super::native_activity::{
     NativeActivityCommit, NativeActivityOutcome, activity_continuity, finish_activity_kills,
     seal_activity_kills,
 };
-use super::{ComposedFreshAdmission, SecureIdentifiers};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, SecureIdentifiers};
 use crate::durability::activity_handoff::{
     ActivityHandoffOwner, ActivityRefusal, ActivityReturnOutcome, ActivityReturnPlacement,
     ActivityReturnReason, ActivityReturnReceipt, ActivityReturnRequest,

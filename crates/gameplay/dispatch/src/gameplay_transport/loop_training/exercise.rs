@@ -108,6 +108,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return true;
         };
+        if kind == oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT {
+            let budget = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+            return budget
+                .retry_unavailable(|| async {
+                    Box::pin(self.training_before_save_bound(
+                        actor,
+                        admitted.game_session_id,
+                        true,
+                        Some(fence),
+                    ))
+                    .await
+                    .then_some(())
+                    .ok_or(super::super::AdmissionRefusal::Unavailable)
+                })
+                .await
+                .is_ok();
+        }
         self.training_before_save_bound(
             actor,
             admitted.game_session_id,
@@ -153,12 +170,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
     async fn release_house_dummy(&self, run: &Run) {
         let Some(key) = run.house_dummy else { return };
-        let Some(fence) = self.training_fence(run.fence).await else {
+        let budget = AdmissionRetryBudget::for_root(&run.fence.game_session_id, self.root);
+        let Ok(Some(fence)) = budget
+            .retry_durability("exercise_dummy_release", || {
+                self.training_fence_durable(run.fence)
+            })
+            .await
+        else {
             return;
         };
-        let _ = self
-            .root
-            .release_exercise_dummy(self.character, self.holder, fence, key)
+        let _ = budget
+            .retry_durability("exercise_dummy_release", || {
+                self.root
+                    .release_exercise_dummy(self.character, self.holder, fence, key)
+            })
             .await;
     }
     async fn advance_exercise(&self, run: &mut Run, stop: bool) -> Option<bool> {

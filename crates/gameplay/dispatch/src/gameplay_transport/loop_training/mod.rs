@@ -20,12 +20,6 @@ use oteryn_protocol_oteryn::loop_training::{
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
-#[cfg(test)]
-tokio::task_local! {
-    pub(in crate::gameplay_transport) static TRAINING_RELEASE_FENCE_BARRIER:
-        Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
-}
-
 pub(in crate::gameplay_transport) struct TrainingRuntime {
     pub config: Option<Arc<TrainingRates>>,
     sessions: Mutex<HashMap<GameSessionId, Session>>,
@@ -261,13 +255,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         #[cfg(test)]
-        if let Ok(barrier) = TRAINING_RELEASE_FENCE_BARRIER.try_with(Arc::clone) {
-            barrier.0.notify_one();
-            barrier.1.notified().await;
-        }
+        super::logout::pause_logout_checkout("offline_training").await;
         // These reads prepare the release but write nothing. A busy holder
         // can recover within the command budget without repeating any save.
-        let fence = AdmissionRetryBudget::for_command(self.root)
+        let fence = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root)
             .retry_durability("offline_training", || self.training_fence_durable(item))
             .await
             .ok()

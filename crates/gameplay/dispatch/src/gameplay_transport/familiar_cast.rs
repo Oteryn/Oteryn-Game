@@ -863,21 +863,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(fence) => fence,
             Err(save) => return save,
         };
-        let Ok(Some(progression)) = self
-            .root
-            .read_character_progression(self.character, fence.character_id)
+        let budget = AdmissionRetryBudget::for_root(&session, self.root);
+        let busy = |error: &CharacterProgressionError| {
+            matches!(
+                error,
+                CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)
+            )
+        };
+        let Ok(Some(progression)) = budget
+            .retry_holder(
+                || {
+                    self.root
+                        .read_character_progression(self.character, fence.character_id)
+                },
+                busy,
+            )
             .await
         else {
             return FamiliarLogoutSave::Unknown;
         };
-        let Ok(loaded) = self
-            .root
-            .read_character_familiar_state(self.character, fence.character_id)
+        let Ok(loaded) = budget
+            .retry_holder(
+                || {
+                    self.root
+                        .read_character_familiar_state(self.character, fence.character_id)
+                },
+                busy,
+            )
             .await
         else {
             return FamiliarLogoutSave::Unknown;
         };
-        let Ok(unix) = self.root.read_familiar_unix_time(self.character).await else {
+        let Ok(unix) = budget
+            .retry_holder(|| self.root.read_familiar_unix_time(self.character), busy)
+            .await
+        else {
             return FamiliarLogoutSave::Unknown;
         };
         let runtime = self.runtime.lock().await;
@@ -993,6 +1013,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FamiliarActorEnd::GraceExpiry(epoch) => FamiliarCleanEndProof::GraceExpiry(epoch),
         };
         #[cfg(test)]
+        super::super::logout::pause_logout_checkout("familiar_write").await;
+        #[cfg(test)]
         let held_for_test = FAMILIAR_CLEAN_END_FAULT
             .try_with(|fault| {
                 (*fault == Some(false))
@@ -1003,26 +1025,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flatten();
         #[cfg(test)]
         let _ = FAMILIAR_CLEAN_END_WRITES.try_with(|writes| writes.set(writes.get() + 1));
-        let outcome = self
-            .root
-            .commit_character_familiar_clean_end(
+        let write = || {
+            self.root.commit_character_familiar_clean_end(
                 self.character,
                 self.holder,
                 prepared.fence,
                 prepared.request.clone(),
                 proof,
             )
-            .await;
+        };
         #[cfg(test)]
         if let Some(held) = held_for_test {
             assert!(matches!(
-                &outcome,
+                write().await,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
                     crate::durability::DurabilityError::RootUnavailable
                 ))
             ));
             assert!(held.run(|_, _| Box::pin(async { Ok(()) })).await.is_ok());
+            // Exercise the later reconciliation of a retained uncommitted write.
+            return FamiliarLogoutSave::Unknown;
         }
+        let outcome = AdmissionRetryBudget::for_root(&session, self.root)
+            .retry_holder(write, busy)
+            .await;
         #[cfg(test)]
         if matches!(&outcome, Ok(FamiliarStateOutcome::Committed(_)))
             && FAMILIAR_CLEAN_END_FAULT
@@ -1182,8 +1208,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         end: FamiliarActorEnd,
     ) -> FamiliarFenceRead<CurrentCharacterGameplayFence> {
-        let read = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let budget = AdmissionRetryBudget::for_root(&session, self.root);
+        let read = budget
+            .retry_durability("familiar_logout", || store.current_session_at(session))
             .await;
         let row = read.as_ref().ok().map(|(current, _)| {
             (
@@ -1204,9 +1232,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return FamiliarFenceRead::Unavailable;
         };
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, character)
+        let Ok(root) = budget
+            .retry_holder(|| self.root.read_current_character(self.character, character), |error| {
+                matches!(error, crate::durability::character_authority::CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable))
+            })
             .await
         else {
             return FamiliarFenceRead::Unavailable;

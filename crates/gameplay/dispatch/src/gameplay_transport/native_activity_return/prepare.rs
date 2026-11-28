@@ -91,8 +91,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return refuse(ActivityRefusal::AuthorityRejected);
         };
-        let (current, now) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(admitted.game_session_id)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let budget = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        let (current, now) = budget
+            .retry_durability("activity_return", || store.current_session_at(admitted.game_session_id))
             .await
             .map_err(|_| ())?;
         if super::item_fence_of(current) != Some(fence) {
@@ -200,19 +202,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             reason
         };
         let owner = ActivityHandoffOwner::new(self.root.clone());
-        let placement = match reason {
-            ActivityReturnReason::Death { occurrence } => {
-                owner
-                    .read_death_return_placement(self.character, self.holder, fence, occurrence)
-                    .await
-            }
-            _ => {
-                owner
-                    .read_return_placement(self.character, self.holder, fence)
-                    .await
-            }
-        }
-        .map_err(|_| ())?;
+        let placement = budget
+            .retry_durability("activity_return", || async {
+                match reason {
+                    ActivityReturnReason::Death { occurrence } => {
+                        owner
+                            .read_death_return_placement(self.character, self.holder, fence, occurrence)
+                            .await
+                    }
+                    _ => owner.read_return_placement(self.character, self.holder, fence).await,
+                }
+            })
+            .await
+            .map_err(|_| ())?;
         let Some(placement) = placement else {
             return refuse(ActivityRefusal::AuthorityRejected);
         };
@@ -251,9 +253,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .into_iter()
             .collect();
         principals.insert(admitted.game_session_id);
+        let logging_out = matches!(reason, ActivityReturnReason::Logout | ActivityReturnReason::IdleLogout);
         for principal in principals {
-            if source_view.drain_kill_rewards(principal).await == DrainOutcome::Deferred {
-                return Err(());
+            while source_view.drain_kill_rewards(principal).await == DrainOutcome::Deferred {
+                if !logging_out
+                    || !budget.retries_unavailable(super::AdmissionRefusal::Unavailable).await
+                {
+                    return Err(());
+                }
             }
         }
         // Shared-XP settlement acquires its lane before recipient revisions.
@@ -274,11 +281,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let Some(actor) = admitted.runtime_actor else {
             return refuse(ActivityRefusal::AuthorityRejected);
         };
-        if !source_view
+        while !source_view
             .settle_activity_equipment(actor, admitted.game_session_id)
             .await
         {
-            return Err(());
+            if !logging_out
+                || !budget.retries_unavailable(super::AdmissionRefusal::Unavailable).await
+            {
+                return Err(());
+            }
         }
         let slot = self.revision_sequencer.acquire(fence.character_id).await;
         let (mut from, mut to) = if source_first {

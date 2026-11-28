@@ -1964,6 +1964,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(permit)
     }
 
+    async fn enter_logout_input(
+        &self,
+        session: GameSessionId,
+    ) -> Option<input_gate::InputPermit<'_>> {
+        let permit = self.states.input_gate.enter().await?;
+        let budget = AdmissionRetryBudget::for_foreground_root(&session, self.root).ok()?;
+        budget
+            .retry_unavailable(|| async {
+                Box::pin(self.reconcile_quest_callbacks(session))
+                    .await
+                    .then_some(())
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()?;
+        Some(permit)
+    }
+
     async fn resume(
         &self,
         attempt: connection::ResumeAttempt<'_>,

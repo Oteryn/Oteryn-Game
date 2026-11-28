@@ -30,46 +30,47 @@ impl <'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .revision_sequencer
             .acquire(attempt.request.source.character_id)
             .await;
+        let budget = AdmissionRetryBudget::for_root(&attempt.admitted.game_session_id, self.root);
         if attempt.receipt.is_none() {
             let account = super::canonical_uuid(&attempt.placement.account_id);
-            let evidence = self
-                .evidence
-                .refresh_account_held(self.root, self.holder, &account)
+            let owner = ActivityHandoffOwner::new(self.root.clone());
+            let result = budget
+                .retry_durability("activity_return", || async {
+                    use crate::durability::DurabilityError;
+
+                    // Take fresh evidence for every attempt. Its publication
+                    // slot has its own hold deadline and must clear before a wait.
+                    let evidence = self.evidence
+                        .refresh_account_held(self.root, self.holder, &account)
+                        .await
+                        .map_err(|error| {
+                            if error.holder_busy() {
+                                DurabilityError::RootUnavailable
+                            } else {
+                                DurabilityError::Unavailable
+                            }
+                        })?;
+                    let result = if matches!(attempt.request.reason, ActivityReturnReason::Death { .. })
+                        && matches!(attempt.trigger_reason,
+                            ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. })
+                    {
+                        owner.return_forced_death(
+                            self.character, self.holder, attempt.request.clone(), attempt.trigger_reason,
+                        ).await
+                    } else if let Some(proof) = attempt.source_exit.as_ref()
+                        && matches!(attempt.request.reason, ActivityReturnReason::Exit)
+                    {
+                        owner.return_participant_for_native_step(
+                            self.character, self.holder, attempt.request.clone(), proof.native_step(),
+                        ).await
+                    } else {
+                        owner.return_participant(self.character, self.holder, attempt.request.clone()).await
+                    };
+                    evidence.release().await.map_err(|_| DurabilityError::Unavailable)?;
+                    result
+                })
                 .await
                 .map_err(|_| ())?;
-            let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if matches!(attempt.request.reason, ActivityReturnReason::Death { .. })
-                && matches!(
-                    attempt.trigger_reason,
-                    ActivityReturnReason::StaffKick { .. }
-                        | ActivityReturnReason::StaffKickLost { .. }
-                ) {
-                owner
-                    .return_forced_death(
-                        self.character,
-                        self.holder,
-                        attempt.request.clone(),
-                        attempt.trigger_reason,
-                    )
-                    .await
-            } else if let Some(proof) = attempt.source_exit.as_ref()
-                && matches!(attempt.request.reason, ActivityReturnReason::Exit)
-            {
-                owner
-                    .return_participant_for_native_step(
-                        self.character,
-                        self.holder,
-                        attempt.request.clone(),
-                        proof.native_step(),
-                    )
-                    .await
-            } else {
-                owner
-                    .return_participant(self.character, self.holder, attempt.request.clone())
-                    .await
-            };
-            evidence.release().await.map_err(|_| ())?;
-            let result = result.map_err(|_| ())?;
             match result {
                 ActivityReturnOutcome::Returned(receipt)
                 | ActivityReturnOutcome::Replayed(receipt) => {
@@ -105,8 +106,9 @@ impl <'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 }
             }
         }
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(attempt.request.destination_game_session_id)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let (current, _) = AdmissionRetryBudget::for_root(&attempt.request.destination_game_session_id, self.root)
+            .retry_durability("activity_return", || store.current_session_at(attempt.request.destination_game_session_id))
             .await
             .map_err(|_| ())?;
         let fence = super::item_fence_of(current).ok_or(())?;

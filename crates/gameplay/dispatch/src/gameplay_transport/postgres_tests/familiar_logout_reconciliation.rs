@@ -52,7 +52,43 @@ fn logout_retries_busy_offline_training_fence_and_releases_postgres() -> TestRes
         return Ok(());
     };
     drop(admin);
-    scenario(false, Finish::TrainingHolderBusy)
+    scenario(false, Finish::HolderBusy("offline_training"))
+}
+
+#[test]
+fn logout_retries_busy_condition_checkpoint_and_releases_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("conditions"))
+}
+
+#[test]
+fn logout_retries_busy_kill_reward_fence_and_releases_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("kill_rewards"))
+}
+
+#[test]
+fn logout_retries_busy_familiar_fence_and_releases_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("familiar"))
+}
+
+#[test]
+fn logout_retries_busy_familiar_write_and_releases_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("familiar_write"))
 }
 
 #[derive(Clone, Copy)]
@@ -60,7 +96,7 @@ enum Finish {
     Logout,
     Loss,
     TrainingRefused,
-    TrainingHolderBusy,
+    HolderBusy(&'static str),
     Terminal,
     RetiredOwner,
 }
@@ -74,7 +110,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
             (true, Finish::Loss) => "familiar_logout_known_loss",
             (false, Finish::Loss) => "familiar_logout_absent_loss",
             (_, Finish::TrainingRefused) => "logout_training_kill_hold",
-            (_, Finish::TrainingHolderBusy) => "logout_training_holder_busy",
+            (_, Finish::HolderBusy(stage)) => stage,
             (_, Finish::Terminal) => "familiar_logout_terminal",
             (_, Finish::RetiredOwner) => "familiar_logout_retired",
         };
@@ -135,8 +171,9 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
         );
         let store = FreshAdmissionStore::from_root(h.root.clone());
 
-        if matches!(finish, Finish::TrainingHolderBusy) {
-            use crate::gameplay_transport::loop_training::TRAINING_RELEASE_FENCE_BARRIER;
+        if let Finish::HolderBusy(stage) = finish {
+            use crate::gameplay_transport::logout::LOGOUT_CHECKOUT_BARRIER;
+            use std::cell::Cell;
             use std::future::{Future, poll_fn};
             use std::sync::Arc;
             use std::task::Poll;
@@ -145,43 +182,40 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
 
             let barrier = Arc::new((Notify::new(), Notify::new()));
             let reply = tokio::time::timeout(Duration::from_secs(10), async {
-                let mut logout = std::pin::pin!(
-                    TRAINING_RELEASE_FENCE_BARRIER.scope(barrier.clone(), owner.logout(admitted)),
-                );
+                let mut logout = std::pin::pin!(LOGOUT_CHECKOUT_BARRIER.scope(
+                    (Cell::new(Some(stage)), barrier.clone()),
+                    owner.logout_command(admitted, 1),
+                ));
                 tokio::select! {
                     () = barrier.0.notified() => {}
-                    reply = &mut logout => return Err(format!("logout ended before the training fence: {reply:?}").into()),
+                    reply = &mut logout => return Err(format!("logout ended before {stage}: {reply:?}").into()),
                 }
                 h.root.await_ready().await?;
                 let held = h.root.try_issue_semantic_pass()?;
                 barrier.1.notify_one();
-                assert!(
-                    poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx)))
-                        .await
-                        .is_pending(),
-                    "logout must wait when the training fence checkout is busy"
-                );
+                assert!(poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx))).await.is_pending());
                 held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                 TestResult::Ok(logout.await)
             })
             .await??;
-            assert_eq!(
-                reply,
-                LogoutReply::Result(LogoutResult::Accepted),
-                "temporary holder contention must not refuse the first logout"
-            );
+            assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted), "the first logout must release after {stage} contention clears");
             assert_eq!(
                 store.current_session(session).await?.session_state(),
-                GameSessionState::Terminal
+                GameSessionState::Terminal,
             );
-            let markers: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_character_training_markers \
-                 WHERE game_session_id=encode($1,'hex')::uuid AND cause='logout'",
-            )
-            .bind(session.as_bytes().as_slice())
-            .fetch_one(&h.pool)
-            .await?;
-            assert_eq!(markers, 1, "logout commits its training marker once");
+            if stage.starts_with("familiar") {
+                assert_eq!(receipt_count_for(&h, None).await?, 1, "familiar clean end commits once");
+            }
+            if stage == "offline_training" {
+                let markers: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_training_markers \
+                     WHERE game_session_id=encode($1,'hex')::uuid AND cause='logout'",
+                )
+                .bind(session.as_bytes().as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(markers, 1, "logout commits its training marker once");
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -344,7 +378,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                 Finish::Logout
                 | Finish::Loss
                 | Finish::TrainingRefused
-                | Finish::TrainingHolderBusy => {
+                | Finish::HolderBusy(_) => {
                     return Err("not a refusal case".into());
                 }
             }
@@ -377,8 +411,8 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                 assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
                 assert_eq!(writes, if committed { 0 } else { 1 });
             }
-            Finish::TrainingHolderBusy => {
-                return Err("training holder case already finished".into());
+            Finish::HolderBusy(_) => {
+                return Err("holder case already finished".into());
             }
             Finish::TrainingRefused => {
                 let principal = (session, original_fence.character_lease_generation);

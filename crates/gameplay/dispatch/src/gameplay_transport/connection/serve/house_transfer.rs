@@ -340,7 +340,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             let mut permit = if limited {
                 None
             } else {
-                authority.enter_input(admitted.game_session_id).await
+                super::command::enter_command_input(authority, admitted, command).await?
             };
             let guard_deferred = permit.is_some()
                 && !super::command::guards(authority, &mut admitted, command).await?;
