@@ -263,7 +263,8 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -503,7 +504,8 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         }
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
