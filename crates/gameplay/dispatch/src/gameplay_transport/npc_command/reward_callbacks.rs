@@ -351,7 +351,13 @@ pub(super) fn prepare(
                 let mut selected = matching_stage.clone().filter(|c| {
                     (c.quest != TWENTY_MILES || meets_requirements(c))
                         && c.inventory.iter().all(|rule| {
-                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
+                            inventory.is_some_and(|facts| {
+                                rule.holds(if c.consumes_fish_stack() {
+                                    &facts.first_fish
+                                } else {
+                                    &facts.quantities
+                                })
+                            })
                         })
                 });
                 if let Some(callback) = selected.next() {

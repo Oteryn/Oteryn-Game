@@ -1,5 +1,7 @@
-//! Each nupi hands over one fish. The hundredth earns Jamjam.
-use super::{InventoryRequirement, ItemAmount, RewardCallback};
+//! Feed whole stacks until 99 fish have been credited, then offer one final fish.
+use super::{
+    InventoryRequirement, ItemAmount, RewardCallback, StateCondition, StateMutation, StateOperation,
+};
 
 const TROUT: &str = "oteryn:item.tibia.i7158";
 const PERCH: &str = "oteryn:item.tibia.i7159";
@@ -42,25 +44,45 @@ pub(super) fn feeding_rows(rows: &[RewardCallback]) -> Result<Vec<RewardCallback
         if item == PERCH {
             row.inventory.push(carried(TROUT, 0, 0));
         }
-        for fed in 0..i64::from(FIRST) {
-            let mut feeding = row.clone();
-            feeding.key = format!("oteryn:quest-reward/sinatuki/{species}-fish-{}", fed + 1);
-            let mut total = feeding.storage[0].clone();
-            total.track = CONTRIBUTION.into();
-            total.minimum = fed;
-            total.maximum = fed;
-            total.set = fed + 1;
-            feeding.storage[0].maximum = 0;
-            feeding.storage[0].set = i64::from(total.set == i64::from(FIRST));
-            feeding.storage.push(total);
-            feeding.give = None;
-            feeding.achievement = None;
-            feeding.completes = false;
-            feeding.reply = vec![
-                "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
-                    .into(),
-            ];
-            result.push(feeding);
+        for quantity in 1..=100_u16 {
+            let threshold = i64::from(FIRST.saturating_sub(quantity));
+            for finish in [false, true] {
+                if !finish && threshold == 0 {
+                    continue;
+                }
+                let mut feeding = row.clone();
+                let phase = if finish { "ready" } else { "feed" };
+                feeding.key =
+                    format!("oteryn:quest-reward/sinatuki/stack-{species}-{quantity}-{phase}");
+                feeding.take[0].count = quantity;
+                feeding.inventory = vec![carried(item, quantity, quantity.into())];
+                feeding.storage[0].maximum = 0;
+                feeding.storage[0].set = i64::from(finish);
+                if finish {
+                    let mut total = feeding.storage[0].clone();
+                    total.track = CONTRIBUTION.into();
+                    total.minimum = threshold;
+                    total.maximum = i64::from(FIRST) - 1;
+                    total.set = i64::from(FIRST);
+                    feeding.storage.push(total);
+                } else {
+                    feeding.state_ops.push(StateOperation {
+                        track: CONTRIBUTION.into(),
+                        from: StateCondition::Between {
+                            minimum: 0,
+                            maximum: threshold - 1,
+                        },
+                        effect: StateMutation::Add {
+                            value: quantity.into(),
+                        },
+                    });
+                }
+                feeding.give = None;
+                feeding.achievement = None;
+                feeding.completes = false;
+                feeding.reply = vec!["Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>".into()];
+                result.push(feeding);
+            }
         }
         row.storage[0].minimum = 1;
         row.storage[0].maximum = 1;

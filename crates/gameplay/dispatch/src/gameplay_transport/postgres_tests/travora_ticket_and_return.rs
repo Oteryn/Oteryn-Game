@@ -348,7 +348,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
-    assert!(offer.iter().any(|line| line.contains("0 gold")));
+    assert!(offer.iter().any(|line| line.contains("for 0 gold")));
     talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
     let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT balance FROM game_account_bank_balances),

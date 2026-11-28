@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct RewardFacts {
     pub quantities: BTreeMap<String, u64>,
+    pub first_fish: BTreeMap<String, u64>,
     pub level: u32,
 }
 
@@ -19,6 +20,7 @@ pub(super) async fn read(
         .ok()?;
     let mut seen = BTreeSet::new();
     let mut quantities = BTreeMap::<String, u64>::new();
+    let mut first_fish = None;
     for item in inventory
         .equipment
         .iter()
@@ -32,6 +34,18 @@ pub(super) async fn read(
         .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
     {
         if seen.insert(item.item_instance_id) && item.definition.family == "Item" {
+            if oteryn_gameplay_quests::quest::reward_callbacks::is_sinatuki_fish(
+                &item.definition.production_key,
+            ) && first_fish
+                .as_ref()
+                .is_none_or(|(id, _, _)| item.item_instance_id < *id)
+            {
+                first_fish = Some((
+                    item.item_instance_id,
+                    item.definition.production_key.clone(),
+                    u64::from(item.quantity),
+                ));
+            }
             let quantity = quantities
                 .entry(item.definition.production_key.clone())
                 .or_default();
@@ -47,6 +61,10 @@ pub(super) async fn read(
         .ok()??;
     Some(RewardFacts {
         quantities,
+        first_fish: first_fish
+            .into_iter()
+            .map(|(_, key, qty)| (key, qty))
+            .collect(),
         level: progression.level,
     })
 }

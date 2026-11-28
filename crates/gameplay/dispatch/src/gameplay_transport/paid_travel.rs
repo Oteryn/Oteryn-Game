@@ -304,13 +304,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
                 };
             }
-            (
-                context,
-                entry.travel_routes.clone(),
-                fence,
-                previous,
-                source_confirmation,
-            )
+            let mut routes = entry.travel_routes.clone();
+            if context.2 == "oteryn:npc.captain_waverider" {
+                routes.retain(|route| {
+                    let cell = match route.route.key.as_str() {
+                        "travora" => (32346, 32859, -7),
+                        "travora_treasure_hunt_island" => (32043, 32931, -7),
+                        _ => return true,
+                    };
+                    npc_command::service_context::at_placement(
+                        &runtime,
+                        actor,
+                        session,
+                        intent.npc_actor,
+                        cell,
+                    )
+                });
+            }
+            (context, routes, fence, previous, source_confirmation)
         };
         if previous.as_ref().is_some_and(|prompt| {
             prompt.route.crystal_callback

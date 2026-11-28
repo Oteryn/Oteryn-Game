@@ -386,6 +386,9 @@ pub(super) async fn consume_reward_inputs(
         .map(|i| i.item.as_str())
         .collect();
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
+    if callback.consumes_fish_stack() {
+        keys.extend(["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"]);
+    }
     keys.sort_unstable();
     keys.dedup();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
@@ -428,7 +431,12 @@ pub(super) async fn consume_reward_inputs(
             return Ok(false);
         }
     }
-    if !reward_inventory::holds(&rows, &callback.inventory)? {
+    let inventory_rows = if callback.consumes_fish_stack() {
+        &rows[..rows.len().min(1)]
+    } else {
+        &rows
+    };
+    if !reward_inventory::holds(inventory_rows, &callback.inventory)? {
         return Ok(false);
     }
     if callback.exact_take {

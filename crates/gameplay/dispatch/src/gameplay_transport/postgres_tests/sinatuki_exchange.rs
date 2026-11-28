@@ -209,11 +209,11 @@ fn scenario(name: &str, case: Case) -> TestResult {
             add_item(&h, 201, TROUT, 100, 1).await?;
             talk(&mut owner, &mut admitted, npc, text, reply).await?;
             let traded = matches!(case, Case::KeywordPrefix);
-            assert_inventory(&h, if traded { [99, 0, 0] } else { [100, 0, 0] }).await?;
+            assert_inventory(&h, if traded { [0, 0, 0] } else { [100, 0, 0] }).await?;
             assert_eq!(
                 quest_state(&h).await?,
                 if traded {
-                    (Some(0), false, 0)
+                    (Some(1), false, 0)
                 } else {
                     (None, false, 0)
                 }
@@ -233,32 +233,23 @@ fn scenario(name: &str, case: Case) -> TestResult {
             assert_inventory(&h, [0, 0, 0]).await?;
             assert_eq!(quest_state(&h).await?, (None, false, 0));
         }
-        let first_stack = if resume { 98 } else { 48 };
+        let first_stack = if resume { 98 } else { 49 };
         add_item(&h, 202, fish, first_stack, 2).await?;
         if !resume {
             add_item(&h, 206, PERCH, 50, 6).await?;
         }
-        for _ in 0..first_stack {
-            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
-        }
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
         assert_eq!(carried(&h, fish).await?, 0);
         assert_eq!(quest_state(&h).await?, (Some(0), false, 0));
         if !resume {
-            for _ in 0..50 {
-                talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
-            }
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
             assert_eq!(carried(&h, PERCH).await?, 0);
         }
-        add_item(&h, 203, fish, if resume { 2 } else { 1 }, 3).await?;
-        talk(
-            &mut owner,
-            &mut admitted,
-            npc,
-            if resume { "nupi please" } else { "nupi" },
-            Some(&[HAND_IN]),
-        )
-        .await?;
-        assert_inventory(&h, if resume { [0, 1, 0] } else { [0, 0, 0] }).await?;
+        if resume {
+            add_item(&h, 203, fish, 2, 3).await?;
+            talk(&mut owner, &mut admitted, npc, "nupi please", Some(&[HAND_IN])).await?;
+        }
+        assert_inventory(&h, [0, 0, 0]).await?;
         assert_eq!(quest_state(&h).await?, (Some(1), false, 0));
 
         if resume {
@@ -283,9 +274,7 @@ fn scenario(name: &str, case: Case) -> TestResult {
             owner.admit_quest_session(&admitted).await;
         }
 
-        if !resume {
-            add_item(&h, 207, PERCH, 1, 7).await?;
-        }
+        add_item(&h, 207, PERCH, 1, 7).await?;
         talk(&mut owner, &mut admitted, npc, "nupi", Some(&[REWARD])).await?;
         assert_inventory(&h, [0, 0, 5]).await?;
         assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
