@@ -12,7 +12,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     encode_world_spatial_entities_snapshot_with_fields,
 };
 
-fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
+fn replay_live(directory: &std::path::Path, stale_revision: bool) -> Result<(), BoxError> {
     use serde_json::Value;
     let expected: Value =
         serde_json::from_slice(&std::fs::read(directory.join("c17b-expected.json"))?)?;
@@ -112,17 +112,39 @@ fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
             .map_err(|error| format!("{error:?}"))?)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let duplicate = received
+    let original = received
         .iter()
         .rev()
         .find(|bytes| {
             decode_wire_envelope(bytes).is_ok_and(|frame| {
                 frame.message_type() == MessageType::StateDelta
                     && frame.server_sequence() <= last_sequence
+                    && (!stale_revision
+                        || decode_state_delta(frame.payload()).is_ok_and(|delta| {
+                            delta.domain_id == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+                        }))
             })
         })
-        .ok_or("missing original sequenced delta for duplicate test")?
-        .clone();
+        .ok_or("missing original C17b delta for negative replay")?;
+    let duplicate = if stale_revision {
+        // Only this negative injection changes the sequence. The payload and both
+        // visibility revisions are the original live delta.
+        let frame = decode_wire_envelope(original)?;
+        let delta = decode_state_delta(frame.payload())?;
+        encode_state_delta(
+            accepted.connection_generation,
+            last_sequence
+                .checked_add(1)
+                .ok_or("C17b replay sequence overflow")?,
+            delta.domain_id,
+            delta.base_revision,
+            delta.new_revision,
+            delta.delta_type,
+            delta.payload,
+        )?
+    } else {
+        original.clone()
+    };
     block_on(async move {
         let (client, server) = tokio::io::duplex(256 * 1024);
         let (mut input, mut output) = tokio::io::split(server);
@@ -189,10 +211,24 @@ fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
         duplicate_now
             .send(())
             .map_err(|_| "C17b duplicate frame sender closed")?;
-        assert!(matches!(
-            observer.service_liveness(Duration::from_secs(1)).await,
-            Err(SessionError::ServerSequenceMismatch { .. })
-        ));
+        let result = observer.service_liveness(Duration::from_secs(1)).await;
+        if stale_revision {
+            assert!(
+                matches!(
+                    result,
+                    Err(SessionError::StateRevisionMismatch {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        ..
+                    })
+                ),
+                "{result:?}"
+            );
+        } else {
+            assert!(
+                matches!(result, Err(SessionError::ServerSequenceMismatch { .. })),
+                "{result:?}"
+            );
+        }
         assert!(
             observer
                 .world_entities()
@@ -208,7 +244,9 @@ fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
 fn e2e_c17b_invisibility_keeps_player_visible_and_rejects_duplicate_frame() -> Result<(), BoxError>
 {
     if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        return replay_live(std::path::Path::new(&directory));
+        let directory = std::path::Path::new(&directory);
+        replay_live(directory, false)?;
+        return replay_live(directory, true);
     }
     block_on(async {
         let target = actor(EntityKind::Player, 9, 3, at(1, 0));

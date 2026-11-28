@@ -167,6 +167,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let started = tokio::time::Instant::now();
     let cooldown = caster.cast_spell(spell, SpellTarget::None, false).await?;
     let mut events = caster.take_events();
+    verify_no_rat_hit(&events, rat, cast.result_server_sequence)?;
     full_row_c17b::verify_recast(&cooldown, paid.value, paid.server_sequence, caster.actor_vitals().copied(), &events, started.elapsed())?;
     if caster.actor_vitals() != Some(&paid.value) || events.iter().any(|event| matches!(event,
         SessionEvent::ActorVitals(delta) if delta.server_sequence > paid.server_sequence)) {
@@ -175,6 +176,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let group_started = tokio::time::Instant::now();
     let group = caster.cast_spell(light, SpellTarget::None, false).await?;
     let group_events = caster.take_events();
+    verify_no_rat_hit(&group_events, rat, cast.result_server_sequence)?;
     full_row_c17b::verify_recast(&group, paid.value, cooldown.result_server_sequence, caster.actor_vitals().copied(), &group_events, group_started.elapsed())?;
     if caster.actor_vitals() != Some(&paid.value) || group_events.iter().any(|event| matches!(event,
         SessionEvent::ActorVitals(delta) if delta.server_sequence > cooldown.result_server_sequence)) {
@@ -186,6 +188,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let support = support_group_ordinal()?;
     loop {
         events.extend(caster.take_events());
+        verify_no_rat_hit(&events, rat, cast.result_server_sequence)?;
         if let Some(projection) = events.drain(..).find_map(|event| match event {
             SessionEvent::ActorCooldowns(delta) if delta.server_sequence > cast.result_server_sequence => Some(delta.value),
             _ => None,
@@ -204,6 +207,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let initial_received = Instant::now();
     let initial = initial.ok_or("C17b cast did not install Invisible")?;
     verify_timer("Invisible", u64::try_from(initial)?, 200_000, 195_000, cast_sent.elapsed())?;
+    verify_no_rat_hit(&caster.take_events(), rat, cast.result_server_sequence)?;
     full_row_c17b::require_rat_stops(&mut caster, rat).await?;
     capture
         .observe(observer.service_liveness(Duration::from_millis(100)))
@@ -217,7 +221,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let position = caster.world_spatial().actor_position;
     capture.observe(full_e2ef5::with_observer_liveness(
         &mut observer,
-        caster_capture.observe(full_row_c17b::wait_rat_combat_end(&mut caster)),
+        caster_capture.observe(wait_for_combat_end_without_rat_hits(&mut caster, rat, cast.result_server_sequence)),
     )).await?;
     verdict::Harness::global().progress("c17b-combat-ended");
     let before_sent = Instant::now();
@@ -226,6 +230,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         caster_capture.observe(full_row_c17b::invisibility_sample(&mut caster)),
     )).await?;
     let before_received = Instant::now();
+    verify_no_rat_hit(&caster.take_events(), rat, cast.result_server_sequence)?;
     let before = before.ok_or("C17b Invisible absent before logout")?;
     if before_sequence <= initial_sequence {
         return Err("C17b pre-logout condition sample did not advance sequence".into());
@@ -291,9 +296,13 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
             let vitals = caster.actor_vitals().ok_or("C17b logout vitals absent")?;
             let durable = (vitals.mana, vitals.soul);
+            if durable != (paid.value.mana, paid.value.soul) {
+                return Err(format!("C17b pre-logout mana/Soul differed from paid cast: expected={:?} actual={durable:?}", (paid.value.mana, paid.value.soul)).into());
+            }
             let logout_sent = Instant::now();
             let result = caster.session_mut().logout().await?;
             let logout_received = Instant::now();
+            verify_no_rat_hit(&caster.take_events(), rat, cast.result_server_sequence)?;
             require_mechanic_acceptance(result.status, "C17b first logout")?;
             if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
                 || result.result_server_sequence <= before_sequence {
@@ -301,9 +310,6 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
             }
             Ok((durable, logout_sent, logout_received, result.result_server_sequence))
         }))).await?;
-    if durable_vitals.0 >= vitals_before.mana {
-        return Err("C17b spent mana did not persist until logout".into());
-    }
     capture.observe(full_row_c17b::wait_visible(&mut observer, caster_ref, false)).await?;
     verdict::Harness::global().progress("c17b-logout-observed");
     // Keep the character definitely offline long enough to distinguish a
@@ -355,6 +361,39 @@ fn envelope(
 ) -> serde_json::Value {
     serde_json::json!({"command_id": command, "game_session_id": session,
         "payload": payload, "server_sequence": sequence, "status": status})
+}
+
+fn verify_no_rat_hit(events: &[SessionEvent], rat: oteryn_dev_client::EntityRef, after: u64) -> TestResult {
+    use oteryn_protocol_oteryn::analyser::{AnalyserDamageSource, AnalyserFact};
+    for event in events {
+        if let SessionEvent::AnalyserAttributedFacts(delta) = event
+            && delta.server_sequence > after
+            && delta.value.iter().any(|event| event.attacker == Some(rat) &&
+                matches!(event.fact, AnalyserFact::DamageInput { source: AnalyserDamageSource::Creature(_), .. }))
+        {
+            return Err(format!("C17b exact Rat damaged the invisible caster at sequence={}", delta.server_sequence).into());
+        }
+    }
+    Ok(())
+}
+
+async fn wait_for_combat_end_without_rat_hits(
+    caster: &mut DevClientSession,
+    rat: oteryn_dev_client::EntityRef,
+    after: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(75);
+    loop {
+        verify_no_rat_hit(&caster.take_events(), rat, after)?;
+        let combat = caster.session_mut().combat_state().ok_or("C17b combat state absent before logout")?;
+        if !combat.in_fight {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C17b combat protection did not clear before first logout".into());
+        }
+        caster.service_liveness(std::time::Duration::from_millis(100)).await?;
+    }
 }
 
 fn support_group_ordinal() -> TestResult<u32> {
