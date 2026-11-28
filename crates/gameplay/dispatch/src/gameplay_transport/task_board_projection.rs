@@ -7,30 +7,8 @@ use oteryn_protocol_oteryn::task_board::{self as wire, full as full_wire};
 
 pub(super) fn legacy(commit: &TaskBoardCommit) -> Option<wire::TaskBoardReply> {
     let balances = &commit.view.balances;
-    let data = &commit.view.data;
-    let bounty = &data.bounty;
-    let bounty_tasks = match &bounty.active {
-        Some(active) => std::slice::from_ref(active),
-        None => &bounty.offers,
-    };
-    // This compact reply has room for five named hunts. Prefer the current
-    // bounty or its offers, then fill the remaining slots from the active week.
-    let weekly_tasks = data
-        .weekly
-        .iter()
-        .filter(|board| !board.finished)
-        .flat_map(|board| &board.kills);
-    let tasks = bounty_tasks
-        .iter()
-        .map(|task| (&task.race, task.required))
-        .chain(weekly_tasks.map(|task| (&task.race, task.required)))
-        .take(wire::MAX_TASKS)
-        .map(|(race, required)| wire::TaskBoardTask {
-            race: race.clone(),
-            required: i64::from(required),
-            claimed_at_unix: 0,
-        })
-        .collect();
+    // Legacy replies retain the balance and upgrade view of the retired board.
+    // Generated hunts are available through the full reply.
     Some(wire::TaskBoardReply {
         refused: commit.refusal.is_some(),
         selected: 0,
@@ -45,7 +23,7 @@ pub(super) fn legacy(commit: &TaskBoardCommit) -> Option<wire::TaskBoardReply> {
             task_board::talisman_upgrade_cost_for_path(path, balances.talisman_levels[path])
                 .unwrap_or(0)
         }),
-        tasks,
+        tasks: Vec::new(),
     })
 }
 
