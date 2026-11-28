@@ -1,4 +1,5 @@
-//! M07 client replay coverage.
+//! Synthetic reducer regression tests for the M07 spatial delta.
+//! The live row replays its own wire frames inside the qualification harness.
 //!
 //! The production consumer is `Session::apply_state_delta` in
 //! `crates/session/src/domain_dispatch.rs`; its capability-6 branch calls
@@ -8,7 +9,7 @@
 use super::*;
 
 #[test]
-fn e2e_m07_rope_ascent_spatial_replay() -> Result<(), BoxError> {
+fn m07_rope_ascent_spatial_reducer_regression() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(replay)?
@@ -19,31 +20,21 @@ fn e2e_m07_rope_ascent_spatial_replay() -> Result<(), BoxError> {
 fn replay() -> Result<(), BoxError> {
     block_on(async {
         use oteryn_protocol_oteryn::world_spatial_entities::*;
-        let (payload, metadata) = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("m07-spatial.bin"))?,
-                std::fs::read_to_string(path.join("m07-expected.txt"))?,
-            )
-        } else {
-            let after = ActorPosition {
-                x: 11,
-                y: 19,
-                floor: 7,
-            };
-            let delta = WorldSpatialEntitiesDelta {
-                content_generation: CONTENT_GENERATION,
-                actor_position: after,
-                enter: vec![],
-                update: vec![own(after)],
-                leave: vec![],
-            };
-            (
-                encode_world_spatial_entities_delta_with_item_handles(&delta)
-                    .map_err(|error| format!("{error:?}"))?,
-                "11 19 8\n11 19 7\n42 5 6 41\n".into(),
-            )
+        let after = ActorPosition {
+            x: 11,
+            y: 19,
+            floor: 7,
         };
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: after,
+            enter: vec![],
+            update: vec![own(after)],
+            leave: vec![],
+        };
+        let payload = encode_world_spatial_entities_delta_with_item_handles(&delta)
+            .map_err(|error| format!("{error:?}"))?;
+        let metadata = "11 19 8\n11 19 7\n42 5 6 41\n";
         let values = metadata
             .split_whitespace()
             .map(str::parse::<i64>)
@@ -95,6 +86,36 @@ fn replay() -> Result<(), BoxError> {
             DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
             &payload,
         )?;
+        let use_result = world_object::encode_use_result(UseDisposition::Committed)
+            .map_err(|error| format!("{error:?}"))?;
+        let receipt = encode_command_result(1, 41, 7, CommandStatus::Accepted, &use_result)?;
+        let checkpoint = session.begin_spatial_capture()?;
+        session.record_spatial_capture(&receipt, &decode_wire_envelope(&receipt)?);
+        session.record_spatial_capture(&frame, &decode_wire_envelope(&frame)?);
+        let captured = session
+            .finish_spatial_capture()
+            .ok_or("M07 capture missing")?;
+        checkpoint
+            .verify_move(&captured, decoded.actor_position, 7, 41, 42)
+            .map_err(|error| error.to_string())?;
+        let checkpoint = session.begin_spatial_capture()?;
+        assert!(
+            checkpoint
+                .verify_move(&captured, decoded.actor_position, 8, 41, 42)
+                .is_err()
+        );
+        let checkpoint = session.begin_spatial_capture()?;
+        assert!(
+            checkpoint
+                .verify_move(
+                    &captured[..captured.len() - 1],
+                    decoded.actor_position,
+                    7,
+                    41,
+                    42
+                )
+                .is_err()
+        );
         session.apply_state_delta(
             u64::try_from(*sequence)?,
             decode_wire_envelope(&frame)?.payload(),

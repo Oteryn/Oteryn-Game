@@ -301,10 +301,10 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 33)
+        self.assertEqual(len(accounts), 34)
         self.assertIn("01934f10-7c00-7000-8000-000000000022", accounts)
-        self.assertEqual(accounts[-3:], [f"01934f10-7c00-7000-8000-{suffix:012x}"
-                                          for suffix in (0x23, 0x24, 0x25)])
+        self.assertEqual(accounts[-4:], [f"01934f10-7c00-7000-8000-{suffix:012x}"
+                                          for suffix in (0x23, 0x24, 0x25, 0x26)])
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 

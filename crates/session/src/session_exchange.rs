@@ -356,6 +356,7 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
+            self.record_spatial_capture(&frame, &envelope);
             if let Some(error) = self.terminal_protocol_error(&envelope)? {
                 return Err(error);
             }

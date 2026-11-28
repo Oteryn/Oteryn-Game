@@ -179,6 +179,7 @@ impl<S: SessionStream> Session<S> {
             stream,
             deadline,
             last_received: tokio::time::Instant::now(),
+            spatial_capture: None,
             connection_generation: session_generation,
             world_id: accepted_fields.world_id,
             activity_scope: accepted_fields.activity_scope,

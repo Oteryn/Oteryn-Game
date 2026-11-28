@@ -92,7 +92,9 @@ mod quest_log_transport;
 mod refusal_details;
 mod replacement_snapshot;
 mod session_access;
+mod spatial_replay;
 pub use oteryn_protocol_oteryn::refusal_detail;
+pub use spatial_replay::SpatialReplay;
 mod session_commands;
 mod session_exchange;
 mod session_transport;
@@ -369,6 +371,7 @@ pub struct Session<S> {
     stream: S,
     deadline: Duration,
     last_received: tokio::time::Instant,
+    spatial_capture: Option<Box<spatial_replay::SpatialCapture>>,
     connection_generation: u64,
     world_id: [u8; 16],
     activity_scope: Option<activity_scope::ActivityScopeSnapshot>,
