@@ -164,7 +164,7 @@ async fn mode_attack(client: &mut DevClientSession, world: &BundleWorld, modes: 
         }
         if target_damage && attributed.is_some() { break; }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=damage observed=target:{target_damage}/incoming:{attributed:?} left_hand_ref_and_count={:?} right_hand_ref_and_count={:?} need=both-damage-deltas", swing_hands[0], swing_hands[1]).into());
+            return Err(format!("step=damage observed=target:{target_damage}/incoming:{attributed:?} left_hand_ref_and_count={:?} right_hand_ref_and_count={:?} game_session_id={:?} server_sequence={} need=both-damage-deltas", swing_hands[0], swing_hands[1], client.join_snapshot().game_session_id, client.last_server_sequence()).into());
         }
     }
     let ending_hp = client.actor_vitals().ok_or("step=armor observed=post-vitals-absent")?.health;
