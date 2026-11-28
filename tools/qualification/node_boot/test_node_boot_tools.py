@@ -686,6 +686,8 @@ class CloudRunSummaryTests(unittest.TestCase):
     def test_client_replay_verdicts(self):
         cases = [
             (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
+            ('symlink', 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
+            ('hardlink', 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
             (True, 0, 0, 'PASS', 'FAIL cause=replay-not-run', True),
             (True, 1, 0, 'PASS', 'FAIL cause=replay-failed', True),
             (True, 0, 2, 'PASS', 'FAIL cause=replay-failed', True),
@@ -705,6 +707,15 @@ class CloudRunSummaryTests(unittest.TestCase):
                     if capture:
                         for name in ('s18-whisper.bin', 's18-expected.txt'):
                             (captures / name).write_bytes(b'fresh')
+                    if capture in ('symlink', 'hardlink'):
+                        stale = work / 'old-say.bin'
+                        stale.write_bytes(b'previous run')
+                        staged = captures / 's18-say.bin'
+                        staged.unlink()
+                        if capture == 'symlink':
+                            staged.symlink_to(stale)
+                        else:
+                            staged.hardlink_to(stale)
                     log = work / 'node.log'
                     kind = 'e2e_capture' if server == 'CAPTURED' else 'e2e_all'
                     log.write_text(

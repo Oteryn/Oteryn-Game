@@ -4,6 +4,7 @@
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 
@@ -120,8 +121,15 @@ def replay_targets():
 def replay_cause(row, package, test, names, captures, server, log):
     # Some replays construct filenames from a prefix. Those replays check the
     # individual reads themselves, but still need at least one row-owned file.
-    files = {path.name for path in captures.glob(f"{row.lower()}[-_.]*")
-             if path.is_file() and path.stat().st_size}
+    if captures is None or captures.is_symlink():
+        return "capture-missing"
+    files = set()
+    for path in captures.glob(f"{row.lower()}[-_.]*"):
+        metadata = path.lstat()
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            return "capture-missing"
+        if metadata.st_size:
+            files.add(path.name)
     if not files or not names <= files:
         return "capture-missing"
     if not package or not server:
@@ -169,7 +177,8 @@ def main(log, batch, validate=False):
     rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
     if not rows:
         return 0
-    captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
+    capture_dir = os.environ.get("E2E_ALL_CAPTURE_DIR")
+    captures = Path(capture_dir) if capture_dir else None
     targets = replay_targets()
     failed = False
     for scenario in rows:
