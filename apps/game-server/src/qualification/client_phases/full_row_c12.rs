@@ -2611,6 +2611,33 @@ fn c12_harmony_rejects_an_overlapping_wrong_roll() {
     assert!(!exact_harmony_draw(23, 29, 3, 2120, 26, 53));
 }
 
+async fn unequip_fists(client: &mut DevClientSession, definition: NonZeroU32) -> TestResult {
+    let equipped = client
+        .inventory()
+        .and_then(|i| {
+            i.equipment.iter().find(|e| {
+                e.slot == items::EquipmentSlot::RightHand
+                    && e.item.item_definition_ref == definition
+            })
+        })
+        .map(|e| e.item.handle)
+        .ok_or("right-hand item absent before unequip")?;
+    let moved = client
+        .move_item(&items::ItemMoveIntent {
+            source: equipped,
+            destination: items::ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if moved.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("unequip ITEM_MOVE reply={moved:?}").into());
+    }
+    wait_inventory(client, "unequip", |c| {
+        !equipped_right(c, definition) && carried_count(c, definition) == 1
+    })
+    .await?;
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let portals = guild_portals(&read_json("content/quests/world-callbacks.json")?)?;
     let definition = item_ref()?;
@@ -2669,7 +2696,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let offset = std::fs::metadata(&use_log)?.len();
     select_fists_damage_perks(&mut client, clients, definition).await?;
     require_no_use_holder_wait(&use_log, offset, "catalyst_")?;
-    prove_authored_hunt(&mut client, world, &metadata.spawns, 0, true).await?;
+    let baseline_weapon = weapon(&client)?;
+    if baseline_weapon == Some(definition) {
+        return Err("need=augment-off-baseline;item-50271-already-equipped".into());
+    }
+    equip_right(&mut client, definition).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, AUGMENT_BPS, true).await?;
+    unequip_fists(&mut client, definition).await?;
+    if let Some(baseline_weapon) = baseline_weapon {
+        equip_right(&mut client, baseline_weapon).await?;
+    }
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
@@ -2677,10 +2713,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let augment = content_augment()?;
     let hunt = prepare_fixture_hunt(&mut client, world).await?;
 
-    let baseline_weapon = weapon(&client)?;
-    if baseline_weapon == Some(definition) {
-        return Err("need=augment-off-baseline;item-50271-already-equipped".into());
-    }
     let baseline =
         verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index, 0))
             .await
@@ -2696,29 +2728,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let augmented = samples(&hunt, &mut client, spell_index, augment).await?;
     row.record_cast("augmented-cast", &augmented, weapon(&client)?);
 
-    let equipped = client
-        .inventory()
-        .and_then(|i| {
-            i.equipment.iter().find(|e| {
-                e.slot == items::EquipmentSlot::RightHand
-                    && e.item.item_definition_ref == definition
-            })
-        })
-        .map(|e| e.item.handle)
-        .ok_or("right-hand item absent before unequip")?;
-    let moved = client
-        .move_item(&items::ItemMoveIntent {
-            source: equipped,
-            destination: items::ItemMoveDestination::MainBackpack,
-        })
-        .await?;
-    if moved.outcome != items::ItemMoveOutcome::Moved {
-        return Err(format!("unequip ITEM_MOVE reply={moved:?}").into());
-    }
-    wait_inventory(&mut client, "unequip", |c| {
-        !equipped_right(c, definition) && carried_count(c, definition) == 1
-    })
-    .await?;
+    unequip_fists(&mut client, definition).await?;
     row.pass("unequip", client.last_server_sequence());
 
     if let Some(baseline_weapon) = baseline_weapon {
