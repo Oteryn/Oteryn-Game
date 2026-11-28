@@ -198,6 +198,12 @@ fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
+# Published World boot also loads the complete map and realizes its authored
+# actors after content activation, before publishing listener readiness.
+NODE_READINESS_WAIT_SECONDS=60
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_WORLD_PROFILE" == published ]]; then
+  NODE_READINESS_WAIT_SECONDS=600
+fi
 NODE_GAMEPLAY_ENV=()
 NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -925,8 +931,20 @@ launch_node() { # PID variable, config, log
   printf -v "$1" '%s' "$!"
 }
 start_node() { launch_node NODE_PID "$BASE/node/node.toml" "$node_log"; }
+poll_node_event() { # log pid pattern seconds
+  local log="$1" pid="$2" pattern="$3" deadline=$((SECONDS + $4))
+  while :; do
+    grep -q "$pattern" "$log" && return 0
+    if ! kill -0 "$pid" 2>/dev/null || (( SECONDS >= deadline )); then
+      return 1
+    fi
+    sleep 1
+  done
+}
 await_log() { # pattern seconds
-  for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
+  poll_node_event "$node_log" "$NODE_PID" "$1" "$2" && return 0
+  echo "--- last node events while waiting for $1"
+  tail -n 12 "$node_log" 2>/dev/null || true
   fail "missing node event: $1"
 }
 
@@ -1398,7 +1416,7 @@ node_complete_assignment() {
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1693,7 +1711,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1727,7 +1745,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
 pvp_ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
 pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
 pvp_await_log() { # pattern seconds
-  for _ in $(seq 1 "$2"); do grep -q "$1" "$WORK/pvp-node.log" && return 0; sleep 1; done
+  poll_node_event "$WORK/pvp-node.log" "$PVP_NODE_PID" "$1" "$2" && return 0
   pvp_fail "missing PvP node event: $1"
 }
 
@@ -1788,7 +1806,7 @@ SQL
   pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  pvp_await_log "event=readiness .*ready=true" 60
+  pvp_await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   local bound_address
   bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
   if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then

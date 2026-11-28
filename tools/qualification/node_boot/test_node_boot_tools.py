@@ -315,6 +315,21 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_node_event_poll_checks_the_log_and_process(self):
+        poll = section('poll_node_event() {', '# Every stage')
+        with tempfile.TemporaryDirectory() as work:
+            result = bash(poll + r"""
+set -e
+: > node.log
+(sleep 0.1; echo 'event=readiness ready=true' >> node.log; sleep 2) &
+pid=$!
+poll_node_event node.log "$pid" 'event=readiness ready=true' 3
+! poll_node_event node.log "$pid" 'unseen' 0
+wait "$pid"
+! poll_node_event node.log "$pid" 'unseen' 60
+""", cwd=work)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_published_profile_requires_the_checked_in_digest(self):
         stage = section('  published_pin=', '  WORLD_DIGEST=')
         setup = """set -Eeuo pipefail
