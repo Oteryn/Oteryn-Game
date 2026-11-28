@@ -146,23 +146,15 @@ pub(super) async fn prepare_owned_house(clients: &SeamClients<'_>) -> TestResult
     Ok(())
 }
 
-async fn catalogue(
-    client: &mut DevClientSession,
-    panel: &mut panel_ui::Panel,
-) -> TestResult<Option<String>> {
-    for town in TOWNS {
-        panel.town = format!("oteryn:content.area.city.{town}");
-        let reply = send(client, panel, None, false).await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(
-                format!("step=query town={town} observed=status:{:?}", reply.status).into(),
-            );
-        }
-        if !panel.page.rows.is_empty() {
-            return Ok(Some(panel.town.clone()));
-        }
+async fn catalogue(client: &mut DevClientSession, panel: &mut panel_ui::Panel) -> TestResult {
+    let house = authored_house()?;
+    let town = house["town"]["key"].as_str().ok_or("house fixture town")?;
+    panel.town = town.into();
+    let reply = send(client, panel, None, false).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=query town={town} observed=status:{:?}", reply.status).into());
     }
-    Ok(None)
+    Ok(())
 }
 
 const AUCTION: &str = "01934f10-7c04-7021-805b-3b1122334491";
@@ -273,7 +265,9 @@ pub(super) async fn prepare_owned_house_live(
         }
         client = prepared;
     }
-    evidence(&format!("G01_CHECK step=served-ownership status=PASS house={HOUSE}"));
+    evidence(&format!(
+        "G01_CHECK step=served-ownership status=PASS house={HOUSE}"
+    ));
     Ok(client)
 }
 
