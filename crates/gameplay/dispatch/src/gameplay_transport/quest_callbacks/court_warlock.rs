@@ -149,13 +149,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if pending.is_some() {
                 return UseDisposition::Rejected;
             }
+            let mut callback = callback.clone();
+            if let Some(encounter) = &mut callback.effects.encounter {
+                encounter.players.retain(|pad| {
+                    staged
+                        .players
+                        .iter()
+                        .any(|(_, _, at)| at.position() == local(pad.from))
+                });
+            }
             *pending = Some(PendingSourceBoss {
                 admission: admission.clone(),
                 staged,
                 projection: Some(lever_projection),
                 actor,
                 session,
-                callback: callback.clone(),
+                callback,
                 key,
                 revision,
                 after,

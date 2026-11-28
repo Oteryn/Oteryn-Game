@@ -144,21 +144,22 @@ pub(super) fn journal(name: &str, source_track: &str) -> Option<QuestLogMission>
         .iter()
         .find(|task| task.source_track == source_track)?;
     let mut stages = BTreeMap::from([(1, hunt_text(task))]);
+    let text = |line: &str| JournalText::Text(line.into());
     let end_value = match task.phase {
         LUGRI_PHASE => {
             let repeat = TASKS.iter().find(|task| task.phase == LUGRI_REPEAT_PHASE)?;
-            stages.insert(2, JournalText::Text("If you dare, you can try finding and fighting Necropharus in his Halls of Sacrifice, deep under Drefia. Note that this will be the only time you're allowed to enter his room, so be well prepared.".into()));
+            stages.insert(2, text("If you dare, you can try finding and fighting Necropharus in his Halls of Sacrifice, deep under Drefia. Note that this will be the only time you're allowed to enter his room, so be well prepared."));
             stages.insert(
                 3,
-                JournalText::Text("You faced Necropharus. Go back to Lugri if you like.".into()),
+                text("You faced Necropharus. Go back to Lugri if you like."),
             );
             stages.insert(4, hunt_text(repeat));
-            stages.insert(5, JournalText::Text("You've finished this task - for now. If you want to kill the different necromancers and priestesses again for an experience and money bonus, talk to Lugri about this task.".into()));
+            stages.insert(5, text("You've finished this task - for now. If you want to kill the different necromancers and priestesses again for an experience and money bonus, talk to Lugri about this task."));
             5
         }
         BUDRIK_PHASE => {
-            stages.insert(2, JournalText::Text("Budrik found the hideout of The Horned Fox! You have a single chance of bringing him down. Go for it.".into()));
-            stages.insert(3, JournalText::Text("You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind.".into()));
+            stages.insert(2, text("Budrik found the hideout of The Horned Fox! You have a single chance of bringing him down. Go for it."));
+            stages.insert(3, text("You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind."));
             3
         }
         _ => {
@@ -199,15 +200,15 @@ pub(crate) fn journal_value(
     value: i64,
     facts: &(impl crate::quest::log::QuestLogFacts + ?Sized),
 ) -> i64 {
-    match (phase, value) {
-        (LUGRI_PHASE, 3) if facts.track_value(LUGRI_REPEAT_PHASE) == Some(1) => 4,
-        (LUGRI_PHASE, 3)
-            if facts
-                .track_value("oteryn:quest-progress/hunting-tasks/necromancers-repeat/count")
-                == Some(1000) =>
-        {
-            5
+    if phase == LUGRI_PHASE && value == 3 {
+        if facts.track_value(LUGRI_REPEAT_PHASE) == Some(1) {
+            return 4;
         }
-        _ => value,
+        if facts.track_value("oteryn:quest-progress/hunting-tasks/necromancers-repeat/count")
+            == Some(1000)
+        {
+            return 5;
+        }
     }
+    value
 }

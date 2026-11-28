@@ -20,9 +20,10 @@ use std::time::Duration;
 
 pub(super) async fn with_unrelated_admission<T>(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    position: crate::foundation::MovementLocalPosition,
     delivery: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
-    use crate::foundation::{GameSessionId, MovementFacing, MovementLocalPosition};
+    use crate::foundation::{GameSessionId, MovementFacing};
     use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CHARGE;
     let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
     let delivery = PRE_SOURCE_BOSS_CHARGE.scope(barrier.clone(), delivery);
@@ -36,7 +37,7 @@ pub(super) async fn with_unrelated_admission<T>(
         let session = GameSessionId::decode(&id(237)).map_err(debug)?;
         let slot = runtime.reserve_fresh_session(session).map_err(debug)?;
         let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
-        runtime.initialize_pinned_test_position(observer, MovementLocalPosition { x: 80, y: 80, floor: 7 }).map_err(debug)?;
+        runtime.initialize_pinned_test_position(observer, position).map_err(debug)?;
         let before = runtime.read_actor_position(observer).map_err(debug)?;
         let turned = runtime.borrow_movement_position().commit_turn(before, MovementFacing::East).map_err(debug)?;
         (observer, turned)

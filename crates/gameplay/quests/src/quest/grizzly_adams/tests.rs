@@ -741,6 +741,10 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         };
     let reports = crate::quest::reward_callbacks::offered_for(catalogue)?;
     let entries = crate::quest::world_callbacks::load()?;
+    state.insert(
+        "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count".into(),
+        0,
+    );
     for (task, directions, after_entry, done) in [
         (
             "necromancers",
@@ -833,6 +837,12 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         "necromancers",
         "Hunted 1/1000. Report to Lugri after the hunt.",
         false,
+    )?;
+    check_mission(
+        &state,
+        "minotaurs",
+        "You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind.",
+        true,
     )?;
     let report = reports
         .iter()
