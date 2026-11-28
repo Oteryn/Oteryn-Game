@@ -96,6 +96,12 @@ fn cwarlock_successor_keeps_paid_cooldown_after_publication_postgres() -> TestRe
     scenario(admin, 9)
 }
 
+#[test]
+fn cwarlock_paid_wire_use_recovers_with_spare_pad_occupied() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    scenario(admin, 10)
+}
+
 fn scenario(_admin: String, mode: u8) -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("cwarlock", move || {
@@ -103,7 +109,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             reset();
             let h = Harness::create_with_admission_seed(admin, "cwarlock", false, false).await?;
             // Keep the independent native source registered for genuine peer bootstrap.
-            let _source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            let recovery_source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let fresh = prepare_current_session(&h).await?;
             let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
                 .into_iter()
@@ -186,6 +192,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                 .await
                 .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
+            if mode == 10 { owner.evidence = &recovery_source.evidence; }
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
@@ -347,7 +354,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     .map_err(debug)?;
             }
             let handoff = matches!(mode, 8 | 9);
-            let mut peer = if mode == 5 || handoff {
+            let mut peer = if matches!(mode, 5 | 10) || handoff {
                 Some(
                     Box::pin(prepare_peer(
                         &h,
@@ -365,6 +372,19 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                 None
             };
             use std::sync::atomic::Ordering;
+            if mode == 10 {
+                let peer = peer.as_ref().ok_or("paid peer")?;
+                Box::pin(super::source_boss_handoff_fixtures::recover_paid_wire_use(
+                    &h, &owner, admitted, (peer.runtime_actor.ok_or("peer actor")?, peer.game_session_id),
+                    placement, MovementLocalPosition { x: 33842, y: 32144, floor: 3 },
+                    MovementLocalPosition { x: 33838, y: 32141, floor: 2 },
+                    crate::durability::boss_encounter::SourceBossLever::CourtWarlock,
+                )).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let interrupted = mode == 8;
             if interrupted {
                 owner.states.quest_callbacks.interrupt_source_boss_before_projection
@@ -373,7 +393,9 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             let before = owner.owner_now().get();
             let lever = use_lever(&owner, &admitted, &placement, 0, 4);
             let outcome = if mode == 5 {
-                super::source_boss_handoff_fixtures::with_unrelated_admission(&owner, lever).await?
+                super::source_boss_handoff_fixtures::with_admission_at(
+                    &owner, MovementLocalPosition { x: 33842, y: 32144, floor: 3 }, lever,
+                ).await?
             } else {
                 lever.await
             };

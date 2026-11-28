@@ -22,7 +22,15 @@ pub(super) async fn with_unrelated_admission<T>(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     delivery: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
-    use crate::foundation::{GameSessionId, MovementFacing, MovementLocalPosition};
+    with_admission_at(owner, crate::foundation::MovementLocalPosition { x: 80, y: 80, floor: 7 }, delivery).await
+}
+
+pub(super) async fn with_admission_at<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    spare_pad: crate::foundation::MovementLocalPosition,
+    delivery: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    use crate::foundation::{GameSessionId, MovementFacing};
     use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CHARGE;
     let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
     let delivery = PRE_SOURCE_BOSS_CHARGE.scope(barrier.clone(), delivery);
@@ -36,7 +44,7 @@ pub(super) async fn with_unrelated_admission<T>(
         let session = GameSessionId::decode(&id(237)).map_err(debug)?;
         let slot = runtime.reserve_fresh_session(session).map_err(debug)?;
         let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
-        runtime.initialize_pinned_test_position(observer, MovementLocalPosition { x: 80, y: 80, floor: 7 }).map_err(debug)?;
+        runtime.initialize_pinned_test_position(observer, spare_pad).map_err(debug)?;
         let before = runtime.read_actor_position(observer).map_err(debug)?;
         let turned = runtime.borrow_movement_position().commit_turn(before, MovementFacing::East).map_err(debug)?;
         (observer, turned)
@@ -45,6 +53,145 @@ pub(super) async fn with_unrelated_admission<T>(
     let result = delivery.await;
     assert_eq!(owner.runtime.lock().await.read_actor_position(observer), Ok(turned));
     Ok(result)
+}
+
+pub(super) async fn recover_paid_wire_use(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: super::AdmittedSession,
+    peer: (
+        crate::foundation::ExactActorRef,
+        crate::foundation::GameSessionId,
+    ),
+    placement: Vec<u8>,
+    spare_pad: crate::foundation::MovementLocalPosition,
+    destination: crate::foundation::MovementLocalPosition,
+    lever: SourceBossLever,
+) -> TestResult {
+    use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
+    use crate::gameplay_transport::connection::{
+        ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority, ResumeAttempt,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
+        encode_use_intent,
+    };
+
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("lever actor")?;
+    let command = admitted.continuity.next_command_id;
+    let payload = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    })
+    .map_err(debug)?;
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_source_boss_before_projection
+        .store(true, std::sync::atomic::Ordering::Release);
+    let after =
+        super::event_object_uncertainty::exchange_uncertain(owner, admitted, &payload).await?;
+    assert!(owner.source_boss_use_unresolved(session));
+    let cooldowns = active_cooldowns(h, lever).await?;
+    assert_eq!(cooldowns.len(), 2);
+    let observer = {
+        let mut runtime = owner.runtime.lock().await;
+        let spare = GameSessionId::decode(&id(237)).map_err(debug)?;
+        let slot = runtime.reserve_fresh_session(spare).map_err(debug)?;
+        let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(observer, spare_pad)
+            .map_err(debug)?;
+        observer
+    };
+
+    super::boss_encounter_fixtures::maintain_ready(owner).await?;
+    let mut holder = owner.root.try_acquire_ready().map_err(debug)?;
+    let input = owner.enter_input(peer.1);
+    tokio::pin!(input);
+    tokio::select! {
+        biased;
+        _ = &mut input => return Err("peer input finished while the receipt holder was busy".into()),
+        () = tokio::task::yield_now() => {}
+    }
+    holder
+        .return_to_pool_observed_until(
+            std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+        )
+        .await;
+    drop(
+        input
+            .await
+            .ok_or("peer input rejected after holder returned")?,
+    );
+    assert!(!owner.has_pending_paid_quest_callback(peer.1));
+    assert!(!owner.source_boss_use_unresolved(session));
+    assert_eq!(
+        owner.lose_control(after, Duration::ZERO, None).await,
+        ControlLossResult::Recorded
+    );
+    let token = super::house_transfer_fixtures::RecoverySource::token(93)?;
+    let mut resumed = owner
+        .resume(ResumeAttempt {
+            game_session_id: session,
+            recovery_material: token.as_bytes(),
+            transport: AuthenticatedTransportRefV1::decode(&[93; 16]).map_err(debug)?,
+            last_applied_server_sequence: after.continuity.server_sequence,
+            supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+        })
+        .await
+        .map_err(debug)?;
+    let (status, result) = super::boss_encounter_fixtures::exchange_kind(
+        owner,
+        &mut resumed,
+        command,
+        COMMAND_TYPE_USE_INTENT,
+        &payload,
+    )
+    .await?;
+    assert_eq!(
+        status,
+        oteryn_protocol_oteryn::CommandStatus::DuplicateReplay
+    );
+    assert_eq!(
+        decode_use_result(&result).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    assert_eq!(active_cooldowns(h, lever).await?, cooldowns);
+    assert_paid_receipt(h, &cooldowns[0].1.as_slice().try_into()?).await?;
+    let runtime = owner.runtime.lock().await;
+    for member in [actor, peer.0] {
+        assert_eq!(
+            runtime
+                .read_actor_position(member)
+                .map_err(debug)?
+                .position(),
+            destination
+        );
+    }
+    assert_eq!(
+        runtime
+            .read_actor_position(observer)
+            .map_err(debug)?
+            .position(),
+        spare_pad
+    );
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .active
+            .lock()
+            .map_err(|_| "phases")?
+            .len(),
+        1
+    );
+    Ok(())
 }
 
 pub(super) async fn assert_paid_handoff(

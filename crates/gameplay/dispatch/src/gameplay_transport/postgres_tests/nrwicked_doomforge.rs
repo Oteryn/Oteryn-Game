@@ -126,6 +126,12 @@ fn nrwicked_paid_projection_recovers_once_from_peer_input() -> TestResult {
     run_case(admin, "nrwicked_paid_resume", FORGE, Scenario::ResumePublication)
 }
 
+#[test]
+fn nrwicked_paid_wire_use_recovers_with_spare_pad_occupied() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_case(admin, "nrwicked_paid_wire", FORGE, Scenario::WireRecovery)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Portal,
@@ -136,6 +142,7 @@ enum Scenario {
     AdmissionAckLost,
     PaidBeforePublication,
     ResumePublication,
+    WireRecovery,
     PaidAfterPublication,
     StaleCharge,
 }
@@ -231,7 +238,7 @@ fn scenario(
                 crate::spell::SpellBook::new(vec![]).map_err(debug)?,
                 if encounter { 16 } else { 2 },
             )?;
-            if matches!(case, Scenario::FireDeadline | Scenario::ReconnectGrace) {
+            if matches!(case, Scenario::FireDeadline | Scenario::ReconnectGrace | Scenario::WireRecovery) {
                 deps.combat_room = Some(room.bundle_view(
                     cells.clone(),
                     pin.frame_binding_digest(),
@@ -243,7 +250,7 @@ fn scenario(
                     },
                 ).ok_or("qualified Doomforge AI bundle room")?);
             }
-            let recovery_source = if matches!(case, Scenario::ReconnectGrace) {
+            let recovery_source = if matches!(case, Scenario::ReconnectGrace | Scenario::WireRecovery) {
                 Some(super::house_transfer_fixtures::RecoverySource::start(&h).await?)
             } else {
                 None
@@ -562,6 +569,14 @@ async fn two_player_encounter(
     };
     use crate::durability::boss_encounter::SourceBossLever;
     let lever = SourceBossLever::Arbaziloth;
+    if matches!(case, Scenario::WireRecovery) {
+        admitted.item_fence = Some(fence.item_fence());
+        return Box::pin(super::source_boss_handoff_fixtures::recover_paid_wire_use(
+            h, owner, admitted, (other, other_session), lever_placement,
+            MovementLocalPosition { x: i32::from(STAGING.x), y: i32::from(STAGING.y) + 2, floor: 14 },
+            ARENA_ENTRY, lever,
+        )).await;
+    }
     if matches!(case, Scenario::AdmissionAckLost) {
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
     }
@@ -608,7 +623,9 @@ async fn two_player_encounter(
         barrier.1.notify_one();
         using_lever.await
     } else if matches!(case, Scenario::AdmissionAckLost) {
-        super::source_boss_handoff_fixtures::with_unrelated_admission(owner, use_lever).await?
+        super::source_boss_handoff_fixtures::with_admission_at(
+            owner, MovementLocalPosition { x: i32::from(STAGING.x), y: i32::from(STAGING.y) + 2, floor: 14 }, use_lever,
+        ).await?
     } else {
         use_lever.await
     };

@@ -18,6 +18,7 @@ pub(super) struct SourceBossUse<'a> {
 
 pub(super) struct PendingSourceBoss {
     admission: SourceBossReservation,
+    wire_command: Option<crate::foundation::CommandRef>,
     staged: super::encounter::ReservedSourceBoss,
     projection: Option<crate::map::facts::SourceBossLeverProjection>,
     actor: ExactActorRef,
@@ -136,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::StaleState;
         }
         let held = self
-            .stage_source_boss(&mut runtime, &mut states, actor, session, &source_use)
+            .stage_source_boss(&mut runtime, &mut states, actor, session, &source_use, None)
             .and_then(super::encounter::StagedSourceBoss::reserve);
         let staged = match held {
             Ok(held) => held,
@@ -151,6 +152,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             *pending = Some(PendingSourceBoss {
                 admission: admission.clone(),
+                wire_command: self
+                    .states
+                    .command_ingress
+                    .pending(command)
+                    .then_some(command),
                 staged,
                 projection: Some(lever_projection),
                 actor,
@@ -241,14 +247,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
     }
 
-    fn clear_source_boss(&self, id: [u8; 16]) {
+    pub(in crate::gameplay_transport) fn source_boss_use_unresolved(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        self.states
+            .quest_callbacks
+            .source_boss
+            .lock()
+            .map_or(true, |pending| {
+                pending.as_ref().is_some_and(|p| {
+                    p.wire_command
+                        .is_some_and(|cmd| cmd.game_session_id() == session)
+                })
+            })
+    }
+
+    fn clear_source_boss(&self, id: [u8; 16]) -> bool {
         if let Ok(mut pending) = self.states.quest_callbacks.source_boss.lock()
-            && pending
-                .as_ref()
-                .is_some_and(|entry| entry.admission.id == id)
+            && let Some(entry) = pending.as_ref().filter(|entry| entry.admission.id == id)
+            && entry.wire_command.is_none_or(|cmd| {
+                self.states
+                    .command_ingress
+                    .complete_item_use(cmd, UseDisposition::Rejected)
+                    .is_some()
+            })
         {
             *pending = None;
+            return true;
         }
+        false
     }
 
     pub(in crate::gameplay_transport) async fn reconcile_source_boss(
@@ -267,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         p.staged.players.iter().any(|player| player.1 == session)
                     })
                 })
-                .map(|p| p.admission.clone())
+                .map(|p| (p.admission.clone(), p.wire_command))
         };
         if admission().is_none() {
             return true;
@@ -275,21 +303,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let Some(admission) = admission() else {
+        let Some((admission, wire_command)) = admission() else {
             return true;
         };
-        match self
-            .source_boss_admission(&admission, SourceBossAdmission::Reconcile)
-            .await
-        {
+        // The active dispatcher must see its pending original before the owner sweep can settle it.
+        if wire_command.is_some_and(|command| self.states.command_ingress.pending(command)) {
+            return false;
+        }
+        let read_receipt =
+            || self.source_boss_admission(&admission, SourceBossAdmission::Reconcile);
+        let paid = if session.is_some() {
+            super::super::AdmissionRetryBudget::for_command(self.root)
+                .retry_durability("source_boss_admission_reconcile", read_receipt)
+                .await
+        } else {
+            read_receipt().await
+        };
+        match paid {
             Ok(true) => match self.bundle_map() {
                 Some(map) => self.publish_paid_source_boss(map, admission.id).await,
                 None => false,
             },
-            Ok(false) => {
-                self.clear_source_boss(admission.id);
-                true
-            }
+            Ok(false) => self.clear_source_boss(admission.id),
             Err(_) => false,
         }
     }
@@ -311,38 +346,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause: p.cause,
             lever: p.admission.lever,
         };
-        let published = p.staged.native.publish(&mut runtime, |runtime| {
-            if p.admission.party.iter().any(|fence| {
-                !p.staged.players.iter().any(|(actor, session, _)| {
-                    *session == fence.game_session_id
-                        && runtime
-                            .bound_attacker_lease(*actor, *session)
-                            .is_ok_and(|lease| {
-                                lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                                    && lease.generation() == fence.character_lease_generation
-                            })
-                })
-            }) {
-                return false;
-            }
-            let Ok(current) =
-                self.stage_source_boss(runtime, &mut states, p.actor, p.session, &source)
-            else {
-                return false;
-            };
-            if current.players != p.staged.players {
-                return false;
-            }
-            let Some(projection) = p.projection.take() else {
-                return false;
-            };
-            self.publish_source_boss(current, &mut states, map, projection);
-            true
-        });
-        if published {
+        let published = p.projection.is_none()
+            || p.staged.native.publish(&mut runtime, |runtime| {
+                if p.admission.party.iter().any(|fence| {
+                    !p.staged.players.iter().any(|(actor, session, _)| {
+                        *session == fence.game_session_id
+                            && runtime
+                                .bound_attacker_lease(*actor, *session)
+                                .is_ok_and(|lease| {
+                                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                        && lease.generation() == fence.character_lease_generation
+                                })
+                    })
+                }) {
+                    return false;
+                }
+                let Ok(current) = self.stage_source_boss(
+                    runtime,
+                    &mut states,
+                    p.actor,
+                    p.session,
+                    &source,
+                    Some(&p.staged.players),
+                ) else {
+                    return false;
+                };
+                if current.players != p.staged.players {
+                    return false;
+                }
+                let Some(projection) = p.projection.take() else {
+                    return false;
+                };
+                self.publish_source_boss(current, &mut states, map, projection);
+                true
+            });
+        if published
+            && p.wire_command.is_none_or(|cmd| {
+                self.states
+                    .command_ingress
+                    .complete_item_use(cmd, UseDisposition::Committed)
+                    .is_some()
+            })
+        {
             *pending = None;
+            return true;
         }
-        published
+        false
     }
 
     async fn source_boss_admission(

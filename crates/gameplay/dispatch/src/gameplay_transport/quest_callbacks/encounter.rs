@@ -133,6 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reservation,
             projection,
             None,
+            None,
         )
     }
 
@@ -143,6 +144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         source: &super::court_warlock::SourceBossUse<'_>,
+        paid_players: Option<&[(ExactActorRef, GameSessionId, MovementPositionSnapshot)]>,
     ) -> Result<StagedSourceBoss<'owner>, UseDisposition> {
         let mut staged = None;
         let disposition = self.quest_encounter(
@@ -160,6 +162,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             None,
             Some(&mut staged),
+            paid_players,
         );
         staged.ok_or(disposition)
     }
@@ -262,6 +265,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(reservation),
             None,
             Some(&mut staged),
+            None,
         );
         let Some(staged) = staged else {
             return disposition;
@@ -332,6 +336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(reservation),
                     None,
                     Some(&mut staged),
+                    None,
                 );
                 let Some(staged) = staged else { return false };
                 if staged.players != held.players
@@ -398,6 +403,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             projection,
             None,
+            None,
         )
     }
 
@@ -418,6 +424,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         projection: Option<&QuestCallbackProjection>,
         staged_source_boss: Option<&mut Option<StagedSourceBoss<'owner>>>,
+        paid_players: Option<&[(ExactActorRef, GameSessionId, MovementPositionSnapshot)]>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -487,9 +494,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut players = Vec::new();
         let mut proofs = Vec::new();
         for member in &encounter.players {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
+            let mut occupants = census.iter().filter(|(who, pos, session)| {
+                pos.position() == local(member.from)
+                    && paid_players.is_none_or(|party| {
+                        session.is_some_and(|session| party.contains(&(*who, session, *pos)))
+                    })
+            });
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Crystal party levers collect whoever stands on their staging tiles.
                 if encounter.phase.is_some() {
