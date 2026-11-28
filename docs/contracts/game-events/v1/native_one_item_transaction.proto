@@ -418,9 +418,10 @@ message OneItemDecayRetireV1 {
   OneItemStateV1 before = 1; // LIVE, quantity > 0
   OneItemStateV1 after = 2;  // RETIRED, quantity 0; same identity, World and definition
   // Exactly one before-location: the corpse's own live Ground (`ground`, the
-  // corpse's own step, admitted only once no live entry remains under it) or
-  // a direct entry of that corpse (`corpse_entry`, carrying the corpse's live
-  // Ground as scope authority exactly as a D3-4 TRANSFER source does).
+  // corpse's own step, admitted only once no live entry remains under it),
+  // a direct entry of that corpse (`corpse_entry`), or a nested entry
+  // (`ground_container_entry`, with the actual parent and corpse tree root).
+  // Each location carries the corpse's live Ground as scope authority.
   OneItemGroundV1 ground = 3;
   OneItemCorpseSourceV1 corpse_entry = 4;
   OneItemCorpseDecayV1 cause = 5;

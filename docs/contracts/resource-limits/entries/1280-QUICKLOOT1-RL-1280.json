@@ -9,7 +9,7 @@
     "maximum": 1280
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "The durable owner limits its same-floor adjacent-cell query and remaining item query before allocation; the shared planner and execution adapter bound work before committing custody. Remaining items stay in their corpses.",
+  "allocation_impact": "The durable owner stops same-floor adjacent corpse traversal at the remaining command budget before collecting candidates. The eight-level traversal bound and 1,280-candidate allotment are Oteryn safety bounds. Remaining items stay in their corpses.",
   "client_visible": true,
   "boundary_tests": [
     "bounded_execution_reports_each_owner_refusal_and_keeps_order: 1281 candidate transfers invoke exactly 1280 owner callbacks",

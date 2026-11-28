@@ -1643,6 +1643,9 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                   WHERE item_instance_id = encode($1,'hex')::uuid"
             }
             SourceKind::Inbox => "SELECT game_depot_search_inbox_remove(encode($1,'hex')::uuid)",
+            SourceKind::Corpse if nested_parent.is_some() => {
+                "DELETE FROM game_item_nested_entries WHERE item_instance_id = encode($1,'hex')::uuid"
+            }
             SourceKind::Corpse => {
                 "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id = encode($1,'hex')::uuid"
             }
