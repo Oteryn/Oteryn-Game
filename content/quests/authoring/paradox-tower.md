@@ -8,8 +8,7 @@ The recipe requires level30 and premium, the ordered Oldrak/Zoltan/Padreia/Lubo
 story, the prisoner's mathemagics rule, one complete selected tower climb and
 the fixed Riddler answers. Selected reward intents are32 talons and Mathemagician.
 The first Oldrak binding is an engine consumer; it alone does not qualify this
-whole quest. Keep failure teleports and other reward alternatives omitted as
-specified by the selected recipe. Preserve all original source claims/holds.
+whole quest. The source Riddler and reward floor use their own progression tracks.
 
 Minimum-level authority is reused from PC3 commit
 `add7faf928c344a1d90309e1777dd43ee9eecb85`, which reads locked progression after
@@ -27,7 +26,7 @@ Riddler32479,31901,z2(line55), Zoltan33266,31847,z4(line151),
 Oldrak32817,32261,z6(line805), Padreia32302,31814,z7(line1525),
 Lubo32489,32119,z7(line1678), A Prisoner32394,32138,z13(line2875).
 These centers agree with existing promotion candidates; no invented placement
-is necessary. Source scope promotion and the complete route remain in progress.
+is necessary. All six NPCs are included in the placement scope.
 
 The tower mechanism work retains the following source puzzle rules. Coordinates
 are legacy z in this table; runtime callback content uses negative floors.
@@ -129,3 +128,16 @@ Riddler identity already exists; its source center is32479,31901,z2. The native
 success destination is plain ground409 with no house. Generic callback movement
 must preflight the actual landing and recover an interrupted committed command;
 no additional achievement is granted at the Riddler.
+
+The Lubo and prisoner rewards also record the Crystal Hugo and Mathemagics
+values read by the Riddler. His original dialogue owns both the Hellgate
+failure landing and the reward-floor landing. Crystal's startup selectors are
+restored from the pinned tables. The two tower approach carvings use UIDs
+25031–25032 and the southeast route uses 25034–25037. Crystal assigns no 25033
+Paradox tile. UIDs 38018–38022 provide repeat descents.
+
+The four pressure-plate groups use action IDs 50308–50311 and surrender the
+corresponding chest claim. The plate and chest share one personal flag. A chest
+requires the Riddler's Mathemagics result and an unspent flag. The first
+successful claim records quest completion, leaving any other earned claim
+available.

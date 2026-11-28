@@ -80,16 +80,24 @@ fn player_ground_case(case: PlayerGroundCase) -> TestResult {
     Ok(())
 }
 
+struct PlacedLevelDoor {
+    region: &'static [u8],
+    item: &'static str,
+    appearance: u64,
+    requirement: u16,
+    y: u16,
+}
+
 fn scenario(
     closing: bool,
     with_item: bool,
     authored: bool,
     player_case: Option<PlayerGroundCase>,
-    vampire_door: Option<u16>,
+    level_door: Option<(&PlacedLevelDoor, u16)>,
 ) -> TestResult {
     run(async |admin| {
         let harness =
-            Harness::create_with_admission_seed(admin, "m06q_quest", vampire_door.is_none(), false)
+            Harness::create_with_admission_seed(admin, "m06q_quest", level_door.is_none(), false)
                 .await?;
         eprintln!("START M06Q real placed-door USE wire PostgreSQL");
         let started = std::time::Instant::now();
@@ -102,7 +110,7 @@ fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = if vampire_door.is_some() {
+        let (controller, pin) = if level_door.is_some() {
             super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
@@ -117,11 +125,7 @@ fn scenario(
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let door = if vampire_door.is_some() {
-            "oteryn:item.tibia.i5102"
-        } else {
-            "oteryn:item.tibia.i5113"
-        };
+        let door = level_door.map_or("oteryn:item.tibia.i5113", |(source, _)| source.item);
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (door, reference(door).ok_or("door")?.get() - 1),
@@ -179,19 +183,13 @@ fn scenario(
             .get_mut(1)
             .ok_or("door entry")?;
         // Read the actual committed world placement, not a test-authored action id.
-        let source_bytes = if vampire_door.is_some() {
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z14-x129-y123.b3"
-            ))
-            .as_slice()
-        } else {
+        let source_bytes = level_door.map_or(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/world/placements/region-z14-x125-y124.b3"
-            ))
-            .as_slice()
-        };
+            )).as_slice(),
+            |(source, _)| source.region,
+        );
         let region = oteryn_world_bundle_compiler::b3::decode_region(
             source_bytes,
             oteryn_world_bundle::bundle::TILE_LIMITS,
@@ -200,8 +198,10 @@ fn scenario(
                 entries: 1_000_000,
             },
         )?;
-        let (x, y, appearance, action) =
-            vampire_door.map_or((32246, 31861, 5113, 10089), |x| (x, 31684, 5102, 1070));
+        let (x, y, appearance, action) = level_door.map_or(
+            (32246, 31861, 5113, 10089),
+            |(source, x)| (x, source.y, source.appearance, 1000 + source.requirement),
+        );
         let placed = region
             .sectors
             .iter()
@@ -351,9 +351,9 @@ fn scenario(
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
-        if vampire_door.is_some() {
+        if let Some((source, _)) = level_door {
             owner.admit_progression_session(&mut admitted).await;
-            vampire_gate(&mut owner, admitted, &authority, &map, &payload).await?;
+            level_gate(&mut owner, admitted, &authority, &map, &payload, source.requirement).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -378,11 +378,29 @@ fn scenario(
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         owner.admit_quest_session(&next).await;
+        let verify_trade = !closing && player_case.is_none();
+        if verify_trade {
+            owner.states.player_trades.seed_offered_for_test(
+                owner.runtime.lock().await.binding(),
+                next.game_session_id,
+                crate::foundation::GameSessionId::decode(&id(84)).map_err(debug)?,
+                id(72),
+            ).ok_or("open trade at quest door")?;
+            assert!(owner.states.player_trades.open(next.game_session_id));
+        }
         // Advance the owner clock beyond the declared USE rate gate without sleeping.
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, None).await?;
         assert_eq!(result, UseDisposition::Committed);
+        if verify_trade {
+            assert!(!owner.states.player_trades.open(next.game_session_id));
+        }
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+            MovementLocalPosition { x: 6, y: 0, floor: 7 },
+            "quest door USE enters the doorway"
+        );
         assert!(map.enterable(station_pos));
         assert_eq!(
             map.facts()
@@ -578,10 +596,12 @@ fn scenario(
                     );
                 }
                 PlayerGroundCase::Refused => {
-                    // x=1 is a real tile beyond reach; x=8 is in reach but absent from the bundle.
-                    for (command_id, x, expected) in [
-                        (101, 1, LoopMoveResult::TooFar),
-                        (102, 8, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
+                    // Door USE placed the actor at (6, 0). The absent cell is adjacent.
+                    assert!(map.base().tile(1, 0, -7).is_some());
+                    assert!(map.base().tile(6, 1, -7).is_none());
+                    for (command_id, target, expected) in [
+                        (101, cell(1), LoopMoveResult::TooFar),
+                        (102, WorldTilePosition { y: 1, ..cell(6) }, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
                     ] {
                         assert_eq!(
                             owner
@@ -591,7 +611,7 @@ fn scenario(
                                     LoopMove {
                                         item,
                                         count: None,
-                                        target: LoopTarget::Ground(cell(x)),
+                                        target: LoopTarget::Ground(target),
                                         slot: None,
                                     }
                                 )
@@ -869,9 +889,8 @@ fn scenario(
                 oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&joined.payload)
                     .map_err(debug)?
                     .header;
-            let next = step_exchange(&owner, next, 3, StepDirection::West).await?;
             assert!(map.enterable(station_pos), "occupied door remains open");
-            let _next = step_exchange(&owner, next, 4, StepDirection::West).await?;
+            let _next = step_exchange(&owner, next, 3, StepDirection::West).await?;
             if authored {
                 assert_eq!(
                     owner
@@ -1084,33 +1103,69 @@ async fn player_ground_state(pool: &sqlx::PgPool) -> Result<serde_json::Value, s
 // Crystal door_level.lua:1070 and doors.lua:273: both source doors require level70.
 #[test]
 fn vampire_shield_placed_level_doors_require_seventy_over_wire() -> TestResult {
+    placed_level_doors(
+        "vampire_shield_level_doors",
+        PlacedLevelDoor {
+            region: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z14-x129-y123.b3"
+            )),
+            item: "oteryn:item.tibia.i5102",
+            appearance: 5102,
+            requirement: 70,
+            y: 31684,
+        },
+        [33190, 33195],
+    )
+}
+
+#[test]
+fn medusa_shield_placed_level_doors_require_sixty_over_wire() -> TestResult {
+    placed_level_doors(
+        "medusa_shield_level_doors",
+        PlacedLevelDoor {
+            region: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z11-x129-y126.b3"
+            )),
+            item: "oteryn:item.tibia.i9565",
+            appearance: 9565,
+            requirement: 60,
+            y: 32398,
+        },
+        [33032, 33037],
+    )
+}
+
+fn placed_level_doors(case: &str, source: PlacedLevelDoor, positions: [u16; 2]) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
-            for x in [33190, 33195] {
-                scenario(false, false, false, None, Some(x)).map_err(|e| e.to_string())?;
+        .spawn(move || {
+            for x in positions {
+                scenario(false, false, false, None, Some((&source, x))).map_err(|e| e.to_string())?;
             }
             Ok::<(), String>(())
         })?
         .join()
-        .map_err(|_| "Vampire Shield wire panic")??;
+        .map_err(|_| "Placed level door wire panic")??;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED vampire_shield_level_doors duration={:?}",
+        "POSTGRES_CASE_COMPLETED {case} duration={:?}",
         started.elapsed()
     );
     Ok(())
 }
 
-async fn vampire_gate(
+async fn level_gate(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     map: &crate::map::boot::BundleWorld,
     payload: &[u8],
+    minimum_level: u16,
 ) -> TestResult {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
@@ -1167,9 +1222,11 @@ async fn vampire_gate(
         .await
         .map_err(debug)?;
     let key = crate::map::boot::tests::door_key();
+    let mut opening_payload = payload.to_vec();
+    let mut unqualified_route = false;
     for (command, level, expected) in [
-        (1, 69, UseDisposition::Locked),
-        (2, 70, UseDisposition::Committed),
+        (1, u32::from(minimum_level) - 1, UseDisposition::Locked),
+        (2, u32::from(minimum_level), UseDisposition::Committed),
     ] {
         let binding = owner
             .progression_binding(admitted.game_session_id)
@@ -1237,20 +1294,40 @@ async fn vampire_gate(
 
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
-            super::item_craft_fixtures::exchange(owner, admitted, command, payload, None).await?;
+            super::item_craft_fixtures::exchange(owner, admitted, command, &opening_payload, None).await?;
         assert_eq!(result, expected, "source level{level}");
-        assert_eq!(
-            map.facts().doors().revision(key),
-            if level == 69 { 0 } else { 1 }
-        );
+        let doors = map.facts().doors();
+        if level < u32::from(minimum_level) {
+            assert_eq!(doors.revision(key), 0);
+            // Model the open pose left by a qualified player while this actor is below the required level.
+            assert!(matches!(doors.toggle(key, 0, false, u32::from(minimum_level), false),
+                Some(crate::map::door::DoorUse::Toggled { open: true, .. })));
+            unqualified_route = owner.item_walk_route(
+                actor,
+                next.game_session_id,
+                crate::gameplay_transport::AutoWalkTarget::Cell(
+                    oteryn_protocol_oteryn::world_spatial::ActorPosition { x: 6, y: 0, floor: 7 },
+                ),
+            ).await.is_ok_and(|route| route.is_some_and(|route| !route.steps.is_empty()));
+            assert!(matches!(doors.toggle(key, 1, false, u32::from(minimum_level), false),
+                Some(crate::map::door::DoorUse::Toggled { open: false, .. })));
+            let mut target = oteryn_protocol_oteryn::world_object::decode_use_intent(payload).map_err(debug)?;
+            target.expected_revision = 2;
+            opening_payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+        } else {
+            assert_eq!(doors.revision(key), 3);
+        }
         admitted = next;
     }
-    let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, payload, None).await?;
+    let position = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+    assert_eq!((position.x, unqualified_route), (6, false),
+        "qualified USE must enter the doorway, and auto-walk must reject the same open door below the required level");
+    let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, &opening_payload, None).await?;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(map.facts().doors().revision(key), 1, "replay toggled twice");
+    assert_eq!(map.facts().doors().revision(key), 3, "replay toggled twice");
     owner.clock_origin -= std::time::Duration::from_secs(1);
-    let (_, result, _) = super::item_craft_fixtures::exchange(owner, next, 3, payload, None).await?;
+    let (_, result, _) = super::item_craft_fixtures::exchange(owner, next, 3, &opening_payload, None).await?;
     assert_eq!(result, UseDisposition::StaleState);
-    assert_eq!(map.facts().doors().revision(key), 1);
+    assert_eq!(map.facts().doors().revision(key), 3);
     Ok(())
 }

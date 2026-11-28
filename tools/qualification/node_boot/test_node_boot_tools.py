@@ -51,6 +51,29 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_node_launch_passes_pinned_npc_catalogue(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            node = base / 'bin' / 'oteryn-game-server'
+            node.parent.mkdir()
+            node.write_text('#!/bin/bash\nprintf "%s\\n" "$@" >&2\n')
+            node.chmod(0o755)
+            digest = 'a' * 64
+            result = bash(function('launch_node') + '''
+                set -Eeuo pipefail
+                as_service=()
+                NODE_GAMEPLAY_ENV=()
+                NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world" --npc-data-sha256 "$NPC_DIGEST")
+                launch_node pid "$BASE/node.toml" "$BASE/node.log"
+                wait "$pid"
+            ''', {'BASE': temporary, 'NODE_BOOT_UNPRIVILEGED': '0', 'NPC_DIGEST': digest})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((base / 'node.log').read_text().splitlines(), [
+                'serve', '--config', str(base / 'node.toml'),
+                '--npc-data-project', str(base / 'npc-data' / 'content' / 'world'),
+                '--npc-data-sha256', digest,
+            ])
+
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
         bin_dir.mkdir()
@@ -293,12 +316,15 @@ WORK=.
 
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section("readonly INTENT_OPERATIONS=", "readonly INTERPRETATION=")
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
         result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
+                      + '[[ ${#BOOTSTRAP_ACCOUNTS[@]} == "${#INTENT_OPERATIONS[@]}" ]]\n'
+                      + '[[ ${#BOOTSTRAP_ACCOUNTS[@]} == "${#INTENT_NAMES[@]}" ]]\n'
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 29)
+        self.assertEqual(len(accounts), 35)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 

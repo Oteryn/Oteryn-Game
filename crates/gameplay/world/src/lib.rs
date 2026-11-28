@@ -1,5 +1,6 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-world`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
+pub mod bank_robbery;
 pub mod house_scope;
 pub mod map;
 pub mod map_view_diff;

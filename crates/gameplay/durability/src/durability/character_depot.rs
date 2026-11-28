@@ -76,7 +76,7 @@ impl super::DurabilityRoot {
                     ordinal: row.try_get::<String,_>("ordinal")?.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
                 });
             }
-            super::db::commit_semantic_transaction(tx,deadline).await?;
+            super::db::commit_semantic_read(tx,deadline).await?;
             Ok(CharacterDepotPage { total: u32::try_from(total).map_err(|_| DurabilityError::InvalidStoredState)?, entries })
         })).await
     }

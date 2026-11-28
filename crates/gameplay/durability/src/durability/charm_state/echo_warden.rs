@@ -4,6 +4,7 @@
 //! character and base species. The kill caller supplies captured damage participation;
 //! this owner proves current character authority and retains the exact occurrence result.
 
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::echo_warden::first_species_charm_points;
 use crate::durability::bestiary_progress::BestiaryKillOccurrence;
@@ -56,7 +57,7 @@ impl DurabilityRoot {
                     if keys.len() > MAX_VIEW_RACES {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(keys))
                 })
             })

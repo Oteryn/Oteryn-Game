@@ -204,7 +204,11 @@ impl <'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             first_entry: FirstEntryOutcome::Positioned,
             controller,
             item_fence: Some(fence),
-            continuity: activity_continuity(old.continuity),
+            continuity: super::connection::SessionContinuity {
+                house_input_pending: matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+                    .then_some(false),
+                ..activity_continuity(old.continuity)
+            },
             ..old
         };
         if !attempt.ancillary_installed {

@@ -67,6 +67,7 @@ pub struct DeliveryPlan {
     pub world_id: [u8; 16],
     pub fulfilment_unit_id: String,
     pub item_instance_id: [u8; 16],
+    pub purchase_request_id: Option<[u8; 16]>,
     pub command: crate::foundation::CommandRef,
     pub mint: crate::durability::character_inbox::RewardClaimInboxMintRequest,
 }
@@ -84,6 +85,7 @@ impl DeliveryPlan {
             || !uuid_v7(&self.character_id)
             || !uuid_v7(&self.world_id)
             || !uuid_v7(&self.item_instance_id)
+            || self.purchase_request_id.as_ref().is_some_and(|id| !uuid_v7(id))
         {
             return Err(StoreValidationError::InvalidUuid);
         }

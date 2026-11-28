@@ -48,17 +48,8 @@ fn run_case(case: &'static str, placement: Option<fn() -> TestResult<NpcPlacemen
 }
 
 fn global_placement() -> TestResult<NpcPlacement> {
-    let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00055.json"
-    )))?;
-    let records = document["records"].as_array().ok_or("NPC placements")?;
-    let mut matches = records
-        .iter()
-        .map(|record| &record["declaration"])
-        .filter(|entry| entry["npc"] == NPC);
-    let entry = matches.next().ok_or("missing global Okolnir placement")?;
-    assert!(matches.next().is_none());
+    let entry = super::npc_placement_fixtures::published(NPC)?
+        .ok_or("missing global Okolnir placement")?;
     let cell = &entry["cell"];
     assert_eq!(
         (

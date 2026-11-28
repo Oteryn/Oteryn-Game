@@ -359,14 +359,19 @@ pub(in crate::gameplay_transport) fn snow_at(
     })
 }
 
+pub(in crate::gameplay_transport) fn swimming_selection() -> AppearanceSelection<String> {
+    AppearanceSelection {
+        outfit_key: "environment.swimming".to_owned(),
+        colours: Colours::default(),
+        addons: 0,
+        mount_key: None,
+    }
+}
+
 fn swimming_definition() -> Option<ConditionDefinition> {
-    ConditionDefinition::new_permanent_outfit("environment.swimming", 1, SWIMMING_LOOK_TYPE)?
-        .with_appearance(AppearanceSelection {
-            outfit_key: "environment.swimming".to_owned(),
-            colours: Colours::default(),
-            addons: 0,
-            mount_key: None,
-        })
+    let selection = swimming_selection();
+    ConditionDefinition::new_permanent_outfit(&selection.outfit_key, 1, SWIMMING_LOOK_TYPE)?
+        .with_appearance(selection)
 }
 
 /// Crystal yellow_pillow.lua:3-10 and utils_definitions.hpp:390 (MONSTER_SAY = 36).
@@ -723,7 +728,7 @@ impl ChannelSpellStates {
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// M06-CLOSE: run while the successful step still owns the Channel lane. The runtime
     /// census is taken after leaving; durable item moves finish before the door transition.
-    pub(super) async fn close_departed_door(
+    pub(in crate::gameplay_transport) async fn close_departed_door(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         actor: ExactActorRef,
@@ -914,7 +919,13 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     item_fence: fence,
                 };
                 let result = loop_move::relocate_source_item(
-                    self, permit, actor, command, item, position, to,
+                    self,
+                    permit,
+                    actor,
+                    command,
+                    item,
+                    loop_move::SourceItemOrigin::Door(position),
+                    to,
                 )
                 .await;
                 if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {

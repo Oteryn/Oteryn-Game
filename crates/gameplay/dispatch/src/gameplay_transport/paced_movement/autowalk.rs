@@ -241,7 +241,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
+            bundle_doors =
+                super::player_bundle_doors(&map.facts, &states, &runtime, actor, session);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -251,6 +252,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             inner: blocking,
             cells: self.movement_cells(),
             blocked: pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
+        };
+        let door_access = PlayerDoorAccess {
+            inner: &pvp_blocking,
+            level: states
+                .get(&runtime, actor, session)
+                .map(|state| state.character_facts().level),
+            states: &self.states,
+            session,
         };
         let occupancy = PathOccupancy::current(&runtime);
         if explicit
@@ -304,7 +313,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (ordinary
                 && cells.index().lookup(cells.scope(), cell)
                     == Ok(crate::content::CollisionClass::Walkable)
-                && !pvp_blocking.blocks(cell)
+                && !door_access.blocks(cell)
+                && !crate::map::floor::player_door_entry_blocked(cells, cell, &door_access)
                 && !crate::map::floor::is_teleport(cells, cell))
             .then(|| occupancy.extra_cost(at, expected.position()))
         };

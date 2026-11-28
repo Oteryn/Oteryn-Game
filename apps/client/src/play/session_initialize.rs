@@ -1,5 +1,28 @@
 use super::*;
 
+/// Seed spell cooldowns before publishing the admission queue.
+pub(super) fn initialize_admission<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    initialize_scope(session, outbox)?;
+    outbox.spell_bar_initialize(session.actor_cooldown_snapshot());
+    Ok(())
+}
+
+pub(super) fn initialize_scope<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 pub(super) fn initialize<T: Stepper>(
     session: &T,
     outbox: &Outbox,
@@ -23,7 +46,6 @@ pub(super) fn initialize<T: Stepper>(
     outbox
         .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
-    outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
     outbox.actor_motion_initialize(session.feature_selected(502));

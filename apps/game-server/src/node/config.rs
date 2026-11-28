@@ -129,6 +129,8 @@ pub struct PlatformConfig {
     pub runtime_status: Option<RuntimeStatusConfig>,
     /// Optional purpose-separated credentials for the existing Character intent read.
     pub bootstrap_intents: Option<BootstrapIntentsConfig>,
+    /// Optional dedicated client identity shared by Store purchase and delivery.
+    pub store: Option<StoreConfig>,
     /// `oteryn-game-list-characters-for-account-v1` §3. Absent: the
     /// projection publisher does not run. Endpoint, peer name and trust roots
     /// are those above.
@@ -197,6 +199,13 @@ pub struct RuntimeStatusConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BootstrapIntentsConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StoreConfig {
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
 }
@@ -742,6 +751,26 @@ impl NodeConfig {
         ] {
             if !absolute(path) {
                 return reject(key);
+            }
+        }
+        if let Some(store) = &platform.store {
+            if self
+                .world_bundle
+                .as_ref()
+                .is_some_and(|bundle| bundle.production)
+            {
+                return reject("platform.store");
+            }
+            for (key, path) in [
+                (
+                    "platform.store.client_certificate_file",
+                    &store.client_certificate_file,
+                ),
+                ("platform.store.client_key_file", &store.client_key_file),
+            ] {
+                if !absolute(path) {
+                    return reject(key);
+                }
             }
         }
         if let Some(intents) = &platform.bootstrap_intents {
@@ -1913,6 +1942,24 @@ start_x = 100
 start_y = 200
 start_floor = -7
 "#;
+
+    #[test]
+    fn store_section_is_opt_in_and_refuses_production_worlds() {
+        let store = r#"
+[platform.store]
+client_certificate_file = "/etc/oteryn/node/store.crt"
+client_key_file = "/etc/oteryn/node/store.key"
+"#;
+        let preproduction = format!("{NODE}{WORLD_BUNDLE}{store}");
+        assert!(NodeConfig::parse(preproduction.as_bytes()).is_ok());
+        let production = preproduction.replace("production = false", "production = true");
+        assert_eq!(
+            NodeConfig::parse(production.as_bytes())
+                .expect_err("Store is preproduction only")
+                .key,
+            "platform.store"
+        );
+    }
 
     const SERVICES: &str = r#"
 [platform.character_services]

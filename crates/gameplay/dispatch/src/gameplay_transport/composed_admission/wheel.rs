@@ -8,6 +8,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        self.refresh_wheel_vitals_for_transport(actor, session, None)
+            .await
+    }
+
+    pub(super) async fn refresh_wheel_vitals_for_transport(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: Option<u64>,
+    ) -> bool {
         // Without a current allocation there are no Wheel effects to qualify. In particular,
         // observing vitals must not take the root's sole holder away from death reconciliation.
         // Still apply zero bonuses below so a removed/stale allocation clears old maxima.
@@ -27,7 +37,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let premium = if current_allocation {
             // Install the same owner-qualified promotion and conservative Premium deadline
             // that spell casts use. A bool-only gate cannot authorize later combat reads.
-            self.refresh_and_apply_spell_access(actor, session)
+            self.refresh_and_apply_spell_access_for_transport(actor, session, None, generation)
                 .await
                 .premium_gate()
                 .premium_current()
@@ -38,15 +48,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // the base vocation stored in the build or in the live spell state.
         let promoted = current_allocation
             && match self.current_quest_fence(session).await {
-                Ok(Some(fence)) => self
-                    .root
-                    .read_promotion_for_session(self.character, self.holder, fence.item_fence())
-                    .await
-                    .unwrap_or(false),
+                Ok(Some(fence))
+                    if generation.is_none_or(|generation| {
+                        generation == fence.connection_generation.get()
+                    }) =>
+                {
+                    self.root
+                        .read_promotion_for_session(self.character, self.holder, fence.item_fence())
+                        .await
+                        .unwrap_or(false)
+                }
                 _ => false,
             };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if generation.is_some_and(|generation| {
+            !states.current_cooldown_transport(actor, session, generation)
+        }) {
+            return false;
+        }
         let Some(state) = states.get(&runtime, actor, session) else {
             return false;
         };
