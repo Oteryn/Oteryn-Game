@@ -138,9 +138,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("I15 active Energy Ring 3088 absent on fresh admission".into());
     }
 
-    let mut path = route_live(&mut client, world, |at| at == FIELD)
-        .await?
-        .ok_or_else(|| format!("I15 no route to native Energy Field {FIELD:?}"))?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let navigation_world = world.clone();
+    let mut path = route_work(&mut client, move || {
+        // Explore the served bundle's cardinal movement graph. A route to this floor
+        // may leave the town helper's start-centred rectangle before returning.
+        find_route(
+            start,
+            |at| at == FIELD,
+            |at, direction| destination(&navigation_world, at, direction),
+        )
+        .map_err(|visited| {
+            format!(
+                "I15 no route to native Energy Field {FIELD:?} from {start:?}; visited={visited}"
+            )
+        })
+    })
+    .await?;
     let entry = path.pop().ok_or("I15 already standing on Energy Field")?;
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
