@@ -167,6 +167,17 @@ pub(super) async fn walk_first_attempt(
         let expected = destination(world, from, direction)
             .filter(|to| *to != from)
             .ok_or("W01b route step has no distinct authored landing")?;
+        let occupant_at_landing = |client: &DevClientSession| {
+            client.world_entities().and_then(|view| {
+                view.iter()
+                    .find(|entity| {
+                        entity.kind == EntityKind::Creature
+                            && tile(entity.position).ok() == Some(expected)
+                    })
+                    .map(|entity| entity.entity)
+            })
+        };
+        let before = occupant_at_landing(client);
         let first = client.step(direction).await?;
         let outcome = if first.disposition == StepDisposition::Blocked {
             if first.status != CommandStatus::Accepted
@@ -175,29 +186,10 @@ pub(super) async fn walk_first_attempt(
             {
                 return Err(format!("W01b blocked STEP changed position: {first:?}").into());
             }
-            let occupant_at_landing = |client: &DevClientSession| {
-                client.world_entities().and_then(|view| {
-                    view.iter()
-                        .find(|entity| {
-                            tile(entity.position).ok() == Some(expected)
-                                && matches!(
-                                    entity.detail,
-                                    EntityDetail::Actor { .. }
-                                        | EntityDetail::ActorWithIcons { .. }
-                                )
-                        })
-                        .map(|entity| entity.entity)
-                })
-            };
-            let occupant = if let Some(occupant) = occupant_at_landing(client) {
-                Some(occupant)
-            } else {
-                pump(client).await?;
-                occupant_at_landing(client)
-            };
-            let occupant = occupant.ok_or_else(|| format!(
-                "BLOCKER-SERVER W01b STEP {direction:?} from={from:?} blocked={expected:?} without a visible occupant reply={first:?}"
-            ))?;
+            let occupant = before.filter(|id| occupant_at_landing(client) == Some(*id))
+                .ok_or_else(|| format!(
+                    "BLOCKER-SERVER W01b STEP {direction:?} from={from:?} blocked={expected:?} without the same creature before STEP and at refusal reply={first:?}"
+                ))?;
             evidence(&format!(
                 "W01B_BLOCKED creature={occupant:?} at={expected:?} reply={first:?}"
             ));
@@ -208,7 +200,14 @@ pub(super) async fn walk_first_attempt(
                     .ok_or("W01b blocked STEP lost entity view")?;
                 if let Some(creature) = view.get(&occupant) {
                     let at = tile(creature.position)?;
-                    if at != expected && occupant_at_landing(client).is_none() {
+                    if at != expected
+                        && !view.iter().any(|entity| {
+                            matches!(
+                                entity.kind,
+                                EntityKind::Creature | EntityKind::Player | EntityKind::Npc
+                            ) && tile(entity.position).ok() == Some(expected)
+                        })
+                    {
                         evidence(&format!(
                             "W01B_UNBLOCKED creature={occupant:?} moved_to={at:?}"
                         ));

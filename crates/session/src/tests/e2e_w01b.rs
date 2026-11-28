@@ -214,6 +214,7 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
     let attack: u64 = value(expected, "attack.sequence")?.parse()?;
     assert!(before < attack && attack < killed);
     let mut attack_seen = false;
+    let mut displayed = value(expected, "kill.initial")?.to_owned();
     let mut trace = Vec::new();
     let mut damaged = false;
     let mut removed = false;
@@ -248,12 +249,22 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
             MessageType::StateDelta => {
                 assert_ne!(sequence, logout);
                 let event = session.apply_state_delta(sequence, frame.payload())?;
-                if sequence > before
+                if sequence > attack
                     && sequence <= killed
                     && let SessionEvent::WorldSpatialEntities(delta) = event
                 {
                     let line = if delta.value.leave.contains(&target) {
                         removed = true;
+                        let entry = delta
+                            .value
+                            .enter
+                            .iter()
+                            .find(|entry| entry.entity == corpse)
+                            .ok_or("recorded Rat removal lacks its corpse entry")?;
+                        assert_eq!(entry.kind, EntityKind::Corpse);
+                        assert!(matches!(entry.detail, Detail::ObjectWithAppearance {
+                            appearance_id, quantity: 1, ..
+                        } if appearance_id.get() == 5964));
                         "absent".to_owned()
                     } else if let Some(entity) = delta
                         .value
@@ -276,6 +287,17 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
                     } else {
                         "same".to_owned()
                     };
+                    if line != "same" {
+                        displayed.clone_from(&line);
+                    }
+                    let view = session
+                        .world_entities()
+                        .ok_or("recorded kill view absent")?;
+                    assert_eq!(
+                        state_text(view.get(&target)),
+                        displayed,
+                        "Rat view did not apply spatial delta {sequence}"
+                    );
                     trace.push(line);
                 }
             }
@@ -307,6 +329,15 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
             assert_eq!(
                 entry.position,
                 at_text(value(expected, "corpse.position")?)?
+            );
+        }
+        if (killed..=returned).contains(&sequence) {
+            let at = session.world_spatial().actor_position;
+            assert_eq!(at.floor, spawn.floor);
+            assert_eq!(
+                at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)),
+                1,
+                "recorded observer left the authored spawn during respawn"
             );
         }
         if sequence == returned {
@@ -373,6 +404,7 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
         .get(&replacement)
         .ok_or("fresh recorded replacement absent")?;
     assert_eq!(replacement.kind, EntityKind::Creature);
+    assert_eq!(replacement.position, spawn);
     assert!(
         replacement
             .display_name

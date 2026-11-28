@@ -36,12 +36,12 @@ fn text_of(entity: Option<&WorldSpatialEntity>) -> String {
     )
 }
 
-fn record_target(events: Vec<SessionEvent>, target: EntityRef, trace: &mut Vec<String>) {
+fn record_target(events: &[SessionEvent], target: EntityRef, trace: &mut Vec<String>) {
     for event in events {
         let SessionEvent::WorldSpatialEntities(delta) = event else {
             continue;
         };
-        let value = delta.value;
+        let value = &delta.value;
         let line = if value.leave.contains(&target) {
             "absent".to_owned()
         } else if let Some(entity) = value
@@ -134,6 +134,51 @@ async fn seed_client_placement(
         return Err("W01b fixture did not place the dedicated hunter exactly once".into());
     }
     Ok(())
+}
+
+// The protocol provides sequence ordering but no server timestamp for Rat removal or spawn
+// warnings. Keep the observer beside the authored point and surface the actual live gap.
+async fn observe_nearby_respawn(
+    client: &mut DevClientSession,
+    target: WorldSpatialEntity,
+    respawn_ms: u32,
+) -> TestResult<WorldSpatialEntity> {
+    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+
+    let observer = client.world_spatial().actor_position;
+    let deadline =
+        tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 11_000);
+    verdict::Harness::global().bounded_wait(deadline, "nearby-respawn");
+    let mut effects = Vec::new();
+    loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        if client.world_spatial().actor_position != observer
+            || tile_distance(tile(observer)?, SPAWN) != 1
+        {
+            return Err("W01b respawn observer did not stay beside the spawn".into());
+        }
+        for event in client.take_events() {
+            if let SessionEvent::ItemEffects(delta) = event {
+                effects.extend(delta.value.iter().filter_map(|effect| match effect.kind {
+                    PresentationEventKind::MagicEffect {
+                        position,
+                        effect_id,
+                        source,
+                    } if tile(position).ok() == Some(SPAWN) => {
+                        Some((delta.server_sequence, effect_id, source))
+                    }
+                    _ => None,
+                }));
+            }
+        }
+        let replacement = creature_at(client, SPAWN);
+        if replacement.is_some() || tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "BLOCKER-SERVER W01b nearby respawn spawn={SPAWN:?} observer={observer:?} killed={:?} authored_ms={respawn_ms} replacement={replacement:?} effects={effects:?} server_timestamps=absent",
+                target.entity
+            ).into());
+        }
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -240,39 +285,58 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut last = target.position;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
-        let events = client.take_events();
+        let events: Vec<_> = client
+            .take_events()
+            .into_iter()
+            .filter(|event| {
+                matches!(event, SessionEvent::WorldSpatialEntities(delta)
+                if delta.server_sequence > attack.result_server_sequence)
+            })
+            .collect();
+        let mut corpse = None;
         for event in &events {
-            if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                if let Some(entity) = delta
                     .value
                     .update
                     .iter()
                     .find(|entry| entry.entity == target.entity)
-            {
-                last = entity.position;
+                {
+                    last = entity.position;
+                }
+                if delta.value.leave.contains(&target.entity) {
+                    corpse = delta
+                        .value
+                        .enter
+                        .iter()
+                        .find(|entry| {
+                            entry.kind == oteryn_dev_client::EntityKind::Corpse
+                                && entry.position == last
+                                && !prior_corpses.contains(&entry.entity)
+                                && matches!(entry.detail, EntityDetail::ObjectWithAppearance {
+                                appearance_id, quantity: 1, ..
+                            } if appearance_id.get() == 5964)
+                        })
+                        .copied();
+                    if corpse.is_none() {
+                        return Err(format!("W01b Rat removal lacked its new i5964 corpse: sequence={} at={last:?} enters={:?}",
+                            delta.server_sequence, delta.value.enter).into());
+                    }
+                }
             }
         }
-        record_target(events, target.entity, &mut trace);
-        if let Some(corpse) = client.world_entities().and_then(|entities| {
-            entities
-                .iter()
-                .find(|entity| {
-                    entity.kind == oteryn_dev_client::EntityKind::Corpse
-                        && entity.position == last
-                        && !prior_corpses.contains(&entity.entity)
-                })
-                .copied()
-        }) && target_state(&client, target.entity).is_none()
-        {
+        record_target(&events, target.entity, &mut trace);
+        if let Some(corpse) = corpse {
+            if target_state(&client, target.entity).is_some()
+                || target_state(&client, corpse.entity) != Some(corpse)
+            {
+                return Err("W01b Rat removal or corpse was not applied to the entity view".into());
+            }
             break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            let live = target_state(&client, target.entity);
-            return Err(format!(
-                "W01b client capture: no corpse and removal before the deadline: last={last:?} target={live:?} attacker={:?}",
-                client.world_spatial().actor_position
-            )
-            .into());
+            return Err(format!("W01b client capture: no Rat removal and corpse before the deadline: last={last:?} target={:?}",
+                target_state(&client, target.entity)).into());
         }
     };
     let killed = client.last_server_sequence();
@@ -287,47 +351,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W01b client capture: kill lacked a damage delta or a removal delta".into());
     }
 
-    // Respawn: leave interest, wait out the authored interval, return, require a new actor.
-    let from = tile(client.world_spatial().actor_position)?;
-    let away = route_avoiding(world, from, |at| tile_distance(at, spawn) >= 20, available)
-        .filter(|route| !route.is_empty())
-        .ok_or("W01b client capture: no route outside spawn interest")?;
-    walk_first_attempt(&mut client, world, &away).await?;
-    // Keep answering liveness while the interval runs out; a bare sleep lets
-    // the server drop the session as unresponsive.
-    let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
-    verdict::Harness::global().bounded_wait(until, "bounded-observation");
-    while tokio::time::Instant::now() < until {
-        client.service_liveness(Duration::from_millis(500)).await?;
-    }
-    let back = route_avoiding(
-        world,
-        tile(client.world_spatial().actor_position)?,
-        |at| tile_distance(at, spawn) == 1,
-        available,
-    )
-    .filter(|route| !route.is_empty())
-    .ok_or("W01b client capture: no route back to the rat point")?;
-    walk_first_attempt(&mut client, world, &back).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    let replacement = loop {
-        if let Some(entity) = creature_at(&client, spawn)
-            && entity.entity != target.entity
-        {
-            break entity;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("W01b client capture: no replacement at the authored point".into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
-    };
-    if target_state(&client, target.entity).is_some() {
-        return Err("W01b client capture: killed actor returned".into());
-    }
-    if !is_rat(&replacement) {
-        return Err("W01b client capture: replacement at the authored point is not a rat".into());
-    }
+    let replacement = observe_nearby_respawn(&mut client, target, respawn_ms).await?;
     let returned = client.last_server_sequence();
     let first_session = client.join_snapshot().game_session_id;
     let mut expected = format!(
@@ -392,7 +416,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     walk_first_attempt(&mut fresh, world, &check).await?;
     let restored_rat = target_state(&fresh, replacement.entity)
         .ok_or("W01b replacement missing after returning from the restored position")?;
-    if !is_rat(&restored_rat) || target_state(&fresh, target.entity).is_some() {
+    if !is_rat(&restored_rat)
+        || tile(restored_rat.position)? != spawn
+        || target_state(&fresh, target.entity).is_some()
+    {
         return Err("W01b relog changed the observed Rat identity".into());
     }
     let fresh_sequence = fresh.last_server_sequence();
