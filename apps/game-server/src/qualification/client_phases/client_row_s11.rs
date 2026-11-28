@@ -178,10 +178,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("step=before-metadata observed={before:?}").into());
     }
-    if before.rows == expected_rows && before.own_row.as_ref() == Some(&expected_own) {
-        return Err("S11 expected ranking already present before publication".into());
-    }
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let (prior_snapshot, prior_time, prior_count) = sqlx::query_as::<_, (i64, i64, i32)>(
+        "SELECT s.snapshot_id, s.computed_at_ms, s.row_count
+         FROM game_world_highscore_heads h
+         JOIN game_world_highscore_snapshots s ON s.snapshot_id = h.current_snapshot_id
+         WHERE h.world_id = $1::uuid AND h.category = 1",
+    )
+    .bind(uuid_text(&clients.world))
+    .fetch_one(&mut connection)
+    .await?;
+    let prior_snapshot = u64::try_from(prior_snapshot)?;
+    if prior_count != 0
+        || before.snapshot_id != prior_snapshot
+        || before.computed_at != prior_time
+        || !before.rows.is_empty()
+        || before.own_row.is_some()
+        || before.own_page.is_some()
+        || before.has_more
+    {
+        return Err(format!("step=before-empty-cut expected_snapshot={prior_snapshot} expected_time={prior_time} persisted_rows={prior_count} observed={before:?}").into());
+    }
     let seeded = sqlx::query(
         "INSERT INTO game_account_loyalty_projections(account_id, loyalty_points, platform_revision)
          SELECT account_id, seed.points, 1 FROM game_character_roots
@@ -276,6 +293,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         u8::from(page.has_more),
         page.rows.len()
     );
+    expected.push_str(&format!(
+        "prior_snapshot={prior_snapshot}\nprior_time={prior_time}\n"
+    ));
     for (index, row) in expected_rows.iter().enumerate() {
         expected.push_str(&format!("row{index}={}\n", row_text(row)));
     }

@@ -157,7 +157,17 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
         (page.category, page.world, page.page)
     );
     assert!(before_page.snapshot_id < page.snapshot_id);
-    assert!(before_page.rows != page.rows || before_page.own_row != page.own_row);
+    assert_eq!(
+        before_page.snapshot_id,
+        value(expected, "prior_snapshot")?.parse::<u64>()?
+    );
+    assert_eq!(
+        before_page.computed_at,
+        value(expected, "prior_time")?.parse::<i64>()?
+    );
+    assert!(before_page.rows.is_empty());
+    assert!(before_page.own_row.is_none() && before_page.own_page.is_none());
+    assert!(!before_page.has_more);
     let world = page.world.ok_or("S11 response lacks World details")?;
     let world = world
         .as_bytes()
