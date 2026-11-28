@@ -59,6 +59,38 @@ async fn await_attack_target(
     }).await
 }
 
+async fn prepare_unarmored_victim(victim: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::item_view::{
+        EquipmentSlot, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
+    };
+    let defensive_slots = [
+        EquipmentSlot::Head, EquipmentSlot::Armor, EquipmentSlot::Legs,
+        EquipmentSlot::Feet, EquipmentSlot::LeftHand, EquipmentSlot::RightHand,
+    ];
+    let equipment: Vec<_> = victim.inventory().ok_or("Challenge victim inventory absent")?
+        .equipment.iter().filter(|entry| defensive_slots.contains(&entry.slot))
+        .map(|entry| (entry.slot, entry.item.handle)).collect();
+    for (slot, handle) in equipment {
+        let moved = victim.move_item(&ItemMoveIntent {
+            source: handle,
+            destination: ItemMoveDestination::MainBackpack,
+        }).await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("Challenge victim unequip {slot:?} refused: {moved:?}").into());
+        }
+        tokio::time::timeout(Duration::from_secs(3), async {
+            while victim.inventory().is_none_or(|inventory| {
+                inventory.equipment.iter().any(|entry| entry.slot == slot)
+            }) {
+                victim.service_liveness(Duration::from_millis(50)).await?;
+            }
+            TestResult::Ok(())
+        }).await.map_err(|_| format!("Challenge victim slot {slot:?} did not clear"))??;
+    }
+    evidence("C17d.client victim defensive slots clear");
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -73,6 +105,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }.connect(clients, 0xd5, 0).await?;
     character_prep::grant_premium(&caster).await?;
     let mut victim = connect_character(clients, 0xd4, 1).await?;
+    full_e2ef5::with_observer_liveness(&mut caster, prepare_unarmored_victim(&mut victim)).await?;
     let open = |at: TilePos| {
         world.base().tile(at.x, at.y, at.floor)
             .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
