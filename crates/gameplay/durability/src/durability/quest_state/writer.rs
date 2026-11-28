@@ -1994,6 +1994,38 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    // The native left chest is shared by this Channel. Reserve its stock
+                    // in the reward transaction so a refused mint returns the entire bundle.
+                    if let Some(world) = &callback
+                        && world.key == "oteryn:quest-callback/captain-iglues-left-chest"
+                    {
+                        let Some(channel) = fence.runtime_scope.channel_id() else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        use oteryn_gameplay_quests::quest::reward_callbacks::StateCondition;
+                        let [clock] = world.state_ops.as_slice() else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        let StateCondition::ElapsedAtLeast { seconds } = clock.from else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        let updated = sqlx::query(
+                            "INSERT INTO game_captain_iglue_chest_stock (world_id, channel_id, collected_at)
+                             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)
+                             ON CONFLICT (world_id, channel_id) DO UPDATE SET collected_at = EXCLUDED.collected_at
+                             WHERE game_captain_iglue_chest_stock.collected_at <= EXCLUDED.collected_at - $4::bigint"
+                        )
+                        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        .bind(channel.as_bytes().as_slice())
+                        .bind(now)
+                        .bind(i64::from(seconds))
+                        .execute(&mut *tx)
+                        .await?;
+                        if updated.rows_affected() != 1 {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {

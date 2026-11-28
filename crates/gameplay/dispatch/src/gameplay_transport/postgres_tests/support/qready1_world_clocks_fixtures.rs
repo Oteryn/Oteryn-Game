@@ -61,7 +61,21 @@ pub(super) async fn exercise(
         expected_revision: 0,
     };
     let fence = admitted.item_fence.ok_or("item fence")?;
-    let offset = u64::from(callback.offerings.is_empty());
+    // Start the Captain case one second before a different collector's stock renews.
+    // This character has no quest receipt and would pass a personal clock alone.
+    if captain {
+        sqlx::query("INSERT INTO game_captain_iglue_chest_stock(world_id, channel_id, collected_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
+            .bind(admitted.world_id.as_bytes().as_slice())
+            .bind(admitted.channel_id.as_bytes().as_slice())
+            .bind(epoch - wait + 1)
+            .execute(&h.pool)
+            .await?;
+        assert_eq!(use_command(owner, admitted, &target, 1).await?, UseDisposition::Rejected);
+        assert_eq!(snapshot(h, callback).await?, (-1, 0, 0, 0));
+        h.root.advance_test_quest_clock(1)?;
+    }
+    let epoch = epoch + i64::from(captain);
+    let offset = u64::from(callback.offerings.is_empty() && !captain);
     if !callback.offerings.is_empty() {
         assert_eq!(
             use_command(owner, admitted, &target, 1).await?,
