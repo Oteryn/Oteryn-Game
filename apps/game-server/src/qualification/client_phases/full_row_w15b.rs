@@ -21,22 +21,34 @@ use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Custody(BTreeMap<(u8, u32, u32), u64>);
+pub(super) struct Custody(BTreeMap<(u8, u32, u32), u64>);
 
-fn reward_increased(before: &Custody, after: &Custody, definition: u32, count: u32) -> bool {
+pub(super) fn reward_increased(
+    before: &Custody,
+    after: &Custody,
+    definition: u32,
+    count: u32,
+) -> bool {
     let quantity = |custody: &Custody| {
-        custody.0.iter()
+        custody
+            .0
+            .iter()
             .filter(|((_, key, _), _)| *key == definition)
             .map(|(_, quantity)| quantity)
             .sum::<u64>()
     };
     quantity(after).checked_sub(quantity(before)) == Some(u64::from(count))
-        && before.0.iter().filter(|((_, key, _), _)| *key != definition)
+        && before
+            .0
+            .iter()
+            .filter(|((_, key, _), _)| *key != definition)
             .eq(after.0.iter().filter(|((_, key, _), _)| *key != definition))
 }
 
-fn custody(client: &DevClientSession) -> TestResult<Custody> {
-    let inventory = client.inventory().ok_or("step-1: inventory snapshot missing")?;
+pub(super) fn custody(client: &DevClientSession) -> TestResult<Custody> {
+    let inventory = client
+        .inventory()
+        .ok_or("step-1: inventory snapshot missing")?;
     let mut held = BTreeMap::new();
     let mut record = |slot, item: &oteryn_protocol_oteryn::item_view::ItemEntry| {
         *held
@@ -80,15 +92,22 @@ fn quest_chests(world: &BundleWorld) -> TestResult<Vec<Chest>> {
     let mut chests = Vec::new();
     for claim in report.served {
         for placement in claim.placements {
-            let Some(transition) = placement.placement.quest_transition else { continue };
+            let Some(transition) = placement.placement.quest_transition else {
+                continue;
+            };
             if placement.reward_callback.is_some() {
                 continue;
             }
             let [reward] = placement.placement.items.as_slice() else {
                 continue;
             };
-            let reward_id = reward.item.key().as_str().strip_prefix("oteryn:item.tibia.i")
-                .ok_or("step-2: bound chest reward has no Tibia item key")?.parse()?;
+            let reward_id = reward
+                .item
+                .key()
+                .as_str()
+                .strip_prefix("oteryn:item.tibia.i")
+                .ok_or("step-2: bound chest reward has no Tibia item key")?
+                .parse()?;
             let reward_definition = provisioning::item_reference(&items, reward_id)?.get();
             let mut key = world.base().digest().to_vec();
             key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
@@ -117,13 +136,58 @@ fn adjacent(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x) <= 1 && a.y.abs_diff(b.y) <= 1
 }
 
-fn select_route(world: &BundleWorld, from: TilePos) -> TestResult<(Chest, Vec<StepDirection>)> {
-    for chest in quest_chests(world)? {
-        if let Some(path) = route(world, from, |at| adjacent(at, chest.at)) {
-            return Ok((chest, path));
-        }
+pub(super) const BATTLE_AXE_CLAIM: &str = "oteryn:reward-claim.kv.battleaxe";
+pub(super) const BATTLE_AXE_CHEST: TilePos = TilePos {
+    x: 32305,
+    y: 32254,
+    floor: -9,
+};
+const BATTLE_AXE_APPROACH: TilePos = TilePos {
+    x: 32306,
+    y: 32254,
+    floor: -9,
+};
+
+pub(super) async fn connect_at_battle_axe(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    row: &str,
+) -> TestResult<DevClientSession> {
+    let mut initial = connect_character(clients, tag, index).await?;
+    let reply = initial.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("fixture placement logout refused: {reply:?}").into());
     }
-    Err("step-2: production bundle has no reachable served quest-transition chest with a fixed item reward".into())
+    drop(initial);
+    wait_character_released(clients, index).await?;
+    use sqlx::Connection as _;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions SET tile_x=$3, tile_y=$4, tile_floor=$5
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[index].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(BATTLE_AXE_APPROACH.x))
+    .bind(i32::from(BATTLE_AXE_APPROACH.y))
+    .bind(i16::from(-BATTLE_AXE_APPROACH.floor))
+    .execute(&mut database)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err("fixture placement did not update one durable position".into());
+    }
+    character_prep::declare_seeded(row, "placement", "isolate the fixed Battle Axe chest claim");
+    let client = connect_character(clients, tag.wrapping_add(1), index).await?;
+    let observed = tile(client.world_spatial().actor_position)?;
+    if observed != BATTLE_AXE_APPROACH || !adjacent(observed, BATTLE_AXE_CHEST) {
+        return Err(format!(
+            "fixture placement expected={BATTLE_AXE_APPROACH:?} observed={observed:?}"
+        )
+        .into());
+    }
+    evidence(&format!("W15B_FIXTURE row={row} placement={observed:?}"));
+    Ok(client)
 }
 
 async fn use_chest(client: &mut DevClientSession, chest: &Chest) -> TestResult<UseDisposition> {
@@ -143,14 +207,18 @@ async fn fresh_admission(
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step-5: logout refused: {reply:?}").into());
     }
-    let fresh = connect_character(clients, 0xb6, 1).await?;
+    let fresh = connect_character(clients, 0xb7, 1).await?;
     if fresh.join_snapshot().game_session_id == old {
         return Err("step-5: fresh admission reused the old game session".into());
     }
     Ok(fresh)
 }
 
-async fn quest_receipts(database: &mut sqlx::PgConnection, clients: &SeamClients<'_>, transition: &str) -> TestResult<(i64, i64)> {
+async fn quest_receipts(
+    database: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+    transition: &str,
+) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT count(*), count(*) FILTER (WHERE transition_key=$2) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid")
         .bind(clients.characters[1].as_slice()).bind(transition).fetch_one(database).await?)
 }
@@ -164,17 +232,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xb5, 1).await?;
+    let mut client = connect_at_battle_axe(clients, 0xb5, 1, "W15b.full").await?;
     let before_quests = query_quest_journal(&mut client, false).await?;
     let before_items = custody(&client)?;
 
-    let (chest, path) = select_route(world, tile(client.world_spatial().actor_position)?)?;
-    walk(&mut client, world, &path)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-2: walking to {} failed: {error}", chest.claim), error) })?;
+    let chest = quest_chests(world)?
+        .into_iter()
+        .find(|chest| chest.at == BATTLE_AXE_CHEST && chest.claim == BATTLE_AXE_CLAIM)
+        .ok_or("step-2: exact Battle Axe chest is not served")?;
+    let expected = provisioning::item_reference(&provisioning::item_index()?, 3266)?.get();
+    if chest.reward_definition != expected || chest.reward_count != 1 {
+        return Err("step-2: Battle Axe chest does not bind exactly one Battle Axe".into());
+    }
     use sqlx::Connection as _;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let receipts_before = quest_receipts(&mut database, clients, &chest.transition).await?;
+    if receipts_before.1 != 0 {
+        return Err("step-3: Battle Axe quest transition was already claimed".into());
+    }
     let first = use_chest(&mut client, &chest).await?;
     if first != UseDisposition::Committed {
         return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
@@ -182,7 +257,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let awarded = loop {
         let observed = custody(&client)?;
-        if reward_increased(&before_items, &observed, chest.reward_definition, chest.reward_count) {
+        if reward_increased(
+            &before_items,
+            &observed,
+            chest.reward_definition,
+            chest.reward_count,
+        ) {
             break observed;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -200,12 +280,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step-3: exact quest receipt missing or unrelated transition committed: expected={} before={receipts_before:?} after={receipts_after:?}", chest.transition).into());
     }
     if advanced == before_quests {
-        return Err(format!("step-3: USE committed but quest-list delta missing claim={}", chest.claim).into());
+        return Err(format!(
+            "step-3: USE committed but quest-list delta missing claim={}",
+            chest.claim
+        )
+        .into());
     }
 
     let second = use_chest(&mut client, &chest).await?;
     if second != UseDisposition::NothingToUse {
-        return Err(format!("step-4: duplicate USE reply={second:?} claim={}", chest.claim).into());
+        return Err(format!(
+            "step-4: duplicate USE reply={second:?} claim={}",
+            chest.claim
+        )
+        .into());
     }
     if custody(&client)? != awarded || query_quest_journal(&mut client, false).await? != advanced {
         return Err("step-4: refused duplicate changed inventory or quest state".into());
@@ -213,13 +301,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let mut fresh = fresh_admission(&mut client, clients).await?;
     if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
-        return Err("step-5: reward custody or quest advance did not survive fresh admission".into());
+        return Err(
+            "step-5: reward custody or quest advance did not survive fresh admission".into(),
+        );
     }
-    let back = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
-        adjacent(at, chest.at)
-    })
-    .ok_or("step-5: no player route back to claimed chest")?;
-    walk(&mut fresh, world, &back).await?;
+    if tile(fresh.world_spatial().actor_position)? != BATTLE_AXE_APPROACH {
+        return Err("step-5: relog did not restore the chest approach tile".into());
+    }
     let after_relog = use_chest(&mut fresh, &chest).await?;
     if after_relog != UseDisposition::NothingToUse {
         return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());
@@ -228,7 +316,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("step-5: post-relog refusal changed durable inventory or quest state".into());
     }
     if quest_receipts(&mut database, clients, &chest.transition).await? != receipts_after {
-        return Err("step-5: duplicate USE or fresh admission changed durable quest receipts".into());
+        return Err(
+            "step-5: duplicate USE or fresh admission changed durable quest receipts".into(),
+        );
     }
     let logout = fresh.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -239,7 +329,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     match result {
         Ok(Ok(detail)) => evidence(&format!(
             "e2e_all scenario=W15b.full status=PASS seconds={:.3} evidence={detail}",
@@ -278,9 +370,34 @@ mod tests {
 
     #[test]
     fn adjacency_is_same_floor_and_chebyshev_one() {
-        let chest = TilePos { x: 10, y: 10, floor: -7 };
-        assert!(adjacent(chest, TilePos { x: 9, y: 11, floor: -7 }));
-        assert!(!adjacent(chest, TilePos { x: 8, y: 10, floor: -7 }));
-        assert!(!adjacent(chest, TilePos { x: 10, y: 10, floor: -6 }));
+        let chest = TilePos {
+            x: 10,
+            y: 10,
+            floor: -7,
+        };
+        assert!(adjacent(
+            chest,
+            TilePos {
+                x: 9,
+                y: 11,
+                floor: -7
+            }
+        ));
+        assert!(!adjacent(
+            chest,
+            TilePos {
+                x: 8,
+                y: 10,
+                floor: -7
+            }
+        ));
+        assert!(!adjacent(
+            chest,
+            TilePos {
+                x: 10,
+                y: 10,
+                floor: -6
+            }
+        ));
     }
 }

@@ -129,10 +129,6 @@ fn quest_chests(world: &BundleWorld) -> TestResult<Vec<Chest>> {
     Ok(chests)
 }
 
-fn adjacent(a: TilePos, b: TilePos) -> bool {
-    a.floor == b.floor && a.x.abs_diff(b.x) <= 1 && a.y.abs_diff(b.y) <= 1
-}
-
 async fn use_chest(client: &mut DevClientSession, chest: &Chest) -> TestResult<UseDisposition> {
     Ok(client
         .session_mut()
@@ -142,7 +138,10 @@ async fn use_chest(client: &mut DevClientSession, chest: &Chest) -> TestResult<U
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
-    let mut client = connect_character(clients, 0x87, 0).await?;
+    use super::full_row_w15b::{
+        BATTLE_AXE_CHEST, BATTLE_AXE_CLAIM, connect_at_battle_axe, custody, reward_increased,
+    };
+    let mut client = connect_at_battle_axe(clients, 0x87, 0, "W15b.client").await?;
     let snapshot = client
         .session_mut()
         .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
@@ -159,34 +158,25 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         item_view::encode_character_inventory_with_equip_drop(inventory, true)
             .map_err(|error| format!("inventory encode: {error:?}").into())
     };
+    let before_custody = custody(&client)?;
     let before_units = units(&client)?;
     let before_payload = inventory_payload(&client)?;
     let before = list(&mut client).await?;
-    // The earlier full row claimed the first chest on another Character; this Character claims
-    // the first chest whose use commits, and a chest that reports NothingToUse is skipped.
-    let mut claimed = None;
-    for chest in quest_chests(world)?.into_iter().take(12) {
-        let from = tile(client.world_spatial().actor_position)?;
-        let Some(path) = route(world, from, |at| adjacent(at, chest.at)) else {
-            continue;
-        };
-        walk(&mut client, world, &path).await?;
-        match use_chest(&mut client, &chest).await? {
-            UseDisposition::Committed => {
-                claimed = Some(chest);
-                break;
-            }
-            UseDisposition::NothingToUse => continue,
-            other => {
-                return Err(format!("step=use claim={} disposition={other:?}", chest.claim).into());
-            }
-        }
+    let chest = quest_chests(world)?
+        .into_iter()
+        .find(|chest| chest.at == BATTLE_AXE_CHEST && chest.claim == BATTLE_AXE_CLAIM)
+        .ok_or("step=use exact Battle Axe chest is not served")?;
+    let first = use_chest(&mut client, &chest).await?;
+    if first != UseDisposition::Committed {
+        return Err(format!("step=use claim={} disposition={first:?}", chest.claim).into());
     }
-    let chest = claimed.ok_or("step=use no reachable unclaimed quest reward chest committed")?;
     let after_units = units(&client)?;
     let after_payload = inventory_payload(&client)?;
     let after = list(&mut client).await?;
-    if after_units == before_units || after.entries == before.entries {
+    let expected_reward = provisioning::item_reference(&provisioning::item_index()?, 3266)?.get();
+    if !reward_increased(&before_custody, &custody(&client)?, expected_reward, 1)
+        || after.entries == before.entries
+    {
         return Err(format!(
             "step=claim claim={} inventory_changed={} quest_changed={}",
             chest.claim,
@@ -220,7 +210,10 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture("w15b-inventory-before.bin", &before_payload);
     capture("w15b-inventory-after.bin", &after_payload);
     capture("w15b-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout refused: {logout:?}").into());
+    }
     Ok(format!(
         "claim={} before={before_units} after={after_units}",
         chest.claim
