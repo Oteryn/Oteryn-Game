@@ -157,6 +157,7 @@ fn wolf_move(item: u16, key: &str, reward: u16, captures: bool, relocating: bool
         (6, 0, 7),
         Some(Tile {
             admits: true,
+            pushable_blockers: false,
             ground_clear: true,
             solid: false,
             // This explicit open ground/trap fixture has no immutable solid barrier.

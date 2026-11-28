@@ -1,4 +1,5 @@
 //! Current Map/Item/LocalObject facts, borrowed for one physical Item-owner transaction.
+mod monster_push;
 #[cfg(test)]
 mod movement_script_tests;
 mod prepared;
@@ -37,6 +38,7 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Clone, Copy)]
 struct Tile {
     admits: bool,
+    pushable_blockers: bool,
     solid: bool,
     source_spawn_admits: bool,
     ground_clear: bool,
@@ -374,6 +376,10 @@ pub struct CurrentMonsterMap<'a, 'db> {
     empty_tiles: BTreeSet<Vec<u8>>,
     read_chunks: BTreeSet<(i32, i32, i16)>,
     source_observed_seconds: Option<u64>,
+    monster_push_owner: Option<(
+        &'a crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        u64,
+    )>,
 }
 impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     /// The qualified room already bound to this map and transaction.
@@ -399,6 +405,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             empty_tiles: BTreeSet::new(),
             read_chunks: BTreeSet::new(),
             source_observed_seconds: None,
+            monster_push_owner: None,
             view: MonsterMap {
                 cells: room.movement_cells().clone(),
                 valid: true,
@@ -1004,6 +1011,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         {
             return Some(Tile {
                 admits: false,
+                pushable_blockers: false,
                 solid: true,
                 source_spawn_admits: false,
                 ground_clear: false,
@@ -1113,6 +1121,7 @@ fn merge_current_tile(
     items: &crate::durability::spell_items_abi::DurableTileItems,
 ) -> Option<Tile> {
     let mut solid = tile.flags().block_solid;
+    let mut blockers_movable = !solid;
     let mut immovable_solid = tile.flags().immovable_block_solid;
     let mut source_placement_proven = true;
     let mut projectile = tile.flags().block_projectile;
@@ -1157,6 +1166,9 @@ fn merge_current_tile(
             attributes.immovable_block_solid == Some(item.immovable_block_solid);
         immovable_solid |= attributes.immovable_block_solid != Some(item.immovable_block_solid)
             || item.immovable_block_solid;
+        if item.blocks_movement {
+            blockers_movable &= monster_push::movable_blocker(item, policy);
+        }
         solid |= item.blocks_movement;
         projectile |= item.blocks_projectile;
     }
@@ -1177,6 +1189,12 @@ fn merge_current_tile(
         }
     }
     Some(Tile {
+        pushable_blockers: solid
+            && blockers_movable
+            && tile.ground_present()
+            && !tile.flags().protection_zone
+            && !tile.flags().floor_change
+            && !teleport,
         ground_clear: tile.ground_present() && !solid,
         solid,
         source_placement_proven,

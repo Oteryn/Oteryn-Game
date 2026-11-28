@@ -777,6 +777,36 @@ pub fn activated_loop_monster(
 ) {
     activate(world, &loop_monster_input(summons))
 }
+/// Same native walk-back fixture, with both movement flags explicitly set for the test.
+pub fn activated_monster_shove(
+    world: oteryn_protocol_oteryn::WorldId,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut input = loop_monster_input(false);
+    let mut profiles: CreatureProfilesDocument =
+        serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+    let rat = profiles
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .expect("rat profile");
+    let Some(ProjectV2AuthoringProfile {
+        data: ProjectV2AuthoringProfileData::Behavior(behavior),
+        ..
+    }) = &mut rat.behavior
+    else {
+        panic!("rat Behavior closure")
+    };
+    behavior.movement.push_items = true;
+    behavior.movement.push_creatures = true;
+    behavior.movement.pushable = true;
+    refresh_fixture_attack_roots(rat);
+    input.creature_profiles = pinned(&serde_json::to_vec(&profiles).unwrap());
+    activate(world, &input)
+}
+
 fn loop_monster_input(summons: bool) -> NativeGameplayInput {
     let mut supplied = manifest_input();
     supplied.source_world = Some(pinned(include_bytes!(

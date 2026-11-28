@@ -1,4 +1,5 @@
 //! Current transaction reads feed the existing goal, search and DEADLINE_STATE owners.
+use super::monster_push::PushableOccupants;
 use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
 use crate::movement::path_search::PathOccupancy;
@@ -12,16 +13,26 @@ struct PathRead<'a, 'tx, 'db> {
     target: MovementLocalPosition,
     exact: bool,
     walks_on_fields: [bool; 3],
+    push_items: bool,
+    pushable: Option<&'a PushableOccupants>,
 }
 impl PathTileReader for PathRead<'_, '_, '_> {
     async fn cost(&mut self, at: MovementLocalPosition) -> Option<u32> {
-        if (!self.exact && at == self.target) || self.map.read(self.runtime, at).await != Some(true)
+        if (!self.exact && at == self.target)
+            || (self.map.read(self.runtime, at).await != Some(true)
+                && !self.map.view().admits_monster_approach(at, self.push_items))
         {
             return None;
         }
-        self.occupancy
-            .extra_cost(at, self.start)
-            .checked_add(self.map.view().field_path_cost(at, self.walks_on_fields)?)
+        let occupancy = if self
+            .pushable
+            .is_some_and(|pushable| pushable.at(at).is_some())
+        {
+            0
+        } else {
+            self.occupancy.extra_cost(at, self.start)
+        };
+        occupancy.checked_add(self.map.view().field_path_cost(at, self.walks_on_fields)?)
     }
 }
 impl CreatureAiTable {
@@ -193,6 +204,7 @@ impl CreatureAiTable {
         order.sort_by_key(|(due, identity, _)| (*due, *identity));
         budget.declare_creatures(order.len());
         let occupancy = PathOccupancy::current(runtime);
+        let pushable = self.current_pushable_occupants(runtime);
         for (_, _, actor) in order {
             if !budget.admits(now, false, player_waiting) {
                 break;
@@ -216,6 +228,8 @@ impl CreatureAiTable {
                 start,
                 target,
                 exact,
+                push_items: movement.push_items,
+                pushable: movement.push_creatures.then_some(&pushable),
                 walks_on_fields: [
                     movement.walks_on_fire,
                     movement.walks_on_energy,

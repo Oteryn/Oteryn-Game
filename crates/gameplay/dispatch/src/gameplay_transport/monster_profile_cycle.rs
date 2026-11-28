@@ -430,6 +430,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     objects.collision_cells()
                 };
+                map.bind_monster_push_owner(owner.holder, owner.reset_epoch);
+                if table.clear_due_monster_step(runtime, &mut map, *native, candidates, now, execution_now)
+                    .await.map_err(|_| crate::durability::DurabilityError::Unavailable)? {
+                    drop(map);
+                    let committed = crate::durability::spell_item_transaction::commit_creature_item_owner_transaction(
+                        tx, deadline,
+                    ).await;
+                    owner.states.loop_ground.invalidate();
+                    committed?;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
                 let player_waiting = attack.players_waiting(now);
                 if native_pending.is_none() && primal_pending.is_none() {
                 // Carried creature requests precede player chase and fresh thinks.

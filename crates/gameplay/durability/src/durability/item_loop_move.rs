@@ -40,6 +40,7 @@ pub(in crate::durability) mod floor_transform;
 pub use floor_assembly::FloorAssemblyTarget;
 
 mod house;
+pub mod monster_push;
 mod seed_drop;
 mod source_scene;
 mod subtree;
@@ -2466,7 +2467,7 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
+                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL OR game_monster_item_push_current(g,i.state_revision)) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
                                 CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
                                 CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
@@ -2491,7 +2492,7 @@ impl DurabilityRoot {
                             AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                             AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
                                  OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
-                                 OR sa.transaction_id IS NOT NULL \
+                                 OR sa.transaction_id IS NOT NULL OR game_monster_item_push_current(g,i.state_revision) \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",

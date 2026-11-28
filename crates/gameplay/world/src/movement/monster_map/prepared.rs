@@ -94,6 +94,7 @@ impl ReadPreparedMonsterMap {
                 None => Tile {
                     ground_clear: false,
                     admits: false,
+                    pushable_blockers: false,
                     solid: true,
                     source_spawn_admits: false,
                     projectile: true,

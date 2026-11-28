@@ -18,6 +18,7 @@ mod creature_goal_adoption;
 mod creature_paths;
 mod creature_step_choice;
 mod creature_step_timer;
+mod monster_push;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct StepFamily;
@@ -42,6 +43,7 @@ pub(super) struct CreatureMotion {
     pub(super) expected: Option<MovementPositionSnapshot>,
     pub(super) target_snapshot: Option<(ExactActorRef, MovementPositionSnapshot)>,
     pub(super) due: Option<u64>,
+    shove_checked: bool,
     pub(super) prepared: Option<(crate::movement::CardinalStep, MovementLocalPosition, bool)>,
 }
 impl Default for CreatureMotion {
@@ -59,6 +61,7 @@ impl Default for CreatureMotion {
             expected: None,
             target_snapshot: None,
             due: None,
+            shove_checked: false,
             prepared: None,
         }
     }

@@ -73,7 +73,25 @@ impl CreatureAiTable {
                 &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(through_us)),
                 fence,
                 |actor| runtime.contains_live_creature(actor),
-                |_, _| std::mem::take(&mut first),
+                |_, actor| {
+                    if !std::mem::take(&mut first) {
+                        return false;
+                    }
+                    let Some(map) = current_map else { return true };
+                    let Some(entry) = self.entry(actor) else {
+                        return true;
+                    };
+                    let Some((_, next, _)) = entry.motion.prepared else {
+                        return true;
+                    };
+                    let movement = &entry.state.profile.behavior().movement;
+                    entry.motion.shove_checked
+                        || !(movement.push_items
+                            && !map.admits(next)
+                            && map.admits_monster_approach(next, true)
+                            || movement.push_creatures
+                                && runtime.position_occupied_by_other(actor, next) == Ok(true))
+                },
             );
             let Some(timer) = fired.into_iter().next() else {
                 break;
@@ -171,6 +189,7 @@ impl CreatureAiTable {
                 entry.due_us = Some(entry.due_us.map_or(now, |due| due.min(now)));
             }
         }
+        let pushable = current_map.map(|_| self.current_pushable_occupants(runtime));
         for entry in self.entries.values_mut() {
             let actor = entry.state.actor;
             let motion = &mut entry.motion;
@@ -232,8 +251,19 @@ impl CreatureAiTable {
                     .is_none_or(|(_, target)| sight(cells, blocking, current_map, at, target)),
                 root,
                 |next| {
-                    admits(cells, blocking, current_map, next)
-                        && runtime.position_occupied_by_other(actor, next) == Ok(false)
+                    let movement = &entry.state.profile.behavior().movement;
+                    let terrain = current_map.map_or_else(
+                        || admits(cells, blocking, None, next),
+                        |map| map.admits_monster_approach(next, movement.push_items),
+                    );
+                    terrain
+                        && match runtime.position_occupied_by_other(actor, next) {
+                            Ok(false) => true,
+                            Ok(true) if movement.push_creatures => pushable
+                                .as_ref()
+                                .is_some_and(|occupants| occupants.at(next).is_some()),
+                            _ => false,
+                        }
                 },
             ) else {
                 // Budget-waiting requests keep their goal/path and hold without retrying a search.
@@ -293,6 +323,7 @@ impl CreatureAiTable {
                         .map(|snapshot| (target, snapshot))
                 });
                 motion.due = Some(due);
+                motion.shove_checked = false;
                 motion.prepared = Some((step, next, near));
             }
         }
@@ -300,7 +331,7 @@ impl CreatureAiTable {
     }
 }
 
-fn walk_back_player_in_view(
+pub(super) fn walk_back_player_in_view(
     runtime: &ChannelRuntimeV1,
     profile: &CreatureBehaviourProfile,
     at: MovementLocalPosition,

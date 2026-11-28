@@ -75,6 +75,7 @@ mod tests {
         map.tiles.insert(
             (at.x, at.y, at.floor),
             Some(Tile {
+                pushable_blockers: false,
                 admits: true,
                 ground_clear: true,
                 solid: false,
@@ -101,6 +102,7 @@ mod tests {
         map.tiles.insert(
             (at.x, at.y, at.floor),
             Some(Tile {
+                pushable_blockers: false,
                 admits: true,
                 ground_clear: true,
                 solid: false,
@@ -123,6 +125,7 @@ mod tests {
         map.tiles.insert(
             (at.x, at.y, at.floor),
             Some(Tile {
+                pushable_blockers: false,
                 admits: false,
                 ground_clear: false,
                 solid: false,
@@ -145,6 +148,7 @@ mod tests {
         map.tiles.insert(
             (at.x, at.y, at.floor),
             Some(Tile {
+                pushable_blockers: false,
                 admits: false,
                 ground_clear: true,
                 solid: false,

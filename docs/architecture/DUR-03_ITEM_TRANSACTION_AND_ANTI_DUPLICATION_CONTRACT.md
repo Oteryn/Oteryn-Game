@@ -891,6 +891,17 @@ aggregate payload for each distinct logical transaction:
   quantity and leaving exactly one authoritative immediate location. (The D3
   amendment in §39.3 additionally admits a `Container { parent = a live corpse
   ItemInstance }` source, alongside Ground, for that one named shape.)
+  A monster's prepared, content-qualified step also admits a same-scope
+  `Ground`-to-`Ground` transfer of whole, materialized movable blockers
+  whose admitted lifetime is permanent. The Item owner compares the original
+  item revision and ground ordinal under the current node, scope and reset
+  fences. It commits exact before and after addresses and an immutable receipt
+  keyed by the original ordinal with the actor and step occurrence. The pile moves atomically. Instance identity, quantity,
+  definition, state revision and mint provenance are preserved. The step
+  rereads current custody before advancing. Tibia Global's Random Hints says,
+  “Keep in mind that not all monsters are pushable, some can rather push objects
+  or weaker monsters themselves in order to get a good hit at you.”
+  [TibiaWiki archive](https://web.archive.org/web/20251005020319/https://tibia.fandom.com/wiki/Random_Hints)
 - `DECAY_RETIRE` (D3 amendment, §39.3 below): one already-existing live
   ItemInstance moves from its live location (typed `Ground`, for a corpse
   ItemInstance, or a `Container` entry, for a loot ItemInstance) to `RETIRED`
