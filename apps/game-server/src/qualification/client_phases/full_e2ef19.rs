@@ -1,8 +1,6 @@
 //! E2EF19: private messages and transient private chat channels between real players.
 use super::*;
-use oteryn_dev_client::{
-    ChatDisposition, ChatIntent, ChatLine, DevClientSession, SessionEvent,
-};
+use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::chat::private_channel::{ChatChannelList, PrivateChannelIntent};
 
 const ACTIONS: &[&str] = &[
@@ -36,7 +34,9 @@ impl Row {
 
     fn pass(&mut self, action: &'static str) {
         if ACTIONS.contains(&action) && self.passed.insert(action) {
-            evidence(&format!("E2EF19_CHECK S04b {action} PASS observed-native-reply-and-delta"));
+            evidence(&format!(
+                "E2EF19_CHECK S04b {action} PASS observed-native-reply-and-delta"
+            ));
         }
     }
 
@@ -57,12 +57,10 @@ impl Row {
                 "FAIL"
             },
             self.started.elapsed().as_secs_f64(),
-            result
-                .as_ref()
-                .err()
-                .map_or("private-message-and-channel-lifecycle-observed".into(), |error| {
-                    format!("step-reply:{error}").replace(' ', "-")
-                }),
+            result.as_ref().err().map_or(
+                "private-message-and-channel-lifecycle-observed".into(),
+                |error| { format!("step-reply:{error}").replace(' ', "-") }
+            ),
         ));
     }
 }
@@ -76,7 +74,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("names:world-entities-missing")?;
+    let entities = client
+        .world_entities()
+        .ok_or("names:world-entities-missing")?;
     let name = entities
         .iter()
         .find(|entity| entity.entity.identity == *entities.own_identity())
@@ -111,23 +111,11 @@ async fn expect_disposition(
     expected: ChatDisposition,
     step: &str,
 ) -> TestResult {
-    for attempt in 0..=2 {
-        let reply = client.chat(&intent).await?;
-        if reply.disposition == expected {
-            return Ok(());
-        }
-        if !matches!(
-            reply.disposition,
-            ChatDisposition::Muted | ChatDisposition::Exhausted
-        ) || attempt == 2
-        {
-            return Err(format!("{step}:disposition={:?}", reply.disposition).into());
-        }
-        client
-            .service_liveness(Duration::from_secs(u64::from(reply.wait_seconds.max(1))))
-            .await?;
+    let reply = client.chat(&intent).await?;
+    if reply.disposition != expected {
+        return Err(format!("{step}:disposition={:?}", reply.disposition).into());
     }
-    Err(format!("{step}:retry-bound-exhausted").into())
+    Ok(())
 }
 
 fn take_private(client: &mut DevClientSession, speaker: &str, text: &str) -> bool {
@@ -177,9 +165,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
         accepted(
             &mut a,
-            ChatIntent::Private { recipient_name: b_name.clone(), text: "e2ef19-a-pm".into() },
+            ChatIntent::Private {
+                recipient_name: b_name.clone(),
+                text: "e2ef19-a-pm".into(),
+            },
             "private-a-to-b",
-        ).await?;
+        )
+        .await?;
         settle(&mut b).await?;
         if !take_private(&mut b, &a_name, "e2ef19-a-pm") {
             return Err("private-a-to-b:accepted-but-recipient-line-missing".into());
@@ -188,9 +180,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
         accepted(
             &mut b,
-            ChatIntent::Private { recipient_name: a_name.clone(), text: "e2ef19-b-pm".into() },
+            ChatIntent::Private {
+                recipient_name: a_name.clone(),
+                text: "e2ef19-b-pm".into(),
+            },
             "private-b-to-a",
-        ).await?;
+        )
+        .await?;
         settle(&mut a).await?;
         if !take_private(&mut a, &b_name, "e2ef19-b-pm") {
             return Err("private-b-to-a:accepted-but-recipient-line-missing".into());
@@ -209,30 +205,94 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await?;
         row.pass("offline-refusal");
 
-        accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Create), "channel-create").await?;
-        let channel_id = channel_list(&mut a, "channel-create-list").await?.own_channel
+        character_prep::grant_premium(&a).await?;
+        evidence("S04B_FIXTURE premium=granted role=channel_owner");
+        if channel_list(&mut a, "channel-create-pre-list")
+            .await?
+            .own_channel
+            .is_some()
+        {
+            return Err("channel-create:own-channel-already-listed".into());
+        }
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Create),
+            "channel-create",
+        )
+        .await?;
+        let channel_id = channel_list(&mut a, "channel-create-list")
+            .await?
+            .own_channel
             .ok_or("channel-create:accepted-but-own-channel-absent")?;
         row.pass("channel-create");
-        accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Invite { name: b_name.clone() }), "channel-invite").await?;
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Invite {
+                name: b_name.clone(),
+            }),
+            "channel-invite",
+        )
+        .await?;
         let invited = channel_list(&mut b, "channel-invite-list").await?;
-        if !invited.invited.iter().any(|invite| invite.channel_id == channel_id && invite.owner_name == a_name) {
+        if !invited
+            .invited
+            .iter()
+            .any(|invite| invite.channel_id == channel_id && invite.owner_name == a_name)
+        {
             return Err("channel-invite:accepted-but-peer-invitation-delta-missing".into());
         }
         row.pass("channel-invite");
-        accepted(&mut b, ChatIntent::PrivateChannel(PrivateChannelIntent::Join { channel_id }), "channel-join").await?;
+        accepted(
+            &mut b,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Join { channel_id }),
+            "channel-join",
+        )
+        .await?;
         row.pass("channel-join");
 
-        accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Say { channel_id, text: "e2ef19-a-channel".into() }), "channel-a-to-b").await?;
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Say {
+                channel_id,
+                text: "e2ef19-a-channel".into(),
+            }),
+            "channel-a-to-b",
+        )
+        .await?;
         settle(&mut b).await?;
-        if !take_channel(&mut b, channel_id, &a_name, "e2ef19-a-channel") { return Err("channel-a-to-b:accepted-but-line-missing".into()); }
+        if !take_channel(&mut b, channel_id, &a_name, "e2ef19-a-channel") {
+            return Err("channel-a-to-b:accepted-but-line-missing".into());
+        }
         row.pass("channel-a-to-b");
-        accepted(&mut b, ChatIntent::PrivateChannel(PrivateChannelIntent::Say { channel_id, text: "e2ef19-b-channel".into() }), "channel-b-to-a").await?;
+        accepted(
+            &mut b,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Say {
+                channel_id,
+                text: "e2ef19-b-channel".into(),
+            }),
+            "channel-b-to-a",
+        )
+        .await?;
         settle(&mut a).await?;
-        if !take_channel(&mut a, channel_id, &b_name, "e2ef19-b-channel") { return Err("channel-b-to-a:accepted-but-line-missing".into()); }
+        if !take_channel(&mut a, channel_id, &b_name, "e2ef19-b-channel") {
+            return Err("channel-b-to-a:accepted-but-line-missing".into());
+        }
         row.pass("channel-b-to-a");
 
-        accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Exclude { name: b_name.clone() }), "channel-exclude").await?;
-        if channel_list(&mut b, "channel-exclude-list").await?.invited.iter().any(|invite| invite.channel_id == channel_id) {
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Exclude {
+                name: b_name.clone(),
+            }),
+            "channel-exclude",
+        )
+        .await?;
+        let before_refusal = channel_list(&mut b, "channel-exclude-list").await?;
+        if before_refusal
+            .invited
+            .iter()
+            .any(|invite| invite.channel_id == channel_id)
+        {
             return Err("channel-exclude:peer-still-invited".into());
         }
         row.pass("channel-exclude");
@@ -246,21 +306,69 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "excluded-post-refusal",
         )
         .await?;
+        if channel_list(&mut b, "excluded-post-list").await? != before_refusal {
+            return Err("excluded-post-refusal:peer-channel-list-changed".into());
+        }
+        settle(&mut a).await?;
+        if take_channel(&mut a, channel_id, &b_name, "must refuse") {
+            return Err("excluded-post-refusal:refused-line-delivered".into());
+        }
         row.pass("excluded-post-refusal");
-        accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Leave { channel_id }), "channel-close").await?;
-        if channel_list(&mut a, "channel-close-list").await?.own_channel.is_some() { return Err("channel-close:own-channel-still-listed".into()); }
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Leave { channel_id }),
+            "channel-close",
+        )
+        .await?;
+        if channel_list(&mut a, "channel-close-list")
+            .await?
+            .own_channel
+            .is_some()
+        {
+            return Err("channel-close:own-channel-still-listed".into());
+        }
         row.pass("channel-close");
 
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Create),
+            "relog-create",
+        )
+        .await?;
+        if channel_list(&mut a, "relog-pre-list")
+            .await?
+            .own_channel
+            .is_none()
+        {
+            return Err("relog-transient:no-open-channel-before-logout".into());
+        }
         logout(&mut a).await?;
         a = connect_character(clients, 0xe3, 0).await?;
-        if channel_list(&mut a, "relog-transient-list").await?.own_channel.is_some() { return Err("relog-transient:channel-replayed".into()); }
+        if channel_list(&mut a, "relog-transient-list")
+            .await?
+            .own_channel
+            .is_some()
+        {
+            return Err("relog-transient:channel-replayed".into());
+        }
         row.pass("relog-transient");
-        accepted(&mut a, ChatIntent::Private { recipient_name: b_name, text: "e2ef19-relog-pm".into() }, "relog-private-message").await?;
+        accepted(
+            &mut a,
+            ChatIntent::Private {
+                recipient_name: b_name,
+                text: "e2ef19-relog-pm".into(),
+            },
+            "relog-private-message",
+        )
+        .await?;
         settle(&mut b).await?;
-        if !take_private(&mut b, &a_name, "e2ef19-relog-pm") { return Err("relog-private-message:accepted-but-line-missing".into()); }
+        if !take_private(&mut b, &a_name, "e2ef19-relog-pm") {
+            return Err("relog-private-message:accepted-but-line-missing".into());
+        }
         row.pass("relog-private-message");
         Ok(())
-    }.await;
+    }
+    .await;
     let a_logout = logout(&mut a).await;
     let b_logout = logout(&mut b).await;
     result.and(a_logout).and(b_logout)

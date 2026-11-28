@@ -13,7 +13,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S04B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "S04B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -29,24 +31,8 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .map_err(|e| format!("invalid display name: {e:?}").into())
 }
 
-async fn chat(
-    client: &mut DevClientSession,
-    intent: ChatIntent,
-) -> TestResult<ChatDisposition> {
-    for attempt in 0..=2 {
-        let reply = client.chat(&intent).await?;
-        if !matches!(
-            reply.disposition,
-            ChatDisposition::Muted | ChatDisposition::Exhausted
-        ) || attempt == 2
-        {
-            return Ok(reply.disposition);
-        }
-        client
-            .service_liveness(Duration::from_secs(u64::from(reply.wait_seconds.max(1))))
-            .await?;
-    }
-    Err("chat retry bound exhausted".into())
+async fn chat(client: &mut DevClientSession, intent: ChatIntent) -> TestResult<ChatDisposition> {
+    Ok(client.chat(&intent).await?.disposition)
 }
 
 async fn accepted(client: &mut DevClientSession, intent: PrivateChannelIntent) -> TestResult {
@@ -79,14 +65,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if a_name == b_name {
         return Err("both admissions have the same character name".into());
     }
-    let selected: Vec<String> = b.selected_capabilities().iter().map(u32::to_string).collect();
+    let selected: Vec<String> = b
+        .selected_capabilities()
+        .iter()
+        .map(u32::to_string)
+        .collect();
 
+    character_prep::grant_premium(&a).await?;
+    evidence("S04B_FIXTURE premium=granted role=channel_owner");
+    if channel_list(&mut a).await?.own_channel.is_some() {
+        return Err("owner already has a private channel before Create".into());
+    }
     accepted(&mut a, PrivateChannelIntent::Create).await?;
     let channel_id = channel_list(&mut a)
         .await?
         .own_channel
         .ok_or("own channel absent after Create")?;
-    accepted(&mut a, PrivateChannelIntent::Invite { name: b_name.clone() }).await?;
+    accepted(
+        &mut a,
+        PrivateChannelIntent::Invite {
+            name: b_name.clone(),
+        },
+    )
+    .await?;
     let invited = channel_list(&mut b).await?;
     if !invited
         .invited
@@ -131,7 +132,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &chat::encode_chat_line(&line).map_err(|e| format!("encode line: {e:?}"))?,
     );
 
-    accepted(&mut a, PrivateChannelIntent::Exclude { name: b_name.clone() }).await?;
+    accepted(
+        &mut a,
+        PrivateChannelIntent::Exclude {
+            name: b_name.clone(),
+        },
+    )
+    .await?;
+    let before_refusal = channel_list(&mut b).await?;
+    if before_refusal
+        .invited
+        .iter()
+        .any(|invite| invite.channel_id == channel_id)
+    {
+        return Err("excluded peer still has a channel invitation".into());
+    }
     let refusal = chat(
         &mut b,
         ChatIntent::PrivateChannel(PrivateChannelIntent::Say {
@@ -143,19 +158,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refusal != ChatDisposition::NotInvited {
         return Err(format!("excluded post disposition {refusal:?}").into());
     }
+    if channel_list(&mut b).await? != before_refusal {
+        return Err("refused post changed the peer's channel list".into());
+    }
     let expected = format!(
         "owner={a_name}\nchannel={channel_id}\ntext={text}\nselected={}\nrefusal=NotInvited\n",
         selected.join(",")
     );
     capture("s04b-expected.txt", expected.as_bytes());
     accepted(&mut a, PrivateChannelIntent::Leave { channel_id }).await?;
-    let _ = a.session_mut().logout().await?;
-    let _ = b.session_mut().logout().await?;
+    if channel_list(&mut a).await?.own_channel.is_some() {
+        return Err("closed private channel still listed for owner".into());
+    }
+    for client in [&mut a, &mut b] {
+        let reply = client.session_mut().logout().await?;
+        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("logout refused: {:?}", reply.result).into());
+        }
+    }
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S04b.client status=CAPTURED evidence={expected}"
         )),
