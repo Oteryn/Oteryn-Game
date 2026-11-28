@@ -291,7 +291,8 @@ async fn provision_instance(clients: &SeamClients<'_>, client: &DevClientSession
     let scope = RuntimeScopeRefV1::instance(
         WorldId::decode(&clients.world)?,
         crate::node::uuid_bytes(INSTANCE).ok_or("G36 Instance fixture identity")?,
-    )?;
+    )
+    .map_err(|error| format!("G36 Instance fixture scope: {error:?}"))?;
     let holder = NodeRegistrationFact::new(NodeId::decode(&holder)?, revision.parse()?);
     let writer = RuntimeScopeAssignmentWriter::open(root, "node-boot-g36")
         .await
