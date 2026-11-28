@@ -254,14 +254,24 @@ async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(until, "bounded-observation");
+    let mut last_seen = None;
     loop {
         c.service_liveness(Duration::from_millis(50)).await?;
         c.take_events();
-        if c.world_entities()
-            .is_some_and(|es| es.get(&target).is_none())
-        {
-            c.session_mut().attack_target(None).await?;
-            return Ok(());
+        if let Some(entities) = c.world_entities() {
+            if let Some(entity) = entities.get(&target) {
+                last_seen = Some(*entity);
+            } else {
+                let vitals = c.session_mut().actor_vitals().copied();
+                evidence(&format!(
+                    "P02_COMBAT key={key} target={target:?} visible=false last_seen={last_seen:?} player_vitals={vitals:?}"
+                ));
+                if vitals.is_none_or(|vitals| vitals.health == 0) {
+                    return Err(format!("step boss-kill {key}: player not alive when boss left visibility").into());
+                }
+                c.session_mut().attack_target(None).await?;
+                return Ok(());
+            }
         }
         if tokio::time::Instant::now() >= until {
             c.session_mut().attack_target(None).await?;
@@ -321,7 +331,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("initial boss slot details missing")?
         .boosted
         .clone();
-    if initial_slot.status != 0 {
+    if initial_slot.status != 0
+        || !before.progress.is_empty()
+        || before.points != 0
+        || initial_slot.points != 0
+        || initial_slot.bosses.iter().any(|boss| !boss.is_empty())
+        || daily_boss != "oteryn:creature.ekatrix"
+    {
         return Err(format!("initial boss slot query: {initial_slot:?}").into());
     }
     row.pass(
@@ -335,20 +351,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("daily boosted boss is not an Archfoe: {daily_boss}").into());
     }
-    // Global Bosstiary lists Arachir as a Nemesis (Prowess at one kill).
-    let boss = "oteryn:creature.arachir_the_ancient_one".to_owned();
-    let ordinary = catalog
+    // Global Bosstiary lists Rotworm Queen as a Nemesis (one kill, ten points).
+    let boss = "oteryn:creature.rotworm_queen".to_owned();
+    catalog
         .iter()
         .find(|entry| entry.key == boss && entry.category.eq_ignore_ascii_case("nemesis"))
         .ok_or("P02 Global ordinary boss absent from Nemesis catalogue")?;
-    let prowess = crate::domain::bosstiary::kill_thresholds(&ordinary.category)
-        .ok_or("P02 ordinary boss thresholds missing")?[0];
     prepare_boss_ground(&mut c, world).await?;
     let previous = counts(&before).get(&boss).copied().unwrap_or(0);
     kill(&mut c, &boss).await?;
     let credited = snapshot(&mut c).await?;
     let current = counts(&credited).get(&boss).copied().unwrap_or(0);
-    if previous.checked_add(1) != Some(current) || credited.points <= before.points {
+    if previous.checked_add(1) != Some(current) || credited.points != 10 {
         return Err(format!("step boss-kill {boss}: expected +1 and Prowess points, observed kills={previous}->{current} points={} -> {}", before.points, credited.points).into());
     }
     before = credited.clone();
@@ -356,21 +370,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "boss-kill-progress",
         (&boss, &credited.progress, credited.points),
     );
-    while counts(&before).get(&boss).copied().unwrap_or(0) < prowess {
-        let previous = counts(&before).get(&boss).copied().unwrap_or(0);
-        kill(&mut c, &boss).await.map_err(|error| {
-            verdict::record_error(error.as_ref());
-            verdict::context(format!("step=prowess boss={boss} kills={previous}/{prowess} need=another-live-boss {error}"), error)
-        })?;
-        before = snapshot(&mut c).await?;
-        let current = counts(&before).get(&boss).copied().unwrap_or(0);
-        if previous.checked_add(1) != Some(current) {
-            return Err(format!(
-                "step=prowess boss={boss} observed={previous}->{current} need={prowess}"
-            )
-            .into());
-        }
-    }
     let boosted_key = daily_boss;
     let previous = counts(&before).get(&boosted_key).copied().unwrap_or(0);
     kill(&mut c, &boosted_key).await?;
