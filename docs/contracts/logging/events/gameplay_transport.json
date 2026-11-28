@@ -215,6 +215,17 @@
       "note": "PR3106: post-commit admission continuation awaiting spell repair; phase is spell_facts or automatic_spells. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "hotkey_equip_cooldown_started",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "command_id",
+        "cooldown_started_at_us"
+      ],
+      "codes": [],
+      "note": "Successful hotkey equipment commit. Cooldown start is the action gate's monotonic time in microseconds from the Channel owner's clock origin. Command_id is the client command id."
+    },
+    {
       "event": "hotkey_equip_rejected",
       "level": "info",
       "span": false,

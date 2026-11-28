@@ -10,6 +10,7 @@ use crate::durability::equipment_policy_abi::EquipmentPolicyLookup;
 use crate::durability::item_loop_move::{ItemLoopContent, LoopDestination, LoopMoveRequest};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
+use oteryn_error_codes::{FieldValue, Level, Line};
 use oteryn_protocol_oteryn::hotkey_equip::Request;
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slot};
 
@@ -372,7 +373,7 @@ pub(super) async fn execute(
             upgrade_tier,
         )
         .await;
-        return finish(owner, actor, slot, outcome);
+        return finish(owner, actor, slot, command.command_id, outcome);
     }
     // A queued command resolves custody after its wait, like the source's rescheduled call.
     let inventory = owner
@@ -417,6 +418,7 @@ pub(super) async fn execute(
         owner,
         actor,
         slot,
+        command.command_id,
         equipment_move::move_hotkey_equipment(owner, actor, command, request).await,
     )
 }
@@ -516,7 +518,13 @@ async fn equip_ammunition(
         .await
         .forget_weapon(actor, command.game_session_id);
     match committed {
-        Ok(Ok(_)) => finish(owner, actor, 6, EquipmentMoveResult::Committed),
+        Ok(Ok(_)) => finish(
+            owner,
+            actor,
+            6,
+            command.command_id,
+            EquipmentMoveResult::Committed,
+        ),
         Ok(Err(refusal)) => {
             let outcome = super::item_move::loop_outcome(refusal);
             if outcome == ItemMoveOutcome::Rejected {
@@ -532,16 +540,33 @@ fn finish(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     slot: u8,
+    command_id: u64,
     outcome: EquipmentMoveResult,
 ) -> Option<ItemMoveOutcome> {
     match outcome {
         EquipmentMoveResult::Committed => {
-            owner
-                .states
-                .world_gate
-                .lock()
-                .ok()?
-                .equip_committed(actor, slot, action_now(owner));
+            let started_at = {
+                let mut gate = owner.states.world_gate.lock().ok()?;
+                let now = action_now(owner);
+                gate.equip_committed(actor, slot, now);
+                now
+            };
+            let trace = super::connection::diagnostic_connection_trace()
+                .map(super::format_connection_trace);
+            let mut line = Line::new(
+                Level::Info,
+                "gameplay_transport",
+                "hotkey_equip_cooldown_started",
+            )
+            .field("command_id", FieldValue::U64(command_id))
+            .field(
+                "cooldown_started_at_us",
+                FieldValue::Owned(started_at.as_micros().to_string()),
+            );
+            if let Some(trace) = trace.as_deref() {
+                line = line.trace(trace);
+            }
+            oteryn_error_codes::emit("oteryn-game-server", &line);
             Some(ItemMoveOutcome::Moved)
         }
         EquipmentMoveResult::Refused(refusal) => Some(super::item_move::equipment_outcome(refusal)),

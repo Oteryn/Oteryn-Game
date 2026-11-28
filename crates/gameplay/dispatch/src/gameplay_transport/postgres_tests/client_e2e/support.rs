@@ -55,6 +55,24 @@ pub(super) fn scenario_with_admin(case: Case, admin: String) -> TestResult {
                 }),
                 "the rejected command emits its operator event"
             );
+            let cooldown_starts: Vec<_> = lines
+                .iter()
+                .filter(|line| line.contains("event=hotkey_equip_cooldown_started "))
+                .collect();
+            assert_eq!(
+                cooldown_starts.len(),
+                1,
+                "only the Moved command starts a cooldown"
+            );
+            let line = cooldown_starts[0];
+            assert!(line.split_whitespace().any(|field| field == "command_id=1"));
+            assert!(
+                line.split_whitespace().any(|field| {
+                    field.strip_prefix("cooldown_started_at_us=")
+                        .is_some_and(|value| value.parse::<u128>().is_ok())
+                }),
+                "the successful hotkey logs the cooldown-start timestamp"
+            );
             eprintln!("POSTGRES_CASE_COMPLETED hotkey_equip_open_pvp");
             Ok(())
         })?
