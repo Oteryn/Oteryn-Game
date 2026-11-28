@@ -6,6 +6,8 @@ use super::*;
 tokio::task_local! {
     pub(super) static FRESH_SPELL_ADMISSION_BARRIER:
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+    pub(super) static RELOG_CONDITIONS_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
 #[cfg(test)]
@@ -41,7 +43,6 @@ mod premium;
 mod progression;
 mod quest;
 mod release;
-pub(in crate::gameplay_transport) use release::ReleaseProgress;
 #[cfg(test)]
 pub(super) use release::{
     CONDITION_RELEASE_PROBE, FAMILIAR_READ_CHECKOUT_PROBE, FAMILIAR_WRITE_CHECKOUT_PROBE,

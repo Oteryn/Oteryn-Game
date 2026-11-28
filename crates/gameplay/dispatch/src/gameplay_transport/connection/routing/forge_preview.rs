@@ -18,6 +18,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         Outcome::Payload(bytes) => Some(Dispatch::Reply(CommandStatus::Accepted, bytes)),
         Outcome::Rejected => Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new())),
+        Outcome::Busy => Some(Dispatch::Reply(
+            CommandStatus::Rejected,
+            super::super::super::forge_preview::refused_reply(request.nonce)?,
+        )),
         Outcome::Unavailable => None,
     }
 }

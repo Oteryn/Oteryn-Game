@@ -19,6 +19,11 @@ pub(super) fn projection_refusal(
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ACTIVITY_INPUT_HOLDER_BUSY: std::sync::Arc<tokio::sync::Notify>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn note_activity_input(
         &self,
@@ -36,12 +41,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Re-prove the same transport/fences on every idempotent attempt, retaining
         // the distinction between a transient holder failure and a lost fence.
-        let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
+        let _foreground = self.root.foreground_demand()?;
+        let budget = super::AdmissionRetryBudget::for_holder_window(
+            self.root,
+            super::AdmissionRetryBudget::holder_wait_window(),
+        );
         budget
             .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
+                let result = ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
+                    .await;
+                #[cfg(test)]
+                if result.as_ref().is_err_and(super::root_holder_busy) {
+                    let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
+                }
+                result
             })
             .await
     }
