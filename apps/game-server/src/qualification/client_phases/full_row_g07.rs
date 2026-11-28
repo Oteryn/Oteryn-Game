@@ -12,14 +12,15 @@
 //! node before the live journey walks to its authored entrance and requests the handoff.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::house_rotation as wire;
+use oteryn_protocol_oteryn::{house_rotation as wire, house_wrap as wrap};
 use sqlx::Connection;
 
 const LANDING: [i32; 3] = [32360, 32253, 7];
 const CHAIR_TILE: [i32; 3] = [32359, 32253, 7];
 // Global Wooden Chair documents four facings; Crystal 201189f8 provides the item ID cycle.
-const CHAIR_BEFORE: &str = "oteryn:item.tibia.i2358";
-const CHAIR_AFTER: &str = "oteryn:item.tibia.i2359";
+const CHAIR_BEFORE: &str = "oteryn:item.tibia.i2360";
+const CHAIR_AFTER: &str = "oteryn:item.tibia.i2361";
+const CHAIR_KIT: u32 = 2777;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -86,39 +87,64 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn prepare_chair(
-    client: &DevClientSession,
+    client: &mut DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult<[u8; 16]> {
-    request_fixture_control(
-        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-        "--profile",
-        "house-g07-chair".into(),
-    )
-    .await?;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let keys: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(i.item_instance_id)
-         FROM game_item_instances i JOIN game_item_house_interior_locations h
+    let kits: Vec<(Vec<u8>, String, String)> = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id), i.state_revision::text, h.acl_revision::text
+         FROM game_item_instances i JOIN game_item_container_entries e
              USING (item_instance_id,world_id)
-         WHERE i.world_id=encode($1,'hex')::uuid AND h.house_key=$2 AND h.spatial_position=$3
+         JOIN game_house_properties h ON h.world_id=i.world_id AND h.house_key=$3
+         WHERE i.world_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid
            AND i.definition_production_key=$4 AND i.quantity=1 AND i.lifecycle=1 LIMIT 2",
     )
     .bind(clients.world.as_slice())
+    .bind(clients.characters[0].as_slice())
     .bind(full_row_g01::HOUSE)
-    .bind(
-        CHAIR_TILE
-            .into_iter()
-            .flat_map(i32::to_be_bytes)
-            .collect::<Vec<_>>(),
-    )
-    .bind(CHAIR_BEFORE)
+    .bind(format!("oteryn:item.tibia.i{CHAIR_KIT}"))
     .fetch_all(&mut database)
     .await?;
-    let [key] = keys.as_slice() else {
-        return Err("G07 fixture expected exactly one chair at its authored tile".into());
+    let [(kit, revision, acl_revision)] = kits.as_slice() else {
+        return Err("step=fixture-input observed=expected-exactly-one-minted-chair-kit".into());
     };
-    evidence("G07_CHECK step=fixture-input item=2358 tile=32359,32253,7");
-    Ok(key.as_slice().try_into()?)
+    let key = kit.as_slice().try_into()?;
+    let request = wrap::Request {
+        action: wrap::Action::Unwrap,
+        item: key,
+        expected_revision: revision.parse()?,
+        acl_revision: acl_revision.parse()?,
+        position: CHAIR_TILE,
+    };
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
+            wrap::COMMAND_WRAP,
+            &request.encode(),
+        )
+        .await?;
+    let committed = request
+        .expected_revision
+        .checked_add(1)
+        .ok_or("chair kit revision overflow")?;
+    if reply.status != CommandStatus::Accepted
+        || wrap::Reply::decode(&reply.payload) != Some(wrap::Reply::Committed(committed))
+    {
+        return Err(format!(
+            "step=fixture-unpack command_id={} status={:?} payload={:02x?} decoded={:?}",
+            reply.command_id,
+            reply.status,
+            reply.payload,
+            wrap::Reply::decode(&reply.payload)
+        )
+        .into());
+    }
+    if chair_definition(clients, &key).await? != CHAIR_BEFORE {
+        return Err("step=fixture-unpack observed=wrong-chair-or-tile".into());
+    }
+    evidence("G07_CHECK step=fixture-input kit=2777 chair=2360 tile=32359,32253,7");
+    Ok(key)
 }
 
 async fn chair_definition(clients: &SeamClients<'_>, key: &[u8; 16]) -> TestResult<String> {
@@ -276,9 +302,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    character_prep::grant_item(&client, character_prep::item_id(CHAIR_BEFORE)?, 1).await?;
+    character_prep::grant_item(&client, CHAIR_KIT, 1).await?;
     enter_house(&mut client, clients).await?;
-    let key = prepare_chair(&client, clients).await?;
+    let key = prepare_chair(&mut client, clients).await?;
     let before = first_entry_with(&mut client, &key).await?;
     if chair_definition(clients, &key).await? != CHAIR_BEFORE {
         return Err("step=before-rotate observed=wrong-chair-orientation".into());
@@ -295,7 +321,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if before.checked_add(1) != Some(after) || chair_definition(clients, &key).await? != CHAIR_AFTER
     {
         return Err(format!(
-            "step=rotate observed=revision:{before}->{after};needed=one-revision-and-chair-2359"
+            "step=rotate observed=revision:{before}->{after};needed=one-revision-and-chair-2361"
         )
         .into());
     }
