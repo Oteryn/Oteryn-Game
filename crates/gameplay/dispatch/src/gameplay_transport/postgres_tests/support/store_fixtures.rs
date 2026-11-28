@@ -50,6 +50,7 @@ pub(super) struct Ledger {
     pub(super) unit_kind_override: Option<&'static str>,
     pub(super) enforce_active_import: bool,
     pub(super) fail_before_debit: bool,
+    pub(super) lose_debit_answer_once: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
@@ -132,6 +133,9 @@ impl StoreTransport for FakePlatform {
                     }
                     ledger.intents.insert(operation.clone(), intent);
                     ledger.answers.insert(request_id, (body.to_owned(), answer.clone()));
+                    if std::mem::take(&mut ledger.lose_debit_answer_once) {
+                        return Box::pin(async { Err(TransportFailure::Unavailable) });
+                    }
                     if ledger.malformed {
                         let unit = answer["units"][0].clone();
                         answer["units"].as_array_mut().expect("units").push(unit);

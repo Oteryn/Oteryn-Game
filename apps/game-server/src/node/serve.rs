@@ -4246,7 +4246,7 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
-    let receipts = crate::gameplay_transport::run_store_receipt_outbox(
+    let receipts = crate::gameplay_transport::run_store_receipt_outbox_with_mode(
         root,
         authority,
         crate::native_admission_source::store::StoreClient::new(
@@ -4257,6 +4257,7 @@ async fn boot_and_serve(
             ),
             material.store.source_authority().to_owned(),
         ),
+        config.store_purchases,
     );
     first(
         first(first(serving, enforcement_owner), catalogue),

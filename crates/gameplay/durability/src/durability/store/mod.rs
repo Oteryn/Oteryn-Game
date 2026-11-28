@@ -27,7 +27,12 @@ pub use hireling_model::{
     HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase,
     canonical_hireling_name,
 };
-pub use hunting_offers::{StoreHuntingDelivery, StoreHuntingOffer, StoreHuntingPurchase};
+#[cfg(any(test, feature = "test-support"))]
+pub use hunting_offers::with_stalled_hunting_grant_commit;
+pub use hunting_offers::{
+    PaidStoreHuntingIntent, PendingStoreHuntingPurchase, StoreHuntingDelivery, StoreHuntingOffer,
+    StoreHuntingPurchase,
+};
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};

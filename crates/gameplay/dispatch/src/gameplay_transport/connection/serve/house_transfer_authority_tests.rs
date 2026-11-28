@@ -470,7 +470,7 @@ impl FreshAdmissionAuthority for StoreRetryAuthority {
         _: u64,
         kind: u32,
         payload: Vec<u8>,
-    ) -> (CommandStatus, Vec<u8>) {
+    ) -> Option<(CommandStatus, Vec<u8>)> {
         use oteryn_protocol_oteryn::store as wire;
         let reply = match kind {
             wire::COMMAND_TYPE_STORE_INBOX_CLAIM => wire::decode_inbox_claim_request(&payload)
@@ -484,11 +484,11 @@ impl FreshAdmissionAuthority for StoreRetryAuthority {
                     })
                 }),
             wire::COMMAND_TYPE_STORE_HISTORY_PAGE => Ok(vec![1]),
-            _ => return (CommandStatus::Rejected, Vec::new()),
+            _ => return Some((CommandStatus::Rejected, Vec::new())),
         };
-        reply.map_or((CommandStatus::Rejected, Vec::new()), |bytes| {
+        Some(reply.map_or((CommandStatus::Rejected, Vec::new()), |bytes| {
             (CommandStatus::Accepted, bytes)
-        })
+        }))
     }
 }
 

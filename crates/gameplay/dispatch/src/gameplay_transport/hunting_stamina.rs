@@ -21,9 +21,24 @@ pub(super) struct LiveStamina {
     minutes: u16,
     durable: u16,
     clock: HuntingClock,
+    store_hunt: Option<StoreHuntActivity>,
     experience_started: bool,
     pending_gain: Option<(BuildOccurrence, u16, u16)>,
     pending_debit: Option<(BuildOccurrence, u16, u16)>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StoreHuntActivity {
+    started: u64,
+    last: u64,
+}
+
+impl StoreHuntActivity {
+    const MAX_GAP_US: u64 = 60_000_000;
+
+    fn continuing_at(self, now: u64) -> bool {
+        now.checked_sub(self.last).is_some_and(|gap| gap <= Self::MAX_GAP_US)
+    }
 }
 
 impl ChannelSpellStates {
@@ -150,11 +165,33 @@ impl ChannelSpellStates {
                 minutes,
                 durable: minutes,
                 clock: HuntingClock::new(now),
+                store_hunt: None,
                 experience_started: false,
                 pending_gain: None,
                 pending_debit: None,
             });
         }
+    }
+
+    pub(super) fn note_store_hunt(
+        &mut self, actor: ExactActorRef, session: GameSessionId, now: u64,
+    ) {
+        if let Some(state) = self.hunting_stamina.iter_mut().find(|s| s.activity_matches(actor, session))
+            && state.minutes >= 840
+            && state.store_hunt.is_none_or(|activity| now >= activity.last)
+        {
+            let started = state.store_hunt.filter(|activity| activity.continuing_at(now))
+                .map_or(now, |activity| activity.started);
+            state.store_hunt = Some(StoreHuntActivity { started, last: now });
+        }
+    }
+
+    pub(super) fn store_hunt_elapsed_ms(
+        &self, actor: ExactActorRef, session: GameSessionId, now: u64,
+    ) -> u64 {
+        self.hunting_stamina.iter().find(|s| s.activity_matches(actor, session))
+            .and_then(|s| s.store_hunt).filter(|activity| activity.continuing_at(now))
+            .map_or(0, |activity| (now - activity.started) / 1000)
     }
 
     /// Preview under the same runtime/state guards as the kill XP transaction.
@@ -190,6 +227,7 @@ impl ChannelSpellStates {
         {
             let (spent, next) = state.clock.activity(now, state.minutes);
             state.minutes -= spent;
+            if state.minutes < 840 { state.store_hunt = None; }
             state.clock = next;
             state.experience_started |= spent > 0;
         }
@@ -737,6 +775,38 @@ mod tests {
             });
             assert_eq!(states.live_stamina(actor, session), Some(2520));
         }
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn store_hunt_clock_keeps_fight_time_between_kills() {
+        let (runtime, actor, session) = fixture::runtime_with_player(149);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                fixture::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("player");
+        states.load_stamina(&runtime, actor, session, 2520);
+        for second in [5, 35, 65, 85] {
+            states.prey_activity(
+                &runtime,
+                actor,
+                session,
+                super::super::prey::PreyActivity {
+                    creature: "oteryn:creature.rat",
+                    kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage,
+                    now: second * 1_000_000,
+                },
+            );
+        }
+        assert_eq!(states.store_hunt_elapsed_ms(actor, session, 85_000_000), 80_000);
+        assert_eq!(states.store_hunt_elapsed_ms(actor, session, 146_000_000), 0);
     }
 
     #[test]

@@ -155,7 +155,7 @@ async fn settle(
                 context: binding.context.clone(), policy_revision: binding.policy_revision.clone(),
                 reward_revision: binding.reward_revision.clone(), policy: binding.policy.clone(),
             },
-            premium: false, forge_dust: None, live_stamina: Some(0),
+            premium: false, forge_dust: None, live_stamina: Some(0), hunt_activity_ms: 0,
             shared: false, party_id: None, party_revision: None,
         }],
     }).await.map_err(debug)?;

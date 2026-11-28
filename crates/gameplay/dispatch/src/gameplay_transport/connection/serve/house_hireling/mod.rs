@@ -57,7 +57,7 @@ impl State {
         }
         if routing::store::handles_command(command.command_type) {
             self.stash_rows = None;
-            return Some(routing::store::route(authority, admitted, command).await);
+            return routing::store::route(authority, admitted, command).await;
         }
         if command.command_type == oteryn_protocol_oteryn::house_sale::COMMAND {
             self.stash_rows = None;

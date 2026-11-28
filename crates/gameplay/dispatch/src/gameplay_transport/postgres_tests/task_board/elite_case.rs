@@ -324,7 +324,7 @@ async fn settle_kill(
                 fence,
                 premium,
                 forge_dust: None,
-                live_stamina: None,
+                live_stamina: None, hunt_activity_ms: 0,
                 shared: false,
                 party_id: None,
                 party_revision: None,

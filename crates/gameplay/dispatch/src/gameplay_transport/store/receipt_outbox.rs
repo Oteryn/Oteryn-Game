@@ -6,7 +6,10 @@ use super::{
 use crate::durability::{
     DurabilityRoot,
     character_authority::ReconciledCharacterAuthority,
-    store::{DeliveryReceipt, PaidStoreCosmeticIntent, PendingStorePurchase, PurchaseRequest, StorePurchaseHistoryEntry},
+    store::{
+        DeliveryReceipt, PaidStoreCosmeticIntent, PendingStorePurchase, PurchaseRequest,
+        StorePurchaseHistoryEntry,
+    },
 };
 use crate::native_admission_source::store::{
     DeliveryIntent, OperationCursor, OperationKind, ProtocolError, PurchaseResult,
@@ -17,13 +20,36 @@ use std::time::Duration;
 pub async fn run_store_receipt_outbox(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    client: StoreClient,
+) {
+    run_store_receipt_outbox_with_mode(root, authority, client, super::StorePurchaseMode::Enabled)
+        .await;
+}
+
+pub async fn run_store_receipt_outbox_with_mode(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
     mut client: StoreClient,
+    purchases: super::StorePurchaseMode,
 ) {
     let mut tick = worker_tick();
+    let mut purchase_cursor = [0; 16];
     let mut cursor = OperationCursor::default();
     loop {
         tick.tick().await;
         publish_pending(root, &mut client).await;
+        if purchases == super::StorePurchaseMode::Enabled
+            && let Ok(purchases) = root
+                .pending_store_hunting_purchases(authority, purchase_cursor)
+                .await
+        {
+            purchase_cursor = purchases
+                .last()
+                .map_or([0; 16], |row| row.request.purchase_request_id);
+            for purchase in purchases {
+                super::hunting_offers::replay(root, &mut client, purchase).await;
+            }
+        }
         let Ok(page) = client.list_pending(&cursor).await else {
             continue;
         };
@@ -203,7 +229,16 @@ async fn reconcile_operation(
                     publish_restore_conflict(root, client, &intent, restore_generation?).await
                 }
                 None if !root.has_store_restore_conflict(operation).await.ok()? => {
-                    recover_cosmetic(root, authority?, client, intent).await
+                    let authority = authority?;
+                    if intent
+                        .offer_key
+                        .as_deref()
+                        .is_some_and(super::hunting_offers::is_offer)
+                    {
+                        super::hunting_offers::recover(root, authority, client, &intent).await
+                    } else {
+                        recover_cosmetic(root, authority, client, intent).await
+                    }
                 }
                 _ => None,
             }
@@ -352,12 +387,21 @@ async fn recover_cosmetic(
     // confirmations, and require the original Platform order and operation.
     let mut after = [0; 16];
     loop {
-        let candidates = root.unanswered_store_cosmetic_purchases(account, offer.clone(), after)
-            .await.ok()?;
+        let candidates = root
+            .unanswered_store_cosmetic_purchases(account, offer.clone(), after)
+            .await
+            .ok()?;
         after = candidates.last()?.purchase_id;
         for pending in candidates {
-            if retain_cosmetic_answer(root, client, &source, pending).await.is_some() {
-                return root.recover_paid_store_cosmetic(authority, intent()).await.ok()?.then_some(());
+            if retain_cosmetic_answer(root, client, &source, pending)
+                .await
+                .is_some()
+            {
+                return root
+                    .recover_paid_store_cosmetic(authority, intent())
+                    .await
+                    .ok()?
+                    .then_some(());
             }
         }
     }

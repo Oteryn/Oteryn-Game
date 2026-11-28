@@ -127,6 +127,7 @@ impl ChannelSpellStates {
         if runtime.owner_fence().is_err() || self.get(runtime, actor, session).is_none() {
             return;
         }
+        self.note_store_hunt(actor, session, event.now);
         let premium = self.get(runtime, actor, session)
             .is_some_and(|state| state.hunting_premium_current(event.now));
         if let Some(p) = self

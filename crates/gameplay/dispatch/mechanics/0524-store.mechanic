@@ -4,4 +4,4 @@ transport=store
 composed=store
 authority=store
 [route]
-routing::store::route(authority, &session.admitted, command).await
+routing::store::route(authority, &session.admitted, command).await.ok_or(ServeEnd::Disconnected)?

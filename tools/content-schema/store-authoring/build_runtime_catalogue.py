@@ -435,7 +435,9 @@ def main() -> int:
         OUT.write_text(json.dumps(build(lua), indent=2) + "\n", encoding="utf-8")
     if args.refresh_owner_offers:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
-        catalogue = with_crystal_charged(with_hunting_offers(with_expansion(catalogue)), admitted_items())
+        catalogue = with_crystal_charged(
+            with_hunting_offers(with_expansion(catalogue)), admitted_items()
+        )
         OUT.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
     platform_base = (
         json.loads(args.platform_base.read_bytes()) if args.platform_base else None

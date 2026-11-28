@@ -18,7 +18,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
-) -> Dispatch {
+) -> Option<Dispatch> {
     let (status, payload) = authority
         .store_command(
             *admitted,
@@ -26,8 +26,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             command.command_type,
             command.payload.to_vec(),
         )
-        .await;
-    Dispatch::Reply(status, payload)
+        .await?;
+    Some(Dispatch::Reply(status, payload))
 }
 
 pub(in super::super) fn is_committed_claim(

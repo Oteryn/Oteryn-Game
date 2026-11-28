@@ -18,6 +18,13 @@ pub struct HuntingXpModifiers {
     pub level: u32,
 }
 
+pub(super) struct HuntingActivity<'a> {
+    pub death: &'a [u8],
+    pub at_ms: i64,
+    pub elapsed_ms: u64,
+    pub earns_experience: bool,
+}
+
 /// Caller owns the fenced Character root lock before reading its typed hunting children.
 pub(super) async fn read_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
@@ -25,7 +32,7 @@ pub(super) async fn read_in_transaction(
     creature: &str,
     premium: bool,
     live_stamina: Option<u16>,
-    died_at_unix_ms: i64,
+    activity: HuntingActivity<'_>,
 ) -> Result<HuntingXpModifiers, DurabilityError> {
     let stamina: Option<i32> = sqlx::query_scalar(
         "SELECT stamina_minutes FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -39,6 +46,15 @@ pub(super) async fn read_in_transaction(
     let stamina = live_stamina.map_or(stamina, |live| stamina.min(i32::from(live)));
     // OFFLINE-0 §3 defines this absent-build-row seed. Reading it never creates a build
     // row or invents a hunting tick; build/stamina writers own that lifecycle.
+    if activity.earns_experience {
+        let elapsed = i64::try_from(activity.elapsed_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+        sqlx::query(
+            "SELECT game_consume_store_hunting_time($1, encode($2,'hex')::uuid,
+                encode($3,'hex')::uuid, $4, $5, $6)",
+        ).bind(activity.death).bind(fence.character_id.as_bytes().as_slice())
+            .bind(fence.game_session_id.as_bytes().as_slice()).bind(activity.at_ms)
+            .bind(elapsed.min(activity.at_ms)).bind(stamina).execute(&mut **tx).await?;
+    }
     let mut result = HuntingXpModifiers {
         prey_slot: None,
         prey_epoch: None,
@@ -48,7 +64,7 @@ pub(super) async fn read_in_transaction(
             tx,
             fence.character_id.as_bytes().as_slice(),
             fence.runtime_scope.world_id().as_bytes().as_slice(),
-            Some((died_at_unix_ms, stamina)),
+            Some((activity.at_ms, stamina)),
         )
         .await?
         .percent(),
