@@ -2,7 +2,7 @@
 //!
 //! Concrete player scenario derived from the matrix, the re-audit, and
 //! `gameplay_transport/character_info.rs`:
-//! 1. Admit the Open PvP World pair. On a fresh shard, earn level eight on each
+//! 1. Admit the Open PvP World pair. On a fresh shard, prepare level eight on each
 //!    character and record an actual unjustified kill before querying its history.
 //! 2. Send the paged `QuerySelf(offset=1, limit=1)` player command and require an accepted,
 //!    strictly decoded bounded page (the history counts may be zero at that offset).
@@ -113,25 +113,26 @@ async fn query(client: &mut DevClientSession, offset: u16, limit: u8) -> TestRes
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
-    verdict::Harness::global().bounded_wait(deadline, "open-pvp-logout-lock");
-    loop {
-        match client.session_mut().logout().await?.result {
-            Some(LogoutResult::Accepted) => return Ok(()),
-            Some(LogoutResult::Busy | LogoutResult::InFight { .. })
-                if tokio::time::Instant::now() < deadline =>
-            {
-                client.service_liveness(Duration::from_millis(100)).await?;
-                client.take_events();
-            }
-            observed => {
-                return Err(format!(
-                    "step logout: observed reply={observed:?}; need accepted logout"
-                )
-                .into());
-            }
+    let deadline = tokio::time::Instant::now()
+        + Duration::from_millis(oteryn_gameplay_combat_rules::pvp::KILL_BLOCK_MS);
+    while client
+        .session_mut()
+        .combat_state()
+        .ok_or("missing combat state before logout")?
+        .in_fight
+    {
+        verdict::Harness::global().bounded_wait(deadline, "open-pvp-logout-lock");
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Open PvP combat lock did not clear before logout".into());
         }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
     }
+    let outcome = client.session_mut().logout().await?;
+    if outcome.status != CommandStatus::Accepted || outcome.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step logout: observed {outcome:?}; need accepted logout").into());
+    }
+    Ok(())
 }
 
 fn one_pve_death(before: Page, after: Page) -> bool {
@@ -194,74 +195,46 @@ impl OpenWorld {
     }
 }
 
-async fn earn_level(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
-    let work = async {
-        loop {
-            let page = query(client, 0, 1).await?;
-            if page.level >= u64::from(oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL) {
-                return Ok(());
-            }
-            travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-            let at = client.world_spatial().actor_position;
-            let target = client
-                .world_entities()
-                .and_then(|view| {
-                    view.iter().find(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == at.floor
-                            && entry
-                                .position
-                                .x
-                                .abs_diff(at.x)
-                                .max(entry.position.y.abs_diff(at.y))
-                                <= 1
-                    })
-                })
-                .ok_or("Open PvP leveling route has no adjacent creature")?
-                .entity;
-            let attack = client.session_mut().attack_target(Some(&target)).await?;
-            if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-                return Err(format!("Open PvP leveling attack refused: {attack:?}").into());
-            }
-            loop {
-                client.service_liveness(Duration::from_millis(250)).await?;
-                client.take_events();
-                if client
-                    .world_entities()
-                    .is_some_and(|view| view.get(&target).is_none())
-                    && query(client, 0, 1).await?.experience > page.experience
-                {
-                    client.session_mut().attack_target(None).await?;
-                    break;
-                }
-            }
-        }
+async fn prepare_pvp_player(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tag: u8,
+    index: usize,
+) -> TestResult<DevClientSession> {
+    let prep = character_prep::Seeded {
+        profile,
+        reason: "The rat hunt exceeded the row budget. Level eight is a PvP input.",
     };
-    tokio::time::timeout(Duration::from_secs(180), work)
-        .await
-        .map_err(|_| "ordinary rat hunt did not reach the Open PvP level within 180s")?
+    let mut player = prep
+        .connect_at(clients, tag, index, "NODE_BOOT_PVP_CONTROL_SOCKET")
+        .await?;
+    let page = query(&mut player, 0, 50).await?;
+    let vitals = player.actor_vitals().ok_or("missing seeded PvP vitals")?;
+    if (
+        page.level,
+        page.experience,
+        vitals.max_health,
+        vitals.max_mana,
+    ) != (8, 4_200, 185, 90)
+        || (page.deaths, page.pvp_kills) != (0, 0)
+    {
+        return Err(format!(
+            "Open PvP profile {profile} requires level-8 derived stats and empty history: page={page:?} vitals={vitals:?}"
+        )
+        .into());
+    }
+    Ok(player)
 }
 
 async fn earn_pvp_kill(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-    mut attacker: DevClientSession,
 ) -> TestResult<DevClientSession> {
     use oteryn_protocol_oteryn::{attack, pvp_expert};
-    earn_level(&mut attacker, world, spawns).await?;
+    let mut attacker = prepare_pvp_player(clients, "s08-knight", 0xca, 0).await?;
     logout(&mut attacker).await?;
     drop(attacker);
-    let mut victim = connect_character(clients, 0xcc, 1).await?;
-    earn_level(&mut victim, world, spawns).await?;
-    logout(&mut victim).await?;
-    drop(victim);
-
-    let mut victim = connect_character(clients, 0xcd, 1).await?;
+    let mut victim = prepare_pvp_player(clients, "s08-sorcerer", 0xcd, 1).await?;
     let unprotected = |at: TilePos| {
         world
             .base()
@@ -414,23 +387,20 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&core.world)?,
         ChannelId::decode(&core.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xca, 0).await.map_err(|error| {
-        verdict::context(
-            format!("step=open-pvp-attacker-admission observed={error}"),
-            error,
-        )
+    character_prep::declare_seeded(
+        "P12c.full",
+        "Open-PvP level-8 knight and sorcerer",
+        "ordinary leveling exceeds the row budget",
+    );
+    let mut client = earn_pvp_kill(clients, world).await.map_err(|error| {
+        verdict::context(format!("step=pvp-kill-history need=credited-unjustified-Open-PvP-kill observed={error}; source:crates/gameplay/durability/src/durability/character_title.rs:309"), error)
     })?;
-    let mut baseline = query(&mut client, 0, 50).await?;
-    if needs_pvp_fight(baseline.pvp_kills) {
-        client = earn_pvp_kill(clients, world, &metadata.spawns, client).await.map_err(|error| {
-            verdict::context(format!("step=pvp-kill-history need=credited-unjustified-Open-PvP-kill observed={error}; source:crates/gameplay/durability/src/durability/character_title.rs:309"), error)
-        })?;
-        baseline = query(&mut client, 0, 50).await?;
-    }
-    if baseline.level == 0 {
-        return Err(
-            format!("step=character-summary observed={baseline:?}; need=nonzero-level").into(),
-        );
+    let baseline = query(&mut client, 0, 50).await?;
+    if (baseline.deaths, baseline.pvp_kills) != (0, 1) {
+        return Err(format!(
+            "step=character-summary observed={baseline:?}; need one new PvP kill and no deaths"
+        )
+        .into());
     }
     let _paged = query(&mut client, 1, 1).await?;
 
@@ -519,9 +489,6 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-fn needs_pvp_fight(count: u16) -> bool {
-    count == 0
-}
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(
@@ -546,12 +513,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn fresh_shard_needs_its_own_pvp_fight() {
-        assert!(needs_pvp_fight(0));
-        assert!(!needs_pvp_fight(1));
-    }
-
     use super::*;
     #[test]
     fn pve_history_can_advance_before_pvp_and_cannot_credit_a_frag() {
