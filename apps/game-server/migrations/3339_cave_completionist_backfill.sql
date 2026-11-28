@@ -17,21 +17,15 @@ BEGIN
            AND current_user = (
                SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid = TG_RELID
            )
-           AND (
-               EXISTS (
-                   SELECT 1 FROM game_character_roots r
-                    WHERE r.character_id = NEW.character_id AND r.account_id = NEW.account_id
-               )
-               OR EXISTS (
-                   SELECT 1 FROM game_account_appearance_unlocks u
-                   JOIN game_account_appearance_unlock_receipts r
-                     USING (grant_occurrence_id, account_id, unlock_key)
-                    WHERE u.account_id = NEW.account_id
-                      AND u.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
-                      AND r.granting_character_id = NEW.character_id
-                      AND r.source_kind = 'quest'
-                      AND r.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
-               )
+           AND EXISTS (
+               SELECT 1 FROM game_account_appearance_unlocks u
+               JOIN game_account_appearance_unlock_receipts r
+                 USING (grant_occurrence_id, account_id, unlock_key)
+                WHERE u.account_id = NEW.account_id
+                  AND u.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
+                  AND r.granting_character_id = NEW.character_id
+                  AND r.source_kind = 'quest'
+                  AND r.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
            )
        )
 $proof$ || anchor);
@@ -40,7 +34,7 @@ END $migration$;
 -- Live achievement writers lock their Character before the request table.
 -- Keep the locked lifecycle and ownership for the progress write as well.
 CREATE TEMP TABLE cave_completionist_backfill_eligible ON COMMIT DROP AS
-    SELECT second.account_id, holder.character_id,
+    SELECT second.account_id, second.granting_character_id AS character_id,
            holder.account_id = second.account_id AND holder.lifecycle <> 2 AS write_progress
     FROM game_account_appearance_unlock_receipts AS second
     JOIN game_account_appearance_unlocks AS second_unlock
@@ -50,19 +44,12 @@ CREATE TEMP TABLE cave_completionist_backfill_eligible ON COMMIT DROP AS
      AND first_unlock.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/1'
     JOIN game_account_appearance_unlock_receipts AS first
       ON first.grant_occurrence_id = first_unlock.grant_occurrence_id
-    JOIN LATERAL (
-        SELECT root.character_id, root.account_id, root.lifecycle
-        FROM game_character_roots AS root
-        WHERE root.account_id = second.account_id OR root.character_id = second.granting_character_id
-        ORDER BY (root.account_id <> second.account_id), (root.lifecycle = 2), root.lifecycle,
-                 (root.character_id = second.granting_character_id) DESC, root.character_id
-        LIMIT 1
-        FOR SHARE
-    ) AS holder ON true
+    JOIN game_character_roots AS holder ON holder.character_id = second.granting_character_id
     WHERE second.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
       AND first.source_kind = 'quest' AND second.source_kind = 'quest'
       AND first.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
-      AND second.content_revision = 'crystal-9f5a72c-quest-rewards-v1';
+      AND second.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
+    FOR SHARE OF holder;
 
 -- Only the migration writes historical requests against Bazaar-locked roots.
 ALTER TABLE game_account_achievement_grant_requests

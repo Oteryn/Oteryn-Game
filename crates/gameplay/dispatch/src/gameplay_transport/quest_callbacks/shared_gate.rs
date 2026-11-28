@@ -10,16 +10,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
-        callback: &Callback,
+        gate: &oteryn_gameplay_quests::quest::shared_switches::Gate,
         key: u64,
         revision: u64,
         cause: QuestCause,
         fence: Option<CurrentCharacterGameplayFence>,
         expected: MovementPositionSnapshot,
     ) -> bool {
-        let Some(gate) = oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key) else {
-            return true;
-        };
         let (Some(fence), QuestCause::Step(_), Some(native)) = (
             fence,
             cause,
@@ -44,7 +41,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor,
                 session,
                 expected,
-                callback: callback.key.clone(),
+                callback: gate.key.to_owned(),
                 key,
                 revision,
                 cause,
@@ -72,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 native,
                 crate::durability::quest_world_callback::shared_count::Request {
-                    gate: callback.key.clone(),
+                    gate: gate.key.to_owned(),
                     context,
                 },
             )

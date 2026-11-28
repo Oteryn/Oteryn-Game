@@ -48,12 +48,27 @@ fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, publis
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn callback_guards(
+        &self,
+    ) -> (
+        tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        tokio::sync::MutexGuard<'_, ChannelSpellStates>,
+    ) {
+        loop {
+            let runtime = self.runtime.lock().await;
+            if let Ok(states) = self.states.spell_states.try_lock() {
+                return (runtime, states);
+            }
+            drop(runtime);
+            drop(self.states.spell_states.lock().await);
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn execute_quest_callback<'map>(
         &self,
         permit: &SpellLanePermit,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        required_position: Option<MovementPositionSnapshot>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &'map BundleMap,
@@ -68,7 +83,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
+        publication: Option<&std::sync::atomic::AtomicBool>,
     ) -> UseDisposition {
+        let (mut runtime_guard, mut states_guard) = self.callback_guards().await;
+        if let Some(publication) = publication
+            && (scene_publication.is_some()
+                || VampireCoffinKind::for_callback(&callback.key).is_some())
+        {
+            publication.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        let (mut runtime, mut states) = (&mut *runtime_guard, &mut *states_guard);
+        if required_position
+            .is_some_and(|expected| runtime.read_actor_position(actor) != Ok(expected))
+        {
+            return UseDisposition::StaleState;
+        }
         // Another user may have obtained the lane after this caller's first
         // receipt check. Only the original batch or its exact receipt can
         // release this placement for a new close.
@@ -1069,21 +1098,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if !self
-            .admit_shared_switch_gate(
-                permit,
-                runtime,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                cause,
-                fence,
-                expected,
-            )
-            .await
+        if let Some(gate) = oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+            && !self
+                .admit_shared_switch_gate(
+                    permit,
+                    runtime,
+                    actor,
+                    session,
+                    map,
+                    gate,
+                    key,
+                    expected_revision,
+                    cause,
+                    fence,
+                    expected,
+                )
+                .await
         {
             return UseDisposition::Rejected;
         }
@@ -1323,6 +1353,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 movement_revision: expected.revision(),
                 party: party_context,
             };
+            let owns_reservation = |record: &Pending| {
+                record.actor == actor
+                    && record.cause == cause
+                    && record.key == key
+                    && record.revision == expected_revision
+                    && record.expected == expected
+                    && record.callback == callback.key
+            };
             let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 let record = pending.entry(session).or_insert(Pending {
                     actor,
@@ -1342,6 +1380,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection_target: None,
                     selected_tool: None,
                 });
+                if !owns_reservation(record) {
+                    return UseDisposition::StaleState;
+                }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
@@ -1438,6 +1479,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     None
                 };
+            let source_revision = map.facts.object_revision(key);
+            drop(states_guard);
+            drop(runtime_guard);
             let outcome = if let Some(input) = &flame {
                 slot.commit_rotten_flame_use(
                     self.root,
@@ -1469,6 +1513,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            let legacy_claimed = if callback.key == world_callbacks::OUTFOX_CACHE
+                && matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+                    ))
+                )
+                && let Ok(Some(claim)) = world_callbacks::legacy_world_claim(callback)
+            {
+                self.root
+                    .reward_claim_is_claimed(
+                        self.character,
+                        self.holder,
+                        fence.item_fence(),
+                        claim.key.clone(),
+                    )
+                    .await
+                    .is_ok_and(|claimed| claimed)
+            } else {
+                false
+            };
+            let kill_queue = self.states.attack.lock().await.kills().clone();
+            (runtime_guard, states_guard) = self.callback_guards().await;
+            runtime = &mut runtime_guard;
+            states = &mut states_guard;
+            let reserved = self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .is_ok_and(|records| records.get(&session).is_some_and(owns_reservation));
+            if !reserved
+                || runtime.owner_fence().is_err()
+                || runtime.read_actor_position(actor) != Ok(expected)
+                || map.facts.object_revision(key) != source_revision
+                || !states.current_cooldown_transport(
+                    actor,
+                    session,
+                    fence.connection_generation.get(),
+                )
+                || !runtime
+                    .bound_attacker_lease(actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+                || runtime.binding().runtime_scope() != fence.runtime_scope
+                || runtime.binding().scope_generation() != fence.scope_ownership_generation
+            {
+                // Preserve the original reservation and receipt identity for reconciliation.
+                return UseDisposition::StaleState;
+            }
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
                 && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
                     oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
@@ -1547,9 +1643,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     if callback.effects.encounter.is_none() {
-                        self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
+                        self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session, &kill_queue);
                     }
-                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    self.refresh_native_objective_snapshot_in_runtime(runtime, session, &kill_queue);
                     self.states.loop_ground.invalidate();
                     self.schedule_quest_refresh(session);
                 }
@@ -1574,7 +1670,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // fenced delivery may still find its undelivered encounter.
                     recover_ordinary_coffin = true;
                 }
-                refusal => {
+                _ => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1583,15 +1679,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
                     }
-                    if callback.key == world_callbacks::OUTFOX_CACHE
-                        && matches!(refusal, Ok(QuestTransitionOutcome::Refused(
-                            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
-                        )))
-                        && let Ok(Some(claim)) = world_callbacks::legacy_world_claim(callback)
-                        && self.root.reward_claim_is_claimed(
-                            self.character, self.holder, fence.item_fence(), claim.key.clone()
-                        ).await.is_ok_and(|claimed| claimed)
-                    {
+                    if legacy_claimed {
                         return UseDisposition::NothingToUse;
                     }
                     // Returning STEP callbacks emit their refusal after restoring

@@ -611,6 +611,34 @@ async fn spike(
         .await?;
         assert_eq!((facts, progress), (1, (lifecycle != 2).then_some(2)), "lifecycle {lifecycle}");
     }
+    // Replay a pre-achievement purchase after a sale with an active seller alt.
+    // Keep this reconstruction in one transaction so the live story can resume.
+    let mut sale = h.pool.begin().await?;
+    sqlx::raw_sql(
+        "SET LOCAL session_replication_role=replica;
+         DELETE FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist';
+         DELETE FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/cave_completionist';
+         DELETE FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist';
+         INSERT INTO game_character_roots
+             (character_id, account_id, world_id, lifecycle, character_revision, profile_revision,
+              ruleset_revision, content_revision, starter_template_revision, name)
+         SELECT uuidv7(), account_id, world_id, 1, 1, profile_revision,
+                ruleset_revision, content_revision, starter_template_revision, 'Retained Alt'
+           FROM game_character_roots;
+         UPDATE game_character_roots SET account_id=uuidv7(), lifecycle=1 WHERE lifecycle=4;
+         SET LOCAL session_replication_role=origin;"
+    ).execute(&mut *sale).await?;
+    sqlx::raw_sql(migration).execute(&mut *sale).await?;
+    let (purchaser, progress): (bool, i64) = sqlx::query_as(
+        "SELECT r.character_id = u.granting_character_id,
+                (SELECT count(*) FROM game_character_achievement_progress WHERE achievement_key=r.achievement_key)
+           FROM game_account_achievement_grant_requests r
+           JOIN game_account_appearance_unlock_receipts u USING (account_id)
+          WHERE r.achievement_key='oteryn:achievement/cave_completionist'
+            AND u.unlock_key='oteryn:outfit.cave_explorer/quest-grant/2'"
+    ).fetch_one(&mut *sale).await?;
+    assert_eq!((purchaser, progress), (true, 0));
+    sale.rollback().await?;
     let mut fixture = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *fixture)
