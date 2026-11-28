@@ -110,12 +110,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .guild_war_notice(self.character, self.holder, fence, None)
             .await
             .ok()??;
-        let line = ChatLine::Guild(oteryn_protocol_oteryn::chat::guild_room::GuildChatLine {
-            guild_id: notice.guild,
-            rank: 1,
-            speaker_name: "[Guild War]".into(),
-            text: notice.message,
-        });
+        let line = if notice.guild_room_visible {
+            ChatLine::Guild(oteryn_protocol_oteryn::chat::guild_room::GuildChatLine {
+                guild_id: notice.guild,
+                rank: 1,
+                speaker_name: "[Guild War]".into(),
+                text: notice.message,
+            })
+        } else {
+            // The client hides guild-room lines once its membership snapshot is Absent.
+            ChatLine::System {
+                text: format!("[Guild War] {}", notice.message),
+            }
+        };
         Some((line, notice.id))
     }
 

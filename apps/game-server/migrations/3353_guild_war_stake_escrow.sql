@@ -166,7 +166,9 @@ BEGIN
    AND 9000000000000000-game_account_bank_credit_headroom_before_bazaar(NEW.seller_account_id,NEW.world_id)
        +game_guild_war_liability(NEW.seller_account_id,NEW.world_id)
        >game_guild_war_bazaar_ceiling(NEW.seller_account_id,NEW.world_id))
- THEN RAISE EXCEPTION 'Bazaar hold would consume guild war settlement headroom' USING ERRCODE='23514'; END IF;
+ THEN RAISE EXCEPTION 'Bazaar hold would consume guild war settlement headroom'
+  USING ERRCODE='23514', CONSTRAINT='game_guild_war_bazaar_hold_guard';
+ END IF;
  RETURN NULL;
 END $$;
 CREATE TRIGGER game_guild_war_bazaar_hold_guard AFTER INSERT OR UPDATE ON game_bazaar_gold_holds
@@ -316,9 +318,16 @@ CREATE CONSTRAINT TRIGGER game_guild_war_escrow_proven AFTER INSERT OR UPDATE ON
 
 -- Preserve the Market branch in the existing closure guard. The only additional
 -- admitted write is a credit from an already funded war ending in this transaction.
-DO $$ DECLARE body TEXT; anchor TEXT:=' -- Market remains SELECT-only to runtime.'; BEGIN
+DO $$ DECLARE body TEXT; anchor TEXT:=' -- Market remains SELECT-only to runtime.';
+ entry_check TEXT:=$entry$closed IS NOT NULL AND TG_TABLE_NAME='game_account_bank_entries' AND TG_OP='INSERT'$entry$;
+ balance_check TEXT:=$balance$closed IS NOT NULL AND TG_TABLE_NAME='game_account_bank_balances' AND TG_OP='UPDATE'$balance$;
+ allowed TEXT:=$state$(closed IS NOT NULL OR EXISTS(SELECT 1 FROM public.game_account_closures WHERE account_id=a AND state='CANCELLING'))$state$;
+BEGIN
  SELECT pg_get_functiondef('game_account_closure_bank_guard()'::regprocedure) INTO STRICT body;
- IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing closing bank settlement seam'; END IF;
+ IF strpos(body,anchor)=0 OR strpos(body,entry_check)=0 OR strpos(body,balance_check)=0
+ THEN RAISE EXCEPTION 'missing closing bank settlement seam'; END IF;
+ body:=replace(body,entry_check,replace(entry_check,'closed IS NOT NULL',allowed));
+ body:=replace(body,balance_check,replace(balance_check,'closed IS NOT NULL',allowed));
  EXECUTE replace(body,anchor,$war$
  IF e.account_id=a AND e.world_id=(j->>'world_id')::uuid AND e.created_xact_id=pg_current_xact_id()
  AND e.war_escrow_phase='SETTLE' AND e.amount>0 AND e.balance_after=e.balance_before+e.amount
@@ -327,6 +336,7 @@ DO $$ DECLARE body TEXT; anchor TEXT:=' -- Market remains SELECT-only to runtime
    AND h.world_id=e.world_id AND h.leader=e.acting_character_id AND h.funded_xact<>pg_current_xact_id()
    AND h.settled_xact=pg_current_xact_id() AND h.settled_gold=e.amount AND w.state=3)
  THEN RETURN NEW; END IF;
+ IF closed IS NULL THEN RAISE EXCEPTION 'new bank work on closing account' USING ERRCODE='55000'; END IF;
 $war$||anchor);
 END $$;
 

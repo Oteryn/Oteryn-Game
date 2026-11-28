@@ -29,14 +29,15 @@ pub struct GuildWarNotice {
     pub id: i64,
     pub guild: [u8; 16],
     pub message: String,
+    pub guild_room_visible: bool,
 }
 
 const NOTICE_RECIPIENTS: &str = "WITH memberships AS (
-    SELECT guild_id, joined_at FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid
+    SELECT guild_id, joined_at, true AS current_member FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid
     UNION ALL
-    SELECT guild_id, joined_at FROM game_guild_war_disband_members WHERE character_id=encode($1,'hex')::uuid
+    SELECT guild_id, joined_at, false FROM game_guild_war_disband_members WHERE character_id=encode($1,'hex')::uuid
 ), eligible AS (
-    SELECT n.notice_id,n.guild_id,n.message FROM memberships m
+    SELECT n.notice_id,n.guild_id,n.message,m.current_member AND g.state IN (1,2) AS guild_room_visible FROM memberships m
     JOIN game_guilds g USING(guild_id)
     JOIN game_guild_war_notices n ON n.guild_id=g.guild_id AND n.occurred_at>=m.joined_at
     LEFT JOIN game_guild_war_notice_cursors c ON c.guild_id=g.guild_id AND c.character_id=encode($1,'hex')::uuid
@@ -159,13 +160,13 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(None));
             }
-            let query = format!("{NOTICE_RECIPIENTS} SELECT notice_id,guild_id::text,message FROM eligible");
-            let row: Option<(i64, String, String)> = sqlx::query_as(sqlx::AssertSqlSafe(query))
+            let query = format!("{NOTICE_RECIPIENTS} SELECT notice_id,guild_id::text,message,guild_room_visible FROM eligible");
+            let row: Option<(i64, String, String, bool)> = sqlx::query_as(sqlx::AssertSqlSafe(query))
                 .bind(character.as_slice()).bind(world.as_slice())
                 .fetch_optional(&mut *tx).await?;
             commit_semantic_read(tx, deadline).await?;
-            Ok(Ok(row.map(|(id, guild, message)| {
-                Ok::<_, DurabilityError>(GuildWarNotice { id, guild: uuid_text(&guild)?, message })
+            Ok(Ok(row.map(|(id, guild, message, guild_room_visible)| {
+                Ok::<_, DurabilityError>(GuildWarNotice { id, guild: uuid_text(&guild)?, message, guild_room_visible })
             }).transpose()?))
         })).await?
     }

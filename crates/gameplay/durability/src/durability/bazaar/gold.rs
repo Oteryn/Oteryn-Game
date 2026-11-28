@@ -179,11 +179,21 @@ async fn hold(tx: &mut Tx<'_>, v: &Value) -> Result<Effect, DurabilityError> {
     {
         return Ok(Effect::Rejected(CONFLICT));
     }
-    if expected == 0 {
-        sqlx::query("INSERT INTO game_bazaar_gold_holds(hold_id,listing_id,offer_id,buyer_account_id,seller_account_id,world_id,purpose,revision,amount,incoming_net,state) VALUES($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::uuid,$7,1,$8,$9,'ACTIVE')").bind(&hold_id).bind(s(v,"listing_id")?).bind(s(v,"offer_id")?).bind(buyer).bind(seller).bind(world).bind(s(v,"hold_purpose")?).bind(amount as i64).bind(incoming as i64).execute(&mut **tx).await?;
+    let written = if expected == 0 {
+        sqlx::query("INSERT INTO game_bazaar_gold_holds(hold_id,listing_id,offer_id,buyer_account_id,seller_account_id,world_id,purpose,revision,amount,incoming_net,state) VALUES($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::uuid,$7,1,$8,$9,'ACTIVE')").bind(&hold_id).bind(s(v,"listing_id")?).bind(s(v,"offer_id")?).bind(buyer).bind(seller).bind(world).bind(s(v,"hold_purpose")?).bind(amount as i64).bind(incoming as i64).execute(&mut **tx).await
     } else {
-        sqlx::query("UPDATE game_bazaar_gold_holds SET revision=$2::numeric,amount=$3,incoming_net=$4 WHERE hold_id=$1::uuid").bind(&hold_id).bind(new_revision.to_string()).bind(amount as i64).bind(incoming as i64).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_bazaar_gold_holds SET revision=$2::numeric,amount=$3,incoming_net=$4 WHERE hold_id=$1::uuid").bind(&hold_id).bind(new_revision.to_string()).bind(amount as i64).bind(incoming as i64).execute(&mut **tx).await
+    };
+    if written
+        .as_ref()
+        .err()
+        .and_then(sqlx::Error::as_database_error)
+        .is_some_and(|error| error.constraint() == Some("game_guild_war_bazaar_hold_guard"))
+    {
+        // The caller rolls back its effect savepoint before publishing the conflict.
+        return Ok(Effect::Rejected(CONFLICT));
     }
+    written?;
     Ok(Effect::Committed(format!(
         r#"{{"hold_id":"{hold_id}","hold_revision":"{new_revision}","buyer_account_id":"{buyer}","offer_id":"{}","hold_purpose":"{}","held_amount":"{amount}"}}"#,
         s(v, "offer_id")?,

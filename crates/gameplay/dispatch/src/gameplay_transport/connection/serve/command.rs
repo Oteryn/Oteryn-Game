@@ -109,9 +109,17 @@ where
         && session
             .selected_capabilities
             .command_selected(command.command_type);
+    let selected_war = crate::gameplay_transport::guild_war::owns(command.command_type)
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type);
     // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
     // here could hide committed money work. A replay above always keeps its retained result.
     if limited && !session.reconcile_original_bank {
+        if selected_war {
+            // Without the owner's receipt a war command may be a replay of a committed write.
+            return Err(ServeEnd::Disconnected);
+        }
         if selected_hotkey {
             RejectionStage::Throttled.log(command.command_id);
         }
@@ -152,6 +160,9 @@ where
         .await;
     let guard_deferred =
         input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
+    if selected_war && (guard_deferred || input_permit.is_none()) {
+        return Err(ServeEnd::Disconnected);
+    }
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }

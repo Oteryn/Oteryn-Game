@@ -88,9 +88,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(result) => wire::encode_guild_war_result(&result)
                 .map_or(GuildReply::Unavailable, GuildReply::Payload),
-            Err(crate::durability::guild::GuildError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            )) => GuildReply::Rejected,
+            // A replay can reach an unavailable root before it can read an existing receipt.
             Err(crate::durability::guild::GuildError::Unavailable(_)) => GuildReply::Unavailable,
             Err(_) => GuildReply::Rejected,
         }

@@ -32,7 +32,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::{ComposedFreshAdmission, guild_intent::GuildReply, item_fence_of};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::chat::{
-    CAPABILITY_CHAT_V1, ChatLine, guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
+    CAPABILITY_CHAT_V1, ChatLine, guild_room::{CAPABILITY_CHAT_GUILD_ROOM_V1, GuildRoomState},
 };
 use oteryn_protocol_oteryn::guild_war::*;
 
@@ -68,11 +68,38 @@ fn guild_war_postgres_closing_account_refunds_and_refuses_new_funding() -> TestR
     threaded_scenario(admin, false, StakeCase::Closing)
 }
 
+#[test]
+fn guild_war_postgres_settles_during_closure_cancellation() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    threaded_scenario(admin, false, StakeCase::Cancelling)
+}
+
+#[test]
+fn guild_war_postgres_bazaar_house_proceeds_conflict_is_terminal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    threaded_scenario(admin, false, StakeCase::BazaarHouse)
+}
+
+#[test]
+fn guild_war_postgres_lost_ack_busy_replay_stays_outstanding() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    threaded_scenario(admin, false, StakeCase::LateAck)
+}
+
 #[derive(Clone, Copy)]
 enum StakeCase {
     Legacy,
     Outcomes,
     Closing,
+    Cancelling,
+    BazaarHouse,
+    LateAck,
 }
 
 fn threaded_scenario(admin: String, warring_killer: bool, staked: StakeCase) -> TestResult {
@@ -198,7 +225,15 @@ fn scenario(admin: String, warring_killer: bool, staked: StakeCase) -> TestResul
                 StakeCase::Outcomes => {
                     settlement_scenarios(&h, &owner, &mut leader, &mut opponent, opposing).await?
                 }
-                _ => closing_scenario(&h, &owner, &mut leader, &mut opponent, opposing).await?,
+                StakeCase::Closing | StakeCase::Cancelling => closing_scenario(
+                    &h, &owner, &mut leader, &mut opponent, opposing,
+                    matches!(staked, StakeCase::Cancelling),
+                ).await?,
+                StakeCase::BazaarHouse => {
+                    bazaar_house_scenario(&h, &owner, &mut leader, &mut opponent, opposing).await?
+                }
+                StakeCase::LateAck => late_ack_scenario(&h, &owner, leader, opposing).await?,
+                StakeCase::Legacy => return Err("unexpected legacy stake scenario".into()),
             }
             drop(owner);
             drop(authority);
@@ -550,13 +585,13 @@ fn select_stake_capabilities(
     Ok(())
 }
 
-async fn closing_scenario(
+async fn fund_small_war(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     leader: &mut AdmittedSession,
     opponent: &mut AdmittedSession,
     opposing: GuildId,
-) -> TestResult {
+) -> TestResult<GuildWarResult> {
     select_stake_capabilities(owner, leader, opponent)?;
     super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 100_000, 120).await?;
     super::guild_bank_fixtures::bank_seed::balance(
@@ -584,6 +619,18 @@ async fn closing_scenario(
     )
     .await?;
     assert_eq!(balances(h).await?, [94_000, 94_000]);
+    Ok(declared)
+}
+
+async fn closing_scenario(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &mut AdmittedSession,
+    opponent: &mut AdmittedSession,
+    opposing: GuildId,
+    cancelling: bool,
+) -> TestResult {
+    let declared = fund_small_war(h, owner, leader, opponent, opposing).await?;
 
     // Seed the committed CloseAccount owner state. All subsequent bank guards run normally.
     sqlx::query("INSERT INTO game_account_closures(account_id,termination_id,close_operation_id,
@@ -591,6 +638,13 @@ async fn closing_scenario(
         VALUES($1::text::uuid,$2::text::uuid,$3::text::uuid,1,1,'CLOSING',1,game_account_closure_now())")
         .bind(seed::uuid(id(40))).bind(seed::uuid(id(180))).bind(seed::uuid(id(181)))
         .execute(&h.pool).await?;
+    if cancelling {
+        let changed = sqlx::query("UPDATE game_account_closures
+            SET lifecycle_generation=2,state='CANCELLING',decision='CANCEL',resolution_operation_id=$2::uuid
+            WHERE account_id=$1::uuid")
+            .bind(seed::uuid(id(40))).bind(seed::uuid(id(182))).execute(&h.pool).await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
     oteryn_gameplay_social::guild::run_guild_world_pass(
         &h.root,
         owner.character,
@@ -635,6 +689,124 @@ async fn closing_scenario(
     );
     assert_eq!(balances(h).await?, [99_000, 99_000]);
     assert_eq!(score(h, pending).await?.0, 1);
+    Ok(())
+}
+
+async fn bazaar_house_scenario(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &mut AdmittedSession,
+    opponent: &mut AdmittedSession,
+    opposing: GuildId,
+) -> TestResult {
+    fund_small_war(h, owner, leader, opponent, opposing).await?;
+    prepare_bazaar(h).await?;
+
+    // A prior house sale reserved seller proceeds. Its buyer is a separate account.
+    // Leave room for 9,749 net Bazaar gold after the war liability and current balance.
+    let proceeds = 999_999_999_999_i64 - balances(h).await?[1] - 10_000 - 9_749;
+    let sale = seed::uuid(seed::sid(225, 8));
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fixture).await?;
+    sqlx::query("INSERT INTO game_house_sale_holds(offer_id,world_id,recipient_account,seller_account,refund,incoming)
+        VALUES($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$5)")
+        .bind(sale).bind(seed::uuid(id(42))).bind(seed::uuid(id(224)))
+        .bind(seed::uuid(seed::sid(90,2))).bind(proceeds).execute(&mut *fixture).await?;
+    fixture.commit().await?;
+
+    use crate::native_admission_source::character_commands::Decision;
+    for (operation, intent, expected) in [
+        (220, BazaarGold::Hold(10_000), "CHAR_CMD_BAZAAR_HOLD_CONFLICT"),
+        (221, BazaarGold::Hold(9_000), "CHAR_CMD_OK"),
+        (222, BazaarGold::Increase { offer_key: 221, amount: 10_000 }, "CHAR_CMD_BAZAAR_HOLD_CONFLICT"),
+    ] {
+        let decision = bazaar_gold(owner, operation, intent).await?;
+        assert!(matches!(&decision, Decision::Publish { result_code, .. } if result_code == expected),
+            "expected {expected} for the shared reservations, got {decision:?}");
+    }
+    let retained: Vec<(i64, i64)> = sqlx::query_as("SELECT amount,revision::bigint FROM game_bazaar_gold_holds")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(retained, [(9_000, 1)], "refused holds leave the prior custody unchanged");
+    Ok(())
+}
+
+async fn late_ack_scenario(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: AdmittedSession,
+    opposing: GuildId,
+) -> TestResult {
+    let intent = GuildWarIntent::Declare {
+        opponent: *opposing.as_bytes(), frag_limit: 10, duration_days: 7,
+    };
+    let body = encode_guild_war_intent(&intent).map_err(debug)?;
+    let id = leader.continuity.next_command_id;
+    let (lost, reached) = crate::durability::with_stalled_commit_response(
+        owner.guild_command(leader, id, COMMAND_TYPE_GUILD_WAR_INTENT, &body),
+    ).await;
+    assert!(reached && matches!(lost, GuildReply::Unavailable), "a real commit must lose its acknowledgement");
+    h.root.await_ready().await?;
+    let mut held = Vec::new();
+    while h.root.is_ready() {
+        held.push(h.root.try_issue_semantic_pass()?);
+    }
+    assert!(matches!(owner.guild_command(leader, id, COMMAND_TYPE_GUILD_WAR_INTENT, &body).await,
+        GuildReply::Unavailable), "a busy replay must leave the committed command outstanding");
+    for pass in held {
+        pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    }
+    assert_busy_war_replay_unanswered(owner, leader, &body).await?;
+    let GuildReply::Payload(bytes) = owner.guild_command(leader, id, COMMAND_TYPE_GUILD_WAR_INTENT, &body).await
+    else { return Err("committed war receipt unavailable after the holder returns".into()); };
+    assert_eq!(decode_guild_war_result(&bytes).map_err(debug)?.code, 1);
+    Ok(())
+}
+
+async fn assert_busy_war_replay_unanswered(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: AdmittedSession,
+    body: &[u8],
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::{
+        connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted},
+        tcp_tls::{read_frame, write_frame},
+    };
+    use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+    let (mut server, mut client) = tokio::io::duplex(1024);
+    let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
+    let driving = async move {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let mut held = Vec::new();
+        while owner.root.is_ready() {
+            held.push(owner.root.try_issue_semantic_pass()?);
+        }
+        write_frame(&mut client, &encode_client_command(session.continuity.connection_generation,
+            &ClientCommandValue { command_id: session.continuity.next_command_id,
+                command_type: COMMAND_TYPE_GUILD_WAR_INTENT, payload: body }).map_err(debug)?).await?;
+        while let Ok(frame) = read_frame(&mut client).await {
+            assert_ne!(decode_wire_envelope(&frame).map_err(debug)?.message_type(),
+                MessageType::CommandResult, "a busy connection must leave the replay unanswered");
+        }
+        for pass in held {
+            pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
+        Ok(())
+    };
+    let (ended, result): (_, TestResult) = tokio::time::timeout(
+        std::time::Duration::from_secs(30), super::fixture::join_two(serving, driving),
+    ).await?;
+    result?;
+    assert!(matches!(ended, ConnectionEnd::AdmittedThenDisconnected(_)));
+    let command = CommandRef::new(session.game_session_id,
+        CommandId::new(session.continuity.next_command_id).map_err(debug)?);
+    assert!(owner.states.command_ingress.pending_reconciliation(command),
+        "the session must retain the original command for reconciliation");
     Ok(())
 }
 
@@ -947,12 +1119,20 @@ async fn settlement_scenarios(
             .bind(seed::uuid(declared.war)).fetch_one(&h.pool).await?;
         assert_eq!(releases, 2 * i64::from(STAKE));
         for (session, message) in [(*leader, outcome[0]), (*opponent, outcome[1])] {
-            owner.chat_guild_admit(session).await;
-            let Some((ChatLine::Guild(line), Some(notice))) =
+            let room = owner.chat_guild_admit(session).await;
+            let Some((line, Some(notice))) =
                 owner.chat_next_delivery(session, &mut 1).await
             else {
-                return Err("settled war has no guild channel notice".into());
+                return Err("settled war has no notice".into());
             };
+            let archived = cancelled && session.game_session_id == opponent.game_session_id;
+            if archived {
+                assert_eq!(room, GuildRoomState::Absent);
+                assert!(matches!(&line, ChatLine::System { text } if text.contains(message)));
+            } else {
+                let ChatLine::Guild(line) = &line else {
+                    return Err("active guild must receive its guild-room notice".into());
+                };
             assert_eq!(
                 line.guild_id,
                 if session.game_session_id == leader.game_session_id {
@@ -966,15 +1146,16 @@ async fn settlement_scenarios(
                 "wrong guild result: {}",
                 line.text
             );
+            }
             owner.chat_guild_admit(session).await;
             assert_eq!(
                 owner.chat_next_delivery(session, &mut 1).await,
-                Some((ChatLine::Guild(line), Some(notice))),
+                Some((line.clone(), Some(notice))),
                 "an unwritten notice is eligible on reconnect"
             );
             if frags[0] == 10 && session.game_session_id == leader.game_session_id {
-                assert!(
-                    !notice_socket(owner, session, true).await?,
+                assert_eq!(
+                    notice_socket(owner, session, true).await?, None,
                     "first notice frame must fail to write"
                 );
                 owner.chat_guild_admit(session).await;
@@ -983,9 +1164,13 @@ async fn settlement_scenarios(
                     Some((ChatLine::Guild(_), Some(replayed))) if replayed == notice),
                     "failed socket write keeps exactly the same notice available"
                 );
-                assert!(
-                    notice_socket(owner, session, false).await?,
+                assert_eq!(
+                    notice_socket(owner, session, false).await?, Some(line),
                     "replacement connection receives the notice"
+                );
+            } else if archived {
+                assert_eq!(notice_socket(owner, session, false).await?, Some(line),
+                    "a former member must receive a visible system notice on the wire"
                 );
             } else {
                 owner.guild_war_notice_written(session, notice).await;
@@ -1115,6 +1300,7 @@ async fn allow_bazaar_buyer(
 
 enum BazaarGold<'a> {
     Hold(u64),
+    Increase { offer_key: u8, amount: u64 },
     Release { hold: &'a str, amount: u64 },
 }
 
@@ -1123,7 +1309,7 @@ async fn bazaar_gold(
     key: u8,
     intent: BazaarGold<'_>,
 ) -> TestResult<crate::native_admission_source::character_commands::Decision> {
-    if matches!(intent, BazaarGold::Hold(_)) {
+    if matches!(intent, BazaarGold::Hold(_) | BazaarGold::Increase { .. }) {
         allow_bazaar_buyer(owner, key).await?;
     }
     let (command, details) = match intent {
@@ -1132,6 +1318,13 @@ async fn bazaar_gold(
             serde_json::json!({
                 "buyer_character_id":seed::uuid(id(41)), "hold_purpose":"OFFER","offer_id":seed::uuid(seed::sid(u32::from(key),7)),
                 "amount":amount.to_string(), "expected_hold_revision":"0"
+            }),
+        ),
+        BazaarGold::Increase { offer_key, amount } => (
+            "HoldBazaarGold",
+            serde_json::json!({
+                "buyer_character_id":seed::uuid(id(41)), "hold_purpose":"OFFER","offer_id":seed::uuid(seed::sid(u32::from(offer_key),7)),
+                "amount":amount.to_string(), "expected_hold_revision":"1"
             }),
         ),
         BazaarGold::Release { hold, amount } => (
@@ -1226,7 +1419,8 @@ async fn notice_socket(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: AdmittedSession,
     fail_notice: bool,
-) -> TestResult<bool> {
+) -> TestResult<Option<ChatLine>> {
+    use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::{
         connection::{IDLE_LIVENESS, serve_admitted},
         tcp_tls::read_frame,
@@ -1247,12 +1441,17 @@ async fn notice_socket(
                 .windows(WAR_SPEAKER.len())
                 .any(|part| part == WAR_SPEAKER)
             {
-                return true;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                assert_eq!(envelope.message_type(), MessageType::StateDelta);
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                assert_eq!(delta.domain_id, oteryn_protocol_oteryn::chat::STATE_DOMAIN_CHAT);
+                assert_eq!(delta.delta_type, oteryn_protocol_oteryn::chat::DELTA_TYPE_CHAT_LINE_V1);
+                return Ok(Some(oteryn_protocol_oteryn::chat::decode_chat_line(delta.payload).map_err(debug)?));
             }
         }
-        false
+        Ok(None)
     };
-    let (failed, written) = tokio::time::timeout(
+    let (failed, written): (_, TestResult<Option<ChatLine>>) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(serving, driving),
     )
@@ -1261,5 +1460,5 @@ async fn notice_socket(
         failed, fail_notice,
         "the fault must reach the war notice socket write"
     );
-    Ok(written)
+    written
 }

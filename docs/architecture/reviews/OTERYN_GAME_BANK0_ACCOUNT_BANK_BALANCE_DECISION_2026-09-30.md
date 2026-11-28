@@ -149,10 +149,20 @@ Fencing, physical transaction proofs and command receipts still apply.
 A completed war credits the accounts recorded at acceptance. A frag-limit win transfers
 both penalties to the winning side. At timeout with unequal scores, transfer
 `floor(loser penalty × frag difference ÷ frag limit)` to the winning side and return the
-remaining penalties. A draw or disband cancellation returns each penalty to its payer.
-Settlement and both guild-channel notices commit with the end transition. If the war reaches
-its frag limit or deadline before cancellation is processed, the normal result takes precedence.
-Legacy declarations without the negotiated stake field continue with their existing terms.
+remaining penalties. A draw or cancellation returns each penalty to its payer. A disband or
+account closure can cancel a funded war. If the war has reached its frag limit or deadline when
+cancellation is processed, the normal result takes precedence. Funding refuses accounts under
+the closure fence. During account closure or its cancellation, the fence allows the exact
+positive settlement credit for escrow funded before the settlement transaction.
+The bank protects Bazaar holds when funding a war. A Bazaar hold or increase that would
+consume reserved war settlement headroom returns a terminal hold conflict, including when
+house-sale reservations reduce the available room.
+
+Settlement and both notices commit with the end transition. The connection sends the notice
+to current members of forming or active guilds in guild chat and uses a system chat line for
+a disbanding guild or a recipient retained by disband cleanup. The delivery cursor advances
+after a successful frame write. Legacy declarations without the negotiated stake field continue
+with their existing terms.
 
 > “In case he accepts, the previously set penalty payments, and a small war declaration fee
 > amounting to 1.000 gold coins, will be transferred from both guild leader's accounts to a
