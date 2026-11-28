@@ -473,6 +473,13 @@ def build(
     tp_records, object_families = teleports(
         candidates + scripted, present, item_keys(root), rejected, catalogue_keys(root)
     )
+    from quest_chest_bindings import CAPTURES, return_transition_rows, selections
+
+    if (root / CAPTURES).is_dir():
+        selected, _, _ = selections(root)
+        for record in return_transition_rows(selected["teleport"]):
+            tp_records.append(record)
+            object_families[record["declaration"]["object"]["family"]] += 1
     summary = {
         "families": {"Transition.Teleport": len(tp_records)},
         "map": {
@@ -491,11 +498,6 @@ def build(
         "source": source_of(scripts),
         "teleport_object_families": object_families,
     }
-    from quest_chest_bindings import CAPTURES, return_transition_rows, selections
-
-    if (root / CAPTURES).is_dir():
-        selected, _, _ = selections(root)
-        tp_records.extend(return_transition_rows(selected["teleport"]))
     if (root / CLASSIC_QUEST_CAPTURE).is_file():
         return classic_quest_teleports(root, tp_records, summary)
     out = shard_files("Transition.Teleport", tp_records, summary["source"])

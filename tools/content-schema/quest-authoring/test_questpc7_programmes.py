@@ -599,16 +599,36 @@ class QuestPc7QuestRewards(unittest.TestCase):
             for c in self.callbacks["callbacks"]
             if c["key"].split("/")[-1].startswith("questpc7-friends-")
         ]
-        qc_path = q.ROOT / "content/quests/npc-callbacks/qc-programmes.json"
-        qc = json.loads(qc_path.read_bytes())["callbacks"] if qc_path.is_file() else []
-        qc_steel = [
-            c
-            for c in qc
-            if c["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel"
+        npc = "oteryn:npc.a_sweaty_cyclops"
+        qc = json.loads(
+            (q.ROOT / "content/quests/npc-callbacks/qc-programmes.json").read_bytes()
+        )["callbacks"]
+        offers = json.loads(
+            (q.ROOT / "content/quests/npc-offers/qc-programmes.json").read_bytes()
+        )["offers"]
+        self.assertEqual(len(selected), 18)
+        track = "oteryn:quest-progress/questpc7/friends/program"
+        for suffix, topic, stage, take in [
+            ("intro", 2, -1, []),
+            ("skirts", 4, 0, [{"item": "oteryn:item.tibia.i3560", "count": 3}]),
+        ]:
+            key = "oteryn:quest-reward/questpc7-friends-" + suffix
+            confirmations = [
+                row for row in offers + qc + selected
+                if row["npc"] == npc and row["topic"] == topic and "yes" in row["keywords"]
+            ]
+            self.assertEqual([row.get("transition") for row in confirmations], [key])
+            transition, = [row for row in selected if row["key"] == key]
+            self.assertEqual(transition["take"], take)
+            self.assertEqual(transition["storage"], [
+                {"track": track, "minimum": stage, "maximum": stage, "set": stage + 1}
+            ])
+        steel = [
+            row for row in qc + selected if row["npc"] == npc
+            and row["topic"] == 6 and "yes" in row["keywords"]
         ]
-        self.assertEqual(len(selected), 18 if qc_steel else 21)
-        services = [c for c in selected if c.get("counter")]
-        services.extend(qc_steel)
+        self.assertEqual([row["key"] for row in steel], ["oteryn:quest-reward/qc-obsidian-draconian-steel"])
+        services = [c for c in selected if c.get("counter")] + steel
         self.assertEqual(len(services), 3)
         self.assertEqual(len({c["counter"]["track"] for c in services}), 3)
         self.assertTrue(

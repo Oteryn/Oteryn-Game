@@ -745,6 +745,32 @@ mod exact_selection_regression_tests {
     }
 }
 
+// Cave Hydra reuses the source Hydra look but has its own creature binding.
+#[cfg(test)]
+fn assert_project_appearance_population(document: &SpellAppearancesDocument) {
+    let non_callback = document
+        .records
+        .iter()
+        .filter(|r| !qualified_soul_war_callback(r));
+    let (hydras, historical): (Vec<_>, Vec<_>) = non_callback.partition(|r| {
+        r.creature
+            .as_ref()
+            .is_some_and(|owner| owner.key == "oteryn:creature.cave_hydra")
+    });
+    assert_eq!(historical.len(), 334);
+    assert_eq!(hydras.len(), 1);
+    assert_eq!(hydras[0].look_type, 121);
+    assert!(historical.iter().any(|record| {
+        record
+            .creature
+            .as_ref()
+            .is_some_and(|owner| owner.key == "oteryn:creature.hydra")
+            && record.source == hydras[0].source
+            && record.look_type == hydras[0].look_type
+            && record.outfit_key == hydras[0].outfit_key
+    }));
+}
+
 #[cfg(test)]
 mod cached_canary_admission_regression_tests {
     #![allow(clippy::unwrap_used)]
@@ -768,14 +794,7 @@ mod cached_canary_admission_regression_tests {
     #[test]
     fn actual_project_admits_exact40_cached_records_preserving_enclosing_source_pin() {
         let document = actual_document();
-        assert_eq!(
-            document
-                .records
-                .iter()
-                .filter(|record| !qualified_soul_war_callback(record))
-                .count(),
-            334
-        );
+        assert_project_appearance_population(&document);
         assert_eq!(document.default_source_revision, PIN);
         let cached: Vec<_> = document
             .records
@@ -859,14 +878,7 @@ mod project_illusionable_admission_regression_tests {
     fn exact26_canonical_missing_illusionable_outfits_compile_without_object_grant_or_old40_scope_change()
      {
         let document = document();
-        assert_eq!(
-            document
-                .records
-                .iter()
-                .filter(|record| !qualified_soul_war_callback(record))
-                .count(),
-            334
-        );
+        assert_project_appearance_population(&document);
         assert_eq!(document.default_source_revision, PIN);
         let added: Vec<_> = document
             .records

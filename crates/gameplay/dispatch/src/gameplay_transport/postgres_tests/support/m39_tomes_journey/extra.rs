@@ -58,6 +58,9 @@ pub(super) async fn exercise(
             number * 5000,
             "literal replay cannot repeat XP"
         );
+        if number == 2 {
+            elapse_tome_interval(h, owner, admitted).await?;
+        }
         assert_eq!(
             grant(owner, admitted, cael, "l2-cael-tome-13").await?.0,
             NpcIntentDisposition::Rejected,
