@@ -1,11 +1,6 @@
-//! W01c client replay capture: an admitted poison spider's melee attack reaches the player as an
-//! `ACTOR_VITALS` health decrease. The session retains typed vitals only, so the captured payload
-//! is the server-delivered `ActorVitals` encoded with the production encoder (the same convention
-//! as M11a). The consumer is `Session::apply_state_delta` and `Session::actor_vitals` in
-//! `crates/session`.
+//! W01c captures the original server envelope for the live damage delta.
 use super::*;
-use oteryn_dev_client::SessionEvent;
-use oteryn_protocol_oteryn::actor_spell;
+use oteryn_protocol_oteryn::{actor_spell, decode_wire_envelope};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::io::Write;
@@ -38,29 +33,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "oteryn:creature.poison_spider",
     )
     .await?;
-    let before = *client
-        .actor_vitals()
-        .ok_or("W01c client capture: admission supplied no ActorVitals")?;
     let cancel = client.session_mut().attack_target(None).await?;
     if cancel.disposition != AttackIntentDisposition::Ok {
         return Err(format!("W01c client capture: attack-cancel refused: {cancel:?}").into());
     }
     client.take_events();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
-    let damaged = 'wait: loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health > 0
-                && delta.value.health < before.health
-            {
-                break 'wait delta.value;
-            }
+    let (frame, before, damaged, revision, previous_sequence) = loop {
+        let mut captured = None;
+        client.session_mut().capture_vitals_damage(Duration::from_millis(50),
+            |frame, before, after, revision, sequence| {
+                captured = Some((frame.to_vec(), *before, *after, revision, sequence));
+            }).await?;
+        client.take_events();
+        if let Some(captured) = captured {
+            break captured;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("W01c client capture: no spider damage delta in 45s".into());
         }
     };
+    let generation = decode_wire_envelope(&frame)?.connection_generation();
+
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
 
     // Release the character through the normal logout path. Dropping the
     // session at the encounter leaves the fixture held by combat loss/grace.
@@ -74,14 +69,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("W01c client capture: town logout refused: {logout:?}").into());
     }
 
-    capture(
-        capture_root,
-        "w01c-vitals.bin",
-        &actor_spell::encode_actor_vitals(&damaged)
-            .map_err(|error| format!("encode vitals: {error:?}"))?,
-    )?;
+    capture(capture_root, "w01c-vitals.bin", &frame)?;
+    let checkpoint = actor_spell::encode_actor_vitals(&before)
+        .map_err(|error| format!("encode prior vitals: {error:?}"))?;
+    capture(capture_root, "w01c-before.bin", &checkpoint)?;
     let expected = format!(
-        "health_before={}\nhealth={}\nmax_health={}\nmana={}\nmax_mana={}\nsoul={}\n",
+        "session={session}\ngeneration={generation}\nprevious_sequence={previous_sequence}\nrevision={revision}\nhealth_before={}\nhealth={}\nmax_health={}\nmana={}\nmax_mana={}\nsoul={}\n",
         before.health,
         damaged.health,
         damaged.max_health,

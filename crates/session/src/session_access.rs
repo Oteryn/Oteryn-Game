@@ -1,6 +1,9 @@
 //! Session session access.
 use super::*;
 
+#[cfg(feature = "test-support")]
+type VitalsCapture<'a> = dyn FnMut(&[u8], &ActorVitals, &ActorVitals, u64, u64) + Send + 'a;
+
 impl<S: SessionStream> Session<S> {
     /// Service an idle connection until at least one pushed domain event is applied.
     ///
@@ -321,7 +324,32 @@ impl<S: SessionStream> Session<S> {
     ) -> Result<(), SessionError> {
         self.ensure_usable()?;
         let until = tokio::time::Instant::now() + duration;
-        let outcome = self.serve_liveness_until(until, discard_events).await;
+        let outcome = self
+            .serve_liveness_until(
+                until,
+                discard_events,
+                #[cfg(feature = "test-support")]
+                None,
+            )
+            .await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Observe the original frame and the client state immediately before a live HP decrease.
+    #[cfg(feature = "test-support")]
+    pub async fn capture_vitals_damage(
+        &mut self,
+        duration: Duration,
+        mut capture: impl FnMut(&[u8], &ActorVitals, &ActorVitals, u64, u64) + Send,
+    ) -> Result<(), SessionError> {
+        self.ensure_usable()?;
+        let outcome = self
+            .serve_liveness_until(
+                tokio::time::Instant::now() + duration,
+                false,
+                Some(&mut capture),
+            )
+            .await;
         self.poison_on_error(outcome)
     }
 
@@ -329,6 +357,7 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         until: tokio::time::Instant,
         discard_events: bool,
+        #[cfg(feature = "test-support")] mut capture: Option<&mut VitalsCapture<'_>>,
     ) -> Result<(), SessionError> {
         loop {
             if discard_events {
@@ -375,8 +404,24 @@ impl<S: SessionStream> Session<S> {
                 MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
                 MessageType::SnapshotBegin => self.replace_snapshot(envelope.payload()).await?,
                 MessageType::StateDelta => {
+                    #[cfg(feature = "test-support")]
+                    let previous = (
+                        self.actor_vitals,
+                        self.vitals_revision,
+                        self.last_server_sequence,
+                    );
                     let server_sequence = self.next_sequence(&envelope)?;
                     let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    #[cfg(feature = "test-support")]
+                    if let (Some(capture), Some(before), SessionEvent::ActorVitals(after)) =
+                        (capture.as_mut(), previous.0, &event)
+                        && after.value.health > 0
+                        && after.value.health < before.health
+                    {
+                        capture(&frame, &before, &after.value, previous.1, previous.2);
+                        self.queue_event(event)?;
+                        return Ok(());
+                    }
                     self.queue_event(event)?;
                 }
                 actual => {
