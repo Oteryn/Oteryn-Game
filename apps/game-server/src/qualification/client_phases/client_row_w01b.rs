@@ -136,53 +136,48 @@ async fn seed_client_placement(
     Ok(())
 }
 
-// The protocol provides sequence ordering but no server timestamp for Rat removal or spawn
-// warnings. Keep the observer beside the authored point and surface the actual live gap.
-async fn observe_nearby_respawn(
+// Keep the existing observation budget. Local time only bounds the diagnostic wait.
+async fn observe_respawn_outside_sight(
     client: &mut DevClientSession,
+    world: &BundleWorld,
     target: WorldSpatialEntity,
     respawn_ms: u32,
-) -> TestResult<WorldSpatialEntity> {
-    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
-
-    let observer = client.world_spatial().actor_position;
+    available: impl Fn(TilePos) -> bool,
+) -> TestResult<(WorldSpatialEntity, u64)> {
     let deadline =
         tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 11_000);
-    verdict::Harness::global().bounded_wait(deadline, "nearby-respawn");
-    let mut effects = Vec::new();
-    loop {
+    verdict::Harness::global().bounded_wait(deadline, "respawn-outside-sight");
+    let path = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| at.floor == SPAWN.floor && tile_distance(at, SPAWN) >= 20,
+        available,
+    )
+    .filter(|path| !path.is_empty())
+    .ok_or("W01b no route outside spawn sight")?;
+    tokio::time::timeout_at(deadline, walk_first_attempt(client, world, &path))
+        .await
+        .map_err(|_| "W01b departure exhausted the existing respawn observation window")??;
+    let outside = client.world_spatial().actor_position;
+    let outside_tile = tile(outside)?;
+    if outside_tile.floor != SPAWN.floor || tile_distance(outside_tile, SPAWN) < 20 {
+        return Err("W01b did not leave spawn sight".into());
+    }
+    let outside_sequence = client.last_server_sequence();
+    evidence(&format!(
+        "W01B_RESPAWN_OUTSIDE observer={outside:?} sequence={outside_sequence}"
+    ));
+    while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(100)).await?;
-        if client.world_spatial().actor_position != observer
-            || tile_distance(tile(observer)?, SPAWN) != 1
-        {
-            return Err("W01b respawn observer did not stay beside the spawn".into());
-        }
-        for event in client.take_events() {
-            if let SessionEvent::ItemEffects(delta) = event {
-                effects.extend(delta.value.iter().filter_map(|effect| match effect.kind {
-                    PresentationEventKind::MagicEffect {
-                        position,
-                        effect_id,
-                        source,
-                    } if tile(position).ok() == Some(SPAWN) => {
-                        Some((delta.server_sequence, effect_id, source))
-                    }
-                    _ => None,
-                }));
-            }
-        }
-        let occupant = creature_at(client, SPAWN);
-        let replacement = occupant.filter(is_rat).map(|rat| rat.entity);
-        if replacement.is_some() || tokio::time::Instant::now() >= deadline {
-            let occupant_name = occupant
-                .and_then(|entity| entity.display_name)
-                .and_then(|name| name.as_str().ok().map(str::to_owned));
-            return Err(format!(
-                "BLOCKER-SERVER W01b nearby respawn spawn={SPAWN:?} observer={observer:?} killed={:?} authored_ms={respawn_ms} rat={replacement:?} occupant={occupant_name:?} effects={effects:?} server_timestamps=absent",
-                target.entity
-            ).into());
+        client.take_events();
+        if client.world_spatial().actor_position != outside {
+            return Err("W01b moved while waiting outside spawn sight".into());
         }
     }
+    Err(format!(
+        "BLOCKER-SERVER W01b respawn timing spawn={SPAWN:?} outside={outside:?} killed={:?} authored_ms={respawn_ms} outside_sequence={outside_sequence} kill_receipt_ts=absent spawn_ts=absent",
+        target.entity
+    ).into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -357,11 +352,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W01b client capture: kill lacked a damage delta or a removal delta".into());
     }
 
-    let replacement = observe_nearby_respawn(&mut client, target, respawn_ms).await?;
+    let (replacement, outside_sequence) =
+        observe_respawn_outside_sight(&mut client, world, target, respawn_ms, available).await?;
     let returned = client.last_server_sequence();
     let first_session = client.join_snapshot().game_session_id;
     let mut expected = format!(
-        "kill.target={}:{}\nkill.initial={initial}\nkill.trace={}\nbefore={before}\nattack.sequence={}\nkilled={killed}\nreturned={returned}\nfirst.session={}\n",
+        "kill.target={}:{}\nkill.initial={initial}\nkill.trace={}\nbefore={before}\nattack.sequence={}\nkilled={killed}\noutside={outside_sequence}\nreturned={returned}\nfirst.session={}\n",
         hex(&target.entity.identity),
         target.entity.generation,
         trace.join(";"),

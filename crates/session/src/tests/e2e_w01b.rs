@@ -196,9 +196,11 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
     let replacement = parse_target(value(expected, "replacement")?)?;
     let before: u64 = value(expected, "before")?.parse()?;
     let killed: u64 = value(expected, "killed")?.parse()?;
+    let outside: u64 = value(expected, "outside")?.parse()?;
     let returned: u64 = value(expected, "returned")?.parse()?;
     let logout: u64 = value(expected, "logout.sequence")?.parse()?;
     assert!(before < killed && killed < returned && returned < logout);
+    assert!(killed < outside && outside < returned);
     assert_ne!(replacement, target);
     let spawn = at_text(value(expected, "spawn")?)?;
 
@@ -334,13 +336,11 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
                 at_text(value(expected, "corpse.position")?)?
             );
         }
-        if (killed..=returned).contains(&sequence) {
+        if sequence == outside {
             let at = session.world_spatial().actor_position;
-            assert_eq!(at.floor, spawn.floor);
-            assert_eq!(
-                at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)),
-                1,
-                "recorded observer left the authored spawn during respawn"
+            assert!(
+                at.floor == spawn.floor && at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) >= 20,
+                "recorded observer stayed in spawn sight"
             );
         }
         if sequence == returned {
