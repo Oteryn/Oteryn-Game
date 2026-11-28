@@ -41,6 +41,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor,
                 game_session_id,
                 now,
+                super::super::pvp_live::CombatLockCause::Attack,
             );
         }
         outcome

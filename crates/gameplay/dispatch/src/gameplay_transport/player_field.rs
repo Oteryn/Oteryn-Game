@@ -783,11 +783,13 @@ impl PendingPlayerField {
         }
         let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(self.now_us);
         for (actor, session, aggression) in self.locks {
-            let lock = crate::gameplay_transport::pvp_live::lock_mut(states, actor, session);
-            lock.on_pvp_hit(now);
-            if aggression {
-                lock.on_aggression(now)
-            }
+            use crate::gameplay_transport::pvp_live::{CombatLockCause, record_pvp_hit};
+            let cause = if actor == self.actor {
+                CombatLockCause::Damage
+            } else {
+                CombatLockCause::Attack
+            };
+            record_pvp_hit(runtime, states, actor, session, now, cause, aggression);
         }
         if let Some(death) = self.death {
             states.deaths.push((self.actor, self.session, death));

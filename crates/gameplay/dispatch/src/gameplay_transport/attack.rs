@@ -51,6 +51,7 @@ use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
 
 use super::ComposedFreshAdmission;
+use super::pvp_live::{CombatLockCause, log_combat_lock_renewal};
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
@@ -233,6 +234,26 @@ struct ActorAttack {
 }
 
 impl ActorAttack {
+    fn record_fight_deadline(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        now: SemanticTimeMicros,
+        constants: &AttackConstants,
+        cause: CombatLockCause,
+    ) {
+        let previous = self.state.in_fight_until();
+        self.state.record_hit(now, constants.in_fight_micros());
+        log_combat_lock_renewal(
+            runtime,
+            self.actor,
+            self.session,
+            cause,
+            "in_fight",
+            previous,
+            self.state.in_fight_until(),
+        );
+    }
+
     fn clear_target(&mut self) {
         self.state.clear_target();
         self.target_ref = None;
@@ -873,7 +894,7 @@ impl ChannelAttackStates {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) {
-        self.record_fight_activity(runtime, actor, session, now);
+        self.record_fight_activity(runtime, actor, session, now, CombatLockCause::Damage);
     }
 
     /// Start or extend the shared combat lock at the time of a committed hostile action.
@@ -883,12 +904,13 @@ impl ChannelAttackStates {
         actor: ExactActorRef,
         session: GameSessionId,
         now: SemanticTimeMicros,
+        cause: CombatLockCause,
     ) {
         let Some(constants) = AttackConstants::checked_in() else {
             return;
         };
         if let Some(entry) = self.entry(runtime, actor, session) {
-            entry.state.record_hit(now, constants.in_fight_micros());
+            entry.record_fight_deadline(runtime, now, &constants, cause);
         }
     }
 }

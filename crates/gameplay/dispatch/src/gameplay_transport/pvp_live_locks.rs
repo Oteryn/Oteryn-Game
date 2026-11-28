@@ -1,5 +1,93 @@
 //! Live combat locks and their fenced readmission refresh.
 use super::*;
+use crate::foundation::GameSessionId;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+
+#[derive(Clone, Copy)]
+pub(in crate::gameplay_transport) enum CombatLockCause {
+    Attack,
+    Damage,
+    Aggressor,
+}
+
+pub(in crate::gameplay_transport) fn log_combat_lock_renewal(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    cause: CombatLockCause,
+    kind: &str,
+    previous: Option<SemanticTimeMicros>,
+    current: Option<SemanticTimeMicros>,
+) {
+    use oteryn_error_codes::{Level, Line};
+    let Some(expiry) = current.filter(|_| current > previous) else {
+        return;
+    };
+    let tile = if let Ok(at) = runtime.read_actor_position(actor) {
+        let at = at.position();
+        (at.x, at.y, at.floor)
+    } else if let Ok(house) = runtime.house_actor_state(actor, session) {
+        let at = house.position;
+        (at.x, at.y, at.floor)
+    } else {
+        return;
+    };
+    let cause = match cause {
+        CombatLockCause::Attack => "attack",
+        CombatLockCause::Damage => "damage",
+        CombatLockCause::Aggressor => "aggressor",
+    };
+    // Keep the registered diagnostic shape and identify only the current runtime actor slot.
+    let detail = format!(
+        "combat_lock_renewed actor={}/{} cause={cause} lock={kind} expires_at_us={} tile=({},{},{})",
+        actor.actor_local_id(),
+        actor.actor_local_generation(),
+        expiry.get(),
+        tile.0,
+        tile.1,
+        tile.2.unsigned_abs(),
+    );
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &Line::new(Level::Info, "gameplay_transport", "transport_diagnostic").detail(&detail),
+    );
+}
+
+pub(in crate::gameplay_transport) fn record_pvp_hit(
+    runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: SemanticTimeMicros,
+    cause: CombatLockCause,
+    aggression: bool,
+) {
+    let lock = lock_mut(states, actor, session);
+    let previous = lock.logout_until();
+    lock.on_pvp_hit(now);
+    log_combat_lock_renewal(
+        runtime,
+        actor,
+        session,
+        cause,
+        "pvp_logout",
+        previous,
+        lock.logout_until(),
+    );
+    if aggression {
+        let previous = lock.pz_until();
+        lock.on_aggression(now);
+        log_combat_lock_renewal(
+            runtime,
+            actor,
+            session,
+            CombatLockCause::Aggressor,
+            "pz",
+            previous,
+            lock.pz_until(),
+        );
+    }
+}
 
 pub(in crate::gameplay_transport) fn lock_mut(
     states: &mut ChannelSpellStates,

@@ -386,8 +386,12 @@ impl PlayerBatchPreflight {
     }
 
     // Only the compositor below calls this, after the unchanged exclusive owner borrow
-    // has validated every index. No allocation, lookup, callback or fallible step follows.
-    fn install(self, states: &mut ChannelSpellStates) -> OwnerCombatBatch {
+    // has validated every index. Diagnostic reads cannot change the commit outcome.
+    fn install(
+        self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+    ) -> OwnerCombatBatch {
         states.deaths.extend(self.deaths);
         states.pvp_locks.retain(|(actor, session, _)| {
             states
@@ -397,11 +401,13 @@ impl PlayerBatchPreflight {
         });
         if let Some(now) = self.batch.now_us {
             for (actor, session, aggression) in self.pvp_locks {
-                let lock = super::super::pvp_live::lock_mut(states, actor, session);
-                lock.on_pvp_hit(now);
-                if aggression {
-                    lock.on_aggression(now);
-                }
+                use super::super::pvp_live::{CombatLockCause, record_pvp_hit};
+                let cause = if actor == self.batch.caster {
+                    CombatLockCause::Attack
+                } else {
+                    CombatLockCause::Damage
+                };
+                record_pvp_hit(runtime, states, actor, session, now, cause, aggression);
             }
         }
         for replacement in self.replacements {
@@ -1045,7 +1051,7 @@ pub fn install_owner_batch(
         let element = preflight.analyser_element;
         let leech = preflight.analyser_leech;
         let split = preflight.analyser_parts;
-        let batch = preflight.install(states);
+        let batch = preflight.install(runtime, states);
         states.owner_wake.notify_one();
         // Advisory allocation follows both owner installations.
         states.analyser_batch(runtime, &batch, &receipt, element, split);
