@@ -73,10 +73,18 @@ fn obelisk_ordinal(bytes: &[u8]) -> TestResult<Option<u8>> {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout;observed=refused".into());
+    let session = client.join_snapshot().game_session_id;
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "step=logout;status={:?};result={:?};session={};command={};server_sequence={}",
+            reply.status,
+            reply.result,
+            uuid_text(session.as_bytes()),
+            reply.command_id,
+            reply.result_server_sequence
+        )
+        .into());
     }
     Ok(())
 }
@@ -140,10 +148,11 @@ async fn obelisk_use(
     if response.status != CommandStatus::Accepted
         || disposition != expected
         || detail != expected_detail
+        || (expected == UseDisposition::Committed && response.command_id != 1)
     {
         return Err(format!(
-            "step=use;observed=status:{:?},disposition:{disposition:?},detail:{detail:?};expected={expected:?},detail:{expected_detail:?}",
-            response.status
+            "step=use;observed=status:{:?},disposition:{disposition:?},detail:{detail:?};expected={expected:?},detail:{expected_detail:?};session={};command={};server_sequence={}",
+            response.status, uuid_text(session.as_bytes()), response.command_id, response.server_sequence
         )
         .into());
     }
@@ -203,6 +212,41 @@ async fn stage_position(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
+async fn report_entry_inputs(clients: &SeamClients<'_>, client: &DevClientSession) -> TestResult {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (level, ready): (Option<i64>, bool) = sqlx::query_as(
+        "SELECT (SELECT level FROM game_character_progression_state
+                   WHERE character_id=encode($1,'hex')::uuid),
+                EXISTS (
+                    SELECT 1 FROM game_runtime_scope_assignments a
+                    JOIN game_runtime_scope_assignments c
+                      ON c.world_id=a.world_id AND c.channel_id=encode($3,'hex')::uuid
+                     AND c.state=1 AND c.holder_node_id=a.holder_node_id
+                     AND c.holder_registration_revision=a.holder_registration_revision
+                    JOIN game_durability_admission_runtime_guards g
+                      ON g.scope_key=decode('02','hex') || uuid_send(a.world_id) || uuid_send(a.activity_instance_id)
+                     AND g.ready AND g.ownership_generation=a.ownership_generation
+                   WHERE a.world_id=encode($2,'hex')::uuid AND a.scope_kind=3 AND a.state=1
+                     AND NOT EXISTS (SELECT 1 FROM game_activity_handoff_groups h
+                                      WHERE h.world_id=a.world_id AND h.instance_id=a.activity_instance_id)
+                     AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+                                      WHERE s.runtime_scope_world_id=a.world_id
+                                        AND s.runtime_scope_instance_id=a.activity_instance_id))",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    let session = client.join_snapshot().game_session_id;
+    evidence(&format!(
+        "row=G36.full entry_inputs session={} position=32375,31158,8 core=47381 core_count=1 level={level:?} ready_instance={ready}",
+        uuid_text(session.as_bytes())
+    ));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -254,6 +298,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    report_entry_inputs(&clients, &client).await?;
     obelisk_use(&mut client, &payload, UseDisposition::Committed).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while client.join_snapshot().game_session_id == channel || core_count(&client, definition)? != 0
