@@ -65,7 +65,11 @@ async fn send_vitals_join_with_content(
         .map_err(|error| format!("vitals: {error:?}"))?;
     let spatial = encode_world_spatial(&WireSpatialObservation {
         content_generation,
-        actor_position: ActorPosition { x: 0, y: 0, floor: 0 },
+        actor_position: ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
     });
     for frame in encode_single_chunk_snapshot(
         1,
