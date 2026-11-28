@@ -40,6 +40,7 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum RopeUse {
     Climb,
+    ClimbDuringCheckout,
     Pull,
     PullFromFullLanding,
     PullCreature,
@@ -56,7 +57,10 @@ pub(super) enum RopeUse {
 
 impl RopeUse {
     fn climbs(self) -> bool {
-        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle) || self.ground_handle()
+        matches!(
+            self,
+            Self::Climb | Self::ClimbDuringCheckout | Self::CoveredObject | Self::CoveredHandle
+        ) || self.ground_handle()
     }
 
     fn pulls(self) -> bool {
@@ -470,6 +474,74 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         };
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session).await?.0;
+        if action == RopeUse::ClimbDuringCheckout {
+            use super::item_craft_fixtures::{CRAFT_INPUT_BARRIER, exchange};
+            use crate::gameplay_transport::COMMAND_HOLDER_WINDOW;
+            use crate::gameplay_transport::capabilities::SelectedCapabilities;
+            use crate::gameplay_transport::connection::{FirstEntryOutcome, IDLE_LIVENESS};
+
+            admitted.runtime_actor = Some(actor);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+                    .ok_or("rope capability offer")?;
+            let command_id = admitted.continuity.next_command_id;
+            let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
+                target: UseTarget::ItemByDefinition(definition),
+                use_with: None,
+                use_with_map_item: Some(map_target),
+                use_with_position: None,
+            })
+            .map_err(debug)?;
+            let barrier = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+            let wire = CRAFT_INPUT_BARRIER.scope(
+                barrier.clone(),
+                exchange(&owner, admitted, command_id, &payload, Some(definition)),
+            );
+            let holding = async {
+                barrier.wait().await;
+                let holder = h.root.try_acquire_ready();
+                barrier.wait().await;
+                let mut holder = holder?;
+                assert!(!h.root.is_ready());
+                tokio::time::sleep(COMMAND_HOLDER_WINDOW / 2).await;
+                holder
+                    .return_to_pool_observed_until(
+                        std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+                    )
+                    .await;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let (wire, held) =
+                tokio::time::timeout(IDLE_LIVENESS.interval, super::fixture::join_two(wire, holding))
+                    .await?;
+            held?;
+            let (_, disposition, _) = wire?;
+            assert_eq!(disposition, UseDisposition::Committed);
+            assert_eq!(
+                deps.runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                at(10, 11, 7),
+            );
+            let character = current_fence(&owner, session).await?.character_id;
+            let backpack = h
+                .root
+                .read_character_backpack(&authority, character)
+                .await?
+                .ok_or("rope backpack after climb")?;
+            assert!(backpack.entries.iter().any(|entry| {
+                entry.item.definition.production_key == tool && entry.item.quantity == 1
+            }));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let mut previous_command = 0;
         for offset in 0..repetitions {
             let item = id(71 + u8::try_from(offset)?);

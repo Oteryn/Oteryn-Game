@@ -1,6 +1,30 @@
 use super::TestResult;
 
 #[test]
+fn m07_rope_spot_ascends_after_busy_quest_receipt_checkout_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(|| {
+            super::fixture::run(async |admin| {
+                super::vertical_move_fixtures::agent_rope(
+                    admin,
+                    "oteryn:item.tibia.i3003",
+                    386,
+                    super::vertical_move_fixtures::RopeUse::ClimbDuringCheckout,
+                )
+                .await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "M07 rope dispatch panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn crystal_agent_tools_and_elvenhair_rope_ascend_through_live_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

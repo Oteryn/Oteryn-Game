@@ -14,6 +14,10 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseTarget, encode_item_use_intent,
 };
 
+tokio::task_local! {
+    pub(super) static CRAFT_INPUT_BARRIER: std::sync::Arc<tokio::sync::Barrier>;
+}
+
 pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -153,6 +157,10 @@ async fn exchange_selected_operands(
             }
             encode_item_use_intent(&intent).map_err(debug)?
         } else { payload.to_vec() };
+        if let Ok(barrier) = CRAFT_INPUT_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.wait().await;
+            barrier.wait().await;
+        }
         let frame = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: 2, payload: &actual })?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;

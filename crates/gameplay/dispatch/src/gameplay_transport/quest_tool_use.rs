@@ -1,6 +1,6 @@
 //! Selected quest tools retain a live target through the fenced value commit.
 use super::{
-    ComposedFreshAdmission,
+    AdmissionRetryBudget, ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
     item_ref_admission::NativeItemWeights,
     item_view::ItemKey,
@@ -34,6 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         corpse: Option<[u8; 16]>,
     ) -> Result<Option<UseOutcome>, ()> {
+        use crate::durability::character_progression::CharacterProgressionError;
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         };
@@ -58,17 +59,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        if let Some(matches) = self
-            .root
-            .reconcile_quest_carried_use(
-                self.character,
-                item_fence.character_id,
-                command_ref,
-                encoded.clone(),
-            )
+        // This read also precedes ordinary map tools such as a rope. Give a busy
+        // checkout the normal command budget before deciding whether to dispatch.
+        let receipt = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("carried_quest_use_receipt", || async {
+                match self
+                    .root
+                    .reconcile_quest_carried_use(
+                        self.character,
+                        item_fence.character_id,
+                        command_ref,
+                        encoded.clone(),
+                    )
+                    .await
+                {
+                    Err(CharacterProgressionError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
             .map_err(|_| ())?
-        {
+            .map_err(|_| ())?;
+        if let Some(matches) = receipt {
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {
