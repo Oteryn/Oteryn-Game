@@ -332,12 +332,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == session {
         return Err("step=fresh observed=reused-session".into());
     }
+    enter_house(&mut fresh, clients).await?;
     let durable = first_entry_with(&mut fresh, &key).await?;
     if durable != after || chair_definition(clients, &key).await? != CHAIR_AFTER {
         return Err("step=fresh observed=chair-or-revision-not-durable".into());
     }
     logout(&mut fresh).await?;
-    evidence("G07_CHECK step=rotation before=2358 after=2359 relog=2359 status=PASS");
+    evidence("G07_CHECK step=rotation before=2360 after=2361 relog=2361 status=PASS");
     Ok(())
 }
 
