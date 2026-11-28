@@ -22,6 +22,80 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+#[derive(Default)]
+struct CaptureTiming(Option<(&'static str, tokio::time::Instant)>);
+
+impl CaptureTiming {
+    fn enter(&mut self, stage: &'static str) {
+        self.record("complete");
+        self.0 = Some((stage, tokio::time::Instant::now()));
+    }
+
+    fn record(&mut self, status: &str) {
+        if let Some((stage, started)) = self.0.take() {
+            evidence(&format!(
+                "I07_CAPTURE_STAGE stage={stage} status={status} elapsed_ms={}",
+                started.elapsed().as_millis(),
+            ));
+        }
+    }
+}
+
+impl Drop for CaptureTiming {
+    fn drop(&mut self) {
+        self.record("interrupted");
+    }
+}
+
+// Fixture work runs on the node control socket. Continue reading gameplay
+// frames and acknowledging liveness while that separate exchange is pending.
+async fn provision_while_serving(
+    client: &mut oteryn_dev_client::DevClientSession,
+    profile: String,
+) -> TestResult<String> {
+    let request = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        profile,
+    );
+    tokio::pin!(request);
+    loop {
+        let servicing = client.service_liveness(Duration::from_millis(100));
+        tokio::pin!(servicing);
+        tokio::select! {
+            result = &mut servicing => result?,
+            result = &mut request => {
+                // A liveness read may have consumed the first byte of a frame.
+                // Finish that window before the next command reads the socket.
+                servicing.await?;
+                return result.map_err(Into::into);
+            }
+        }
+    }
+}
+
+// The serial command loop finishes sending the preceding command's deltas
+// before it can answer this read. Waiting out a quiet interval is unnecessary.
+async fn quick_loot_reply_barrier(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::quick_loot as wire;
+    let payload = wire::encode_quick_loot_request(&request(QuickLootAction::ReviewDestinations))
+        .map_err(|error| format!("I07 Quick Loot barrier request: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            wire::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || wire::decode_quick_loot_destinations(&reply.payload).is_err()
+    {
+        return Err(format!("I07 Quick Loot barrier refused: {reply:?}").into());
+    }
+    Ok(())
+}
+
 fn request(action: QuickLootAction) -> QuickLootRequest {
     QuickLootRequest {
         action,
@@ -423,10 +497,15 @@ impl Capture<'_> {
         } else {
             oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1
         };
+        let started = tokio::time::Instant::now();
         let reply = client
             .session_mut()
             .gated_command(capability, command, &payload)
             .await?;
+        evidence(&format!(
+            "I07_CAPTURE_PROBE probe={key} elapsed_ms={}",
+            started.elapsed().as_millis()
+        ));
         let expected_status = if matches!(key, 19 | 20 | 25) {
             CommandStatus::Rejected
         } else {
@@ -614,6 +693,8 @@ pub(super) async fn journey(
         (false, "oteryn:item.tibia.i3577"),
         (true, "oteryn:item.tibia.i3357"),
     ];
+    let mut timing = CaptureTiming::default();
+    timing.enter("resolve_fixture");
     let index = provisioning::item_index()?;
     let skip_reference = provisioning::item_reference(&index, 3577)?.get();
     let gold_reference = provisioning::item_reference(&index, 3031)?.get();
@@ -635,7 +716,9 @@ pub(super) async fn journey(
         ..*clients
     };
     let clients = &scoped;
+    timing.enter("picker_admission");
     let mut client = connect_world(clients, 0x07).await?;
+    timing.enter("picker_grants");
     let initial_inventory = client.inventory().ok_or("I07 starter inventory missing")?;
     let missing: Vec<_> = [
         (3577, skip_reference),
@@ -651,11 +734,18 @@ pub(super) async fn journey(
     })
     .collect();
     for &(id, _) in &missing {
-        character_prep::grant_item(&client, id, 1).await?;
+        let started = tokio::time::Instant::now();
+        provision_while_serving(&mut client, format!("item-{id}-1")).await?;
+        evidence(&format!(
+            "I07_CAPTURE_GRANT definition={id} elapsed_ms={}",
+            started.elapsed().as_millis(),
+        ));
     }
+    timing.enter("picker_logout");
     let picker_seed_session = client.join_snapshot().game_session_id;
     require_logout(&mut client).await?;
     drop(client);
+    timing.enter("loot_admission");
     let mut client = connect_world(clients, 0x07).await?;
     if client.join_snapshot().game_session_id == picker_seed_session {
         return Err("I07 picker inventory admission reused its provisioning session".into());
@@ -664,15 +754,12 @@ pub(super) async fn journey(
     if tile(admitted_position)? != TOWN {
         return Err("I07 fixture requires admission at the seeded corpse tile".into());
     }
-    let provisioning_log = request_fixture_control(
-        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-        "--profile",
-        "i07-loot".into(),
-    )
-    .await?;
+    timing.enter("loot_provisioning");
+    let provisioning_log = provision_while_serving(&mut client, "i07-loot".into()).await?;
     if !provisioning_log.is_empty() {
         evidence(&provisioning_log);
     }
+    timing.enter("fixture_readback");
     evidence("FIXTURE I07 premium=granted purpose=category_prerequisite");
     let character = &clients.characters[1];
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
@@ -923,6 +1010,7 @@ pub(super) async fn journey(
     );
     let unassigned = route(None, QuickLootRecipient::MainContainer, None, false);
 
+    timing.enter("initial_loot_commands");
     capture.probe(&mut client, 1, skip, &[]).await?;
     require_filters(&mut database, character, false, &FILTERS[..1]).await?;
     capture
@@ -1110,9 +1198,12 @@ pub(super) async fn journey(
         .probe(&mut client, 11, armor_route(true), &[])
         .await?;
     require_routes(&mut database, character, &pouch, true, true, full, false).await?;
+    timing.enter("loot_logout");
     require_logout(&mut client).await?;
     drop(client);
+    timing.enter("relog_admission");
     let mut fresh = connect_world(clients, 0x07).await?;
+    timing.enter("relog_loot_commands");
     let fresh_session = fresh.join_snapshot().game_session_id;
     if fresh_session == original_session
         || owned_containers(&mut database, character, &clients.world).await? != (pouch, backpack)
@@ -1200,6 +1291,7 @@ pub(super) async fn journey(
         "I07_LOOT_CUSTODY fallback=on relog=true armor=backpack filtered=corpse stacked=retained",
     );
 
+    timing.enter("corpse_commands");
     // Manual click bypasses the active Accept filter and targets only this corpse.
     let (corpse_entity, corpse_handle, selected, sibling, opened, primary_use_sequence) =
         open_primary_corpse(&mut fresh, skip_reference).await?;
@@ -1473,7 +1565,7 @@ pub(super) async fn journey(
     evidence("I07_INVALID_POUCH status=rejected settings=unchanged");
     let _ = fresh.take_events();
     capture.probe(&mut fresh, 20, click, &[]).await?;
-    fresh.service_liveness(Duration::from_secs(2)).await?;
+    quick_loot_reply_barrier(&mut fresh).await?;
     if fresh
         .take_events()
         .into_iter()
@@ -1541,7 +1633,7 @@ pub(super) async fn journey(
             &[],
         )
         .await?;
-    fresh.service_liveness(Duration::from_millis(250)).await?;
+    quick_loot_reply_barrier(&mut fresh).await?;
     require_no_foreign_container_events(
         fresh.take_events(),
         before_foreign_click,
@@ -1564,9 +1656,12 @@ pub(super) async fn journey(
     )
     .await?;
     evidence("I07_FOREIGN_CLICK refusal=stale live_item=foreign_corpse custody=unchanged");
+    timing.enter("corpse_logout");
     require_logout(&mut fresh).await?;
     drop(fresh);
+    timing.enter("readback_admission");
     let mut readback = connect_world(clients, 0x07).await?;
+    timing.enter("final_readback");
     let readback_session = readback.join_snapshot().game_session_id;
     if readback_session == original_session
         || readback_session == fresh_session
@@ -1668,7 +1763,9 @@ pub(super) async fn journey(
         }
         evidence("I07_FULL_QUIVER bolts=7 backpack_debit=7 after_relog=true");
     }
+    timing.enter("final_logout");
     require_logout(&mut readback).await?;
+    timing.record("complete");
     evidence(
         "I07_LOOT_CUSTODY final_relog=true exact_ids_counts_slots=true pouch=inbox backpack=equipped click_sibling=retained skip_listed=retained",
     );
@@ -2146,9 +2243,7 @@ async fn require_corpse_view(
             {
                 return Err("I07 selected Click emitted a wrong corpse view delta".into());
             }
-            client
-                .service_liveness(deadline.saturating_duration_since(tokio::time::Instant::now()))
-                .await?;
+            quick_loot_reply_barrier(client).await?;
             if matching_corpse_delta(client, corpse)?.is_some() {
                 return Err("I07 selected Click emitted an extra corpse delta".into());
             }
