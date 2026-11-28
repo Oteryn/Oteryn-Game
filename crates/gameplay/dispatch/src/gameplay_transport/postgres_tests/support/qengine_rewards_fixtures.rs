@@ -91,6 +91,18 @@ pub(super) async fn talk(
     id: u64,
     text: &str,
 ) -> TestResult<NpcIntentDisposition> {
+    Ok(talk_outcome(owner, admitted, npc, id, text)
+        .await?
+        .disposition)
+}
+
+pub(super) async fn talk_outcome(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    id: u64,
+    text: &str,
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -115,7 +127,7 @@ pub(super) async fn talk(
         )
         .await;
     assert!(!outcome.unknown, "NPC command must have a known outcome");
-    Ok(outcome.disposition)
+    Ok(outcome)
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
