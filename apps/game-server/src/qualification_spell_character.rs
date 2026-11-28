@@ -102,6 +102,7 @@ pub(super) async fn prepare_free_sorcerer(
             context,
             xp_occurrence,
             build_occurrence,
+            magic_seed: None,
         },
     )
     .await
@@ -116,6 +117,7 @@ pub(crate) struct QualificationBuildSpec<'a> {
     pub context: ProgressionRevisionContext<String>,
     pub xp_occurrence: [u8; 16],
     pub build_occurrence: [u8; 16],
+    pub magic_seed: Option<(u16, [u8; 16])>,
 }
 
 #[cfg(test)]
@@ -217,6 +219,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         context,
         xp_occurrence: _,
         build_occurrence: _,
+        magic_seed,
     } = spec;
     let character =
         CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
@@ -346,10 +349,35 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
+    let magic_seed = magic_seed
+        .map(|(level, occurrence)| BuildOccurrence::from_bytes(occurrence).map(|id| (level, id)))
+        .transpose()
+        .map_err(debug)?;
     if resume_items {
-        // The exact XP checkpoint and proven vocation permit resuming the item stage.
-        // Preserve the current build and later play.
-        return Ok(());
+        // Preserve subsequent play after the training occurrence was committed.
+        let Some((magic_level, occurrence)) = magic_seed else {
+            return Ok(());
+        };
+        let receipt = retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_build(authority, occurrence).await
+        })
+        .await
+        .map_err(debug)?;
+        if let Some(receipt) = receipt {
+            if receipt.character_id != character
+                || receipt.cause != BuildCause::Training
+                || receipt.after.magic() != (magic_level, 0)
+            {
+                return Err("qualification magic seed occurrence mismatch".into());
+            }
+            return Ok(());
+        }
+        if !progression
+            .as_ref()
+            .is_some_and(|state| state.level == level && state.total_experience == experience)
+        {
+            return Err("qualification XP changed before magic seed".into());
+        }
     }
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
@@ -368,9 +396,10 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .map_err(debug)?
         .revision,
     };
-    if progression
-        .as_ref()
-        .is_some_and(|state| state.character_revision != fence.expected_character_revision)
+    if !resume_items
+        && progression
+            .as_ref()
+            .is_some_and(|state| state.character_revision != fence.expected_character_revision)
     {
         return Err("spell fixture progression revision differs from current root revision".into());
     }
@@ -453,6 +482,45 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
+    let after = if let Some((magic_level, occurrence)) = magic_seed {
+        if after.magic() != (0, 0) {
+            return Err("qualification magic seed requires untouched training state".into());
+        }
+        let trained = DurableBuildState::new(after.vocation(), (magic_level, 0), after.skills())
+            .map_err(debug)?;
+        if trained != after {
+            fence.expected_character_revision =
+                retry_holder(Some(root), deadline, authority_busy, async || {
+                    root.read_current_character(authority, character).await
+                })
+                .await
+                .map_err(debug)?
+                .revision;
+            retry_holder(Some(root), deadline, progression_busy, async || {
+                slot.commit_build(
+                    root,
+                    authority,
+                    node,
+                    fence,
+                    BuildChangeRequest {
+                        occurrence,
+                        cause: BuildCause::Training,
+                        before: after.clone(),
+                        after: trained.clone(),
+                        pruned_stance: None,
+                    },
+                    &formula,
+                    None,
+                )
+                .await
+            })
+            .await
+            .map_err(debug)?;
+        }
+        trained
+    } else {
+        after
+    };
     // Verify the requested owned state with typed errors; the cast-facts loader
     // erases holder-busy into Unavailable, which cannot safely be retried.
     let verification_revision = retry_holder(Some(root), deadline, authority_busy, async || {
@@ -488,6 +556,77 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     {
         return Err("fenced spell fixture did not produce requested source build".into());
     }
+    Ok(())
+}
+
+/// Seed the W10 knight's axe training through the durable build owner.
+pub(super) async fn prepare_w10_axe(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    content: &str,
+    occurrence: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    let character =
+        CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+            .map_err(debug)?;
+    let revision = retry_holder(Some(root), deadline, authority_busy, async || {
+        root.read_current_character(authority, character).await
+    })
+    .await
+    .map_err(debug)?
+    .revision;
+    let before = retry_holder(Some(root), deadline, progression_busy, async || {
+        root.read_character_build_state(authority, character).await
+    })
+    .await
+    .map_err(debug)?;
+    let mut skills = before.skills();
+    // SKILLS stores axe after fist, club and sword.
+    skills[3] = (120, 0);
+    let after = DurableBuildState::new("knight", before.magic(), skills).map_err(debug)?;
+    if before == after {
+        return Ok(());
+    }
+    let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
+        content,
+    )
+    .map_err(debug)?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: revision,
+    };
+    let occurrence = BuildOccurrence::from_bytes(occurrence).map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    retry_holder(Some(root), deadline, progression_busy, async || {
+        slot.commit_build(
+            root,
+            authority,
+            node,
+            fence,
+            BuildChangeRequest {
+                occurrence,
+                cause: BuildCause::Training,
+                before: before.clone(),
+                after: after.clone(),
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+    })
+    .await
+    .map_err(debug)?;
     Ok(())
 }
 

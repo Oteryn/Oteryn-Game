@@ -131,7 +131,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed(1, error, "a valid channel id"))?,
     )
     .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))?;
-    let mut client = connect_world(clients, 0xd0)
+    let mut client = connect_character(clients, 0xd0, W10_CHARACTER)
         .await
         .map_err(|error| failed_error(1, error, "fresh native admission"))?;
 
@@ -352,7 +352,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         return Err(failed(5, "logout_refused", "an accepted logout reply"));
     }
     drop(client);
-    let mut client = connect_world(clients, 0xd1)
+    let mut client = connect_character(clients, 0xd1, W10_CHARACTER)
         .await
         .map_err(|error| failed_error(5, error, "fresh native readmission"))?;
     if client.join_snapshot().game_session_id == old_session {

@@ -4,7 +4,7 @@ use crate::gameplay_transport::house_podium::Approach;
 use crate::gameplay_transport::raid_notices::ServerMessageConnection;
 use oteryn_protocol_oteryn::house_podium::{COMMAND_PROJECTION, COMMAND_QUERY, decode_item};
 use oteryn_protocol_oteryn::house_transfer::{
-    COMMAND_TYPE_HOUSE_TRANSFER, STATE_DOMAIN_HOUSE_SCOPE,
+    COMMAND_TYPE_HOUSE_TRANSFER, HouseTransferRefusal, STATE_DOMAIN_HOUSE_SCOPE,
 };
 use oteryn_protocol_oteryn::zones_nologout::{
     CAPABILITY_ZONES_NOLOGOUT_V1, SERVER_MESSAGES_EMPTY_SNAPSHOT, STATE_DOMAIN_SERVER_MESSAGES,
@@ -12,6 +12,27 @@ use oteryn_protocol_oteryn::zones_nologout::{
 use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::time::Instant;
+
+/// Fill rejections produced before the transfer owner runs, or by an authority
+/// that still returns the original empty refusal.
+pub(super) fn refusal_payload(
+    command_type: u32,
+    selected: bool,
+    status: CommandStatus,
+    payload: &[u8],
+) -> Option<[u8; 2]> {
+    (command_type == COMMAND_TYPE_HOUSE_TRANSFER
+        && status == CommandStatus::Rejected
+        && payload.is_empty())
+    .then(|| {
+        if selected {
+            HouseTransferRefusal::Unavailable
+        } else {
+            HouseTransferRefusal::CapabilityRequired
+        }
+        .encode()
+    })
+}
 
 pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
@@ -31,16 +52,21 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         .sequence
         .checked_add(1)
         .ok_or(ServeEnd::Disconnected)?;
+    let status = if next.is_some() {
+        CommandStatus::Accepted
+    } else {
+        CommandStatus::Rejected
+    };
+    let fallback = refusal_payload(command.command_type, true, status, &payload);
+    let payload = fallback
+        .as_ref()
+        .map_or(payload.as_slice(), |bytes| bytes.as_slice());
     let result = encode_command_result(
         session.generation,
         sequence,
         command.command_id,
-        if next.is_some() {
-            CommandStatus::Accepted
-        } else {
-            CommandStatus::Rejected
-        },
-        &payload,
+        status,
+        payload,
     )
     .map_err(|_| ServeEnd::Disconnected)?;
     session
@@ -503,8 +529,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .server_sequence
                 .checked_add(1)
                 .ok_or(ServeEnd::Disconnected)?;
+            let fallback = refusal_payload(
+                command.command_type,
+                selected.command_selected(command.command_type),
+                status,
+                &payload,
+            );
+            let reply = fallback
+                .as_ref()
+                .map_or(payload.as_slice(), |bytes| bytes.as_slice());
             let result =
-                encode_command_result(generation, sequence, command.command_id, status, &payload)
+                encode_command_result(generation, sequence, command.command_id, status, reply)
                     .map_err(|_| ServeEnd::Disconnected)?;
             commands
                 .terminalize_with(command.command_id, &result, || {})

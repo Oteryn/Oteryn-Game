@@ -49,6 +49,66 @@ def bash(script, env=None, cwd=None):
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
+class ClassARowWiringTests(unittest.TestCase):
+    phases = Path(os.environ.get(
+        'NODE_BOOT_ROW_SOURCE',
+        HERE.parents[2] / 'apps/game-server/src/qualification/client_phases',
+    ))
+
+    def test_p19_optional_capture_preserves_live_proof(self):
+        row = (self.phases / 'client_row_p19.rs').read_text()
+        self.assertNotIn('required("E2E_ALL_CAPTURE_DIR")', row)
+        self.assertIn('if let Some(capture) = capture.as_deref()', row)
+        self.assertLess(row.index('if first.0 != Some(stacks)'), row.index('p19_capture_files'))
+        self.assertIn('P19 fresh admission did not resume', row)
+
+    def test_i10_without_capture_still_enters_and_checks_all_refusals(self):
+        row = (self.phases / 'client_row_i10.rs').read_text()
+        self.assertNotIn('let Some(directory) = std::env::var_os', row)
+        self.assertIn('journey(clients, directory.as_deref().map(Path::new))', row)
+        self.assertGreaterEqual(row.count('Refusal::NotInHouse'), 2)
+        self.assertIn('Refusal::Stale', row)
+        self.assertIn('enter_house(clients).await?', row)
+
+    def test_c16c_reloads_the_provisioned_character(self):
+        row = (self.phases / 'client_row_c16c.rs').read_text()
+        self.assertRegex(row, r'connect_character\(clients, 0xd5, C16C_CHARACTER\)')
+        self.assertRegex(row, r'provision_profile\(\s*client,\s*clients,\s*C16C_CHARACTER,')
+
+    def test_w10_death_receipt_is_queried_for_the_admitted_character(self):
+        row = (self.phases / 'client_row_w10.rs').read_text()
+        self.assertRegex(row, r'connect_character\(clients, 0x06, W10_CHARACTER\)')
+        self.assertRegex(row, r'committed_hunt_death\(\s*client,\s*clients,'
+                              r'\s*Some\(clients.characters\[W10_CHARACTER\]\)')
+
+    def test_p19_census_uses_the_qualification_operator_path(self):
+        row = (self.phases / 'client_row_p19.rs').read_text()
+        census = row.split('async fn census(', 1)[1].split('fn log_census', 1)[0]
+        self.assertRegex(census, r'request_fixture_control\(session, "--inspect-forge", None\)')
+        self.assertNotIn('UnixStream', census)
+
+    def test_c16c_then_w10_routes_to_distinct_bootstrapped_characters(self):
+        world = (self.phases / 'world.rs').read_text()
+        indices = {
+            row: list(re.findall(rf'const {row}_CHARACTER: usize = (\d+);', world))
+            for row in ('C16C', 'W10')
+        }
+        self.assertTrue(all(len(index) == 1 for index in indices.values()), indices)
+        self.assertNotEqual(indices['C16C'], indices['W10'])
+        fixtures = (self.phases.parents[1] / 'qualification.rs').read_text()
+        packet_accounts = fixtures.split('let packet_accounts =', 1)[1].split('])', 1)[0]
+        accounts = re.findall(r'required\("(NODE_BOOT_\w+_ACCOUNT_ID)"\)', packet_accounts)
+        for row in ('C16C', 'W10'):
+            self.assertEqual(accounts[int(indices[row][0])], f'NODE_BOOT_{row}_ACCOUNT_ID')
+        self.assertLess(world.index('client_row_c16c::run_packet'),
+                        world.index('client_row_w10::run_packet'))
+        self.assertIn('clients.characters[C16C_CHARACTER]',
+                      (self.phases / 'client_row_c16c.rs').read_text())
+        for row in ('client_row_w10.rs', 'full_row_w10.rs'):
+            self.assertIn(', W10_CHARACTER)', (self.phases / row).read_text())
+        self.assertIn('"$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT")', RUN_TEXT)
+        self.assertIn('NODE_BOOT_W10_ACCOUNT_ID=$W10_ACCOUNT_ID', RUN_TEXT)
+
 class KnobTests(unittest.TestCase):
     def test_world_node_launch_passes_pinned_npc_catalogue(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -279,7 +339,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 13)
+        self.assertEqual(len(accounts), 15)
         self.assertEqual(len(set(accounts)), len(accounts))
 
 
@@ -292,6 +352,7 @@ class ReuseTests(unittest.TestCase):
             set -Eeuo pipefail
             WORK={temp}/fresh; mkdir -p "$WORK"
             BASE={temp}/base
+            GAME_SOURCE={HERE.parents[2]}
             NODE_BOOT_REUSE_STACK={mode}
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
             NODE_BOOT_E2E_ONLY=rows
@@ -362,6 +423,39 @@ class ReuseTests(unittest.TestCase):
                     self.assertEqual(result.stdout.strip(),
                                      'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack')
             self.assertEqual(self.run_guard(temp, 'teardown', 'NODE_BOOT_E2E_ONLY=mp').returncode, 0)
+
+    def test_rows_reuse_requires_the_kept_premium_activation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            without_activation = 'sudo() { [[ "$1" != grep ]]; }'
+            rows = self.run_guard(temp, 1, f"{without_activation}; OTERYN_E2E_ROW_BATCH=118:1")
+            self.assertEqual(rows.returncode, 2, rows.stdout + rows.stderr)
+            self.assertIn('reason=kept_stack_missing_premium_activation', rows.stdout)
+            w10 = self.run_guard(temp, 1, f'{without_activation}; OTERYN_E2E_ROW_BATCH=193:1')
+            self.assertEqual(w10.returncode, 0, w10.stdout + w10.stderr)
+            for mode, groups in ((1, 'f6'), ('teardown', 'rows')):
+                result = self.run_guard(
+                    temp, mode, f'{without_activation}; NODE_BOOT_E2E_ONLY={groups}'
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(self.run_guard(temp, 1).returncode, 0)
+
+    def test_every_premium_row_blocks_reuse_without_activation(self):
+        world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
+        rows = dict((name, index) for index, name in re.findall(
+            r'e2e_row_selected\((\d+)\) \{\s*(?://[^\n]+\s*)?verdict::indexed\("([^"]+)"', world,
+        ))
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            for row in ("E06.full", "C12.full", "S07.full", "W12.full", "S13c.full",
+                        "P14.full", "S13a.client", "S13b.client", "S13c.client",
+                        "W15c.full", "I07.client", "P06.full", "P20.full", "S05.full"):
+                with self.subTest(row=row):
+                    result = self.run_guard(
+                        temp, 1, f'OTERYN_E2E_ROW_BATCH={rows[row]:0>6}:0001; sudo() {{ [[ "$1" != grep ]]; }}'
+                    )
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn("reason=kept_stack_missing_premium_activation", result.stdout)
 
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)

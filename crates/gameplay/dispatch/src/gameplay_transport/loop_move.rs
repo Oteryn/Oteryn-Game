@@ -79,7 +79,8 @@ impl ItemLoopContent for NativeItemWeights<'_> {
                 | "oteryn:item.tibia.i8140"
                 | "oteryn:item.tibia.i8141"
                 | "oteryn:item.tibia.i8106"
-        ) {
+        ) && !crate::durability::item_loop_move::rat_drag_stage(&definition.production_key)
+        {
             return None;
         }
         let mut facts = generation_item_facts(self.0, definition).ok()?;
@@ -294,7 +295,7 @@ pub struct LoopGroundOverlay {
     facts: HashMap<[u8; 16], EntryFacts>,
     ordinals: HashMap<[u8; 16], u64>,
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
-    source_plain_corpses: HashSet<[u8; 16]>,
+    retirement_tracked_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
@@ -349,11 +350,19 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         let mut ordinals = HashMap::new();
         let mut native_pickup_cells = HashMap::new();
-        let mut source_plain_corpses = HashSet::new();
+        let mut retirement_tracked_corpses = HashSet::new();
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
             let committed_corpse = entry.native_corpse && entry.field_collision.is_none();
+            let dragged_rat = committed_corpse
+                && crate::durability::item_loop_move::rat_drag_stage(
+                    &item.definition.production_key,
+                )
+                && item
+                    .ground
+                    .corpse_ref
+                    .starts_with(crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX);
             // A native MINT uses runtime coordinates. After an ordinary loop
             // move, the same nonportable corpse uses the loop's map coordinates.
             let native_axes = entry.field_collision.is_some()
@@ -465,8 +474,8 @@ impl LoopGroundOverlay {
                 overlay.add_ground(item)
             };
             if added.is_ok() {
-                if entry.source_plain_corpse {
-                    source_plain_corpses.insert(id);
+                if entry.source_plain_corpse || dragged_rat {
+                    retirement_tracked_corpses.insert(id);
                 }
                 facts.insert(id, entry_facts);
                 ordinals.insert(id, ordinal);
@@ -480,7 +489,7 @@ impl LoopGroundOverlay {
             facts,
             ordinals,
             native_pickup_cells,
-            source_plain_corpses,
+            retirement_tracked_corpses,
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
@@ -689,7 +698,7 @@ impl LoopGroundCache {
 
     /// The complete scoped corpse read also reconciles an ambiguous retirement.
     /// Only representation metadata is compared; Ground custody stays in Items.
-    pub(super) fn reconcile_plain_corpses(
+    pub(super) fn reconcile_retired_corpses(
         &self,
         scope: crate::foundation::RuntimeScopeRefV1,
         live: &[[u8; 16]],
@@ -698,7 +707,7 @@ impl LoopGroundCache {
             && state.current.as_ref().is_some_and(|current| {
                 current.overlay.runtime_scope() == scope
                     && current
-                        .source_plain_corpses
+                        .retirement_tracked_corpses
                         .iter()
                         .any(|item| !live.contains(item))
             })
@@ -1169,6 +1178,13 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .as_ref()
         .and_then(|ground| ground.ground_entry(&item))
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
+    let rat_corpse = ground.as_ref().and_then(|ground| {
+        let MapDefinition::Item(reference) = ground.facts.get(&item)?.definition else {
+            return None;
+        };
+        let (key, _) = index?.definition_at(reference)?;
+        Some(crate::durability::item_loop_move::rat_drag_stage(key))
+    }) == Some(true);
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
         (Some(cell), Some(at)) if in_reach(at, cell) => {
@@ -1187,7 +1203,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             let Some((base, at, content_revision, placement_context)) = &pins else {
                 return refused(LoopMoveRefusal::NotSupported);
             };
-            if let Some(mailbox) = mailbox {
+            if !rat_corpse && let Some(mailbox) = mailbox {
                 if !in_reach(*at, (to.x, to.y, to.floor)) {
                     return LoopMoveResult::TooFar;
                 }
@@ -1199,7 +1215,29 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     return posted;
                 }
             }
-            match drop_cell(base, *at, to) {
+            let cell = if rat_corpse {
+                // Crystal 201189f8 item.hpp:331 and game.cpp:2054: floor-only
+                // items have a two-tile throw range, with a clear source-to-target path.
+                const THROW_RANGE: u32 = 2;
+                if at.2 != to.floor
+                    || at.0.abs_diff(to.x) > THROW_RANGE
+                    || at.1.abs_diff(to.y) > THROW_RANGE
+                {
+                    return LoopMoveResult::TooFar;
+                }
+                let clear = ground
+                    .as_deref()
+                    .zip(admission.bundle_map())
+                    .zip(pickup)
+                    .is_some_and(|((scene, map), from)| rat_throw_clear(scene, map, from, to));
+                if !clear {
+                    return refused(LoopMoveRefusal::Blocked);
+                }
+                source_drop_cell(base, *at, to)
+            } else {
+                drop_cell(base, *at, to)
+            };
+            match cell {
                 Ok(spatial_position) => LoopDestination::Ground(LoopGround {
                     spatial_position,
                     map_revision: map_revision(base),
@@ -1398,6 +1436,20 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .browse_fields
             .committed_move(request.item, destination);
     }
+    if rat_corpse
+        && matches!(committed, Ok(Ok(receipt)) if !receipt.replayed)
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(floor) = to.floor.checked_neg()
+    {
+        let _ = admission.runtime.lock().await.relocate_bound_corpse(
+            item,
+            crate::foundation::MovementLocalPosition {
+                x: to.x,
+                y: to.y,
+                floor,
+            },
+        );
+    }
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
     }
@@ -1418,6 +1470,42 @@ pub(super) async fn move_loop_item_with_house_capacity(
         Ok(Err(refusal)) => LoopMoveResult::Refused(refusal),
         Err(_) => LoopMoveResult::Unknown,
     }
+}
+
+fn rat_throw_clear(
+    scene: &LoopGroundOverlay,
+    map: &crate::map::boot::BundleMap,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> bool {
+    use crate::foundation::MovementLocalPosition;
+    let start = MovementLocalPosition {
+        x: from.0,
+        y: from.1,
+        floor: from.2,
+    };
+    let end = MovementLocalPosition {
+        x: to.x,
+        y: to.y,
+        floor: to.floor,
+    };
+    crate::spell::world_execution::source_sight_steps(start, end).is_ok_and(|steps| {
+        let facts = scene.facts(&map.facts);
+        steps.into_iter().all(|(position, exempt)| {
+            if exempt {
+                return true;
+            }
+            let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(position.x),
+                u16::try_from(position.y),
+                i8::try_from(position.floor),
+            ) else {
+                return false;
+            };
+            view::compose_tile(scene.overlay(), &facts, TilePos { x, y, floor })
+                .is_ok_and(|tile| view::RoofFacts::of(tile.as_ref()).look_through)
+        })
+    })
 }
 
 /// The 10-byte cell of a drop onto `to`: a base tile of the bundle in reach of the actor at

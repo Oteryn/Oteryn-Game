@@ -6,6 +6,8 @@ mod activity_handoff_tests;
 mod activity_scope_tests;
 #[path = "tests/actor_cooldowns.rs"]
 mod actor_cooldowns_tests;
+#[path = "tests/admission_snapshot_tests.rs"]
+mod admission_snapshot_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
@@ -58,7 +60,7 @@ mod e2e_e03;
 mod e2e_i06;
 #[path = "tests/e2e_i08.rs"]
 mod e2e_i08;
-#[path = "tests/e2e_i09.rs"]
+#[path = "tests/e2e_i09_tests.rs"]
 mod e2e_i09;
 #[path = "tests/e2e_i12.rs"]
 mod e2e_i12;
@@ -86,6 +88,8 @@ mod e2e_m09;
 mod e2e_m11a;
 #[path = "tests/e2e_p11.rs"]
 mod e2e_p11;
+#[path = "e2e_p19_replay_tests.rs"]
+mod e2e_p19;
 #[cfg(test)]
 #[path = "tests/e2e_s04c.rs"]
 mod e2e_s04c;
@@ -353,9 +357,13 @@ mod spell_aim_mode;
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;
 
+#[path = "e2e_c16c_replay_tests.rs"]
+mod c16c_summon_replay;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
 mod e2e_c16d;
+#[path = "tests/replay_input.rs"]
+mod replay_input;
 
 #[test]
 fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {

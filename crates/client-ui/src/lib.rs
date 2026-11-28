@@ -273,6 +273,9 @@ pub mod guild;
 /// Server-confirmed party membership controls.
 #[path = "features/0042-party/mod.rs"]
 pub mod party;
+/// Party join and leave notices that refresh the Party window.
+#[path = "features/0576-party-membership-notices/protocol.rs"]
+pub mod party_membership_notices;
 /// Direct player-trade panel state and controls.
 #[path = "features/0060-player-trade/mod.rs"]
 pub mod player_trade;

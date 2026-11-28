@@ -106,11 +106,52 @@ def apply_admissions(definitions, root=ROOT):
         definition.update(replacement)
 
 
+# C16d supplies the initial edge. The TibiaWiki Dead Rat Fandom archive
+# supplies visible stage durations, weights and first-stage volume. The pinned
+# Canary Item identities only map those stages to the existing appearance IDs.
+RAT_STAGES = {
+    3994: (5, 300_000, 3995, 6300),
+    3995: (None, 300_000, 3996, 4400),
+    3996: (None, 60_000, None, 3000),
+}
+
+
+def apply_rat_admissions(definitions, root=ROOT):
+    path = Path(__file__).with_name('primal_corpse_items.py')
+    spec = importlib.util.spec_from_file_location('rat_corpse_definition', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    indexed = {definition['identity']['key']: definition for definition in definitions}
+    fresh = indexed['oteryn:item.tibia.i5964']['semantics']['temporal']['value']
+    fresh['duration']['value'] = 10_000
+    fresh['decay_target'] = {'state': 'KNOWN', 'value': {
+        'key': 'oteryn:item.tibia.i3994', 'revision': 'definition-r1'}}
+
+    objects = json.loads((root / 'content/world/objects/objects-00500-00999.json').read_bytes())
+    pointers = {row['provenance']['item_pointer']['key']: row for row in objects['records']
+                if row['provenance'].get('item_pointer')}
+    for item, (capacity, duration, target, weight) in RAT_STAGES.items():
+        key = f'oteryn:item.tibia.i{item}'
+        definition, world_object = indexed[key], pointers[key]
+        if (world_object['provenance']['item_pointer'] != definition['identity']
+                or world_object['kind'] != {'state': 'KNOWN', 'value': 'corpse'}
+                or world_object['movable']['state'] != 'KNOWN'):
+            raise ValueError('Rat Item/WorldObject corpse binding differs: ' + key)
+        replacement = module.corpse_definition(
+            definition, capacity, duration, target, world_object['movable']['value'], weight)
+        definition.update(replacement)
+
+
 def outputs(root=ROOT):
     shards = {path: json.loads(path.read_bytes())
               for path in (root / 'content/items/definitions').glob('items-*.json')}
     owned = {f'oteryn:item.tibia.i{item}' for item in source_policies(root)}
-    apply_admissions([row['definition'] for shard in shards.values() for row in shard['records']], root)
+    definitions = [row['definition'] for shard in shards.values() for row in shard['records']]
+    apply_admissions(definitions, root)
+    apply_rat_admissions(definitions, root)
+    owned.add('oteryn:item.tibia.i5964')
+    owned.update(f'oteryn:item.tibia.i{stage}' for stage in RAT_STAGES)
     return {path: (json.dumps(shard, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
             for path, shard in shards.items()
             if any(row['definition']['identity']['key'] in owned for row in shard['records'])}

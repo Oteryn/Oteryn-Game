@@ -242,9 +242,11 @@ pub(super) async fn execute(
                 Err(LoopMoveRefusal::NoRoom) => DepotOutcome::Full,
                 Err(LoopMoveRefusal::NoBackpack) => DepotOutcome::NoBackpack,
                 Err(LoopMoveRefusal::Overweight) => DepotOutcome::Overweight,
-                Err(LoopMoveRefusal::NotSupported | LoopMoveRefusal::WeightUnknown) => {
-                    DepotOutcome::Unsupported
-                }
+                Err(
+                    LoopMoveRefusal::NotSupported
+                    | LoopMoveRefusal::WeightUnknown
+                    | LoopMoveRefusal::NotPickupable,
+                ) => DepotOutcome::Unsupported,
                 Err(LoopMoveRefusal::Rejected | LoopMoveRefusal::Blocked) => DepotOutcome::Rejected,
             }
         } else {

@@ -38,6 +38,19 @@ UNKNOWN_CLASSIFICATION_ITEMS = {
 }
 
 
+class RatCustodyProfile(unittest.TestCase):
+    def test_rat_decay_stages_advertise_floor_custody_in_native_profiles(self):
+        raw = (corpse.ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes()
+        profiles = {row['production_definition']['production_key']: row
+                    for row in json.loads(raw)['records']}
+        for number in corpse.RAT_STAGES:
+            with self.subTest(item=number):
+                row = profiles[f'oteryn:item.tibia.i{number}']
+                self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
+                self.assertEqual(row['semantics']['physical']['value']['pickupable'],
+                                 corpse.grizzly.source.K(False))
+
+
 class CorpseQualification(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -46,12 +59,9 @@ class CorpseQualification(unittest.TestCase):
         cls.xml = corpse.grizzly.source.xml_index(raw)
         client = (corpse.ROOT / corpse.custody.CLIENT).read_bytes()
         cls.appearances = corpse.grizzly.source.engine_items.load_appearance_objects(client)
-        cls.policies = {
-            row["server_item_id"]: row
-            for row in corpse.grizzly.source.policies(
-                client, raw, {int(key.rsplit("i", 1)[1]) for key in cls.plan.records}
-            )
-        }
+        selected = {int(key.rsplit('i', 1)[1]) for key in cls.plan.records} | corpse.RAT_STAGES.keys()
+        cls.policies = {row['server_item_id']: row for row in corpse.grizzly.source.policies(
+            client, raw, selected)}
         cls.definitions = corpse.definitions(corpse.ROOT, cls.policies)
         cls.world = corpse.world_objects(corpse.ROOT, cls.policies)
         cls.bindings = corpse.grizzly.source.binding_index(
@@ -78,6 +88,20 @@ class CorpseQualification(unittest.TestCase):
             bindings or self.bindings,
             fresh,
         )
+
+    def test_rat_decay_stages_qualify_global_physical_and_container_facts(self):
+        known = corpse.grizzly.source.K
+        for number, (capacity, _, _, weight) in corpse.RAT_STAGES.items():
+            with self.subTest(item=number):
+                row = self.qualify(number, fresh=False)
+                semantics = row['semantics']
+                self.assertEqual(semantics['physical']['value']['pickupable'], known(False))
+                self.assertEqual(semantics['physical']['value']['movable'], known(True))
+                self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
+                self.assertEqual(semantics['physical']['value']['weight'], known(weight))
+                expected = (corpse.grizzly.source.NA if capacity is None else
+                            known({'capacity': known(capacity)}))
+                self.assertEqual(semantics['container'], expected)
 
     def test_native_goal_decay_tail_retains_its_non_container_policy(self):
         row = self.qualify(4027, fresh=False)

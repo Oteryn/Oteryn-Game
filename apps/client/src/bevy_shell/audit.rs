@@ -13,6 +13,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod local_state;
+#[cfg(test)]
+mod local_state_tests;
 mod named;
 
 const MAX_PENDING_MANUAL_CAPTURES: usize = 4;
@@ -179,6 +182,7 @@ struct Snapshot<'a> {
     selection_pending: bool,
     character_scoped: bool,
     play_observation: Option<PlayObservation>,
+    local_state: local_state::LocalState,
     accepted: GraphicsDraft,
     draft: Option<GraphicsDraft>,
     feedback: &'a str,
@@ -321,6 +325,7 @@ pub(super) fn write(
             map_center: play.view.map_center(),
             last_step: play.view.step_receipt(),
         }),
+        local_state: local_state::LocalState::read(&owner, &named),
         accepted: owner.accepted(),
         draft: owner.draft(),
         feedback: &owner.settings.feedback,

@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_gameplay_domain::domain::forge_creature::ForgeCreature;
 
 impl ChannelRuntimeV1 {
     /// Synthetic context is confined to tests. A committed session still goes through
@@ -84,6 +85,26 @@ impl ChannelRuntimeV1 {
         definition_key: &str,
         position: MovementLocalPosition,
     ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        self.realize_native_qualification_spawn_with_forge(
+            source_id,
+            expected_pin,
+            definition_key,
+            position,
+            None,
+        )
+    }
+
+    /// Apply an optional Forge classification in the same owner turn and rollback boundary
+    /// as qualification placement, before the caller can publish the exact actor.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn realize_native_qualification_spawn_with_forge(
+        &mut self,
+        source_id: u16,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+        forge: Option<ForgeCreature>,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
         let source = SpawnSourceId(source_id);
         self.owner_fence()?;
         if self.spawn_activation.is_some() {
@@ -93,7 +114,10 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         let policy = self.companion_policy(definition_key)?;
-        if policy.is_familiar {
+        if policy.is_familiar
+            || matches!(forge, Some(ForgeCreature::Influenced(stacks))
+                if ForgeCreature::new_influenced(stacks).is_none())
+        {
             return Err(CarrierError::InvalidCreatureTarget);
         }
         // The census refuses foreign physical contexts; reserved/pending destinations
@@ -148,6 +172,9 @@ impl ChannelRuntimeV1 {
                 .live
                 .ok_or(CarrierError::PlanConflict)?;
             self.install_creature_policy(actor, definition_key)?;
+            if let Some(kind) = forge {
+                self.apply_forge_classification(actor, kind)?;
+            }
             self.companion_snapshot(actor)
         })();
         if result.is_err() {

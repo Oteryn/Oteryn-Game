@@ -665,13 +665,8 @@ pub(super) async fn prepare_with_current_restrictions(
     if !spawn.consume_rune_charge() {
         return reject();
     }
-    let mut operations = corpse
-        .contents
-        .iter()
-        .cloned()
-        .map(SpellItemOperation::RetireContained)
-        .collect::<Vec<_>>();
-    operations.push(SpellItemOperation::ConsumeCorpse(corpse));
+    // The durable writer expands the reserved contents before retiring the root.
+    let operations = vec![SpellItemOperation::ConsumeCorpse(corpse)];
     let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_corpse_operations":format!("{operations:?}"),"source_prepared_spawn":format!("{spawn:?}"),"source_current_acquisition_restrictions":format!("{current:?}"),"source_current_group_revision":group.revision()})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut cues = Vec::new();
     if let Some(p) = spell

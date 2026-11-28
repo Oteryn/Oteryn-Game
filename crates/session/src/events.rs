@@ -57,6 +57,8 @@ pub enum SessionEvent {
     AchievementEarned(AppliedDelta<AchievementEarned>),
     /// Domain 57: one server status, warning or advance message, retained in wire order.
     ServerMessage(AppliedDelta<ServerMessage>),
+    /// Domain 57 delta type 2 under capability 576: a member joined or left the own Party.
+    PartyMembershipNotice(AppliedDelta<party::PartyMembershipNotice>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
     WorldSpatial(AppliedDelta<WorldSpatialObservation>),
     /// Domain 1 with capability 6 selected: the entities that entered, updated and left, and the
@@ -138,7 +140,7 @@ impl SessionEvent {
             Self::AchievementEarned(_) => {
                 oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES
             }
-            Self::ServerMessage(_) => {
+            Self::ServerMessage(_) | Self::PartyMembershipNotice(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }
             Self::WorldSpatial(_)

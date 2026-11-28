@@ -33,6 +33,46 @@ pub struct HouseTransferAck {
     pub position: [i32; 3],
 }
 
+/// Field 13 of HouseTransferAckV1, sent by itself on a rejected CommandResult.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum HouseTransferRefusal {
+    Unavailable = 1,
+    InvalidIntent = 2,
+    NotAtEntrance = 3,
+    NoAccess = 4,
+    InCombat = 5,
+    Busy = 6,
+    HouseClosed = 7,
+    NoRoom = 8,
+    CapabilityRequired = 9,
+}
+
+impl HouseTransferRefusal {
+    pub const fn encode(self) -> [u8; 2] {
+        [13 << 3, self as u8]
+    }
+}
+
+pub fn decode_house_transfer_refusal(body: &[u8]) -> Option<HouseTransferRefusal> {
+    use HouseTransferRefusal::*;
+    let [104, code] = body else {
+        return None;
+    };
+    Some(match code {
+        1 => Unavailable,
+        2 => InvalidIntent,
+        3 => NotAtEntrance,
+        4 => NoAccess,
+        5 => InCombat,
+        6 => Busy,
+        7 => HouseClosed,
+        8 => NoRoom,
+        9 => CapabilityRequired,
+        _ => return None,
+    })
+}
+
 fn house(value: &[u8]) -> Result<String, Error> {
     let text = std::str::from_utf8(value).map_err(|_| Error::Malformed)?;
     let suffix = text
@@ -72,7 +112,7 @@ pub fn decode_house_transfer_intent(body: &[u8]) -> Result<HouseTransferIntent, 
     })
 }
 
-/// Empty is a refusal, never a grant. Every successful encoding includes the full selection.
+/// Every successful encoding includes the full selection.
 pub fn encode_house_transfer_ack(ack: &HouseTransferAck) -> Result<Vec<u8>, Error> {
     for id in [ack.transfer, ack.session, ack.world, ack.channel] {
         if id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80 {

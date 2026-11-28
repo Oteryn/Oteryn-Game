@@ -106,6 +106,7 @@ pub use oteryn_protocol_oteryn::presentation::{
     PresentationValue, PresentationValueKind,
 };
 mod recovery;
+mod replay_capture;
 use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::coin_market;
 pub use oteryn_protocol_oteryn::coin_transfer;
@@ -141,6 +142,7 @@ pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
+pub use replay_capture::{REPLAY_DELTA_LIMIT, RawReplayDelta};
 mod chat_extended;
 mod guild_chat;
 mod private_channels;
@@ -282,6 +284,7 @@ use std::fmt;
 use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 pub use vip_presence::expire_vip_presence;
@@ -306,7 +309,7 @@ use capability_support::{capability_of_domain, gated_routes};
 pub const STEP_RETRY_ATTEMPTS: u32 = 4;
 pub const STEP_RETRY_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
 
-/// A state domain of a selected capability from the join snapshot, payload undecoded.
+/// A state domain's snapshot metadata and undecoded payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GatedSnapshot {
     pub domain_id: u32,
@@ -392,12 +395,14 @@ pub struct Session<S> {
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,
     selected_capabilities: Vec<u32>,
+    admission_snapshots: Option<Arc<[GatedSnapshot]>>,
     gated_snapshots: Vec<GatedSnapshot>,
     actor_cooldown_snapshot: Option<ActorCooldownUpdate>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
+    replay: replay_capture::ReplayRetention,
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
