@@ -281,14 +281,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .fetch_one(&mut database)
     .await?;
-    sqlx::query(
-        "CREATE OR REPLACE FUNCTION game_house_calendar_milliseconds(t TIMESTAMPTZ)
-        RETURNS BIGINT LANGUAGE sql IMMUTABLE STRICT
-        AS $$ SELECT floor(extract(epoch FROM t)*1000)::bigint + 259200000 $$",
+    let (offer_id, disposition_id, due, advance): (String, String, i64, i64) = sqlx::query_as(
+        "SELECT o.offer_id::text, d.operation_id::text, d.due_at,
+                    d.due_at - floor(extract(epoch FROM clock_timestamp())*1000)::bigint + 1
+             FROM game_house_sale_offers o
+             JOIN game_house_dispositions d ON d.operation_id=o.disposition
+             JOIN game_house_sale_holds h ON h.offer_id=o.offer_id
+             WHERE o.world_id=encode($1,'hex')::uuid AND o.house_key=$2 AND o.state=2
+               AND d.state=1 AND d.released_at IS NULL",
     )
-    .execute(&mut database)
+    .bind(clients.world.as_slice())
+    .bind(HOUSE)
+    .fetch_one(&mut database)
     .await?;
+    if due != escrow.due_at_unix_ms || advance <= 0 {
+        return Err(format!("step=settlement-setup observed=due:{due},advance:{advance}").into());
+    }
+    // Use the persisted server deadline to advance the existing qualification calendar.
+    let advance_calendar = format!(
+        "CREATE OR REPLACE FUNCTION game_house_calendar_milliseconds(t TIMESTAMPTZ)
+         RETURNS BIGINT LANGUAGE sql IMMUTABLE STRICT
+         AS $$ SELECT floor(extract(epoch FROM t)*1000)::bigint + {advance} $$"
+    );
+    sqlx::raw_sql(sqlx::AssertSqlSafe(advance_calendar))
+        .execute(&mut database)
+        .await?;
     let settled: TestResult<sale::HouseSaleRow> = async {
+        let now: i64 = sqlx::query_scalar(
+            "SELECT game_house_calendar_milliseconds(clock_timestamp())",
+        )
+        .fetch_one(&mut database)
+        .await?;
+        if now <= due {
+            return Err(format!("step=settlement-setup observed=server-now:{now},due:{due}").into());
+        }
+        evidence(&format!(
+            "row=G26.full escrow_id={offer_id} disposition_id={disposition_id} due_ms={due} server_now_ms={now}"
+        ));
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
         loop {
             let page = accepted(&mut buyer, &request).await?;
