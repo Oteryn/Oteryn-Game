@@ -12,6 +12,7 @@ import sys
 import tempfile
 import textwrap
 import time
+import tomllib
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -151,10 +152,28 @@ class KnobTests(unittest.TestCase):
         self.assertIn('PG_PORT="${NODE_BOOT_PG_PORT:-15433}"', RUN_TEXT)
         self.assertIn('WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"', RUN_TEXT)
 
-    def test_pvp_override_cannot_alias_another_listener(self):
-        for port in ('15433', '18463'):
-            result = self.knobs(NODE_BOOT_PVP_GAME_PORT=port)
-            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+    def test_port_allocator_preserves_overrides_and_skips_occupied_ports(self):
+        prepare = HERE.parent / "game_platform" / "prepare.py"
+        with socket.socket() as occupied, socket.socket() as explicit:
+            occupied.bind(("127.0.0.1", 0))
+            occupied.listen()
+            explicit.bind(("127.0.0.1", 0))
+            override = str(explicit.getsockname()[1])
+            command = [sys.executable, str(prepare), "--select-ports"]
+            result = subprocess.run(command, env={"GAME_PLATFORM_NATIVE_PORT": override},
+                                    check=True, capture_output=True, text=True)
+            ports = dict(line.split("=") for line in result.stdout.splitlines())
+            self.assertEqual(ports["GAME_PLATFORM_NATIVE_PORT"], override)
+            self.assertEqual(len(ports), len(set(ports.values())))
+            self.assertNotIn(str(occupied.getsockname()[1]), ports.values())
+            for name, port in ports.items():
+                if name != "GAME_PLATFORM_NATIVE_PORT":
+                    with socket.socket() as probe:
+                        probe.bind(("127.0.0.1", int(port)))
+            conflict = subprocess.run(command, env={"NODE_BOOT_GAME_PORT": override,
+                                                      "NODE_BOOT_PVP_GAME_PORT": override},
+                                      capture_output=True, text=True)
+            self.assertNotEqual(conflict.returncode, 0)
 
     def test_pvp_auto_port_is_allocated_by_the_real_listener(self):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
@@ -233,6 +252,29 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_all_groups_disable_the_unprovisioned_world_event_exporter(self):
+        with tempfile.TemporaryDirectory() as work:
+            pin = Path(work, 'pin.json')
+            pin.write_text(json.dumps(dict.fromkeys(
+                ('digest', 'project_format_version', 'world_schema_version', 'content_revision'),
+                'fixture',
+            )))
+            setup = '''
+install_owned() { :; }
+game_platform_config() { :; }
+PG_PORT=15433
+WP5_PORT=18463
+DESCRIPTOR_INSTALLED_AT=1
+NODE_REQUIRED_CAPABILITIES=[]
+'''
+            result = bash(setup + function('write_node_config')
+                          + '\nwrite_node_config launch.json\n',
+                          {'WORK': work, 'BASE': work, 'PIN': str(pin),
+                           'NODE_BOOT_WORLD': '1', 'NODE_BOOT_LIFECYCLE': 'native_reference'})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            config = tomllib.loads(Path(work, 'node.toml').read_text())
+            self.assertIs(config['platform']['world_event_outcomes']['enabled'], False)
+
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
         epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(
@@ -274,13 +316,17 @@ WORK=.
 
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section("readonly INTENT_OPERATIONS=", "readonly INTERPRETATION=")
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
         result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
+                      + '[[ ${#BOOTSTRAP_ACCOUNTS[@]} == "${#INTENT_OPERATIONS[@]}" ]]\n'
+                      + '[[ ${#BOOTSTRAP_ACCOUNTS[@]} == "${#INTENT_NAMES[@]}" ]]\n'
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 13)
+        self.assertEqual(len(accounts), 34)
         self.assertEqual(len(set(accounts)), len(accounts))
+        self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
 class ReuseTests(unittest.TestCase):
@@ -437,6 +483,35 @@ class StageDumpTests(unittest.TestCase):
         self.assertNotIn('--verbose', passed)
         failed = self.run_stage('false')
         self.assertRegex(failed, r'PG_OBSERVE dump --stage sample --dir \S+ --activity \S+activity.log --verbose')
+
+    def test_unexpected_row_failure_preserves_first_node_log(self):
+        with tempfile.TemporaryDirectory() as temp:
+            script = textwrap.dedent(f'''\
+                set -Eeuo pipefail
+                WORK={temp}; VARS={temp}/vars; : > "$VARS"
+                GAME_SOURCE={temp}/game
+                mkdir -p "$GAME_SOURCE/tools/qualification/node_boot"
+                echo Known.full > "$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt"
+                node_log={temp}/node.log; failed_node_log={temp}/failed-node.log
+                NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
+                declare -A STATUS=(); ORDER=()
+                evidence() {{ :; }}
+                start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
+                pg_observability_dump() {{ :; }}
+                sample_row() {{
+                    printf '%s\n' "$1" > "$node_log"
+                    printf 'SEAM_EVIDENCE e2e_all scenario=%s status=FAIL seconds=1\n' "$2"
+                }}
+                ''') + '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage')) + textwrap.dedent('''
+                stage known -- sample_row known Known.full
+                [[ ${STATUS[known]} == PASS && ! -e "$failed_node_log" ]]
+                stage first -- sample_row first C19a.full
+                [[ ${STATUS[first]} == 'FAIL(rows)' && $(cat "$failed_node_log") == first ]]
+                stage later -- sample_row later C20d.full
+                [[ ${STATUS[later]} == 'FAIL(rows)' && $(cat "$failed_node_log") == first ]]
+                ''')
+            result = bash(script)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 class NodeSignalTests(unittest.TestCase):
@@ -610,6 +685,31 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_cloud_uses_first_eligible_work_parent(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp, "work")
+            work.mkdir()
+            alias = Path(temp, "alias")
+            alias.symlink_to(work, target_is_directory=True)
+            foreign = Path(temp, "foreign")
+            foreign.mkdir()
+            command = helper + textwrap.dedent("""
+                stat() {
+                    if [[ "${@: -1}" == "$foreign" ]]; then
+                        printf '424242\n'
+                    else
+                        printf '0\n'
+                    fi
+                }
+                foreign="$1/foreign"
+                select_work_parent /srv "$1/missing" "$foreign" "$1/alias" /tmp
+                """)
+            result = subprocess.run(["bash", "-c", command, "test", temp],
+                                    check=True, capture_output=True, text=True)
+            self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

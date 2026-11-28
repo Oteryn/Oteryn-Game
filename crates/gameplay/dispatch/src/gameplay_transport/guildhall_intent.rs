@@ -61,9 +61,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(request) = GuildResignRequest::new(common, intent.expected_revision) else {
             return GuildReply::Rejected;
         };
-        match self
-            .root
-            .commit_guild_resign(self.character, self.holder, fence, request, premium)
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_holder(
+                async || {
+                    self
+                        .root
+                        .commit_guild_resign(self.character, self.holder, fence, request.clone(), premium)
+                        .await
+                },
+                super::guild_intent::guild_holder_busy,
+            )
             .await
         {
             Ok(GuildOutcome::Committed(receipt) | GuildOutcome::Replayed(receipt)) => {

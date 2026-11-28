@@ -1163,6 +1163,43 @@
       "note": null
     },
     {
+      "key": "oteryn:item.tibia.i10385",
+      "source_id": 10385,
+      "name": "Zaoan helmet",
+      "slot": "HEAD",
+      "crystal": {
+        "level": null,
+        "vocation": "Knight;true, Paladin;true, Elite Knight, Royal Paladin"
+      },
+      "wiki": {
+        "levelrequired": null,
+        "vocrequired": "knights and paladins"
+      },
+      "level": 0,
+      "vocations": [
+        "KNIGHT",
+        "PALADIN"
+      ],
+      "note": "CrystalServer 201189f8 data/items/items.xml:27260-27277 (blob ea4196beae8f77be898f05de89db81de134886b6)"
+    },
+    {
+      "key": "oteryn:item.tibia.i10387",
+      "source_id": 10387,
+      "name": "Zaoan legs",
+      "slot": "LEGS",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": null,
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": "CrystalServer 201189f8 data/items/items.xml:27290-27298 (blob ea4196beae8f77be898f05de89db81de134886b6)"
+    },
+    {
       "key": "oteryn:item.tibia.i10388",
       "source_id": 10388,
       "name": "drakinata",
@@ -1209,6 +1246,23 @@
       "level": 25,
       "vocations": [],
       "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i10412",
+      "source_id": 10412,
+      "name": "wailing widow's necklace",
+      "slot": "AMULET",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": null,
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": "CrystalServer 201189f8 data/items/items.xml:27504-27509 (blob ea4196beae8f77be898f05de89db81de134886b6)"
     },
     {
       "key": "oteryn:item.tibia.i12683",

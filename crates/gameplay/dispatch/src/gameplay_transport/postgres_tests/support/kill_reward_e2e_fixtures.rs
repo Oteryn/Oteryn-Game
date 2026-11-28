@@ -130,6 +130,7 @@ pub(super) fn scenario_with_creature_charmed(
         settings,
         false,
         None,
+        false,
     )
 }
 
@@ -144,6 +145,7 @@ pub(super) fn analyser_scenario() -> TestResult {
         (None, None, None),
         true,
         None,
+        false,
     )
 }
 
@@ -158,12 +160,19 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
         (None, None, None),
         false,
         Some(creature),
+        false,
+    )
+}
+
+pub(super) fn scenario_with_blocked_bounty_read() -> TestResult {
+    scenario_with_creature_observed(
+        None, false, None, false, false, false, (None, None, None), false, None, true,
     )
 }
 
 #[allow(
     clippy::too_many_arguments,
-    reason = "existing composed scenario options plus analyser observation"
+    reason = "existing composed scenario options plus focused observations"
 )]
 fn scenario_with_creature_observed(
     reconcile: Option<bool>,
@@ -175,6 +184,7 @@ fn scenario_with_creature_observed(
     settings: KillScenarioSettings<'_>,
     analyser: bool,
     letter_creature: Option<&str>,
+    blocked_bounty_read: bool,
 ) -> TestResult {
     let (charm, boss_policy, daily_target) = settings;
     let holy_target =
@@ -1144,6 +1154,57 @@ fn scenario_with_creature_observed(
                 .boss_spawn_pass(&mut std::collections::BTreeMap::new())
                 .await
                 .map_err(debug)?;
+        }
+        if blocked_bounty_read {
+            use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+
+            let (target_actor, initial_health) = {
+                let runtime = owner.runtime.lock().await;
+                let creature = runtime.visible_entities().creatures[0].actor;
+                (creature, runtime.live_creature_health(creature))
+            };
+            assert!(initial_health.is_some());
+            assert_eq!(corpse_receipts(&harness).await?, 0);
+            assert_eq!(
+                owner.attack_target(actor, session, 1, Some(rat)).await,
+                AttackIntentDisposition::Ok
+            );
+
+            // Keep the independent bonus reader blocked while physical swings are due.
+            let mut blocker = harness.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_character_task_boards IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            assert!(owner.bounty_talisman_for_session(session).await.is_err());
+            let mut damaged = false;
+            let mut dead = false;
+            for _ in 0..30 {
+                assert!(owner.tick_combat(actor, session).await.is_some());
+                let health = owner.runtime.lock().await.live_creature_health(target_actor);
+                damaged |= health.is_some_and(|hp| Some(hp) < initial_health);
+                dead = health.is_none();
+                if dead {
+                    break;
+                }
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("clock origin")?;
+            }
+            blocker.rollback().await?;
+            assert!(damaged, "accepted attack dealt no damage during 90 seconds of owner time");
+            assert!(dead, "target remained alive after 90 seconds of owner time");
+            // Settlement also uses this table. Recover any holder retired by its
+            // own timeout before testing that the queued death mints a corpse.
+            let mut drains = 0;
+            while corpse_receipts(&harness).await? == 0 {
+                drains += 1;
+                assert!(drains < 8, "the queued death mints a corpse");
+                owner.root.maintain_ready_once().await.map_err(debug)?;
+                assert!(owner.tick_combat(actor, session).await.is_some());
+            }
+            assert_eq!(corpse_receipts(&harness).await?, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         // The target is held (attacking state), then the real owner pass swings until the rat
         // dies; each pass is one swing interval later on the owner clock.

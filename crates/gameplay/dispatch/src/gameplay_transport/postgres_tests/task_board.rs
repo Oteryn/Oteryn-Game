@@ -692,7 +692,12 @@ fn scenario_with_bootstrap(
             return harness.cleanup().await;
         }
 
-        let legacy = board(&owner, &mut admitted, 0, 0).await?;
+        let command_id = admitted.continuity.next_command_id;
+        let (status, payload) = super::guild_wire_fixtures::exchange_with_holder_pressure(
+            &owner, &mut admitted, command_id, wire::COMMAND_TYPE_TASK_BOARD, &request(0, 0), true,
+        ).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let legacy = wire::decode_task_board_reply(&payload).map_err(debug)?;
         assert!(!legacy.refused);
         assert!(
             legacy.tasks.is_empty(),

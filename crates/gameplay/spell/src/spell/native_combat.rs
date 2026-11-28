@@ -410,6 +410,80 @@ fn boss_allowed(p: &Value, target: &NativeTargetFact) -> Result<bool, Error> {
             .is_some_and(|name| name == target.name.to_lowercase())
     }))
 }
+fn override_target_eligible(filter: &str, target: &NativeTargetFact) -> bool {
+    matches!(target.kind, TargetKind::MasterlessMonster)
+        && (filter == "masterless_monsters" || !target.reward_boss)
+        && (filter != "masterless_ranged_non_reward_monsters" || target.preferred_distance > 1)
+}
+
+/// Qualify only sight between candidates reachable within the authored chain length.
+/// Crystal 201189f8 combat.cpp:1881 searches from each current target within jump range.
+pub fn override_chain_sight_pairs(
+    parameters: &Value,
+    stage: u8,
+    caster: u64,
+    origin: TilePosition,
+    targets: &[NativeTargetFact],
+) -> Result<BTreeSet<(TilePosition, TilePosition)>, Error> {
+    let spec = field(parameters, "chain")?;
+    let radius = n(spec, "jump_radius", stage)?;
+    let first_range = chain_first_range(parameters, stage, radius)?;
+    let further_targets = chain_further_targets(spec, stage)?;
+    let filter = text(parameters, "target_filter")?;
+    let candidates = targets
+        .iter()
+        .filter(|target| target.id != caster && override_target_eligible(filter, target))
+        .map(|target| target.position)
+        .collect::<BTreeSet<_>>();
+    let mut frontier = candidates
+        .iter()
+        .copied()
+        .filter(|&target| within(origin, target, first_range))
+        .collect::<BTreeSet<_>>();
+    let mut pairs = frontier
+        .iter()
+        .map(|&target| (origin, target))
+        .collect::<BTreeSet<_>>();
+    let mut expanded = BTreeSet::new();
+    for _ in 0..further_targets {
+        if frontier.is_empty() {
+            break;
+        }
+        let mut next = BTreeSet::new();
+        for from in frontier {
+            if !expanded.insert(from) {
+                continue;
+            }
+            for &to in &candidates {
+                if from != to && within(from, to, radius) {
+                    pairs.insert((from, to));
+                    if !expanded.contains(&to) {
+                        next.insert(to);
+                    }
+                }
+            }
+        }
+        frontier = next;
+    }
+    Ok(pairs)
+}
+
+fn chain_first_range(parameters: &Value, stage: u8, jump_radius: u64) -> Result<u64, Error> {
+    Ok(parameters
+        .get("first_target_range")
+        .map(|value| number(value, stage))
+        .transpose()?
+        .unwrap_or(jump_radius))
+}
+
+fn chain_further_targets(spec: &Value, stage: u8) -> Result<u64, Error> {
+    let count = n(spec, "further_targets", stage)?;
+    if count > 16 {
+        return fail("chain length outside bound");
+    }
+    Ok(count)
+}
+
 fn chain<'a>(
     spec: &Value,
     p: &Value,
@@ -417,11 +491,7 @@ fn chain<'a>(
     eligible: impl Fn(&NativeTargetFact) -> bool,
 ) -> Result<Vec<&'a NativeTargetFact>, Error> {
     let r = n(spec, "jump_radius", f.stage)?;
-    let first_range = p
-        .get("first_target_range")
-        .map(|v| number(v, f.stage))
-        .transpose()?
-        .unwrap_or(r);
+    let first_range = chain_first_range(p, f.stage, r)?;
     let valid = |t: &&NativeTargetFact| {
         t.id != f.caster
             && t.legal
@@ -451,10 +521,7 @@ fn chain<'a>(
     let Some(first) = first else {
         return fail("no first chain target");
     };
-    let count = n(spec, "further_targets", f.stage)?;
-    if count > 16 {
-        return fail("chain length outside bound");
-    }
+    let count = chain_further_targets(spec, f.stage)?;
     let mut selected = vec![first];
     let mut ids = BTreeSet::from([f.caster, first.id]);
     for _ in 0..count {
@@ -642,12 +709,7 @@ pub fn plan(
                 }
             }
             let filter = text(p, "target_filter")?;
-            let eligible = |t: &NativeTargetFact| {
-                matches!(t.kind, TargetKind::MasterlessMonster)
-                    && (filter == "masterless_monsters" || !t.reward_boss)
-                    && (filter != "masterless_ranged_non_reward_monsters"
-                        || t.preferred_distance > 1)
-            };
+            let eligible = |t: &NativeTargetFact| override_target_eligible(filter, t);
             let selected = if let Some(spec) = p.get("chain") {
                 chain(spec, p, f, eligible)?
             } else {
@@ -1257,6 +1319,39 @@ mod tests {
         assert_eq!(p.incoming_after_reduction, Some(95));
         assert_eq!(f.incoming_hit, Some(101));
     }
+    #[test]
+    fn override_chain_sight_is_limited_to_reachable_chain_candidates() -> Result<(), Error> {
+        let f = facts();
+        let first = target(2, 17, 10);
+        let second = target(3, 24, 10);
+        let too_many_hops = target(4, 31, 10);
+        let mut bystander = target(5, 11, 10);
+        bystander.kind = TargetKind::Player;
+        let mut boss = target(6, 12, 10);
+        boss.reward_boss = true;
+        let mut melee = target(7, 13, 10);
+        melee.preferred_distance = 1;
+        let required = BTreeSet::from([
+            (f.caster_position, first.position),
+            (first.position, second.position),
+        ]);
+        let params = json!({
+            "target_filter":"masterless_ranged_non_reward_monsters",
+            "chain":{"jump_radius":7,"further_targets":{"0":1,"1":2}}
+        });
+        assert_eq!(
+            override_chain_sight_pairs(
+                &params,
+                0,
+                f.caster,
+                f.caster_position,
+                &[first, second, too_many_hops, bystander, boss, melee],
+            )?,
+            required
+        );
+        Ok(())
+    }
+
     #[test]
     fn chain_attack_priority_source_ties_and_no_repeats() {
         let mut f = facts();

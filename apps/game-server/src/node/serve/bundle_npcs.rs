@@ -866,6 +866,108 @@ pub(crate) mod tests {
         Ok(npc.position)
     }
 
+    #[test]
+    fn compiled_town_boots_king_tibianus_and_sam_at_authored_placements()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_world_bundle_compiler::{compile, project, source};
+        use std::process::Command;
+
+        let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../..")).canonicalize()?;
+        let regions =
+            std::fs::read_to_string(root.join("tools/qualification/node_boot/town-regions.txt"))?;
+        let regions = regions
+            .trim()
+            .split(';')
+            .map(|region| {
+                let (x, y) = region.split_once(',').ok_or("town region must be x,y")?;
+                Ok((x.parse()?, y.parse()?))
+            })
+            .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+        let project = source::project_town_qualification(&root, &regions)?;
+        let (registry, palette) = source::registry(&root, &project)?;
+        let compiled = compile::compile(
+            &compile::Input {
+                regions: &project.regions,
+                palette: &palette,
+                identity: serde_json::from_slice(&source::read(
+                    &root.join("content/world/pins/oteryn.identity.json"),
+                )?)?,
+                world: source::world_extent(&root)?,
+                build_class: bundle::BuildClass::NonProduction,
+                draft_areas: project::draft_areas(&project.index)?,
+                families: &project.families,
+            },
+            &registry,
+        )?;
+
+        let output = Command::new("bash")
+            .args([
+                "-eu",
+                "-c",
+                r#"
+                    WORK=$(mktemp -d)
+                    trap 'rm -rf -- "$WORK"' EXIT
+                    BASE="$WORK/node"
+                    mkdir "$BASE"
+                    NODE_NPC_ARGS=()
+                    as_operator=()
+                    source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
+                    node_boot_stage_npc_data
+                    printf '%s\n' "$WORK" "${NODE_NPC_ARGS[@]}"
+                    trap - EXIT
+                "#,
+            ])
+            .env("GAME_SOURCE", &root)
+            .env("NODE_BOOT_UNPRIVILEGED", "1")
+            .env("NODE_BOOT_E2E_ONLY", "f6")
+            .output()?;
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let output = String::from_utf8(output.stdout)?;
+        let mut lines = output.lines();
+        let work = lines.next().ok_or("missing staging directory")?;
+        let prepared = (|| -> Result<_, Box<dyn std::error::Error>> {
+            let frame = read(&compiled.bytes).map_err(|error| format!("{error:?}"))?;
+            let args: Vec<_> = lines.collect();
+            let project = match args.as_slice() {
+                ["--npc-data-project", path, "--npc-data-sha256", digest] => {
+                    let path = Path::new(path);
+                    let catalogue = crate::content::load_data_only_npc_catalogue(path, digest)
+                        .map_err(|error| error.to_string())?;
+                    Some((catalogue, path))
+                }
+                [] => None,
+                _ => return Err(format!("unexpected NPC staging arguments: {args:?}").into()),
+            };
+            prepare(
+                Some(frame),
+                project.as_ref().map(|(catalogue, path)| (catalogue, *path)),
+                false,
+            )
+            .map_err(|error| format!("{error:?}").into())
+        })();
+        std::fs::remove_dir_all(work)?;
+        let mut runtime = channel_runtime_with(4096);
+        place(&mut runtime, prepared?.as_ref(), None).map_err(|error| format!("{error:?}"))?;
+        let visible = runtime.visible_entities();
+        for (key, expected) in [
+            ("oteryn:npc.king_tibianus", (32311, 32172, 6)),
+            ("oteryn:npc.sam", (32361, 32198, 7)),
+        ] {
+            let positions: Vec<_> = visible
+                .npcs
+                .iter()
+                .filter(|entry| runtime.npc_key(entry.actor) == Some(key))
+                .map(|entry| (entry.position.x, entry.position.y, entry.position.floor))
+                .collect();
+            assert_eq!(positions, [expected], "{key}");
+        }
+        Ok(())
+    }
+
     fn timed_boot(keys: &[&str]) -> NpcBoot {
         NpcBoot::Place {
             table: NpcPlacementTable::default(),

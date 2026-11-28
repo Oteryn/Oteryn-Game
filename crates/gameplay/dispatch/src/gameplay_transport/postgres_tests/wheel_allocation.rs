@@ -692,8 +692,11 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             CommandStatus::Rejected
         );
         admitted.item_fence = original_fence;
+        let command_id = admitted.continuity.next_command_id;
         assert_eq!(
-            send(&owner, &mut admitted, &bytes).await?,
+            super::guild_wire_fixtures::exchange_with_holder_pressure(
+                &owner, &mut admitted, command_id, wire::COMMAND_TYPE_WHEEL_ALLOCATION, &bytes, true,
+            ).await?,
             reply(false, 1, points)?
         );
         if let Some(case) = combat {

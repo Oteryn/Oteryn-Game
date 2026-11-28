@@ -271,7 +271,7 @@ class AcceptedOverlayTests(unittest.TestCase):
             r
             for r in after["records"]
             if r["production_definition"]["production_key"]
-            not in registration.POTION_KEYS
+            not in registration.CONSUMABLE_PROFILE_KEYS
         ]
         for old, new in zip(before["records"], retained, strict=True):
             if (
@@ -286,9 +286,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         added = [
             r
             for r in after["records"]
-            if r["production_definition"]["production_key"] in registration.POTION_KEYS
+            if r["production_definition"]["production_key"] in registration.CONSUMABLE_PROFILE_KEYS
         ]
-        self.assertEqual(len(added), 18)
+        self.assertEqual(len(added), 19)
         world = json.loads(
             (ROOT / "content/world/definitions/reference.json").read_bytes()
         )
@@ -373,12 +373,12 @@ class AcceptedOverlayTests(unittest.TestCase):
         sources = [
             r
             for r in json.loads(actual_read(world_path))["records"]
-            if r["identity"]["key"] in registration.POTION_KEYS
+            if r["identity"]["key"] in registration.CONSUMABLE_PROFILE_KEYS
         ]
         bindings = [
             b
             for b in json.loads(actual_read(bindings_path))["bindings"]
-            if b["target"]["key"] in registration.POTION_KEYS
+            if b["target"]["key"] in registration.CONSUMABLE_PROFILE_KEYS
         ]
         for operator in (
             "missing",

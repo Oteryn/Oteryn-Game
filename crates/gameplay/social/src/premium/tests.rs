@@ -823,3 +823,32 @@ fn profile_b_premium_hint_stops_the_shared_gate_without_granting() {
     empty.profile_b_hint(ACCOUNT, 10);
     assert!(!empty.premium_current(ACCOUNT, now));
 }
+
+#[test]
+fn durable_consumer_waits_for_snapshot_publication() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            use std::future::{Future, poll_fn};
+            use std::task::Poll;
+
+            let view = view(EntitlementState::Active, true);
+            let fence = view.fence.unwrap();
+            let account = fence.latest.account_id;
+            let consumer = PremiumConsumer::default();
+            let publisher = consumer.lock_snapshot_publication(account).await;
+            let purchase = consumer.lock_snapshot_publication(account);
+            let mut purchase = std::pin::pin!(purchase);
+            // A different account can still transact while this account's snapshot is pending.
+            let other = consumer.lock_snapshot_publication([255; 16]);
+            let mut other = std::pin::pin!(other);
+            assert!(poll_fn(|cx| Poll::Ready(other.as_mut().poll(cx).is_ready())).await);
+            assert!(poll_fn(|cx| Poll::Ready(purchase.as_mut().poll(cx).is_pending())).await);
+            assert!(!consumer.premium_current(account, at(T0 + 1)));
+            consumer.update(account, |view| view.prove(PullTicket(1), fence));
+            drop(publisher);
+            let _purchase = purchase.await;
+            assert!(consumer.premium_current(account, at(T0 + 1)));
+        });
+}

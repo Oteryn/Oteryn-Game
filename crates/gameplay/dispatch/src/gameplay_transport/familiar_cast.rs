@@ -1315,15 +1315,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return Some(SpellCastOutcome::rejected());
             };
-            let Some(settings) = source
-                .read_current(owned.binding(), now.get())
-                .filter(|p| p.current(owned.binding(), now.get()))
-            else {
-                return Some(SpellCastOutcome::rejected());
-            };
-            if settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility {
-                return Some(SpellCastOutcome::rejected());
-            }
             let Ok(position) = runtime.read_actor_position(actor) else {
                 return Some(SpellCastOutcome::rejected());
             };
@@ -1333,6 +1324,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: pos.y,
                 floor: pos.floor,
             };
+            let operational = OperationalCastFacts {
+                caster_position: cell,
+                target_position: None,
+                target: None,
+                line_of_sight_clear: None,
+                direction_available: false,
+                wheel_unlocked: None,
+                in_protection_zone: false,
+                target_tile_solid: None,
+                target_tile_creature: None,
+            };
+            // Crystal checks the engine cooldowns and cost gates before invoking
+            // CreateFamiliarSpell, including when an active summon fills the slot.
+            if let Err(disposition) = crate::spell::cast::admit_condition_gates(state, spell, now)
+                .and_then(|()| {
+                    crate::spell::resolve_native_callback_common(
+                        spell,
+                        &caster,
+                        &state.cooldowns,
+                        now,
+                        &operational,
+                    )
+                    .map(|_| ())
+                    .map_err(|error| crate::spell::cast::disposition(&error))
+                })
+            {
+                return Some(SpellCastOutcome {
+                    disposition,
+                    vitals: None,
+                });
+            }
+            let Some(settings) = source
+                .read_current(owned.binding(), now.get())
+                .filter(|p| p.current(owned.binding(), now.get()))
+            else {
+                return Some(SpellCastOutcome::rejected());
+            };
+            if settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility {
+                return Some(SpellCastOutcome::rejected());
+            }
             let raw = nonce(b"oteryn:familiar-cast:v1", actor, session, command_id);
             let revisions = crate::ability::RevisionSet::new(
                 &progression.context.ruleset,
@@ -1408,17 +1439,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None,
             ) else {
                 return Some(SpellCastOutcome::rejected());
-            };
-            let operational = OperationalCastFacts {
-                caster_position: cell,
-                target_position: None,
-                target: None,
-                line_of_sight_clear: None,
-                direction_available: false,
-                wheel_unlocked: None,
-                in_protection_zone: false,
-                target_tile_solid: None,
-                target_tile_creature: None,
             };
             let Ok(mut paid) = crate::spell::cast::prepare_native_owner_cast_with_caster(
                 state,

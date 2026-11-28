@@ -44,7 +44,7 @@ impl SpellPresentationOwner {
             .map_or(0, |clock| clock.ordinal)
             .checked_add(1)
             .ok_or(Error::Capacity)?;
-        let binding = "appearance:effect/magic_green";
+        let binding = super::SOURCE_MAGIC_GREEN_CUE;
         let cue = resolve_source_cue(binding).ok_or(Error::UnqualifiedSource)?;
         Ok(PreparedFamiliarDefenseCue {
             actor: snapshot.actor,

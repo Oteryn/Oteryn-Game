@@ -314,6 +314,18 @@ pub(super) fn encode(
                 0,
             ),
         ),
+        // USE can be refused before it reaches its owner when input is unavailable.
+        Dispatch::Unregistered
+            if command.command_type
+                == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT =>
+        {
+            let disposition = UseDisposition::Rejected;
+            let payload = encode_use_result(disposition).map_err(|_| ServeEnd::Disconnected)?;
+            (
+                CommandStatus::Rejected,
+                detailed(session, payload, RefusalDetail::of_use(disposition)),
+            )
+        }
         Dispatch::Unregistered
             if command.command_type
                 == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE

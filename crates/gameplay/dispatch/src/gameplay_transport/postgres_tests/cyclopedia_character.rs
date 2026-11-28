@@ -288,7 +288,24 @@ fn tabs_scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'knight',7,0,10,0,10,0,42,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET magic_level=7,sword_level=42")
             .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        let (_, stats) = exchange(&owner, &mut admitted, 6, tab, &[1, 0, 0, 1]).await?;
+        // A normal self-query can arrive while a short background operation owns the holder.
+        let mut holders = Vec::new();
+        while h.root.is_ready() {
+            holders.push(h.root.try_issue_semantic_pass()?);
+            assert!(holders.len() <= 16, "fixture holder bound");
+        }
+        assert!(!holders.is_empty());
+        let (result, ()) = tokio::join!(
+            owner.cyclopedia_character_wire(admitted, 6, tab, &[1, 0, 0, 1]),
+            async move {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                drop(holders);
+            }
+        );
+        let stats = result.map_err(|()| "GeneralStats refused while the holder was busy")?;
+        // The direct handler probe did not advance the wire command sequence.
+        let (status, replay) = exchange(&owner, &mut admitted, 6, tab, &[1, 0, 0, 1]).await?;
+        assert_eq!((status, replay), (CommandStatus::Accepted, stats.clone()));
         let stored: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         let word = |at: usize| u16::from_le_bytes([stats[at], stats[at + 1]]);
@@ -346,6 +363,14 @@ fn tabs_scenario() -> TestResult {
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(extended[..stats.len()], stats[..], "the V1 body is unchanged");
         assert_eq!(extended[stats.len()..], [vocation_id("knight").ok_or("knight")?]);
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let (status, promoted) = exchange(&owner, &mut admitted, 11, tab, &[1, 0, 0, 1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(promoted[stats.len()..], [vocation_id("elite_knight").ok_or("elite knight")?]);
         // Capability 488: the public final-blow killer and the unjustified flag follow the cause.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
@@ -376,7 +401,7 @@ fn tabs_scenario() -> TestResult {
             ],
         )
         .ok_or("cyclopedia death details capability")?;
-        let (status, detailed) = exchange(&owner, &mut admitted, 11, tab, &[2, 0, 0, 50]).await?;
+        let (status, detailed) = exchange(&owner, &mut admitted, 12, tab, &[2, 0, 0, 50]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let mut expected = deaths.clone();
         expected.extend_from_slice(&u32::try_from(level)?.to_le_bytes());

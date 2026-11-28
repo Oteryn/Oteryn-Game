@@ -2119,6 +2119,24 @@ pub async fn begin_semantic_transaction<'a>(
     begin_transaction(holder, deadline, None).await
 }
 
+/// Scheduled owners can defer on a contended PostgreSQL lock and free the holder
+/// for admission. The same transaction keeps its ordinary budget on a player turn.
+pub(super) async fn begin_background_sensitive_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: TokioInstant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    let begin = begin_semantic_transaction(holder, deadline);
+    if is_background_holder() {
+        PERIODIC_LOCK_BUDGET.scope((), begin).await
+    } else {
+        begin.await
+    }
+}
+
+pub(super) fn is_background_holder() -> bool {
+    holder_queue::is_background()
+}
+
 /// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
 pub(super) async fn begin_observation_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,

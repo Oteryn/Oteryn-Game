@@ -733,25 +733,25 @@ impl LoopGroundCache {
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
-where
-    F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Result<T, E>>,
-{
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        loop {
-            match read().await {
-                Ok(value) => return Some(value),
-                Err(error) if busy(&error) => {
-                    tokio::time::sleep(std::time::Duration::from_millis(5)).await
-                }
-                Err(_) => return None,
-            }
-        }
-    })
-    .await
-    .ok()
-    .flatten()
+pub(super) async fn projection_read<T, E>(
+    root: &super::DurabilityRoot,
+    read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T> {
+    let budget =
+        super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
+    projection_read_with_budget(&budget, read, busy).await
+}
+
+async fn projection_read_with_budget<T, E>(
+    budget: &super::AdmissionRetryBudget<'_>,
+    read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T> {
+    tokio::time::timeout_at(budget.deadline, budget.retry_holder(read, busy))
+        .await
+        .ok()?
+        .ok()
 }
 
 /// Movement shares the runtime's static collision index with Ground USE-WITH.
@@ -792,14 +792,18 @@ pub(super) async fn reconcile_cask_collision(
         pin
     };
     let retired = projection_read(
-        || {
-            admission.root.read_retired_map_cask_placements(
-                world_id,
-                channel_id,
-                pin.bundle,
-                pin.reset_epoch,
-                base.entry_count(),
-            )
+        admission.root,
+        async || {
+            admission
+                .root
+                .read_retired_map_cask_placements(
+                    world_id,
+                    channel_id,
+                    pin.bundle,
+                    pin.reset_epoch,
+                    base.entry_count(),
+                )
+                .await
         },
         |error| {
             matches!(
@@ -856,7 +860,8 @@ pub async fn loop_ground(
     }
     let index = index?;
     let items = projection_read(
-        || async {
+        admission.root,
+        async || {
             if synchronize_sculpture {
                 admission
                     .root
@@ -875,14 +880,18 @@ pub async fn loop_ground(
     } = scope
     {
         projection_read(
-            || {
-                admission.root.read_map_item_mint_placement_states(
-                    world_id,
-                    channel_id,
-                    base.digest(),
-                    admission.reset_epoch,
-                    base.entry_count(),
-                )
+            admission.root,
+            async || {
+                admission
+                    .root
+                    .read_map_item_mint_placement_states(
+                        world_id,
+                        channel_id,
+                        base.digest(),
+                        admission.reset_epoch,
+                        base.entry_count(),
+                    )
+                    .await
             },
             |error| {
                 matches!(
@@ -1691,7 +1700,7 @@ async fn observe_container_with_house_capacity_inner(
         return super::browse_field::observe(admission, actor, fence, target).await;
     }
     if matches!(target, ItemKey::MapBase { .. }) {
-        return map_sources::observe(admission, actor, fence, target).await;
+        return map_sources::observe(admission, actor, fence, target, house_capacity_v2).await;
     }
     let ItemKey::Instance(container) = target else {
         return None;
@@ -2035,37 +2044,49 @@ mod tests {
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>
     {
+        use crate::durability::DurabilityError;
+
+        let mut session_bytes = [1; 16];
+        session_bytes[6] = 0x70;
+        session_bytes[8] = 0x80;
+        let session = crate::foundation::GameSessionId::decode(&session_bytes)
+            .map_err(|error| format!("{error:?}"))?;
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
+            .start_paused(true)
             .build()?
             .block_on(async {
+                let budget = super::super::AdmissionRetryBudget::new(&session);
                 let attempts = std::cell::Cell::new(0);
-                let result = projection_read(
-                    || {
-                        let attempt = attempts.get() + 1;
-                        attempts.set(attempt);
-                        std::future::ready(if attempt < 3 { Err(true) } else { Ok(42) })
+                let result = projection_read_with_budget(
+                    &budget,
+                    async || {
+                        attempts.set(attempts.get() + 1);
+                        if attempts.get() < 3 {
+                            Err(DurabilityError::RootUnavailable)
+                        } else {
+                            Ok(42)
+                        }
                     },
-                    |temporary| *temporary,
+                    super::super::root_holder_busy,
                 )
                 .await;
                 assert_eq!(result, Some(42));
                 assert_eq!(attempts.get(), 3);
-                let attempts = std::cell::Cell::new(0);
-                let result = projection_read(
-                    || {
+
+                let budget = super::super::AdmissionRetryBudget::new(&session);
+                attempts.set(0);
+                let result = projection_read_with_budget(
+                    &budget,
+                    async || {
                         attempts.set(attempts.get() + 1);
-                        std::future::ready(Err::<u8, _>(false))
+                        Err::<u8, _>(DurabilityError::CommitRejected)
                     },
-                    |temporary| *temporary,
+                    super::super::root_holder_busy,
                 )
                 .await;
                 assert_eq!(result, None);
-                assert_eq!(
-                    attempts.get(),
-                    1,
-                    "an authority or stored-state refusal is never retried as resource contention"
-                );
+                assert_eq!(attempts.get(), 1);
             });
         Ok(())
     }

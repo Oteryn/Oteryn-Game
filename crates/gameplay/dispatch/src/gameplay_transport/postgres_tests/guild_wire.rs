@@ -216,12 +216,13 @@ fn scenario() -> TestResult {
             name: "Wire Guild".into(),
         })
         .map_err(debug)?;
-        let (status, receipt) = exchange(
+        let (status, receipt) = super::guild_wire_fixtures::exchange_with_holder_pressure(
             &owner,
             &mut leader,
             found_command,
             COMMAND_TYPE_GUILD_INTENT,
             &found,
+            true,
         )
         .await?;
         assert_eq!(status, CommandStatus::Accepted);

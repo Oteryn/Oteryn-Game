@@ -106,6 +106,7 @@ pub use oteryn_protocol_oteryn::presentation::{
     PresentationValue, PresentationValueKind,
 };
 mod recovery;
+mod replay_capture;
 use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::coin_market;
 pub use oteryn_protocol_oteryn::coin_transfer;
@@ -141,6 +142,7 @@ pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
+pub use replay_capture::{REPLAY_DELTA_LIMIT, RawReplayDelta};
 mod chat_extended;
 mod guild_chat;
 mod private_channels;
@@ -398,6 +400,7 @@ pub struct Session<S> {
     events: Vec<SessionEvent>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
+    replay: replay_capture::ReplayRetention,
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,

@@ -54,13 +54,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1);
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
         if kind == wire::COMMAND_TYPE_GUILD_BANK_QUERY {
             let Ok(query) = wire::decode_guild_bank_query(payload) else {
                 return GuildReply::Rejected;
             };
             return reply(
-                self.root
-                    .query_guild_bank(self.character, self.holder, fence, query, include_guildhall)
+                budget
+                    .retry_holder(
+                        async || {
+                            self.root
+                                .query_guild_bank(
+                                    self.character,
+                                    self.holder,
+                                    fence,
+                                    query,
+                                    include_guildhall,
+                                )
+                                .await
+                        },
+                        super::guild_intent::guild_holder_busy,
+                    )
                     .await,
             );
         }
@@ -85,18 +99,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let GuildBankAction::Disband(confirmation) = &intent.action {
             // Current native fence also precedes historical start receipt reads on this path.
-            if let Err(e) = self
-                .root
-                .query_guild_bank(
-                    self.character,
-                    self.holder,
-                    fence,
-                    wire::GuildBankQuery {
-                        guild: Some(intent.guild),
-                        before: None,
-                        after_claim: None,
+            if let Err(e) = budget
+                .retry_holder(
+                    async || {
+                        self.root
+                            .query_guild_bank(
+                                self.character,
+                                self.holder,
+                                fence,
+                                wire::GuildBankQuery {
+                                    guild: Some(intent.guild),
+                                    before: None,
+                                    after_claim: None,
+                                },
+                                include_guildhall,
+                            )
+                            .await
                     },
-                    include_guildhall,
+                    super::guild_intent::guild_holder_busy,
                 )
                 .await
             {
@@ -120,9 +140,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(request) = GuildDisbandRequest::new(common, confirmation) else {
                 return GuildReply::Rejected;
             };
-            let result = self
-                .root
-                .commit_guild_disband(self.character, self.holder, fence, request)
+            let result = budget
+                .retry_holder(
+                    async || {
+                        self.root
+                            .commit_guild_disband(
+                                self.character,
+                                self.holder,
+                                fence,
+                                request.clone(),
+                            )
+                            .await
+                    },
+                    super::guild_intent::guild_holder_busy,
+                )
                 .await;
             let receipt = match result {
                 Ok(GuildOutcome::Committed(r) | GuildOutcome::Replayed(r)) => r,
@@ -130,15 +161,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let code = if receipt.result == GuildResult::Ok {
                 // One bounded World step pays out. Existing guild_scheduler resumes cleanup/restart.
-                if let Err(e) = self
-                    .root
-                    .advance_guild_disband(
-                        self.character,
-                        self.holder,
-                        GuildDisbandJobRequest {
-                            world_id: admitted.world_id,
-                            guild_id,
+                if let Err(e) = budget
+                    .retry_holder(
+                        async || {
+                            self.root
+                                .advance_guild_disband(
+                                    self.character,
+                                    self.holder,
+                                    GuildDisbandJobRequest {
+                                        world_id: admitted.world_id,
+                                        guild_id,
+                                    },
+                                )
+                                .await
                         },
+                        super::guild_intent::guild_holder_busy,
                     )
                     .await
                 {
@@ -162,18 +199,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }));
         }
         reply(
-            self.root
-                .commit_guild_bank(
-                    self.character,
-                    self.holder,
-                    fence,
-                    GuildBankRequest {
-                        operation_id: derive(b"oteryn:guild-bank-operation:v1"),
-                        command,
-                        occurred_at: now,
-                        wire_digest: Sha256::digest(payload).into(),
-                        intent,
+            budget
+                .retry_holder(
+                    async || {
+                        self.root
+                            .commit_guild_bank(
+                                self.character,
+                                self.holder,
+                                fence,
+                                GuildBankRequest {
+                                    operation_id: derive(b"oteryn:guild-bank-operation:v1"),
+                                    command,
+                                    occurred_at: now,
+                                    wire_digest: Sha256::digest(payload).into(),
+                                    intent: intent.clone(),
+                                },
+                            )
+                            .await
                     },
+                    super::guild_intent::guild_holder_busy,
                 )
                 .await,
         )
