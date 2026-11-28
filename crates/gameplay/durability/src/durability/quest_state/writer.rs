@@ -1355,6 +1355,16 @@ impl DurabilityRoot {
                             entrance_premium_denied = true;
                         }
                     }
+                    let progress_gate = oteryn_gameplay_quests::quest::shared_switches::gate(&request.transition_key)
+                        .filter(|gate| gate.progress.is_some());
+                    if progress_gate.is_some() {
+                        let Some((_, _, Some(native))) = context.as_ref() else {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        };
+                        super::super::character_equipment::assert_current_equipment_in_transaction(
+                            &mut tx, &recovery, &node, &fence.item_fence(), None, native.source_digest(),
+                        ).await.map_err(|_| DurabilityError::Unavailable)?;
+                    }
                     let root = match super::rotten_essence::assert_fence(&mut tx, &fence, &node, essence.is_some() || soul_input).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
@@ -2394,6 +2404,22 @@ impl DurabilityRoot {
                     if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
                     if let Some(callback) = &reward_callback {
                         map_marks::record(&mut tx, fence, callback, committed_revision).await?;
+                    }
+                    // Take the admission snapshot after all potentially blocking progress
+                    // writes. A refusal rolls back the receipt and every track change.
+                    if let Some(gate) = progress_gate {
+                        let Some((permit, world, _)) = context.as_ref() else { return Err(DurabilityError::InvalidStoredState); };
+                        if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        let observed = super::super::quest_world_callback::shared_count::observe(
+                            &mut tx, fence, gate, world,
+                        ).await?;
+                        if !observed.personal_completion && observed.count < gate.required {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     let committed = CommittedQuestTransition {
                         character_id: character,

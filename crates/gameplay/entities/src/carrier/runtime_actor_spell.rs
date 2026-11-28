@@ -830,6 +830,9 @@ impl ChannelRuntimeV1 {
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
             );
         }
+        if self.carrier.encounter_slot_reserved(index) {
+            return Err(CarrierError::PlanConflict);
+        }
         if state(&self.carrier.slots[index])
             .map_err(|_| {
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
@@ -1582,7 +1585,9 @@ impl ChannelRuntimeV1 {
             return Err(Error::InvalidBatch);
         }
         for (index, original) in &staged.originals {
-            if self.carrier.slots.get(*index) != Some(original) {
+            if self.carrier.encounter_slot_reserved(*index)
+                || self.carrier.slots.get(*index) != Some(original)
+            {
                 return Err(Error::SnapshotChanged);
             }
         }

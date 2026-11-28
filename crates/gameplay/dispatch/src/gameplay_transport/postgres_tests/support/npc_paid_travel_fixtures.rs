@@ -1086,13 +1086,13 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                 tx.commit().await?;
                 let position = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?;
                 for (harlow_step, (word, expected)) in [
-                    ("vengoth", Some("dangerous island")),
+                    ("vengoth", Some("looking for someone to take you to Vengoth?")),
                     ("yes", Some("100 gold")),
                     ("no", None),
                     ("yes", None),
                     ("transportation", Some("100 gold")),
                     ("no", None),
-                    ("vengoth", Some("dangerous island")),
+                    ("vengoth", Some("looking for someone to take you to Vengoth?")),
                 ].into_iter().enumerate() {
                     owner.clock_origin -= std::time::Duration::from_secs(1);
                     let reply = talk(&owner, &dependencies, npc, 4_000 + u64::try_from(harlow_step)?, word).await?;
@@ -1108,6 +1108,18 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                 line(&talk(&owner, &dependencies, npc, command_id + 2, if *captain == "harlow" { "yes" } else { request }).await?)
                     .contains(&format!("{fare} gold"))
             );
+            if *captain == "harlow" {
+                assert_eq!(gold(&h).await?, before);
+                let origin = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?.position();
+                assert_eq!((origin.x, origin.y, origin.floor), (32310, 32210, 6));
+                if reward_fixture {
+                    // Exercise transportation as the first settled trip in this fixture.
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    talk(&owner, &dependencies, npc, 4_007, "no").await?;
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    assert!(line(&talk(&owner, &dependencies, npc, 4_008, "transportation").await?).contains("100 gold"));
+                }
+            }
             // Crystal's travel children reset the topic, or ungreet for Eremo.
             let decline = match *captain {
                 "brodrosch" => Some(("We would like to serve you some time.", false)),
@@ -1247,11 +1259,33 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
                     .await?;
             assert_eq!(after, receipts + 1);
             if *captain == "harlow" {
-                sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
-                let npc = at_start(captain).await?;
-                owner.clock_origin -= std::time::Duration::from_secs(1);
-                talk(&owner, &dependencies, npc, 4_010, "hi").await?;
-                assert!(line(&talk(&owner, &dependencies, npc, 4_011, "vengoth").await?).contains("100 gold"));
+                for (keyword, command) in [("vengoth", 4_010), ("transportation", 4_020)] {
+                    sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+                    let npc = at_start(captain).await?;
+                    let balance = gold(&h).await?;
+                    let origin = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?;
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    talk(&owner, &dependencies, npc, command, "hi").await?;
+                    let mut quote = talk(&owner, &dependencies, npc, command + 1, keyword).await?;
+                    if keyword == "vengoth" {
+                        assert!(line(&quote).contains("looking for someone to take you to Vengoth?"));
+                        owner.clock_origin -= std::time::Duration::from_secs(1);
+                        quote = talk(&owner, &dependencies, npc, command + 2, "yes").await?;
+                        assert_eq!(gold(&h).await?, balance);
+                        assert_eq!(dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?, origin);
+                    }
+                    if keyword == "transportation" {
+                        assert_eq!(line(&quote), "Want me to bring you to Vengoth again for 100 gold?");
+                    } else {
+                        assert!(line(&quote).contains("Give me 100 gold pieces"));
+                    }
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    let paid = talk(&owner, &dependencies, npc, command + 3, "yes").await?;
+                    assert!(paid.inventory_changed);
+                    assert_eq!(gold(&h).await?, balance - fare);
+                    let arrival = dependencies.runtime.lock().await.read_actor_position(dependencies.actor).map_err(debug)?.position();
+                    assert_eq!((arrival.x, arrival.y, arrival.floor), *tile);
+                }
             }
             if !reward_fixture && *captain == "eremo" {
                 assert_eq!(mission().await?, 1, "Eremo is outside the Postman tour");

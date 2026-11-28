@@ -642,6 +642,27 @@ async fn two_player_encounter(
     }
     if matches!(case, Scenario::ResumePublication) {
         assert_eq!(outcome.disposition, UseDisposition::Rejected);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let observer_session = GameSessionId::decode(&id(237)).map_err(debug)?;
+            let slot = runtime.reserve_fresh_session(observer_session).map_err(debug)?;
+            let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
+            runtime.initialize_pinned_test_position(observer, MovementLocalPosition {
+                x: 80, y: 80, floor: 7,
+            }).map_err(debug)?;
+            let mut states = owner.states.spell_states.lock().await;
+            let now = owner.owner_now();
+            states.initialize(&runtime, observer, observer_session,
+                crate::gameplay_transport::actor_spell::tests::FACTS, (0, 0), now)
+                .ok_or("observer spell state")?;
+            let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());
+            let health = states.get(&runtime, other, other_session).ok_or("peer state")?.vitals().health;
+            assert!(states.apply_creature_damage_native(&runtime, other, other_session, health, now).is_none());
+            assert_eq!(states.get(&runtime, other, other_session).ok_or("peer state")?.vitals().health, health);
+            let hit = states.apply_creature_damage_native(&runtime, observer, observer_session, 1, now)
+                .ok_or("unrelated creature hit")?;
+            assert_eq!(hit.damage.applied, 1);
+        }
         assert!(owner.reconcile_quest_callbacks(other_session).await);
         assert!(owner.reconcile_quest_callbacks(session).await);
         assert_eq!(active_cooldowns(h, lever).await?.len(), 2);
@@ -713,6 +734,9 @@ async fn two_player_encounter(
     }
     if matches!(case, Scenario::AdmissionAckLost | Scenario::ResumePublication) {
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
+        assert_eq!(census.iter().filter(|(actor, _, _)|
+            runtime.matches_live_creature_identity(*actor, BOSS.as_bytes())
+        ).count(), 1);
         return Ok(());
     }
     if matches!(case, Scenario::FireDeadline) {

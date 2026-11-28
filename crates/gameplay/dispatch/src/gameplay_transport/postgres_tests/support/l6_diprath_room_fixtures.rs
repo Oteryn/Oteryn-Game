@@ -182,7 +182,11 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_diprath_room version={version}");
-    let (switches, signs, open) = if name.ends_with("-shared") {
+    let expires = name.ends_with("-expiry");
+    let interrupted = name.ends_with("-recovery");
+    let (switches, signs, open) = if expires {
+        (7, 0, false)
+    } else if interrupted || name.ends_with("-shared") {
         (7, 0, true)
     } else if name.ends_with("-personal") {
         (0, 8, true)
@@ -191,7 +195,15 @@ pub(super) async fn exercise(
     } else {
         return Err("Diprath room case".into());
     };
-    for s in SWITCHES.iter().copied().take(switches) {
+    for (index, s) in SWITCHES.iter().copied().take(switches).enumerate() {
+        if index == 6 && (expires || interrupted) {
+            // Keep the original lease duration and move only the test occurrence.
+            let occurred: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 1195000",
+            ).fetch_one(&h.pool).await?;
+            *owner.states.quest_callbacks.shared_switch_occurred_test.lock()
+                .map_err(|_| "test occurrence")? = Some(occurred);
+        }
         use_switch(owner, admitted, s).await?;
     }
     super::l6_native_signs_fixtures::activate_signs(owner, admitted, signs).await?;
@@ -221,6 +233,27 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(1))
         .ok_or("step clock")?;
+    if expires {
+        sqlx::raw_sql("CREATE SEQUENCE diprath_write;
+            GRANT USAGE ON SEQUENCE diprath_write TO oteryn_game_runtime;
+            CREATE FUNCTION hold_diprath_write() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                PERFORM nextval('diprath_write');
+                PERFORM pg_sleep_until(to_timestamp((SELECT min(expires_at_unix_ms)
+                    FROM game_shared_switch_leases) / 1000.0));
+                RETURN NEW;
+            END $$;
+            CREATE TRIGGER diprath_write BEFORE INSERT ON game_character_quest_receipts
+            FOR EACH ROW EXECUTE FUNCTION hold_diprath_write()").execute(&h.pool).await?;
+        // Start the STEP just before expiry, within the writer's two-second budget.
+        sqlx::query("SELECT pg_sleep_until(to_timestamp((min(expires_at_unix_ms)-900)/1000.0))
+            FROM game_shared_switch_leases").execute(&h.pool).await?;
+    }
+    if interrupted {
+        owner.states.quest_callbacks.interrupt_after_commit.store(
+            true, std::sync::atomic::Ordering::Release,
+        );
+    }
     let ordinal = admitted.continuity.next_command_id;
     let payload = encode_step_intent(StepDirection::East);
     let reply = super::quest_world_callbacks_fixtures::wire(
@@ -235,6 +268,24 @@ pub(super) async fn exercise(
         decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved
     );
+    if expires {
+        let attempted: bool = sqlx::query_scalar("SELECT is_called FROM diprath_write")
+            .fetch_one(&h.pool).await?;
+        assert!(attempted, "the delayed write reached the receipt insert");
+    }
+    if interrupted {
+        let session = admitted.game_session_id;
+        assert!(owner.has_pending_quest_callback(session));
+        assert_eq!(owner.runtime.lock().await.read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+            .map_err(debug)?.position(), super::quest_world_callbacks_fixtures::local(TRIGGER));
+        let committed = snapshot(h).await?;
+        sqlx::query("SELECT pg_sleep_until(to_timestamp(min(expires_at_unix_ms)/1000.0))
+            FROM game_shared_switch_leases").execute(&h.pool).await?;
+        assert!(owner.reconcile_quest_callbacks(session).await);
+        assert!(!owner.has_pending_quest_callback(session));
+        assert!(owner.reconcile_quest_callbacks(session).await);
+        assert_eq!(snapshot(h).await?, committed);
+    }
     let expected = if open { GOAL } else { ORIGIN };
     let actual = owner
         .runtime

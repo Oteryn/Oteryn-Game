@@ -37,21 +37,90 @@ impl DurabilityRoot {
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let mut context = (permit, native);
-        self.try_issue_semantic_pass()?.run_with_context(&mut context,move|holder,deadline,context|Box::pin(async move {
-            let (permit,native)=*context;
-            let mut tx=crate::durability::db::begin_type2_transaction(holder,deadline).await?;
-            assert_recovery_fence(&mut tx,&record).await?;
-            let Some(gate)=oteryn_gameplay_quests::quest::shared_switches::gate(&request.gate) else{return Ok(None)};
-            let Some(recipe)=oteryn_gameplay_quests::quest::shared_switches::recipe(gate.counter_recipe) else{return Ok(None)};
-            let crate::foundation::RuntimeScopeRefV1::Channel {world_id,..}=fence.runtime_scope else{return Ok(None)};
-            assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence.item_fence(),None,native.source_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
-            if !super::context_is_current(&mut tx,permit,fence,&request.context).await? {return Ok(None)}
-            let (now,count,next,personal_completion):(i64,i64,Option<i64>,bool)=sqlx::query_as("WITH clock AS (SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS now) SELECT clock.now,game_shared_switch_count(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,clock.now),(SELECT min(r.expires_at_unix_ms) FROM game_shared_switch_leases r JOIN game_shared_switch_recipes p USING(recipe) WHERE r.world_id=encode($1,'hex')::uuid AND r.context->>'map_revision'=$2 AND (r.context->>'reset_epoch')::numeric=$3::text::numeric AND p.group_key=$4 AND r.expires_at_unix_ms>clock.now),EXISTS(SELECT 1 FROM game_character_quest_tracks t WHERE t.character_id=encode($5,'hex')::uuid AND t.track_key=$6 AND t.quest_key=$7 AND t.value=1) FROM clock")
-                .bind(world_id.as_bytes().as_slice()).bind(&request.context.map_revision).bind(request.context.reset_epoch.to_string()).bind(recipe.group).bind(fence.character_id.as_bytes().as_slice()).bind(gate.personal_completion).bind(gate.quest).fetch_one(&mut **tx).await?;
-            if !(0..=500).contains(&count) {return Err(DurabilityError::InvalidStoredState)}
-            if !super::context_is_current(&mut tx,permit,fence,&request.context).await? {return Ok(None)}
-            let result=Observation {personal_completion,count:count.try_into().map_err(|_|DurabilityError::InvalidStoredState)?,observed_at_unix_ms:now,next_change_unix_ms:next};
-            tx.commit(deadline).await?;Ok(Some(result))
-        })).await
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (permit, native) = *context;
+                    let mut tx =
+                        crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let Some(gate) =
+                        oteryn_gameplay_quests::quest::shared_switches::gate(&request.gate)
+                    else {
+                        return Ok(None);
+                    };
+                    if !matches!(
+                        fence.runtime_scope,
+                        crate::foundation::RuntimeScopeRefV1::Channel { .. }
+                    ) {
+                        return Ok(None);
+                    }
+                    assert_current_equipment_in_transaction(
+                        &mut tx,
+                        &record,
+                        &node,
+                        &fence.item_fence(),
+                        None,
+                        native.source_digest(),
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    if !super::context_is_current(&mut tx, permit, fence, &request.context).await? {
+                        return Ok(None);
+                    }
+                    let result = observe(&mut tx, fence, gate, &request.context).await?;
+                    if !super::context_is_current(&mut tx, permit, fence, &request.context).await? {
+                        return Ok(None);
+                    }
+
+                    tx.commit(deadline).await?;
+                    Ok(Some(result))
+                })
+            })
+            .await
     }
+}
+
+pub(in crate::durability) async fn observe(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    gate: &oteryn_gameplay_quests::quest::shared_switches::Gate,
+    context: &QuestWorldContext,
+) -> Result<Observation, DurabilityError> {
+    let recipe = oteryn_gameplay_quests::quest::shared_switches::recipe(gate.counter_recipe)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let world_id = fence.runtime_scope.world_id();
+    let (now, count, next, personal_completion): (i64, i64, Option<i64>, bool) = sqlx::query_as(
+        "WITH clock AS (SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS now)
+         SELECT clock.now, game_shared_switch_count(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,clock.now),
+                (SELECT min(r.expires_at_unix_ms) FROM game_shared_switch_leases r
+                 JOIN game_shared_switch_recipes p USING(recipe)
+                 WHERE r.world_id=encode($1,'hex')::uuid AND r.context->>'map_revision'=$2
+                   AND (r.context->>'reset_epoch')::numeric=$3::text::numeric
+                   AND p.group_key=$4 AND r.expires_at_unix_ms>clock.now),
+                EXISTS(SELECT 1 FROM game_character_quest_tracks t
+                       WHERE t.character_id=encode($5,'hex')::uuid AND t.track_key=$6
+                         AND t.quest_key=$7 AND t.value=1)
+         FROM clock",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(&context.map_revision)
+    .bind(context.reset_epoch.to_string())
+    .bind(recipe.group)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(gate.personal_completion)
+    .bind(gate.quest)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !(0..=500).contains(&count) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(Observation {
+        personal_completion,
+        count: count
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        observed_at_unix_ms: now,
+        next_change_unix_ms: next,
+    })
 }

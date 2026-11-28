@@ -331,8 +331,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 prompt.introduce_passage = false;
                 prompt.opened = received_at.get();
                 let line = format!(
-                    "Do you seek a passage to {} for {} gold?",
-                    prompt.route.keyword, prompt.fare
+                    "I could do that, it's not far from here. I don't run a charity organisation, though. Tell you what. Give me {} gold pieces, and me and my boat are yours for the trip. Okay?",
+                    prompt.fare
                 );
                 let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
                     return ordinary;
@@ -419,9 +419,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.item_fence() != fence {
                 return ordinary;
             }
-            let (fare, first_passage) = match self
+            let fare = match self
                 .root
-                .quote_npc_passage(
+                .quote_npc_travel(
                     self.character,
                     self.holder,
                     current,
@@ -439,9 +439,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                 }
             };
-            let introduce_passage = first_passage && text == "vengoth";
+            let harlow = route.service == "oteryn:service.travel.harlow";
+            let introduce_passage = harlow && text == "vengoth";
             let line = if introduce_passage {
-                "Vengoth is a dangerous island. Are you sure you want to go there?".into()
+                "So you are saying you're looking for someone to take you to Vengoth?".into()
+            } else if harlow {
+                format!("Want me to bring you to Vengoth again for {fare} gold?")
             } else {
                 format!(
                     "Do you seek a passage to {} for {fare} gold?",

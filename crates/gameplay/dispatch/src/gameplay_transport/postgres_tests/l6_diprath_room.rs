@@ -36,3 +36,13 @@ fn l6_diprath_room_shared_seven_without_signs() -> TestResult {
 fn l6_diprath_room_personal_eight_without_switches() -> TestResult {
     run("l6-diprath-room-personal")
 }
+
+#[test]
+fn l6_diprath_room_expiry_during_progress_write() -> TestResult {
+    run("l6-diprath-room-expiry")
+}
+
+#[test]
+fn l6_diprath_room_committed_step_recovers_after_expiry() -> TestResult {
+    run("l6-diprath-room-recovery")
+}

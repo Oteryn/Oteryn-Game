@@ -1155,7 +1155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_some()
+        // Progress gates admit the STEP in the quest receipt transaction. Replay of
+        // that occurrence can then finish its pending move after the switches expire.
+        if oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+            .is_some_and(|gate| gate.progress.is_none())
             && !await_receipt!(self.admit_shared_switch_gate(
                 permit,
                 runtime.content_pin().server_artifact_digest(),
