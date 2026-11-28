@@ -98,7 +98,7 @@
       "quest": "oteryn:quest.killing_in_the_name_of_quest",
       "initial": 0,
       "min": 0,
-      "max": 2,
+      "max": 3,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
       ]
@@ -118,7 +118,7 @@
       "quest": "oteryn:quest.killing_in_the_name_of_quest",
       "initial": 0,
       "min": 0,
-      "max": 2,
+      "max": 3,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
       ]
@@ -189,6 +189,36 @@
       "initial": -1,
       "min": -1,
       "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1000,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
       ]
@@ -530,7 +560,46 @@
       "topics": [
         1
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        }
+      ],
       "reply": [
         "Will you hunt 150 Goblins?"
       ],
@@ -696,8 +765,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "ne",
-          "value": 1
+          "op": "eq",
+          "value": 2
         }
       ],
       "reply": [
@@ -744,7 +813,52 @@
       "topics": [
         2
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
       "reply": [
         "Will you hunt 100 Trolls for Edron?"
       ],
@@ -878,7 +992,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
         },
         {
           "kind": "level",
@@ -961,8 +1075,35 @@
       "guards": [
         {
           "kind": "level",
-          "op": "lt",
-          "value": 40
+          "op": "ge",
+          "value": 20
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 39
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
         },
         {
           "kind": "storage",
@@ -1002,7 +1143,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
         },
         {
           "kind": "level",
@@ -1188,13 +1329,40 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 59
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
         },
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
-          "op": "eq",
-          "value": 0
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [
@@ -1473,44 +1641,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/awaiting-boss-route",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.gabel",
-      "trigger": "say",
-      "keywords": [
-        "task",
-        "green djinns"
-      ],
-      "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
-      "guards": [
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
-          "op": "eq",
-          "value": 1
-        },
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
-          "op": "eq",
-          "value": 500
-        }
-      ],
-      "reply": [
-        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
-      ],
-      "effects": [],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
-      ],
-      "exclude_keywords": [
-        "mission"
-      ]
-    },
-    {
       "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/accept",
       "quest": "oteryn:quest.killing_in_the_name_of_quest",
       "npc": "oteryn:npc.malor",
@@ -1659,44 +1789,6 @@
       ],
       "reply": [
         "The hunt for 500 Blue Djinns or Marids is still in progress. See your quest log for the count."
-      ],
-      "effects": [],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
-      ],
-      "exclude_keywords": [
-        "mission"
-      ]
-    },
-    {
-      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/awaiting-boss-route",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.malor",
-      "trigger": "say",
-      "keywords": [
-        "task",
-        "blue djinns"
-      ],
-      "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
-      "guards": [
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
-          "op": "eq",
-          "value": 1
-        },
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
-          "op": "eq",
-          "value": 500
-        }
-      ],
-      "reply": [
-        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
       ],
       "effects": [],
       "sources": [
@@ -2056,43 +2148,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/awaiting-boss-route",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.budrik",
-      "trigger": "say",
-      "keywords": [
-        "task",
-        "minotaurs",
-        "mission",
-        "quest"
-      ],
-      "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
-      "guards": [
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
-          "op": "eq",
-          "value": 1
-        },
-        {
-          "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
-          "op": "eq",
-          "value": 5000
-        }
-      ],
-      "reply": [
-        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
-      ],
-      "effects": [],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
-      ]
-    },
-    {
       "key": "oteryn:quest-npc/hunting-tasks/necromancers/accept",
       "quest": "oteryn:quest.killing_in_the_name_of_quest",
       "npc": "oteryn:npc.lugri",
@@ -2306,7 +2361,192 @@
       ]
     },
     {
-      "key": "oteryn:quest-npc/hunting-tasks/necromancers/awaiting-boss-route",
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers-repeat/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        19
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 60
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Your hunt for 1000 Necromancers and Priestesses has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers-repeat/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        19
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Very well."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers-repeat/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "necromancers"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        19
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 60
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Will you hunt 1000 Necromancers and Priestesses?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 19
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers-repeat/in-progress",
       "quest": "oteryn:quest.killing_in_the_name_of_quest",
       "npc": "oteryn:npc.lugri",
       "trigger": "say",
@@ -2321,19 +2561,25 @@
       "guards": [
         {
           "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
           "op": "eq",
           "value": 1
         },
         {
           "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count",
+          "op": "lt",
+          "value": 1000
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
           "op": "eq",
-          "value": 4000
+          "value": 3
         }
       ],
       "reply": [
-        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
+        "The hunt for 1000 Necromancers and Priestesses is still in progress. See your quest log for the count."
       ],
       "effects": [],
       "sources": [

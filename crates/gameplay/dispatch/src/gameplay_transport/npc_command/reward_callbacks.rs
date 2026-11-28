@@ -42,6 +42,8 @@ pub(super) struct Offer {
     #[serde(default)]
     open_shop: bool,
     #[serde(default)]
+    source_dialogue: bool,
+    #[serde(default)]
     reward_order: Option<RewardOrder>,
     next_topic: u16,
     storage: Vec<Storage>,
@@ -296,6 +298,9 @@ pub(super) fn prepare(
                 if let Some(offer) = earlier {
                     if !meets_level(offer.minimum_level) {
                         return refusal(&offer.failure_reply);
+                    }
+                    if offer.source_dialogue {
+                        return None;
                     }
                     if offer.reward_order == Some(RewardOrder::Before) {
                         open_shop = offer.open_shop;

@@ -27,7 +27,11 @@
         }
       ],
       "take": [],
-      "give": null,
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
       "outfit": null,
       "achievement": null,
       "reply": [
@@ -45,7 +49,9 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "experience": 10000,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/cyclops/report",
@@ -169,7 +175,11 @@
         }
       ],
       "take": [],
-      "give": null,
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
       "outfit": null,
       "achievement": null,
       "reply": [
@@ -187,7 +197,9 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "experience": 10000,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/minotaurs/report",
@@ -314,7 +326,8 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You completed the hunt for 3000 pirates. Here are the coins I promised."
+        "You completed the hunt for 3000 pirates. Here are the coins I promised.",
+        "One of the four pirate leaders is hiding on Nargor. You may enter the hideout once."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
@@ -325,6 +338,11 @@
           "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
           "minimum": 5,
           "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+          "minimum": 0,
+          "maximum": 2
         }
       ],
       "exclude_keywords": [
@@ -332,7 +350,8 @@
         "mission",
         "mermaid",
         "pirate outfit"
-      ]
+      ],
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/rotworms/report",
@@ -423,6 +442,115 @@
       "exclude_keywords": [
         "mission"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/necromancers-repeat/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count",
+          "minimum": 1000,
+          "maximum": 1000,
+          "set": 1000,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have done well. Return if you wish to hunt another thousand."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ],
+      "experience": 40000
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/pirates/repeat-report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/count",
+          "minimum": 3000,
+          "maximum": 3000,
+          "set": 3000,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 3000 pirates. Here are the coins I promised."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "experience": 10000,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
+      ],
+      "per_occurrence_mint": true
     }
   ]
 }

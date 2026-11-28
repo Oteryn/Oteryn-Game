@@ -1,6 +1,6 @@
 //! I05 parity: timed equipment budgets and paired forms the timed-item path reads, against
 //! Crystal `201189f8` `data/items/items.xml` (`duration` seconds, `charges`, `transformEquipTo`,
-//! `transformDeEquipTo`, `decayTo`). Canary `47dfd51f` carries the same values for these ids.
+//! `transformDeEquipTo`, `decayTo`). Crystal also supplies the corrected Ethereal Ring decay target.
 #![allow(clippy::expect_used, clippy::panic)]
 
 use super::*;
@@ -53,6 +53,85 @@ fn i05_crystal_timed_equipment_budgets_match() {
             target.map(|target| target.definition.production_key),
             decay.map(key),
             "{base}"
+        );
+    }
+}
+
+#[test]
+fn cledwyn_exchange_rewards_equip_and_expire_to_the_discharged_item() {
+    use crate::domain::timed_item::{ExpireReason, LaneWriteKind};
+    use crate::domain::timed_item_host::{HostedItem, TimedItemDefinition, TimedItemHost};
+
+    let controller = native();
+    let native = native_state(&controller);
+    let callbacks =
+        oteryn_gameplay_quests::quest::reward_callbacks::load().expect("exchange recipes");
+    for (dormant, worn, seconds, discharged) in [
+        (30344, 30345, 7200, 29429),
+        (30342, 30343, 3600, 29428),
+        (31557, 31616, 3600, 31621),
+        (30403, 30402, 7200, 30401),
+        (32621, 32635, 7200, 32636),
+        (39177, 39178, 10800, 39179),
+        (39180, 39181, 10800, 39182),
+        (39183, 39184, 10800, 39185),
+        (39233, 39234, 7200, 39235),
+        (50147, 50148, 10800, 50149),
+        (50154, 50155, 7200, 50156),
+    ] {
+        let recipe = callbacks
+            .iter()
+            .find(|r| r.key == format!("oteryn:quest-reward/cledwyn-exchange-{dormant}"))
+            .expect("paid recipe");
+        assert!(recipe.take.iter().any(|r| r.item == key(discharged)));
+        assert_eq!(
+            recipe.give.as_ref().expect("enchanted reward").item,
+            key(dormant)
+        );
+        let definition = typed_of(native, dormant).expect("carried definition");
+        let equipped = equipped_definition(native, &definition).expect("worn definition");
+        assert_eq!(equipped.production_key, key(worn));
+        let (budget, target) = facts(native, &definition).expect("worn item clock");
+        assert_eq!(budget.full.remaining_ms(), Some(seconds * 1000));
+        let mut host = TimedItemHost::new(1000).expect("equipment clock");
+        host.host_live(
+            vec![HostedItem {
+                item_instance_id: [7; 16],
+                definition: TimedItemDefinition {
+                    definition: equipped.clone(),
+                    full: budget.full,
+                    decay_target: target.map(|t| t.definition),
+                },
+                row: None,
+            }],
+            0,
+        )
+        .expect("first wear after exchange");
+        host.advance(seconds * 1000);
+        let writes = host.due_writes(seconds * 1000, || [8; 16], |_| None);
+        let [expiry] = writes.as_slice() else {
+            panic!("expected one expiry for {worn}");
+        };
+        assert_eq!(
+            expiry.write.kind,
+            LaneWriteKind::Expire {
+                reason: ExpireReason::TimeExhausted
+            }
+        );
+        assert_eq!(
+            expiry
+                .definition
+                .decay_target
+                .as_ref()
+                .expect("expiry target")
+                .production_key,
+            key(discharged)
+        );
+        assert_eq!(
+            transform(native, &equipped, ReferenceTransformKind::Deequip)
+                .expect("unequip")
+                .production_key,
+            definition.production_key
         );
     }
 }

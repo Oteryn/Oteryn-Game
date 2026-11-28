@@ -569,10 +569,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Occupied;
             }
-            let Ok(policy) = runtime.companion_policy(&monster.creature) else {
+            let creature = if monster.alternatives.is_empty() {
+                monster.creature.as_str()
+            } else {
+                let QuestCause::Step(step) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                // The server-owned movement occurrence selects one boss consistently on replay.
+                let choice = oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *step.game_session_id().as_bytes(),
+                    step.command_id().get(),
+                    *b"PirateBossChoice",
+                    1,
+                    1 + monster.alternatives.len() as u64,
+                );
+                let Some(selected) = choice.and_then(|index| {
+                    std::iter::once(&monster.creature)
+                        .chain(&monster.alternatives)
+                        .nth(index as usize)
+                }) else {
+                    return UseDisposition::Rejected;
+                };
+                selected.as_str()
+            };
+            let Ok(policy) = runtime.companion_policy(creature) else {
                 return UseDisposition::Rejected;
             };
-            monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+            monsters.push((creature, policy.maximum_health, at));
         }
         if preflight {
             let result = if encounter.phase.is_some() {

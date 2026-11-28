@@ -103,7 +103,7 @@
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
-        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+        "Current Global Office Job and A Noble Cause are sequential. Four Magistratus deaths qualify the Office Job report. Accepting A Noble Cause opens the six-noble counter."
       ]
     },
     {
@@ -116,7 +116,7 @@
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
-        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+        "Current Global Office Job and A Noble Cause are sequential. Four Magistratus deaths qualify the Office Job report. Accepting A Noble Cause opens the six-noble counter."
       ]
     },
     {
@@ -1493,9 +1493,15 @@
           "set": 0
         },
         {
-          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
           "minimum": -1,
-          "maximum": -1,
+          "maximum": 23,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": -1,
+          "maximum": 0,
           "set": 0
         }
       ],
@@ -1505,12 +1511,105 @@
       "achievement": null,
       "requires_premium": true,
       "reply": [
-        "Eliminate four magistrati and six imperial nobles, then report your imperial hunt."
+        "Eliminate four Lizard Magistratus and report your mission to me."
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
-        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
-        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/office-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "mission",
+        "office report"
+      ],
+      "topic": 0,
+      "next_topic": 45,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "The officials are gone. Will you eliminate six imperial nobles?"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/noble-hunt",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 45,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Eliminate six imperial nobles and report your mission to me."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 5,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -1518,6 +1617,7 @@
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zlak",
       "keywords": [
+        "mission",
         "imperial report"
       ],
       "topic": 0,
@@ -1545,8 +1645,8 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": -1,
-          "maximum": 27,
+          "minimum": 24,
+          "maximum": 24,
           "set": 27
         },
         {
@@ -1560,6 +1660,12 @@
           "minimum": -1,
           "maximum": 1,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 6
         }
       ],
       "take": [],
@@ -1568,12 +1674,11 @@
       "achievement": null,
       "requires_premium": true,
       "reply": [
-        "Your imperial hunt is recorded. Free the sleeping dragon from its dream. The dream-opening word is SOLOSARASATIQUARIUM."
+        "Your noble hunt is recorded. Free the sleeping dragon from its dream. The dream-opening word is SOLOSARASATIQUARIUM."
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
-        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
-        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
       ]
     },
     {

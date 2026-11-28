@@ -194,6 +194,16 @@ pub enum NpcRuleGuard {
 
 /// Effects retain source order. Storage/topic effects are evaluated in the plan;
 /// the production storage owner refuses effects requiring another native owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RenownAction {
+    Relations,
+    Ask,
+    Quote,
+    Confirm,
+    Cancel,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleEffect {
@@ -204,6 +214,9 @@ pub enum NpcRuleEffect {
     },
     BigfootMatchmakerTarget,
     BigfootSoulMelody,
+    GnomallyRenown {
+        action: RenownAction,
+    },
     Set {
         track: String,
         value: i64,
@@ -525,6 +538,7 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/beginning.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/hunting-tasks.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/gnomally-renown.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/postman.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),

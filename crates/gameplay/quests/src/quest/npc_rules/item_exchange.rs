@@ -66,6 +66,12 @@ impl NpcRuleCatalog {
             let mut grants = 0;
             for effect in &rule.effects {
                 match effect {
+                    NpcRuleEffect::GnomallyRenown { .. }
+                        if rule.quest == BIGFOOT && npc == "oteryn:npc.gnomally" =>
+                    {
+                        keys.insert("oteryn:item.tibia.i16128".into());
+                        items = true;
+                    }
                     NpcRuleEffect::Set { .. }
                     | NpcRuleEffect::SetNowPlus { .. }
                     | NpcRuleEffect::Add { .. }

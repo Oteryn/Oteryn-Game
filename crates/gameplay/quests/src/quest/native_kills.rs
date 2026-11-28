@@ -9,6 +9,25 @@ pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
 mod fugue;
 mod phase_settlements;
 
+/// The lower Spike task also credits the two Drillworm Caves beneath Kazordoon.
+pub fn death_position_matches(
+    transition: &str,
+    area: Option<super::authored_bindings::kills::DeathArea>,
+    position: Option<[i32; 3]>,
+) -> bool {
+    area.is_none_or(|area| {
+        position.is_some_and(|cell| {
+            area.contains(cell)
+                || (transition == "oteryn:quest-transition/native-kills/spike-lower-kill"
+                    && super::authored_bindings::kills::DeathArea {
+                        minimum: [32520, 31995, 15],
+                        maximum: [32705, 32090, 15],
+                    }
+                    .contains(cell))
+        })
+    })
+}
+
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]

@@ -911,6 +911,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/source-gate-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/token-souvenir-wiki-bindings.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1067,7 +1070,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 10680,
+          "record_count": 10698,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1075,7 +1078,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "c11278f421b7a61d9fd5b319c9f7e147b19ae7ff7ff83925cafe22cd0a7bec36"
+          "sha256": "2a6ed74eb41cb8cc9838cd6523466ed75cf0304bbd7f302fb9c58eb804648daa"
         },
         {
           "creates_canonical_identities": false,

@@ -1,0 +1,212 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.gnomally-renown",
+  "quest": "oteryn:quest.bigfoot_s_burden_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1906"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1906"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/gnomally-renown/relations",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "trigger": "say",
+      "keyword_mode": "msg_contains",
+      "keywords": [
+        "relations"
+      ],
+      "any_message": false,
+      "reply": [
+        "Our relations improve with every mission you undertake on our behalf. Another way to improve your relations with us gnomes is to trade in minor crystal tokens. ...",
+        "Your renown amongst us gnomes is currently {$renown}. Do you want to improve your standing by sacrificing tokens? One token will raise your renown by 5 points. "
+      ],
+      "inventory_failure_reply": [],
+      "topics": null,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "op": "ge",
+          "value": 25
+        }
+      ],
+      "effects": [
+        {
+          "kind": "gnomally_renown",
+          "action": "relations"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:126"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/gnomally-renown/ask",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "trigger": "say",
+      "keyword_mode": "msg_contains",
+      "keywords": [
+        "yes"
+      ],
+      "any_message": false,
+      "reply": [
+        "How many tokens do you want to trade?"
+      ],
+      "inventory_failure_reply": [],
+      "topics": [
+        121
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "op": "ge",
+          "value": 25
+        }
+      ],
+      "effects": [
+        {
+          "kind": "gnomally_renown",
+          "action": "ask"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:171"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/gnomally-renown/quote",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "trigger": "say",
+      "keyword_mode": "msg_contains",
+      "keywords": [],
+      "any_message": true,
+      "reply": [
+        "Do you really want to trade $tokens minor tokens for $renown renown?"
+      ],
+      "inventory_failure_reply": [],
+      "topics": [
+        122
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "op": "ge",
+          "value": 25
+        }
+      ],
+      "effects": [
+        {
+          "kind": "gnomally_renown",
+          "action": "quote"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/gnomally-renown/confirm",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "trigger": "say",
+      "keyword_mode": "msg_contains",
+      "keywords": [
+        "yes"
+      ],
+      "any_message": false,
+      "reply": [
+        "As you wish! Your new renown is {$renown}."
+      ],
+      "inventory_failure_reply": [
+        "You don't have these many tokens."
+      ],
+      "topics": null,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "op": "ge",
+          "value": 25
+        }
+      ],
+      "effects": [
+        {
+          "kind": "gnomally_renown",
+          "action": "confirm"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:174",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/player.lua:126-147"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/gnomally-renown/cancel",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "trigger": "say",
+      "keyword_mode": "msg_contains",
+      "keywords": [
+        "no"
+      ],
+      "any_message": false,
+      "reply": [
+        "As you like."
+      ],
+      "inventory_failure_reply": [],
+      "topics": null,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "op": "ge",
+          "value": 25
+        }
+      ],
+      "effects": [
+        {
+          "kind": "gnomally_renown",
+          "action": "cancel"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:189"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gnomally.lua",
+      "sha256": "e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data/libs/functions/player.lua",
+      "sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

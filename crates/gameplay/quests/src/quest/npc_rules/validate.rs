@@ -323,6 +323,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for effect in &rule.effects {
                 let valid = match effect {
+                    NpcRuleEffect::GnomallyRenown { action } => {
+                        document.quest == "oteryn:quest.bigfoot_s_burden_quest"
+                          && rule.npc == "oteryn:npc.gnomally"
+                          && rule.key == format!("oteryn:quest-npc/gnomally-renown/{action:?}").to_ascii_lowercase()
+                    }
                     NpcRuleEffect::BigfootMatchmakerTarget => {
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && tracks.keys().any(|key| key.as_str() == "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed")
