@@ -169,7 +169,14 @@ async fn icon(
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("icon query refused: {:?}", reply.status).into());
+        return Err(format!(
+            "S02 icon query refused view={view} session={} command_id={} status={:?} server_sequence={} payload_hex={}",
+            hex(client.join_snapshot().game_session_id.as_bytes()),
+            reply.command_id,
+            reply.status,
+            reply.server_sequence,
+            hex(&reply.payload),
+        ).into());
     }
     let icons = party_skull::decode_party_icons(&reply.payload)
         .map_err(|e| format!("icon reply undecodable: {e:?}"))?;
@@ -309,7 +316,10 @@ async fn journey(clients: &SeamClients<'_>, captures: &Path) -> TestResult {
     for client in [&mut leader, &mut peer] {
         let reply = client.session_mut().logout().await?;
         if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("S02 client logout: {reply:?}").into());
+            return Err(format!(
+                "S02 client logout session={} reply={reply:?}",
+                hex(client.join_snapshot().game_session_id.as_bytes()),
+            ).into());
         }
     }
     drop((leader, peer));
