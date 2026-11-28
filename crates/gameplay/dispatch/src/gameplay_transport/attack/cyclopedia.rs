@@ -564,7 +564,7 @@ fn attack_skill(weapon_attack: u32, skill: u32) -> i64 {
     (attack * (f64::from(skill.saturating_add(4)) / 28.0) - attack) as i64
 }
 
-fn amplification_ppm(boots_tier: u8) -> i64 {
+pub(super) fn amplification_ppm(boots_tier: u8) -> i64 {
     if boots_tier == 0 {
         return 0;
     }

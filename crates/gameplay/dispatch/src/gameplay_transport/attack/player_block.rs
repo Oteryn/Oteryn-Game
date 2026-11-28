@@ -131,7 +131,14 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
             return false;
         };
         charm.base_damage = base_damage;
-        charm_combat::evaluate(
+        super::tier_effects::ruse(
+            self.states,
+            runtime,
+            target,
+            session,
+            &charm.root,
+            charm.occurrence,
+        ) || charm_combat::evaluate(
             self.states,
             runtime,
             charm.catalogue,
@@ -458,5 +465,87 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
             self.trained,
         );
         player_defence_bounds(constants, hand, skill, mode, swung)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ability::AiAbilityAdapter;
+    use crate::ability::creature_bite::{
+        CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection, commit_ai_bite,
+    };
+    use crate::content::charm_source::CanonicalCharmCatalogue;
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+    use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+
+    #[test]
+    fn global_ruse_amplification_negates_a_bite_before_damage() -> Result<(), String> {
+        let (mut runtime, target, session) = runtime_with_player(179);
+        let position = |x| MovementLocalPosition { x, y: 10, floor: 7 };
+        runtime
+            .initialize_movement_test_position(target, position(10))
+            .map_err(|error| format!("{error:?}"))?;
+        let creature = runtime
+            .admit_test_creature(position(11))
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = CanonicalCharmCatalogue::embedded().map_err(|error| error.to_string())?;
+
+        for (index, (armor_tier, boots_tier, expected)) in
+            [(6, 3, 0), (6, 0, 10), (0, 3, 10)].into_iter().enumerate()
+        {
+            let now = SemanticTimeMicros::from_micros(index as u64 * 2_000_000);
+            let mut states = ChannelSpellStates::default();
+            states
+                .initialize(&runtime, target, session, FACTS, (0, 0), now)
+                .ok_or("initialize player")?;
+            states
+                .get_mut(&runtime, target, session)
+                .ok_or("current player")?
+                .install_equipped_offence(EquippedOffence {
+                    armor_tier,
+                    boots_tier,
+                    ..EquippedOffence::default()
+                });
+            let hit = commit_ai_bite(
+                &mut CreatureBiteLedger::default(),
+                &mut runtime,
+                &mut PlayerBiteVitals {
+                    quest_sessions: None,
+                    charm: Some(IncomingCharm {
+                        source: creature,
+                        catalogue: &catalogue,
+                        root: GameplayDecisionRoot::from_bytes([0; 32]),
+                        // Draws 3.7867%, between the unamplified and amplified tier 6 chances.
+                        occurrence: DecisionOccurrenceId::from_bytes(1600_u128.to_be_bytes()),
+                        sequence: index as u64 + 1,
+                        race: "rat",
+                        base_damage: 0,
+                    }),
+                    conditions: None,
+                    states: &mut states,
+                    attack: &mut ChannelAttackStates::default(),
+                    formula: None,
+                    trained: &mut Vec::new(),
+                },
+                AiAbilityAdapter::bite(creature, index as u64 + 1, target, session, 0, 0),
+                CreatureBiteDefinition::new(2_000_000, 10).ok_or("bite definition")?,
+                RevisionSet::new(
+                    "ruleset:ai-v1",
+                    "content:1",
+                    "world:ai-v1",
+                    "formula:bite-v1",
+                    "simulation:v1",
+                )
+                .map_err(|error| format!("{error:?}"))?,
+                ReentryProtection {
+                    protected_until: None,
+                },
+                OwnerTime::from_micros(now.get()),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(hit.damage.applied, expected);
+        }
+        Ok(())
     }
 }

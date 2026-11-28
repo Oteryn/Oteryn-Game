@@ -521,7 +521,7 @@ fn equipped_offence_inner(
     if equipment.content_digest != content.source_digest() {
         return None;
     }
-    let mut tiers = (0, 0);
+    let (mut armor_tier, mut boots_tier, mut weapon_tier) = (0, 0, 0);
     let mut conversion = None;
     let mut vibrancy = 0;
     let mut sums = [0_i64; 7];
@@ -550,19 +550,20 @@ fn equipped_offence_inner(
             .ok()?;
         }
 
-        if item.slot == 4 && in_own_slot(semantics, semantic_slot) {
-            tiers.1 = item.tier;
+        let worn = in_own_slot(semantics, semantic_slot);
+        if worn && slot == EquipmentSlot::Armor {
+            armor_tier = item.tier;
+        }
+        if worn && slot == EquipmentSlot::Feet {
+            boots_tier = item.tier;
         }
         if item.slot == 6
             && matches!(&semantics.weapon, ReferenceItemField::Known(weapon)
             if matches!(weapon.weapon_type, ReferenceItemField::Known(kind) if !matches!(kind, crate::content::ReferenceWeaponType::Shield)))
         {
-            tiers.0 = item.tier;
+            weapon_tier = item.tier;
         }
-        if item_ability_profile(semantics).ok()?.timed
-            || slot == EquipmentSlot::Ammo
-            || !in_own_slot(semantics, semantic_slot)
-        {
+        if item_ability_profile(semantics).ok()?.timed || slot == EquipmentSlot::Ammo || !worn {
             continue;
         }
         for installed in imbuements
@@ -620,8 +621,9 @@ fn equipped_offence_inner(
     offence.reflect_percent = u64::try_from(sums[5].max(0)).ok()?;
     offence.reflect_flat = u32::try_from(sums[6].clamp(0, i64::from(u32::MAX))).ok()?;
     offence.perfect_shot = shots;
-    offence.weapon_tier = tiers.0;
-    offence.boots_tier = tiers.1;
+    offence.weapon_tier = weapon_tier;
+    offence.boots_tier = boots_tier;
+    offence.armor_tier = armor_tier;
     Some(offence)
 }
 

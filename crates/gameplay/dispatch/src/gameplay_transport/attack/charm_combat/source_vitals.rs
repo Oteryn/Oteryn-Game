@@ -393,7 +393,15 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             .finalize();
         let mut identity = [0; 16];
         identity.copy_from_slice(&digest[..16]);
-        evaluate(
+        let occurrence = DecisionOccurrenceId::from_bytes(identity);
+        super::super::tier_effects::ruse(
+            self.states,
+            runtime,
+            target,
+            session,
+            &self.root,
+            occurrence,
+        ) || evaluate(
             self.states,
             runtime,
             self.catalogue,
@@ -401,7 +409,7 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             session,
             &creature.state.policy.definition_key,
             &self.root,
-            DecisionOccurrenceId::from_bytes(identity),
+            occurrence,
             CharmHookEvent::IncomingCreatureAttack,
         )
         .iter()

@@ -34,6 +34,7 @@ pub(super) mod player_block;
 pub(in crate::gameplay_transport) mod ranged;
 mod shared_experience;
 pub(super) mod skill_training;
+pub(super) mod tier_effects;
 
 use crate::foundation::encode_state_delta;
 #[cfg(test)]

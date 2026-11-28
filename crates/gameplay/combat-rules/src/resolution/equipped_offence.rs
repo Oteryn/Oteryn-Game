@@ -23,6 +23,7 @@ pub struct EquippedOffence {
     /// Canary item.cpp:571-583,607-619: installed weapon and boots tiers.
     pub weapon_tier: u8,
     pub boots_tier: u8,
+    pub armor_tier: u8,
     pub reflect_percent: u64,
     /// Physical reflection points; other elements receive only reflectpercentall.
     pub reflect_flat: u32,
