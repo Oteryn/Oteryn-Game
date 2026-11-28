@@ -109,12 +109,17 @@ async fn browse_command(
             &payload,
         )
         .await?;
-    if reply.status != oteryn_protocol_oteryn::CommandStatus::Accepted {
-        return Err(format!("step=browse observed=command-status-{:?}", reply.status).into());
-    }
+    require_accepted(reply.status)?;
     let outcome = tree::decode_container_view_result(&reply.payload)
         .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
     Ok((outcome, reply.server_sequence))
+}
+
+fn require_accepted(status: oteryn_protocol_oteryn::CommandStatus) -> TestResult {
+    if status != oteryn_protocol_oteryn::CommandStatus::Accepted {
+        return Err(format!("step=browse observed=command-status-{status:?}").into());
+    }
+    Ok(())
 }
 
 fn verify_walk(
@@ -148,6 +153,13 @@ fn verify_walk(
     Ok(current)
 }
 
+fn invalid_open_event(event: &SessionEvent) -> bool {
+    matches!(
+        event,
+        SessionEvent::GatedSnapshotReplaced(_) | SessionEvent::ContainerViews(_)
+    )
+}
+
 async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
@@ -173,7 +185,7 @@ async fn browse_open(
                     landings.push((update.server_sequence, position));
                 }
             }
-            SessionEvent::GatedSnapshotReplaced(_) | SessionEvent::ContainerViews(_) => {
+            event if invalid_open_event(&event) => {
                 return Err("step=browse-open observed=replacement-or-premature-view".into());
             }
             _ => {}
@@ -228,6 +240,15 @@ fn assert_empty_field(view: &tree::ContainerView) -> TestResult {
     Ok(())
 }
 
+fn verify_setup_step(
+    disposition: StepDisposition,
+    landing: Option<TilePos>,
+    observed: TilePos,
+    expected: TilePos,
+) -> bool {
+    disposition == StepDisposition::Moved && landing == Some(expected) && observed == expected
+}
+
 async fn walk_once(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -238,15 +259,16 @@ async fn walk_once(
         let expected =
             destination(world, before, direction).ok_or("step=setup-walk missing-landing")?;
         let receipt = client.step(direction).await?;
-        if receipt.disposition != StepDisposition::Moved
-            || receipt
+        if !verify_setup_step(
+            receipt.disposition,
+            receipt
                 .world_spatial_delta
                 .as_ref()
                 .map(|delta| tile(delta.value.actor_position))
-                .transpose()?
-                != Some(expected)
-            || tile(client.world_spatial().actor_position)? != expected
-        {
+                .transpose()?,
+            tile(client.world_spatial().actor_position)?,
+            expected,
+        ) {
             return Err(format!(
                 "step=setup-walk direction={direction:?} first-receipt={receipt:?}"
             )
@@ -302,6 +324,7 @@ async fn drop_first(
 async fn take_entry(
     client: &mut DevClientSession,
     entry: &oteryn_protocol_oteryn::item_view::ItemEntry,
+    field: &tree::ContainerView,
 ) -> TestResult<()> {
     let before = quantity(client, entry.item_definition_ref)?;
     client.take_events();
@@ -314,13 +337,60 @@ async fn take_entry(
     if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=take observed={:?};needed=Moved", moved.outcome).into());
     }
-    wait_quantity(
-        client,
-        entry.item_definition_ref,
-        before + u64::from(entry.count.get()),
-    )
-    .await?;
-    Ok(())
+    let expected = before + u64::from(entry.count.get());
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut credited = false;
+    let mut emptied = false;
+    loop {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::GatedSnapshotReplaced(_) => {
+                    return Err("step=take observed=replacement-snapshot".into());
+                }
+                SessionEvent::Inventory(_) => {
+                    credited = quantity(client, entry.item_definition_ref)? == expected
+                }
+                SessionEvent::ContainerViews(update) => {
+                    let refreshed = update
+                        .value
+                        .views
+                        .iter()
+                        .find(|view| {
+                            view.view_id == field.view_id
+                                && view.browse.map(|page| page.position)
+                                    == field.browse.map(|page| page.position)
+                        })
+                        .ok_or("step=take observed=missing-field-refresh")?;
+                    assert_empty_field(refreshed)?;
+                    emptied = true;
+                }
+                _ => {}
+            }
+        }
+        if credited && emptied {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=take observed=missing-pickup-effects credit={credited} empty-field={emptied}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
+}
+
+fn refusal_changed_state(event: &SessionEvent, distant: TilePos) -> bool {
+    match event {
+        SessionEvent::WorldSpatialEntities(update) => {
+            tile(update.value.actor_position).ok() != Some(distant)
+        }
+        SessionEvent::WorldSpatial(_)
+        | SessionEvent::Inventory(_)
+        | SessionEvent::ContainerViews(_)
+        | SessionEvent::GatedSnapshotReplaced(_) => true,
+        _ => false,
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -390,16 +460,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     client.service_liveness(Duration::from_secs(1)).await?;
     if refused != tree::ContainerViewOutcome::TooFar
         || barrier != tree::ContainerViewOutcome::Stale
-        || client.take_events().iter().any(|event| match event {
-            SessionEvent::WorldSpatialEntities(update) => {
-                tile(update.value.actor_position).ok() != Some(distant)
-            }
-            SessionEvent::WorldSpatial(_)
-            | SessionEvent::Inventory(_)
-            | SessionEvent::ContainerViews(_)
-            | SessionEvent::GatedSnapshotReplaced(_) => true,
-            _ => false,
-        })
+        || client
+            .take_events()
+            .iter()
+            .any(|event| refusal_changed_state(event, distant))
         || tile(client.world_spatial().actor_position)? != distant
         || client.inventory() != Some(&inventory_before_refusal)
         || client.session_mut().container_views() != views_before_refusal.as_ref()
@@ -420,11 +484,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if quantity(&client, definition)? != debited {
         return Err("step=take observed=backpack-quantity-changed-before-pickup".into());
     }
-    take_entry(&mut client, entry).await?;
+    take_entry(&mut client, entry, &view).await?;
     if quantity(&client, definition)? != before {
         return Err("step=restore observed=backpack-count-not-restored".into());
     }
-    assert_empty_field(&browse_open(&mut client, at, t0, false).await?)?;
     logout(&mut client).await?;
     let mut relogged = connect_world(clients, 0xf1).await?;
     if quantity(&relogged, definition)? != before {
@@ -442,4 +505,112 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         arrived.floor,
         view.entries.len()
     ))
+}
+
+#[test]
+fn browse_audit_rejects_jump_and_late_arrival() -> TestResult {
+    let start = TilePos {
+        x: 10,
+        y: 10,
+        floor: -7,
+    };
+    let target = TilePos { x: 14, ..start };
+    let adjacent = TilePos { x: 13, ..start };
+    assert!(verify_walk(start, target, &[(4, adjacent)], 5).is_err());
+    let steps = [
+        (2, TilePos { x: 11, ..start }),
+        (3, TilePos { x: 12, ..start }),
+        (4, adjacent),
+    ];
+    assert!(verify_walk(start, target, &steps, 4).is_err());
+    assert_eq!(verify_walk(start, target, &steps, 5)?, adjacent);
+    Ok(())
+}
+
+#[test]
+fn browse_audit_rejects_rejected_status_and_retained_stack() -> TestResult {
+    use oteryn_protocol_oteryn::{CommandStatus, item_view::ItemEntry};
+    use std::num::{NonZeroU32, NonZeroU64};
+
+    assert!(require_accepted(CommandStatus::Rejected).is_err());
+    require_accepted(CommandStatus::Accepted)?;
+    let mut view = tree::ContainerView {
+        view_id: 0,
+        container_handle: NonZeroU64::MIN,
+        parent_handle: None,
+        capacity: 20,
+        entries: vec![ItemEntry {
+            appearance_id: 0,
+            handle: NonZeroU64::MIN,
+            item_definition_ref: NonZeroU32::MIN,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        }],
+        browse: Some(browse::BrowseFieldPage {
+            position: WorldTilePosition {
+                x: 10,
+                y: 10,
+                floor: 7,
+            },
+            index: 0,
+            total: 1,
+        }),
+    };
+    assert!(assert_empty_field(&view).is_err());
+    view.entries.clear();
+    assert!(assert_empty_field(&view).is_err());
+    view.browse.as_mut().ok_or("browse page")?.total = 0;
+    assert_empty_field(&view)
+}
+
+#[test]
+fn browse_audit_rejects_replacement_delayed_effect_and_first_refusal() {
+    use oteryn_dev_client::{AppliedDelta, native_session::GatedSnapshot};
+    use oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation;
+
+    let replacement = SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+        server_sequence: 12,
+        base_revision: 1,
+        new_revision: 2,
+        value: GatedSnapshot {
+            domain_id: tree::STATE_DOMAIN_CONTAINER_VIEWS,
+            snapshot_type: 1,
+            revision: 2,
+            payload: Vec::new(),
+        },
+    });
+    assert!(invalid_open_event(&replacement));
+
+    let distant = TilePos {
+        x: 10,
+        y: 10,
+        floor: -7,
+    };
+    let delayed = SessionEvent::WorldSpatial(AppliedDelta {
+        server_sequence: 13,
+        base_revision: 1,
+        new_revision: 2,
+        value: WorldSpatialObservation {
+            content_generation: [0; 32],
+            actor_position: ActorPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            },
+        },
+    });
+    assert!(refusal_changed_state(&delayed, distant));
+    for refusal in [
+        StepDisposition::Rejected,
+        StepDisposition::TooEarly,
+        StepDisposition::Blocked,
+    ] {
+        assert!(!verify_setup_step(refusal, Some(distant), distant, distant));
+    }
+    assert!(verify_setup_step(
+        StepDisposition::Moved,
+        Some(distant),
+        distant,
+        distant
+    ));
 }
