@@ -3,29 +3,72 @@ use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::{DurabilityError, spell_item_transaction as item_tx, world_party};
 use crate::foundation::PartySnapshot;
 use oteryn_protocol_oteryn::{party_skull::PartyIcon, world_spatial_entities::EntityRef};
+use sha2::{Digest, Sha256};
 use sqlx::Row;
+use sqlx::postgres::{PgConnectOptions, PgListener, PgPoolOptions};
 use std::collections::BTreeMap;
+use std::time::Duration;
 use tokio::sync::watch;
 
-/// Transient hints keyed by the durable members who need a fresh scoped observation.
+/// Transient hints keyed by the opaque tokens of live observers.
 /// A subscription lives with the serving connection.
 #[derive(Default)]
-pub(super) struct PartyIconUpdates(std::sync::Mutex<BTreeMap<[u8; 16], watch::Sender<()>>>);
+pub(super) struct PartyIconUpdates(std::sync::Mutex<BTreeMap<String, watch::Sender<()>>>);
 
 impl PartyIconUpdates {
     pub(super) fn subscribe(&self, character: [u8; 16]) -> Option<watch::Receiver<()>> {
         let mut recipients = self.0.lock().ok()?;
         recipients.retain(|_, sender| sender.receiver_count() != 0);
-        Some(recipients.entry(character).or_default().subscribe())
+        let token: String = Sha256::digest(character)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        Some(recipients.entry(token).or_default().subscribe())
     }
 
-    pub(super) fn publish(&self, source: &PartySnapshot) {
+    pub(super) fn publish(&self, tokens: &str) {
         if let Ok(recipients) = self.0.lock() {
-            for member in &source.members {
-                if let Some(recipient) = recipients.get(&member.character) {
+            for token in tokens.split(',') {
+                if let Some(recipient) = recipients.get(token) {
                     recipient.send_replace(());
                 }
             }
+        }
+    }
+
+    pub(super) async fn receive(&self, listener: &mut PgListener) -> Result<bool, sqlx::Error> {
+        let Some(notice) = listener.try_recv().await? else {
+            return Ok(false);
+        };
+        self.publish(notice.payload());
+        Ok(true)
+    }
+
+    pub(super) async fn listen(&self, world: [u8; 16], options: PgConnectOptions) {
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .acquire_timeout(Duration::from_secs(2))
+            .max_lifetime(None)
+            .idle_timeout(None)
+            .connect_lazy_with(options);
+        let topic = world_party::ingress::leadership_icon_topic(world);
+        loop {
+            let subscription = tokio::time::timeout(Duration::from_secs(2), async {
+                let mut listener = PgListener::connect_with(&pool).await?;
+                listener.eager_reconnect(false);
+                listener.listen(&topic).await?;
+                Ok::<_, sqlx::Error>(listener)
+            });
+            if let Ok(Ok(mut listener)) = subscription.await {
+                // Catch a change committed while the listener was disconnected.
+                if let Ok(recipients) = self.0.lock() {
+                    for recipient in recipients.values() {
+                        recipient.send_replace(());
+                    }
+                }
+                while matches!(self.receive(&mut listener).await, Ok(true)) {}
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 }

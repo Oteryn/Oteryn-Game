@@ -55,6 +55,45 @@ pub async fn read_in_transaction(
     })
 }
 
+pub fn leadership_icon_topic(world: [u8; 16]) -> String {
+    let world: String = world.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!("oteryn_party_icons_{world}")
+}
+
+/// Publish a presentation hint as part of the transfer transaction. PostgreSQL
+/// releases the hint at commit. Its payload contains opaque recipient tokens,
+/// and receivers must re-read the existing scoped party projection.
+pub async fn notify_leadership_icons_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    party: [u8; 16],
+) -> Result<String> {
+    let (world, _) = owner(tx, authority).await?;
+    // The World party invariant permits 50 members and 50 live invitations.
+    // 100 hex SHA-256 tokens plus separators fit one PostgreSQL notification.
+    let recipients: String = sqlx::query_scalar(
+        "SELECT COALESCE(string_agg(encode(sha256(uuid_send(recipient)), 'hex'), ',' ORDER BY recipient), '')
+         FROM (
+             SELECT m.character_id AS recipient FROM game_party_members m JOIN game_parties p USING(party_id)
+             WHERE p.party_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+             UNION
+             SELECT i.invitee FROM game_party_invitations i JOIN game_parties p USING(party_id)
+             WHERE p.party_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+                 AND i.expires_at>clock_timestamp()
+         ) AS recipients",
+    )
+    .bind(party.as_slice())
+    .bind(world.as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    sqlx::query("SELECT pg_notify($1, $2)")
+        .bind(leadership_icon_topic(world))
+        .bind(&recipients)
+        .execute(&mut **tx)
+        .await?;
+    Ok(recipients)
+}
+
 struct CurrentLogoutProof {
     character: [u8; 16],
     command: CommandRef,

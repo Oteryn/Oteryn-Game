@@ -618,7 +618,15 @@ async fn scenario(
     if notices {
         return check_notices(&owner, &mut admitted).await;
     }
-    for a in admitted.iter_mut().skip(1) {
+    let joined = if partyskull {
+        super::party_leadership_push::leadership_refreshes_invitee_and_remote_successor(
+            h, &owner, &mut admitted, &targets, characters,
+        ).await?;
+        2
+    } else {
+        1
+    };
+    for a in admitted.iter_mut().skip(joined) {
         let results = roundtrip(&owner, a, &[Step::Query, Step::Accept]).await?;
         assert_eq!(results[0].invitations.len(), 1);
         assert_eq!(results[1].disposition, PartyDisposition::Ok);

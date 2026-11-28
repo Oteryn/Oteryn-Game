@@ -87,9 +87,18 @@ where
         &payload,
     )
     .map_err(|_| ServeEnd::Disconnected)?;
-    write_frame(stream, &frame)
-        .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+    // A shield refresh must release the serve loop within one visibility tick.
+    // A timed-out write may have sent a frame prefix, so close the stream.
+    match tokio::time::timeout(
+        VISIBILITY_REFRESH.min(session.policy.interval),
+        crate::gameplay_transport::tcp_tls::write_frame(stream, &frame),
+    )
+    .await
+    {
+        Ok(Ok(())) => {}
+        Ok(Err(_)) => return Err(ServeEnd::Disconnected),
+        Err(_) => return Err(ServeEnd::ControlLost("party_icons_write_timeout")),
+    }
     session.sequence = sequence;
     session.revision = revision;
     session.admitted.continuity.server_sequence = sequence;

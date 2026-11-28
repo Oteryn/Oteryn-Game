@@ -375,21 +375,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     _ => None,
                 };
+                let icon_recipients = if matches!(intent, Some(PartyIntent::PassLeadership(_)))
+                    && let Some(receipt) = &receipt
+                    && receipt.disposition == "APPLIED"
+                    && !receipt.replayed
+                    && let Some(party) = view.source.party_id.filter(|id| receipt.party_id == Some(*id))
+                {
+                    **step = "party_icon_recipients";
+                    Some(world_party::ingress::notify_leadership_icons_in_transaction(&mut tx, &authority, party)
+                        .await.map_err(|_| DurabilityError::Unavailable)?)
+                } else {
+                    None
+                };
                 **step = "transaction_commit";
                 crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-                Ok((receipt, view, refused, shared_hunt))
+                Ok((receipt, view, refused, shared_hunt, icon_recipients))
             })
         }).await;
         match outcome {
-            Ok((receipt, source, refused, shared_hunt)) => {
-                if matches!(intent, Some(PartyIntent::PassLeadership(_)))
-                    && receipt
-                        .as_ref()
-                        .is_some_and(|receipt| receipt.disposition == "APPLIED")
-                {
-                    // The durable transaction has committed. Wake each member's live
-                    // presenter even if this caller's own runtime projection fails.
-                    self.states.party_icon_updates.publish(&source.source);
+            Ok((receipt, source, refused, shared_hunt, icon_recipients)) => {
+                if let Some(tokens) = &icon_recipients {
+                    // Wake local recipients immediately after commit. Other Channel
+                    // presenters receive the same hint from the World subscription.
+                    self.states.party_icon_updates.publish(tokens);
                 }
                 if let Some(plan) = &shared_hunt {
                     plan.apply(&self.states.analyser)?;

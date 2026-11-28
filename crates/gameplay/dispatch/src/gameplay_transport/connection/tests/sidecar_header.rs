@@ -27,6 +27,7 @@ struct RelocatingAuthority {
     party_peer: Option<EntityRef>,
     party_shield: Cell<u8>,
     visibility_busy: Cell<bool>,
+    party_updates: Option<tokio::sync::watch::Sender<()>>,
 }
 
 impl RelocatingAuthority {
@@ -148,6 +149,12 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
             skull: 0,
         }])
     }
+
+    fn party_icon_updates(&self, _: AdmittedSession) -> Option<tokio::sync::watch::Receiver<()>> {
+        self.party_updates
+            .as_ref()
+            .map(|updates| updates.subscribe())
+    }
 }
 
 /// Joins, runs the first visibility ticks and returns, for every sidecar delta, its header
@@ -168,6 +175,7 @@ fn sidecar_headers(
                     party_peer: None,
                     party_shield: Cell::new(1),
                     visibility_busy: Cell::new(false),
+                    party_updates: None,
                 };
                 let ids = [6, 134, 508, 509];
                 let offered = ids.map(|id| OfferedCapability { id, requires: &[] });
@@ -303,6 +311,7 @@ fn party_leader_shield_republishes_while_visibility_is_busy() -> Result<(), Box<
                     party_peer: Some(entity),
                     party_shield: Cell::new(3),
                     visibility_busy: Cell::new(false),
+                    party_updates: None,
                 };
                 let ids = [6, 42, 134, 286];
                 let mut admitted = positioned()?;
@@ -363,6 +372,65 @@ fn party_leader_shield_republishes_while_visibility_is_busy() -> Result<(), Box<
         })?
         .join()
         .map_err(|_| "party shield connection test panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn leadership_shield_write_times_out_within_visibility_budget() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                tokio::time::pause();
+                let (updates, _) = tokio::sync::watch::channel(());
+                let authority = RelocatingAuthority {
+                    x: Cell::new(0),
+                    during: Relocating::Capacity,
+                    party_peer: None,
+                    party_shield: Cell::new(4),
+                    visibility_busy: Cell::new(false),
+                    party_updates: Some(updates.clone()),
+                };
+                let ids = [6, 42, 134];
+                let mut admitted = positioned()?;
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &ids)
+                        .filter(|selected| selected.as_slice() == ids)
+                        .ok_or("party shield capabilities")?;
+                // The peer stops reading after the join. Only the next frame's
+                // length prefix fits, so a retry on this stream would corrupt it.
+                let (mut server, mut client) = tokio::io::duplex(4);
+                let serving = async move {
+                    tokio::time::timeout(
+                        VISIBILITY_REFRESH * 2,
+                        serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS),
+                    )
+                    .await
+                };
+                let join = async {
+                    loop {
+                        let frame =
+                            crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+                        if decode_wire_envelope(&frame)?.message_type()
+                            == MessageType::SnapshotCommit
+                        {
+                            updates.send_replace(());
+                            return Ok::<_, Box<dyn Error>>(());
+                        }
+                    }
+                };
+                let (end, joined) = tokio::join!(serving, join);
+                joined?;
+                assert!(
+                    matches!(end, Ok(ConnectionEnd::AdmittedThenControlLost(_))),
+                    "a stalled leadership shield write must end within the visibility budget: {end:?}"
+                );
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "shield backpressure test panicked")?
         .map_err(Into::into)
 }
 

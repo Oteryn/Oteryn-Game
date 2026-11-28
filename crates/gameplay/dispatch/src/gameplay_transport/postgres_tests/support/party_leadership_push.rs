@@ -1,4 +1,4 @@
-use super::party_membership_fixtures::read_live_frame;
+use super::party_membership_fixtures::{Step, read_live_frame, roundtrip};
 use super::party_skull_fixtures::icon_snapshot_revision;
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
 use crate::foundation::{MessageType, decode_wire_envelope};
@@ -6,7 +6,8 @@ use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::SelectedCapabilities,
     connection::{
-        AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, LivenessPolicy, serve_admitted,
+        AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, LivenessPolicy,
+        serve_admitted,
     },
     tcp_tls::{read_frame, write_frame},
 };
@@ -22,6 +23,82 @@ use std::time::Duration;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 const CAPABILITIES: [u32; 3] = [6, CAPABILITY_PARTY_V1, CAPABILITY_PARTY_SKULL_V1];
+
+pub(super) async fn leadership_refreshes_invitee_and_remote_successor(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+    targets: &[EntityRef],
+    [old_character, new_character]: [[u8; 16]; 2],
+) -> TestResult {
+    let [old, new, invitee] = admitted else {
+        return Err("leader, successor and pending invitee required".into());
+    };
+    let accepted = roundtrip(owner, new, &[Step::Query, Step::Accept]).await?;
+    assert_eq!(accepted[0].invitations.len(), 1);
+    assert_eq!(accepted[1].disposition, PartyDisposition::Ok);
+
+    // Another Channel owns an independent subscription map and database socket.
+    // Its successor subscription never sees the writer's local fanout.
+    let remote = crate::gameplay_transport::party_skull::PartyIconUpdates::default();
+    let mut successor = remote
+        .subscribe(new_character)
+        .ok_or("remote successor subscription")?;
+    let mut listener = sqlx::postgres::PgListener::connect_with(&harness.pool).await?;
+    listener
+        .listen(
+            &crate::durability::world_party::ingress::leadership_icon_topic(
+                *old.world_id.as_bytes(),
+            ),
+        )
+        .await?;
+
+    let mut observing = *invitee;
+    observing.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &CAPABILITIES)
+            .ok_or("invitee party shield offer")?;
+    let generation = observing.continuity.connection_generation;
+    let (mut server, mut client) = tokio::io::duplex(64 << 10);
+    let serving = async move { serve_admitted(&mut server, observing, owner, IDLE_LIVENESS).await };
+    let driving = async move {
+        icon_snapshot_revision(&mut client, generation).await?;
+        wait_shields(&mut client, generation, targets, [1, 11, 0]).await?;
+        tokio::time::timeout(Duration::from_secs(4), async {
+            let _foreground = harness.root.foreground_demand()?;
+            let passed = roundtrip(owner, old, &[Step::Query, Step::Pass(new_character)]).await?;
+            assert_eq!(passed[1].disposition, PartyDisposition::Ok);
+            let remote_wake = async {
+                assert!(remote.receive(&mut listener).await?);
+                successor.changed().await?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            };
+            tokio::try_join!(
+                wait_shields(&mut client, generation, targets, [11, 1, 0]),
+                remote_wake,
+            )?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+        .await
+        .map_err(|_| "pending invitee shield and remote successor wake must follow the committed transfer")??;
+        client.shutdown().await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(Duration::from_secs(30), async {
+        tokio::join!(Box::pin(serving), driving)
+    })
+    .await?;
+    result?;
+    let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+        return Err(format!("invitee connection: {end:?}").into());
+    };
+    let original = invitee.continuity.selected_capabilities;
+    invitee.continuity = ended.continuity;
+    invitee.continuity.selected_capabilities = original;
+
+    let returned = roundtrip(owner, new, &[Step::Query, Step::Pass(old_character)]).await?;
+    assert_eq!(returned[1].disposition, PartyDisposition::Ok);
+    Ok(())
+}
 
 pub(super) async fn check(
     harness: &Harness,

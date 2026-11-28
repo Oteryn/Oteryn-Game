@@ -297,6 +297,16 @@ pub async fn serve_gameplay(
             None => std::future::pending().await,
         }
     });
+    let mut party_icon_listener = Box::pin(async {
+        if let Some(options) = authority.root.chat_relay_connect_options() {
+            authority
+                .states
+                .party_icon_updates
+                .listen(*owners.world_id.as_bytes(), options)
+                .await;
+        }
+        std::future::pending::<()>().await;
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
@@ -324,6 +334,7 @@ pub async fn serve_gameplay(
         let _ = positions.as_mut().poll(context);
         // Never ends: it parks once shutdown is requested.
         let _ = relay.as_mut().poll(context);
+        let _ = party_icon_listener.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
             cycles_stop.cancel();
