@@ -232,7 +232,7 @@ fn channel(harness: &Harness) -> TestResult<(ChannelRuntimeV1, u64)> {
         1,
         1,
         "runtime-scope-assignment:1",
-        16,
+        32,
         pin.clone(),
     )?;
     runtime.install_companion_policies(CompiledCreaturePolicies::from_active_artifact(
