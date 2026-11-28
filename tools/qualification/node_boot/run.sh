@@ -626,6 +626,25 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 
 # Use the merged native producer for every shard; the PHP producer is retired.
 game_platform_start
+if [[ "${OTERYN_E2E_ROW_BATCH:-}" == 96:1 && -n "${C11_CAPTURE_RUN:-}" ]]; then
+  c11_platform_db="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+  [[ "$c11_platform_db" =~ ^portal_e2e_[a-f0-9]{12}$ ]] || fail "c11_platform_fixture_database"
+  docker exec -i "$GP_PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 \
+    -U game_platform_admin -d "$c11_platform_db" -v account="$C11_KNIGHT_ACCOUNT" <<'SQL_C11_PREMIUM'
+BEGIN;
+INSERT INTO premium_authority(account_id) VALUES (:'account');
+INSERT INTO premium_ledger(request_id, account_id, actor_id, event_type, duration_days,
+    reason_sha256, entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until)
+VALUES (:'account', :'account', :'account', 'GRANT', 1,
+    sha256('C11 Premium fixture'::bytea), :'account', 1, 86400,
+    date_trunc('second', CURRENT_TIMESTAMP) - interval '1 minute',
+    date_trunc('second', CURRENT_TIMESTAMP) - interval '1 minute' + interval '1 day');
+INSERT INTO premium_audit(request_id, actor_id, account_id, event_name)
+VALUES (:'account', :'account', :'account', 'products.premium_granted');
+COMMIT;
+SQL_C11_PREMIUM
+  evidence "row=C11.client fixture=premium source=platform-ledger grants=1"
+fi
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
 fi

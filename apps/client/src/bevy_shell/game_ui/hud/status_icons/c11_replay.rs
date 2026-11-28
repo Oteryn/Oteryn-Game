@@ -8,7 +8,15 @@ use oteryn_session::{
     StepOutcome, battle_instinct_status as wire,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::VecDeque, path::Path, time::Duration};
+use std::{
+    collections::VecDeque,
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -80,7 +88,10 @@ fn c11_capture_rejects_swapped_runs_and_mutated_bytes() -> Result<(), Error> {
     Ok(())
 }
 
-struct CapturedPeer(VecDeque<GatedCommandResult>);
+struct CapturedPeer {
+    replies: VecDeque<GatedCommandResult>,
+    delivered: Arc<AtomicUsize>,
+}
 
 impl Stepper for CapturedPeer {
     fn feature_selected(&self, capability: u32) -> bool {
@@ -99,7 +110,12 @@ impl Stepper for CapturedPeer {
                 &[][..]
             )
         );
-        self.0.pop_front().ok_or(SessionError::SessionUnusable)
+        let reply = self
+            .replies
+            .pop_front()
+            .ok_or(SessionError::SessionUnusable)?;
+        self.delivered.fetch_add(1, Ordering::Relaxed);
+        Ok(reply)
     }
 
     async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -145,18 +161,33 @@ fn c11_live_native_replay() -> Result<(), Error> {
                     (capture.four, capture.four_payload),
                     (capture.five, capture.five_payload),
                 ];
-                let peer = CapturedPeer(
-                    responses
-                        .map(
-                            |([command_id, server_sequence], payload)| GatedCommandResult {
-                                command_id,
-                                server_sequence,
-                                status: CommandStatus::Accepted,
-                                payload,
-                            },
-                        )
-                        .into(),
-                );
+                let mut results = VecDeque::from(responses.map(
+                    |([command_id, server_sequence], payload)| GatedCommandResult {
+                        command_id,
+                        server_sequence,
+                        status: CommandStatus::Accepted,
+                        payload,
+                    },
+                ));
+                let [command_id, server_sequence] = capture.rejected;
+                results.push_back(GatedCommandResult {
+                    command_id,
+                    server_sequence,
+                    status: CommandStatus::Rejected,
+                    payload: capture.rejected_payload,
+                });
+                // A client-side decoder fault, separate from the live refusal evidence.
+                results.push_back(GatedCommandResult {
+                    command_id: command_id.checked_add(1).ok_or("C11 command id overflow")?,
+                    server_sequence: server_sequence.checked_add(1).ok_or("C11 sequence overflow")?,
+                    status: CommandStatus::Accepted,
+                    payload: vec![2],
+                });
+                let delivered = Arc::new(AtomicUsize::new(0));
+                let peer = CapturedPeer {
+                    replies: results,
+                    delivered: Arc::clone(&delivered),
+                };
                 let task = tokio::spawn(run_session(peer, commands, outbox));
                 let link = |app: &bevy::prelude::App| {
                     // The app's actual link is used for both input and HUD projection.
@@ -197,7 +228,9 @@ fn c11_live_native_replay() -> Result<(), Error> {
                         .battle_instinct_status_input(std::slice::from_ref(&input))
                 );
                 // The first HUD projection queues its normal refresh, which consumes the five-actor reply.
-                for (melee, shielding, label) in [(0, 0, "Instinct ready"), (1, 6, "Instinct")] {
+                for (melee, shielding, label, state) in
+                    [(0, 0, "Instinct ready", "Eligible"), (1, 6, "Instinct", "Active")]
+                {
                     let expected = wire::BattleInstinctStatus {
                         active: true,
                         melee,
@@ -214,6 +247,12 @@ fn c11_live_native_replay() -> Result<(), Error> {
                         }
                     })
                     .await?;
+                    assert_eq!(
+                        oteryn_client_ui::battle_instinct_status::panel_text(
+                            &link(&app).ok_or("native play link missing")?,
+                        ),
+                        format!("Battle Instinct: {state}\r\nMelee: +{melee}\r\nShielding: +{shielding}\r\n")
+                    );
                     app.update();
                     assert!(
                         keys(&mut app)
@@ -227,6 +266,37 @@ fn c11_live_native_replay() -> Result<(), Error> {
                             .iter()
                             .any(|icon| icon.key == "Battle Instinct" && icon.label == label)
                     }));
+                }
+                for (count, failure) in [(3, "live refusal"), (4, "accepted malformed payload")] {
+                    app.world()
+                        .non_send::<HostOwner>()
+                        .play
+                        .as_ref()
+                        .ok_or("native play link missing")?
+                        .link
+                        .battle_instinct_status_request();
+                    let panel = tokio::time::timeout(Duration::from_secs(3), async {
+                        loop {
+                            if let Some(panel) = link(&app)
+                                && !panel.pending
+                                && delivered.load(Ordering::Relaxed) == count
+                            {
+                                break panel;
+                            }
+                            tokio::task::yield_now().await;
+                        }
+                    })
+                    .await?;
+                    assert_eq!(
+                        panel.snapshot,
+                        Some(wire::BattleInstinctStatus { active: true, melee: 1, shielding: 6 }),
+                        "{failure}"
+                    );
+                    assert_eq!(
+                        oteryn_client_ui::battle_instinct_status::panel_text(&panel),
+                        "Battle Instinct could not be refreshed. Try Refresh.",
+                        "{failure}"
+                    );
                 }
                 let owner = app.world().non_send::<HostOwner>();
                 owner

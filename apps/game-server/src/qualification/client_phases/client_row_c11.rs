@@ -1,5 +1,6 @@
 //! Live Wheel persistence and Battle Instinct threshold for the native client replay.
 
+use super::client_row_e02::{backpack_coins, coin_refs, wait_coins};
 use super::full_row_c11::{admitted_vocation, approach_npc, talk, wheel_command};
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -284,7 +285,6 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     relog(&mut client, clients, ("throne-room", throne)).await?;
-    character_prep::grant_premium(&client).await?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
     if Some(vocation) != oteryn_protocol_oteryn::cyclopedia_character::vocation_id("knight")
         || level != 625
@@ -308,10 +308,20 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("C11 King Tibianus command=promotion observed={quote:?}").into());
     }
+    let coins = coin_refs()?;
+    let before_fee = backpack_coins(&client, coins)?;
+    if before_fee != [0, 0, 2] {
+        return Err(
+            format!("C11 promotion requires exactly 20,000 carried gold: {before_fee:?}").into(),
+        );
+    }
     let confirmation = talk(&mut client, king, "yes").await?;
     if confirmation != ["You are now promoted."] {
         return Err(format!("C11 King Tibianus command=yes observed={confirmation:?}").into());
     }
+
+    wait_coins(&mut client, coins, [0; 3], "C11 promotion debit").await?;
+    evidence("C11_PROMOTION_FEE carried_before=20000 carried_after=0 charged=20000");
 
     query(&mut client, wire::BattleInstinctStatus::default()).await?;
     let read = wheel::WheelAllocationRequest {
@@ -358,13 +368,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if wheel_command(&mut client, &read).await? != saved {
         return Err("C11 exact Wheel allocation failed to survive relog".into());
     }
-    // Fixture Premium is session-local against the disposable Platform account.
-    // Check persisted points before refreshing this independent input.
-    character_prep::grant_premium(&client).await?;
-    evidence("C11_FIXTURE premium=combat-session wheel_allocation=verified_after_relog");
+    if backpack_coins(&client, coins)? != [0; 3] {
+        return Err("C11 promotion debit did not survive relog".into());
+    }
     query(&mut client, eligible)
         .await
         .map_err(|error| format!("C11 post-relog eligibility: {error}"))?;
+    evidence("C11_DURABILITY promotion_coins=0 wheel_allocation=exact perk_eligible=true");
     let mut creatures = adjacent_creatures(&client)?;
     if !creatures.is_empty() {
         return Err(
