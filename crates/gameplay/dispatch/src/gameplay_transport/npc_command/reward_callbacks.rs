@@ -29,6 +29,13 @@ struct Offers {
 }
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct OfferCooldown {
+    track: String,
+    seconds: u32,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(super) struct Offer {
     npc: String,
     keywords: Vec<String>,
@@ -37,6 +44,8 @@ pub(super) struct Offer {
     any_topic: bool,
     #[serde(default)]
     crystal_keyword: bool,
+    #[serde(default)]
+    cooldown: Option<OfferCooldown>,
     next_topic: u16,
     // A dialogue alias can select the NPC's existing fenced reward callback.
     #[serde(default)]
@@ -379,6 +388,13 @@ pub(super) fn prepare(
                 if !meets_level(offer.minimum_level, offer.maximum_level) {
                     return refusal(&offer.failure_reply);
                 }
+                if let Some(cooldown) = &offer.cooldown {
+                    let reported = track_value(&cooldown.track)?;
+                    let now = crate::gameplay_transport::unix_seconds()?;
+                    if now.saturating_sub(reported) < i64::from(cooldown.seconds) {
+                        return refusal(&["It is too soon to take this task again.".into()]);
+                    }
+                }
                 if let Some(key) = &offer.transition {
                     // Keep the original callback, value plan and saved-definition pin.
                     callbacks.clone().find(|callback| {
@@ -601,6 +617,17 @@ fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> 
 }
 
 fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
+    if callback.quest == "oteryn:quest.spike_task"
+        && matches!(
+            callback.npc.as_str(),
+            "oteryn:npc.gnomilly" | "oteryn:npc.gnombold" | "oteryn:npc.gnomargery"
+        )
+    {
+        return callback
+            .keywords
+            .iter()
+            .any(|word| crystal_keyword(text, word));
+    }
     if callback.npc == "oteryn:npc.gnome_trooper"
         && callback
             .key

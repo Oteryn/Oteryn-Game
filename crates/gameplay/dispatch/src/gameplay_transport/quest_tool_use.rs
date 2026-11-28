@@ -41,9 +41,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_actor_position(actor)
             .map_err(|_| ())?
             .position();
+        let sessions = self.states.quest_sessions.lock().map_err(|_| ())?;
+        let copy = sessions
+            .get(&command.game_session_id)
+            .and_then(|session| session.copy.as_ref())
+            .ok_or(())?;
+        let last_report = copy
+            .tracks()
+            .get("oteryn:quest-progress/spike/tracking/reported_at")
+            .copied()
+            .unwrap_or_default();
         if let Some(clue) = survey.clue(
             character.as_bytes(),
             self.reset_epoch,
+            last_report,
             position.x,
             position.y,
             position.floor,

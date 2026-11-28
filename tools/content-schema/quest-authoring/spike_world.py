@@ -26,13 +26,15 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
         {
             "npc": "oteryn:npc.gnombold",
             "topic": 0,
+            "crystal_keyword": True,
             "keywords": ["nests"],
             "next_topic": 31,
             "minimum_level": 50,
             "maximum_level": 79,
             "storage": [storage(phase, 0, 0, preserve=True)],
+            "cooldown": {"track": clock, "seconds": 72_001},
             "reply": [
-                "Will you use the gnomish transformer and destroy eight monster nests?"
+                "Will you use the gnomish transformer and destroy five monster nests?"
             ],
         }
     )
@@ -77,11 +79,13 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
         {
             "npc": "oteryn:npc.gnomilly",
             "topic": 0,
+            "crystal_keyword": True,
             "keywords": ["release"],
             "next_topic": 31,
             "minimum_level": 25,
             "maximum_level": 49,
             "storage": [storage(phase, 0, 0, preserve=True)],
+            "cooldown": {"track": clock, "seconds": 72_001},
             "reply": ["Will you release an angry spirit from an ominous mound?"],
         }
     )

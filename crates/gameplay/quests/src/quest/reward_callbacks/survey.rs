@@ -2,6 +2,7 @@
 use super::SelfTarget;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::cmp::Ordering::{Equal, Greater, Less};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -30,6 +31,7 @@ impl Survey {
         &self,
         character: &[u8; 16],
         epoch: u64,
+        last_report: i64,
         x: i32,
         y: i32,
         floor: i16,
@@ -42,6 +44,10 @@ impl Survey {
                 let mut hash = Sha256::new();
                 hash.update(character);
                 hash.update(self.areas[0].minimum.floor.to_le_bytes());
+                // Keep the first commission stable for characters already tracking.
+                if last_report != 0 {
+                    hash.update(last_report.to_le_bytes());
+                }
                 let digest = hash.finalize();
                 u64::from(u16::from_le_bytes([digest[0], digest[1]]))
             }
@@ -62,13 +68,18 @@ impl Survey {
                 "The detector points above you."
             });
         }
-        let east = i64::from(x) * 2 < i64::from(area.minimum.x) + i64::from(area.maximum.x);
-        let south = i64::from(y) * 2 < i64::from(area.minimum.y) + i64::from(area.maximum.y);
-        Some(match (east, south) {
-            (true, true) => "The detector points southeast.",
-            (true, false) => "The detector points northeast.",
-            (false, true) => "The detector points southwest.",
-            (false, false) => "The detector points northwest.",
-        })
+        let dx = i64::from(area.minimum.x) + i64::from(area.maximum.x) - 2 * i64::from(x);
+        let dy = i64::from(area.minimum.y) + i64::from(area.maximum.y) - 2 * i64::from(y);
+        match (dx.cmp(&0), dy.cmp(&0)) {
+            (Equal, Equal) => None,
+            (Greater, Equal) => Some("The detector points east."),
+            (Less, Equal) => Some("The detector points west."),
+            (Equal, Greater) => Some("The detector points south."),
+            (Equal, Less) => Some("The detector points north."),
+            (Greater, Greater) => Some("The detector points southeast."),
+            (Greater, Less) => Some("The detector points northeast."),
+            (Less, Greater) => Some("The detector points southwest."),
+            (Less, Less) => Some("The detector points northwest."),
+        }
     }
 }

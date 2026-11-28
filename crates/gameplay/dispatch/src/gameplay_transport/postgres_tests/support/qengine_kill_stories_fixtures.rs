@@ -795,7 +795,7 @@ async fn spike_surveys(
             let p: oteryn_gameplay_quests::quest::world_callbacks::Position =
                 serde_json::from_value(area["minimum"].clone()).ok()?;
             let at = MovementLocalPosition { x: p.x.into(), y: p.y.into(), floor: -i16::from(p.floor) };
-            survey.clue(character.as_bytes(), owner.reset_epoch, at.x, at.y, at.floor)
+            survey.clue(character.as_bytes(), owner.reset_epoch, 0, at.x, at.y, at.floor)
                 .is_none().then_some(at)
         }).ok_or("selected survey area")?;
         {
@@ -853,7 +853,7 @@ async fn spike_hunting(
     native.install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
     death(owner, admitted, DRILLWORM, 20_000).await?;
     assert_eq!(count(h, KILLS).await?, 0);
-    for (id, text) in [(1, "hi"), (2, "kill"), (3, "yes")] {
+    for (id, text) in [(1, "hi"), (2, "tell me about killing"), (3, "yes please")] {
         assert_eq!(
             talk(owner, admitted, argery, id, text).await?,
             NpcIntentDisposition::Ok
@@ -878,7 +878,7 @@ async fn spike_hunting(
     }
     death(owner, admitted, DRILLWORM, 20_008).await?;
     assert_eq!(count(h, KILLS).await?, 7);
-    for (id, text) in [(6, "report"), (7, "kill")] {
+    for (id, text) in [(6, "I want to report"), (7, "the killing task")] {
         assert_eq!(
             talk(owner, admitted, argery, id, text).await?,
             NpcIntentDisposition::Ok
@@ -887,9 +887,8 @@ async fn spike_hunting(
     assert_eq!(count(h, FAME).await?, 1);
     assert_eq!(count(h, KILLS).await?, 0);
     assert_eq!(count(h, PHASE).await?, 0);
-    for (id, text) in [(8, "kill"), (9, "yes")] {
-        let _ = talk(owner, admitted, argery, id, text).await?;
-    }
+    assert_eq!(talk(owner, admitted, argery, 8, "kill").await?, NpcIntentDisposition::Rejected);
+    let _ = talk(owner, admitted, argery, 9, "yes").await?;
     assert_eq!(
         count(h, PHASE).await?,
         0,

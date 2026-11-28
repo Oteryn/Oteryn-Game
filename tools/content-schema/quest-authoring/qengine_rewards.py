@@ -4077,11 +4077,13 @@ def build():
             [
                 {
                     "npc": "oteryn:npc." + npc,
+                    "crystal_keyword": True,
                     "keywords": ["kill"],
                     "topic": 0,
                     "next_topic": 24,
                     "minimum_level": level,
                     "storage": [storage(phase, 0, 0, preserve=True)],
+                    "cooldown": {"track": timer, "seconds": 72_001},
                     **(
                         {
                             # Crystal checks the "kill" request's level even when
@@ -4099,6 +4101,7 @@ def build():
                 },
                 {
                     "npc": "oteryn:npc." + npc,
+                    "crystal_keyword": True,
                     "keywords": ["report"],
                     "topic": 0,
                     "any_topic": True,

@@ -2823,6 +2823,7 @@
     },
     {
       "npc": "oteryn:npc.gnomargery",
+      "crystal_keyword": true,
       "keywords": [
         "deliver",
         "delivery"
@@ -2839,12 +2840,17 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/lower/parcel/reported_at",
+        "seconds": 72001
+      },
       "reply": [
         "Will you deliver supplies to four different gnome outposts?"
       ]
     },
     {
       "npc": "oteryn:npc.gnomargery",
+      "crystal_keyword": true,
       "keywords": [
         "kill"
       ],
@@ -2860,12 +2866,17 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/lower/reported_at",
+        "seconds": 72001
+      },
       "reply": [
         "Will you take on the local hunting task?"
       ]
     },
     {
       "npc": "oteryn:npc.gnomargery",
+      "crystal_keyword": true,
       "keywords": [
         "report"
       ],
@@ -2879,6 +2890,7 @@
     },
     {
       "npc": "oteryn:npc.gnomargery",
+      "crystal_keyword": true,
       "keywords": [
         "temperature"
       ],
@@ -2894,12 +2906,17 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/temperature/reported_at",
+        "seconds": 72001
+      },
       "reply": [
         "Will you find the hottest lava pool?"
       ]
     },
     {
       "npc": "oteryn:npc.gnombold",
+      "crystal_keyword": true,
       "keywords": [
         "kill"
       ],
@@ -2915,6 +2932,10 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/middle/reported_at",
+        "seconds": 72001
+      },
       "any_topic": true,
       "maximum_level": 79,
       "failure_reply": [
@@ -2927,6 +2948,7 @@
     {
       "npc": "oteryn:npc.gnombold",
       "topic": 0,
+      "crystal_keyword": true,
       "keywords": [
         "nests"
       ],
@@ -2942,12 +2964,17 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/nests/reported_at",
+        "seconds": 72001
+      },
       "reply": [
-        "Will you use the gnomish transformer and destroy eight monster nests?"
+        "Will you use the gnomish transformer and destroy five monster nests?"
       ]
     },
     {
       "npc": "oteryn:npc.gnombold",
+      "crystal_keyword": true,
       "keywords": [
         "report"
       ],
@@ -2961,6 +2988,7 @@
     },
     {
       "npc": "oteryn:npc.gnomilly",
+      "crystal_keyword": true,
       "keywords": [
         "kill"
       ],
@@ -2976,6 +3004,10 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/upper/reported_at",
+        "seconds": 72001
+      },
       "any_topic": true,
       "maximum_level": 49,
       "failure_reply": [
@@ -2988,6 +3020,7 @@
     {
       "npc": "oteryn:npc.gnomilly",
       "topic": 0,
+      "crystal_keyword": true,
       "keywords": [
         "release"
       ],
@@ -3003,12 +3036,17 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/release/reported_at",
+        "seconds": 72001
+      },
       "reply": [
         "Will you release an angry spirit from an ominous mound?"
       ]
     },
     {
       "npc": "oteryn:npc.gnomilly",
+      "crystal_keyword": true,
       "keywords": [
         "report"
       ],
@@ -3022,6 +3060,7 @@
     },
     {
       "npc": "oteryn:npc.gnomilly",
+      "crystal_keyword": true,
       "keywords": [
         "track",
         "tracking"
@@ -3039,6 +3078,10 @@
           "preserve": true
         }
       ],
+      "cooldown": {
+        "track": "oteryn:quest-progress/spike/tracking/reported_at",
+        "seconds": 72001
+      },
       "reply": [
         "Will you track the malevolent presence?"
       ]

@@ -59,11 +59,13 @@ def append(root, add, storage, callbacks, offers, declare, elapsed, stamp, fame_
     offers.append(
         {
             "npc": "oteryn:npc." + npc,
+            "crystal_keyword": True,
             "keywords": ["deliver", "delivery"],
             "topic": 0,
             "next_topic": 31,
             "minimum_level": 80,
             "storage": [storage(phase, 0, 0, preserve=True)],
+            "cooldown": {"track": reported, "seconds": 72_001},
             "reply": ["Will you deliver supplies to four different gnome outposts?"],
         }
     )
@@ -160,11 +162,13 @@ def append_surveys(
         offers.append(
             {
                 "npc": "oteryn:npc." + npc,
+                "crystal_keyword": True,
                 "keywords": words,
                 "topic": 0,
                 "next_topic": topic,
                 **levels,
                 "storage": [storage(phase, 0, 0, preserve=True)],
+                "cooldown": {"track": clock, "seconds": 72_001},
                 "reply": [
                     "Will you track the malevolent presence?"
                     if selection == "personal"

@@ -2868,9 +2868,9 @@ mod tests {
             .and_then(|row| row.survey.as_ref())
             .ok_or("thermometer survey")?;
         for player in [[0; 16], [1; 16]] {
-            assert_eq!(thermometer.clue(&player, 0, 32263, 32481, 13), None);
-            assert!(thermometer.clue(&player, 1, 32263, 32481, 13).is_some());
-            assert_eq!(thermometer.clue(&player, 1, 32163, 32558, 13), None);
+            assert_eq!(thermometer.clue(&player, 0, 0, 32263, 32481, 13), None);
+            assert!(thermometer.clue(&player, 1, 0, 32263, 32481, 13).is_some());
+            assert_eq!(thermometer.clue(&player, 1, 0, 32163, 32558, 13), None);
         }
         let ghost = readings
             .iter()
@@ -2884,6 +2884,26 @@ mod tests {
             2
         );
         assert_eq!(ghost.iter().filter(|row| row.take.len() == 1).count(), 1);
+        let detector = ghost
+            .iter()
+            .find(|row| row.key.ends_with("-survey-1"))
+            .and_then(|row| row.survey.as_ref())
+            .ok_or("first tracking survey")?;
+        let player = [0; 16];
+        let (x, y) = [(32197, 32527), (32327, 32572), (32217, 32661)]
+            .into_iter()
+            .find(|&(x, y)| detector.clue(&player, 0, 0, x, y, 8).is_none())
+            .ok_or("selected tracking site")?;
+        for (dx, dy, clue) in [
+            (-5, 0, "The detector points east."),
+            (5, 0, "The detector points west."),
+            (0, -5, "The detector points south."),
+            (0, 5, "The detector points north."),
+        ] {
+            assert_eq!(detector.clue(&player, 0, 0, x + dx, y + dy, 8), Some(clue));
+        }
+        assert_eq!(detector.clue(&player, 1, 0, x, y, 8), None);
+        assert!((1..=16).any(|n| detector.clue(&player, 0, n * 72_001, x, y, 8).is_some()));
         Ok(())
     }
 
