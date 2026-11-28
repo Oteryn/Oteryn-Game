@@ -43,7 +43,10 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -224,9 +227,13 @@ fn proficiency_catalyst_statement_failure_refuses_without_debit() -> TestResult 
 
 fn statement_failure_scenario() -> TestResult {
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "proficiency_catalyst_statement_failure", false, false)
-                .await?;
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            "proficiency_catalyst_statement_failure",
+            false,
+            false,
+        )
+        .await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -236,7 +243,10 @@ fn statement_failure_scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -286,8 +296,13 @@ fn statement_failure_scenario() -> TestResult {
         sqlx::raw_sql("CREATE FUNCTION reject_catalyst() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected catalyst commit failure'; END $$; CREATE TRIGGER reject_catalyst BEFORE INSERT ON game_character_proficiency_receipts FOR EACH ROW EXECUTE FUNCTION reject_catalyst()")
             .execute(&harness.pool).await?;
         let outcome = FreshAdmissionAuthority::use_proficiency_catalyst(
-            &owner, actor, command(1), ItemKey::Instance(id(UNITS)), ItemKey::Instance(id(WEAPON)),
-        ).await;
+            &owner,
+            actor,
+            command(1),
+            ItemKey::Instance(id(UNITS)),
+            ItemKey::Instance(id(WEAPON)),
+        )
+        .await;
         assert_eq!(
             outcome.map(|outcome| outcome.map(|outcome| outcome.disposition)),
             Ok(Some(UseDisposition::Rejected)),

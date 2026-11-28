@@ -176,7 +176,7 @@ fn all_authored_merchants_with_dialogue_are_in_the_live_talk_book() {
         !book
             .get("oteryn:npc.blind_orc")
             .expect("Blind Orc catalogue entry")
-            .matches_greeting("hi"),
+            .matches_focus_or_dialogue("hi"),
         "standard greetings must not bypass the Blind Orc's Orcish negotiation"
     );
 }
@@ -190,7 +190,8 @@ fn xodet_authored_greeting_opens_focus_and_item_266_trade() {
     let (runtime, actor, session, npc) = fixture_for(2, XODET);
     let chat = chat_with(session, Arc::clone(&book));
     let conversations = NpcConversations::default();
-    let greeting = conversations.converse(&chat, &runtime, actor, session, &intent(npc, "hi"));
+    let greeting =
+        conversations.converse(&chat, &runtime, actor, session, &intent(npc, "hi"), at(1));
     assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
     let greeting = greeting.conversation.expect("Xodet greeting");
     assert_eq!(greeting.open, Some((npc, NpcConversationState::Open)));

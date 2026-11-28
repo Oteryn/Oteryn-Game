@@ -218,7 +218,9 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
         // COMMIT failures have their own classes. A statement rejection rolls back
         // both the proficiency write and the catalyst burn.
         Err(CharacterProgressionError::Unavailable(
-            DurabilityError::Database(SqlxFailureClass::Database(_) | SqlxFailureClass::RetryableStatement)
+            DurabilityError::Database(
+                SqlxFailureClass::Database(_) | SqlxFailureClass::RetryableStatement,
+            )
             | DurabilityError::CommitRejected
             | DurabilityError::CommitTransactionTimeout,
         )) => return disposition(UseDisposition::Rejected),
