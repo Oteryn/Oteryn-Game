@@ -346,7 +346,7 @@ async fn logout(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
         .bind(session_id.as_bytes().as_slice())
     };
     let before = state().fetch_one(&mut db).await?;
-    if before != (1, true, false) {
+    if before != (2, true, false) {
         return Err(format!("step=logout-prestate observed={before:?}").into());
     }
     let reply = client.session_mut().logout().await?;
@@ -728,7 +728,7 @@ mod tests {
 
     #[test]
     fn rejects_accepted_without_release_and_release_after_loss() {
-        assert!(!clean_terminal_logout((1, true, false)));
+        assert!(!clean_terminal_logout((2, true, false)));
         assert!(!clean_terminal_logout((3, false, true)));
         assert!(clean_terminal_logout((3, false, false)));
     }
