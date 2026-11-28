@@ -46,7 +46,7 @@ pub(super) async fn seed(
     let inventory = root
         .read_item_use_inventory(authority, proof, fence)
         .await
-        .map_err(qualification_build::debug)?;
+        .map_err(|error| format!("I07 inventory revision read: {error:?}"))?;
     let index = native
         .item_index()
         .ok_or("I07 fixture item index missing")?;
@@ -191,7 +191,7 @@ pub(super) async fn seed(
                 },
             )
             .await
-            .map_err(qualification_build::debug)?;
+            .map_err(|error| format!("I07 freeze corpse slot {death_slot}: {error:?}"))?;
         let ItemMintOutcome::Committed(corpse) = root
             .commit_corpse_mint(
                 &permit,
@@ -201,7 +201,7 @@ pub(super) async fn seed(
                 *character.as_bytes(),
             )
             .await
-            .map_err(qualification_build::debug)?
+            .map_err(|error| format!("I07 commit corpse slot {death_slot}: {error:?}"))?
         else {
             return Err("I07 fixture corpse did not commit".into());
         };
@@ -225,11 +225,13 @@ pub(super) async fn seed(
                     },
                 )
                 .await
-                .map_err(qualification_build::debug)?;
+                .map_err(|error| format!("I07 freeze coin or loot slot {death_slot}: {error:?}"))?;
             if !matches!(
                 root.commit_corpse_loot_mint(&permit, authority, proof, &mut entry)
                     .await
-                    .map_err(qualification_build::debug)?,
+                    .map_err(|error| format!(
+                        "I07 commit coin or loot slot {death_slot}: {error:?}"
+                    ))?,
                 ItemMintOutcome::Committed(_)
             ) {
                 return Err("I07 fixture corpse entry did not commit".into());
@@ -242,7 +244,8 @@ pub(super) async fn seed(
             east,
             south,
         )
-        .await?;
+        .await
+        .map_err(|error| format!("I07 publish corpse slot {death_slot}: {error}"))?;
     }
     Ok(())
 }
