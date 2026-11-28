@@ -14,7 +14,7 @@ fn w05d_halloween_hare_without_exact_waves_spawns_nothing() -> TestResult {
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             crate::bestiary_postgres_harness::runtime()
-                .map_err(debug)?
+                .map_err(|error| error.to_string())?
                 .block_on(async {
                     let h =
                         Harness::create_with_admission_seed(admin, "halloween_hare", true, false)
@@ -24,7 +24,7 @@ fn w05d_halloween_hare_without_exact_waves_spawns_nothing() -> TestResult {
                     result?;
                     cleanup
                 })
-                .map_err(debug)
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "Halloween Hare thread panicked")?
