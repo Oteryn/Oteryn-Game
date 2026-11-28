@@ -85,6 +85,54 @@ fn creature_at(client: &DevClientSession, at: TilePos) -> Option<WorldSpatialEnt
     })
 }
 
+// Stage only the dedicated hunter's initial position in the disposable node-boot database.
+// The two real admissions and the final saved position still come from Game.
+async fn seed_client_placement(
+    clients: &SeamClients<'_>,
+    map_digest: &[u8; 32],
+    entry: TilePos,
+) -> TestResult {
+    use sqlx::Connection as _;
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_last_positions (
+             character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest,
+             map_revision_digest, server_artifact_digest, character_lease_generation, write_sequence
+         )
+         SELECT r.character_id, r.world_id, $4, $5, $6, a.frame_binding_digest, $7,
+                a.server_artifact_digest, 1, 1
+         FROM game_character_roots r
+         CROSS JOIN LATERAL (
+             SELECT frame_binding_digest, server_artifact_digest
+             FROM game_content_activations
+             WHERE world_id = r.world_id AND channel_id = encode($3, 'hex')::uuid
+             ORDER BY activation_sequence DESC LIMIT 1
+         ) a
+         WHERE r.character_id = encode($1, 'hex')::uuid
+           AND r.world_id = encode($2, 'hex')::uuid
+           AND r.account_id = $8::uuid
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions previous
+               WHERE previous.character_id = r.character_id
+           )",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .bind(i32::from(entry.x))
+    .bind(i32::from(entry.y))
+    .bind(-i16::from(entry.floor))
+    .bind(map_digest.as_slice())
+    .bind(&clients.accounts[0])
+    .execute(&mut database)
+    .await?;
+    if seeded.rows_affected() != 1 {
+        return Err("W01b fixture did not place the dedicated hunter exactly once".into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -97,7 +145,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W01B_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
-    let mut client = character_prep::w01b_rat_hunter("W01b.client", clients, 0x0c).await?;
     let spawn = SPAWN;
     let mut points = rat_points(&metadata.spawns).filter(|(point, _)| *point == spawn);
     let (_, respawn_ms) = points.next().ok_or("W01b authored Rat point absent")?;
@@ -106,8 +153,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let spawn_cells = authored_spawn_cells(&metadata.spawns);
     let available = |at| !spawn_cells.contains(&at);
+    let entry = TilePos {
+        x: 32467,
+        y: 32169,
+        floor: -7,
+    };
+    if tile_distance(entry, spawn) < 20
+        || !available(entry)
+        || !world
+            .base()
+            .tile(entry.x, entry.y, entry.floor)
+            .is_some_and(|cell| cell.walkable())
+    {
+        return Err(
+            "W01b fixture entry is not a walkable authored ground cell outside Rat interest".into(),
+        );
+    }
+    seed_client_placement(clients, &metadata.digest, entry).await?;
+    let mut client = character_prep::w01b_rat_hunter("W01b.client", clients, 0x0c).await?;
     let joined_position = client.world_spatial().actor_position;
     let initial_position = tile(joined_position)?;
+    if initial_position != entry {
+        return Err(
+            format!("W01b fixture entry expected={entry:?} observed={initial_position:?}").into(),
+        );
+    }
+    evidence(&format!(
+        "W01B_CLIENT_PLACEMENT row=W01b.client position={entry:?}"
+    ));
     let approach = route_avoiding(
         world,
         initial_position,
