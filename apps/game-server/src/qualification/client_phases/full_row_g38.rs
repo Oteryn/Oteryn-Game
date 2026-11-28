@@ -4,7 +4,7 @@ use super::*;
 use crate::map::door::AuthoredClosedDoor;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::CommandStatus;
-use oteryn_protocol_oteryn::world_map::MapOrigin;
+use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::{
     CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
@@ -141,6 +141,37 @@ async fn hotbar_use(
     }
 }
 
+fn observe_door_frame(
+    event: SessionEvent,
+    after: u64,
+    position: ActorPosition,
+    observed: &mut Option<([u8; 32], MapTile)>,
+) {
+    match event {
+        SessionEvent::WorldMapSnapshot(frame) if frame.server_sequence > after => {
+            *observed = frame
+                .value
+                .tiles
+                .into_iter()
+                .find(|tile| tile.position == position)
+                .map(|tile| (frame.value.header.bundle_digest, tile));
+        }
+        SessionEvent::WorldMap(frame) if frame.server_sequence > after => {
+            if let Some(tile) = frame
+                .value
+                .tiles
+                .into_iter()
+                .find(|tile| tile.position == position)
+            {
+                *observed = Some((frame.value.header.bundle_digest, tile));
+            } else if frame.value.cleared.contains(&position) {
+                *observed = None;
+            }
+        }
+        _ => {}
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     use StepDirection::*;
 
@@ -241,6 +272,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "G38_CHECK step=hotbar-approach planned_steps={}",
         path.len()
     ));
+    let approach_sequence = client.last_server_sequence();
     let mut at = start;
     for direction in path {
         at = destination(world, at, direction)
@@ -255,50 +287,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         y: door.y.into(),
         floor: -i16::from(door.floor),
     };
-    let map = client
-        .session_mut()
-        .world_map_snapshot()
-        .ok_or("step=hotbar-route;needed=served-map-snapshot")?;
-    let mut observed = map
-        .tiles
-        .iter()
-        .find(|cell| cell.position == position)
-        .cloned();
+    let mut observed = None;
     client.service_liveness(Duration::from_millis(50)).await?;
     for event in client.take_events() {
-        match event {
-            SessionEvent::WorldMapSnapshot(delta) => {
-                observed = delta
-                    .value
-                    .tiles
-                    .into_iter()
-                    .find(|cell| cell.position == position);
-            }
-            SessionEvent::WorldMap(delta) => {
-                if let Some(cell) = delta
-                    .value
-                    .tiles
-                    .into_iter()
-                    .find(|cell| cell.position == position)
-                {
-                    observed = Some(cell);
-                }
-            }
-            _ => {}
-        }
+        observe_door_frame(event, approach_sequence, position, &mut observed);
     }
+    let (bundle_digest, observed) =
+        observed.ok_or("step=hotbar-route;needed=fresh-served-door-tile")?;
     let revision = observed
-        .and_then(|cell| {
-            cell.items.into_iter().find_map(|item| match item.origin {
-                MapOrigin::BaseOrdinal {
-                    ordinal: seen,
-                    object_revision,
-                } if seen == ordinal && item.appearance_id == closed => Some(object_revision),
-                _ => None,
-            })
+        .items
+        .into_iter()
+        .find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal {
+                ordinal: seen,
+                object_revision,
+            } if seen == ordinal && item.appearance_id == closed => Some(object_revision),
+            _ => None,
         })
         .ok_or("step=hotbar-route;needed=served-closed-door")?;
-    let mut placement = map.header.bundle_digest.to_vec();
+    let mut placement = bundle_digest.to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let open_revision =
         hotbar_use(&mut client, &placement, position, ordinal, revision, open).await?;
@@ -335,6 +342,64 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn door_prestate_requires_a_fresh_frame_and_discards_a_cleared_tile() {
+        use oteryn_dev_client::AppliedDelta;
+        use oteryn_protocol_oteryn::world_map::{MapViewHeader, WorldMapViewDelta};
+
+        let position = ActorPosition {
+            x: 10,
+            y: 20,
+            floor: -7,
+        };
+        let tile = MapTile {
+            position,
+            items: Vec::new(),
+            more: false,
+            ground_speed: 100,
+        };
+        let frame = |server_sequence, tiles, cleared| {
+            SessionEvent::WorldMap(AppliedDelta {
+                server_sequence,
+                base_revision: 1,
+                new_revision: 2,
+                value: WorldMapViewDelta {
+                    header: MapViewHeader {
+                        content_generation: [0; 32],
+                        bundle_digest: [1; 32],
+                        reset_epoch: 0,
+                        origin: position,
+                        first_visible_floor: -7,
+                    },
+                    tiles,
+                    cleared,
+                },
+            })
+        };
+        let mut seen = None;
+        observe_door_frame(
+            frame(40, vec![tile.clone()], Vec::new()),
+            40,
+            position,
+            &mut seen,
+        );
+        assert_eq!(seen, None);
+        observe_door_frame(
+            frame(41, vec![tile.clone()], Vec::new()),
+            40,
+            position,
+            &mut seen,
+        );
+        assert_eq!(seen, Some(([1; 32], tile)));
+        observe_door_frame(
+            frame(42, Vec::new(), vec![position]),
+            40,
+            position,
+            &mut seen,
+        );
+        assert_eq!(seen, None);
+    }
 
     #[test]
     fn source_token_has_no_spaces() {
