@@ -18,6 +18,12 @@ pub(super) async fn scenario(
         _ => return Err("not rotation case".into()),
     };
     let old_custody = custody(h).await?;
+    let before_graph = if matches!(case, Case::Decoration(34278, _)) {
+        stock_cupboard(owner, admitted).await?;
+        Some(cupboard_graph(h).await?)
+    } else {
+        None
+    };
     let (next, query, _) = exchange(owner, admitted, 1, rotation::Request::Query(0)).await?;
     admitted = next;
     let rotation::Reply::Catalogue(catalogue) = query else {
@@ -125,10 +131,74 @@ pub(super) async fn scenario(
     assert_eq!(replay.disposition, UseDisposition::Committed);
     assert!(!replay.fresh);
     assert_eq!(item(h).await?, after);
+    if let Some((mut root, edges)) = before_graph {
+        root["definition_production_key"] = after["definition_production_key"].clone();
+        assert_eq!(
+            cupboard_graph(h).await?,
+            (root, edges),
+            "rotation and replay preserve the capacity, child edges and reclaim provenance"
+        );
+    }
     eprintln!(
         "W18 POSTGRES_CASE_COMPLETED explicit730 real_catalogue_route_mutation_duplicate_and_durable_replay source={after_id}"
     );
     Ok(())
+}
+
+async fn stock_cupboard(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
+    use crate::gameplay_transport::item_view::ItemKey;
+
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    for (child, parent, command_id) in [(72, 71, 100), (73, 72, 101)] {
+        assert_eq!(
+            owner
+                .move_loop_item(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    LoopMove {
+                        item: ItemKey::Instance(id(child)),
+                        count: None,
+                        target: LoopTarget::Container(ItemKey::Instance(id(parent))),
+                        slot: None,
+                    },
+                )
+                .await,
+            LoopMoveResult::Committed
+        );
+    }
+    Ok(())
+}
+
+async fn cupboard_graph(h: &Harness) -> TestResult<(Value, Vec<Value>)> {
+    let root: Value = sqlx::query_scalar(
+        "SELECT to_jsonb(r) FROM game_house_container_roots r
+         WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(71).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let edges: Vec<Value> = sqlx::query_scalar(
+        "SELECT jsonb_build_object('edge',to_jsonb(n),'item',to_jsonb(i),'reclaim',to_jsonb(p))
+         FROM game_item_nested_entries n JOIN game_item_instances i USING(item_instance_id,world_id)
+         JOIN game_house_nested_reclaim_provenance p USING(item_instance_id,world_id)
+         WHERE n.item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)
+         ORDER BY n.item_instance_id",
+    )
+    .bind(id(72).as_slice())
+    .bind(id(73).as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(edges.len(), 2);
+    Ok((root, edges))
 }
 
 async fn exchange(

@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "family_replay.rs"]
+mod family_replay;
+
 pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     super::super::reset();
     let (before_key, after_key) = match case {
@@ -353,7 +356,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {
         vec![(before_key, 1), (other_key.as_str(), 1)]
-    } else if matches!(case, Case::Container | Case::ContainerMove | Case::ContainerCapacity) {
+    } else if matches!(
+        case,
+        Case::Container | Case::ContainerMove | Case::ContainerCapacity | Case::Decoration(34278, _)
+    ) {
         vec![(before_key, 1), (INNER, 1), ("oteryn:item.tibia.i3031", 10)]
     } else if case == Case::Nested {
         vec![(before_key, 1), (INNER, 1)]
@@ -595,8 +601,21 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     if case == Case::StaticAqueduct {
         return super::super::house_base_decorations::aqueduct_scenario(&owner, h, admitted).await;
     }
-    if let Case::BedKit(kit) = case {
-        return super::super::house_base_decorations::bed_scenario(&owner, h, admitted, kit).await;
+    let new_replay_owner = || -> TestResult<_> {
+        let mut owner = deps.owner(h, &authority);
+        owner.movement_cells = (&cells).into();
+        owner.evidence = &evidence.evidence;
+        owner.active_generation = Some(active);
+        owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            required, crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", offers,
+        ).map_err(debug)?;
+        Ok(owner)
+    };
+    if let Case::BedKit(831) = case {
+        return super::super::house_base_decorations::bed_scenario(&owner, h, admitted, 831).await;
+    }
+    if matches!(case, Case::BedKit(_) | Case::Decoration(39446 | 22737, _)) {
+        return family_replay::use_and_replay(h, &owner, new_replay_owner()?, admitted, case).await;
     }
     if case == Case::ContainerMove {
         return super::container::wire_move(&owner, h, admitted, before_ref, inner_ref).await;
@@ -695,13 +714,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Recreate the command directory; the historical raw wire bytes contain a
     // now-obsolete handle and must replay the receipt before resolving it.
     drop(owner);
-    let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = (&cells).into();
-    owner.evidence = &evidence.evidence;
-    owner.active_generation = Some(active);
-    owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        required, crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", offers,
-    ).map_err(debug)?;
+    let owner = new_replay_owner()?;
     admitted.continuity.next_command_id = 1;
     // For a nested source, OPEN1 is executed again before the original USE2.
     // The fresh directory never invents a high-water mark or a retained result.
