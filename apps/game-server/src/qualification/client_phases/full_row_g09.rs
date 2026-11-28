@@ -155,6 +155,7 @@ async fn acquire(
         .ok_or("step=buy observed=live-seller-omitted-offer")?;
     let before = carried(client, definition).len();
     client.take_events();
+    let purchase_command_id = client.next_command_id();
     let reply = runtime::buy(
         client.session_mut(),
         &wire::NpcTradeIntent {
@@ -181,6 +182,11 @@ async fn acquire(
         }
         client.service_liveness(Duration::from_millis(20)).await?;
         client.take_events();
+    }
+    if client.selected_capabilities().contains(&wire::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1)
+        && !client.session_mut().inventory_npc_purchase_command_ids().contains(&purchase_command_id)
+    {
+        return Err("step=buy observed=missing-purchase-command-attribution".into());
     }
     Ok(())
 }
