@@ -14,6 +14,27 @@ pub(super) fn historical(row: &RewardCallback) -> bool {
     row.npc == NPC && row.key.starts_with(HISTORICAL)
 }
 
+pub(super) fn advances_contribution(row: &RewardCallback) -> bool {
+    let ([cost], [rule], [op]) = (&row.take[..], &row.inventory[..], &row.state_ops[..]) else {
+        return false;
+    };
+    let value = i64::from(cost.count);
+    row.consumes_fish_stack()
+        && row.npc == NPC
+        && super::is_sinatuki_fish(&cost.item)
+        && (1..FIRST).contains(&cost.count)
+        && rule.item == cost.item
+        && rule.minimum == u32::from(cost.count)
+        && rule.maximum == rule.minimum
+        && op.track == CONTRIBUTION
+        && op.effect == (StateMutation::Add { value })
+        && op.from
+            == (StateCondition::Between {
+                minimum: 0,
+                maximum: i64::from(FIRST) - value - 1,
+            })
+}
+
 fn cost(item: &str, count: u16) -> ItemAmount {
     ItemAmount {
         item: item.into(),

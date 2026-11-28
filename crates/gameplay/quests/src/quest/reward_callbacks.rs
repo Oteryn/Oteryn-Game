@@ -1486,6 +1486,7 @@ fn validate_document_with_capacity(
             || (!c.repeatable
                 && c.counter.is_none()
                 && !c.value_only_guarded()
+                && !sinatuki::advances_contribution(c)
                 && !c.is_save_restart_only()
                 // A foreign participant can close eligibility in the same transaction.
                 && c.storage
