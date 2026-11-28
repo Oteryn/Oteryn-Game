@@ -150,8 +150,7 @@ pub(super) async fn capture(
             node,
             material,
             assignment,
-            reset_epoch,
-            bundle.map_or("", |world| world.map_revision()),
+            (reset_epoch, bundle.map_or("", |world| world.map_revision())),
             || {
                 bundle
                     .map(metadata)
@@ -181,8 +180,7 @@ async fn capture_once(
     node: &NodeIncarnationProof,
     material: &Material,
     assignment: &RuntimeScopeAssignment,
-    reset_epoch: u64,
-    map_revision: &str,
+    (reset_epoch, map_revision): (u64, &str),
     metadata: impl FnOnce() -> Result<Vec<PublicHouseMetadata>, ()>,
 ) -> bool {
     let update = |houses| PublicHouseCatalogue {
@@ -348,13 +346,13 @@ epoch_fence_file = "/missing/public.fence"
                         };
                         let records = || Ok(vec![house.clone(), guildhall.clone()]);
                         for _ in 0..2 {
-                            assert!(capture_once(&h.root, &authority, &h.node, &material, &assignment, 0, "map-1", records).await);
+                            assert!(capture_once(&h.root, &authority, &h.node, &material, &assignment, (0, "map-1"), records).await);
                         }
                         let properties: Vec<(String, i16, i64, Vec<u8>)> = sqlx::query_as(
                             "SELECT house_key,state,rent_gold,content_digest FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid"
                         ).bind(material.world.as_bytes().as_slice()).fetch_all(&h.pool).await?;
                         assert_eq!(properties, [(house.house_key.clone(), 1, 200, vec![1;32])], "activated personal property uses the World digest");
-                        assert!(!capture_once(&h.root, &authority, &h.node, &material, &assignment, 1, "map-1", records).await);
+                        assert!(!capture_once(&h.root, &authority, &h.node, &material, &assignment, (1, "map-1"), records).await);
                         for (table, count) in [("game_house_ownership", 1), ("game_house_auctions", 0), ("game_public_house_catalogue", 0)] {
                             assert_eq!(h.count(table).await?, count, "{table}");
                         }
