@@ -1,4 +1,4 @@
-//! Raw world and appearance payloads observed at validated session state boundaries.
+//! Raw world, appearance and cooldown payloads observed at validated session state boundaries.
 use super::*;
 use oteryn_protocol_oteryn::{
     StateDeltaView, actor_motion, appearance, entity_names, guild_emblem, inventory_capacity,
@@ -27,6 +27,7 @@ pub(super) struct ReplayRetention {
     pub(super) world_deltas: VecDeque<RawReplayDelta>,
     pub(super) appearance_sequence: Option<u64>,
     pub(super) appearance_deltas: VecDeque<RawReplayDelta>,
+    pub(super) cooldown_deltas: VecDeque<RawReplayDelta>,
 }
 
 pub(super) fn retain_delta(
@@ -47,6 +48,11 @@ pub(super) fn retain_delta(
 }
 
 impl<S> Session<S> {
+    /// Most recent validated standalone actor cooldown deltas, oldest first.
+    pub fn raw_actor_cooldown_deltas(&self) -> &VecDeque<RawReplayDelta> {
+        &self.replay.cooldown_deltas
+    }
+
     /// Most recent applied world entity deltas, oldest first, since the latest world snapshot.
     /// The oldest entries are evicted at [`REPLAY_DELTA_LIMIT`].
     pub fn raw_world_entity_deltas(&self) -> &VecDeque<RawReplayDelta> {

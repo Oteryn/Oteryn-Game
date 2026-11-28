@@ -74,6 +74,7 @@ fn cooldown_delta_type_and_replacement_semantics_follow_negotiation() -> Result<
                     .apply_state_delta(41, decode_wire_envelope(&frame)?.payload())
                     .is_err()
             );
+            assert!(session.raw_actor_cooldown_deltas().is_empty());
             let frame = encode_state_delta(
                 1,
                 41,
@@ -86,6 +87,14 @@ fn cooldown_delta_type_and_replacement_semantics_follow_negotiation() -> Result<
             let event = session.apply_state_delta(41, decode_wire_envelope(&frame)?.payload())?;
             assert!(matches!(event, SessionEvent::ActorCooldowns(update)
                 if update.value.snapshot != sparse && update.value.value == value));
+            assert_eq!(session.raw_actor_cooldown_deltas().len(), 1);
+            let retained = session
+                .raw_actor_cooldown_deltas()
+                .front()
+                .ok_or("raw cooldown absent")?;
+            assert_eq!(retained.server_sequence, 41);
+            assert_eq!(retained.delta_type, expected);
+            assert_eq!(retained.payload.as_ref(), payload);
         }
         Ok(())
     })?

@@ -242,6 +242,9 @@ pub(super) fn apply<S: SessionStream>(
         })
     };
     row.1 = delta.new_revision;
+    if cooldowns {
+        replay_capture::retain_delta(&mut session.replay.cooldown_deltas, sequence, &delta);
+    }
     Ok(event)
 }
 
