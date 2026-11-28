@@ -14,6 +14,16 @@ pub enum ForgePopulationDrawRefusal {
 #[derive(Debug)]
 pub struct ForgePopulationCensus {
     pub now_micros: u64,
+    pub due_micros: u64,
+    pub seed: u64,
+    pub artifact_digest: [u8; 32],
+    pub population_tick_micros: u64,
+    /// Owner slots after observing deaths and before releasing expired reservations.
+    pub fiendish_slots: Vec<(ExactActorRef, Option<u64>)>,
+    pub influenced_count: usize,
+    pub influenced_available_slots: usize,
+    /// Readable live native spawn cells in source and point order, before either draw.
+    pub candidates: Vec<ForgePopulationCandidate>,
     /// Newly classified incarnations in application order.
     pub selected: Vec<ForgePopulationSelection>,
     /// Previously classified native actors, including fiends still holding a dead slot.
@@ -26,6 +36,17 @@ pub struct ForgePopulationCensus {
     pub eligible: Vec<(u64, ExactActorRef)>,
     /// All live controlled summons, including familiars, in the Channel.
     pub excluded_owned_summons: Vec<ExactActorRef>,
+}
+
+#[derive(Debug)]
+pub struct ForgePopulationCandidate {
+    pub actor: ExactActorRef,
+    pub spawn_identity: u64,
+    pub kind: Option<ForgeCreature>,
+    pub owned: bool,
+    pub forge_difficulty: Option<u8>,
+    pub creature_key: String,
+    pub position: MovementLocalPosition,
 }
 
 #[derive(Debug)]
@@ -56,6 +77,18 @@ pub(super) struct ActiveDraw {
 }
 
 impl ActiveDraw {
+    pub(super) fn record_candidate(&mut self, spawn_identity: u64, snapshot: &CompanionSnapshot) {
+        self.census.candidates.push(ForgePopulationCandidate {
+            actor: snapshot.actor,
+            spawn_identity,
+            kind: snapshot.forge,
+            owned: snapshot.state.master.is_some(),
+            forge_difficulty: snapshot.state.policy.forge_difficulty,
+            creature_key: snapshot.state.policy.definition_key.clone(),
+            position: snapshot.position,
+        });
+    }
+
     pub(super) fn record_selection(&mut self, snapshot: &CompanionSnapshot, kind: ForgeCreature) {
         self.census.selected.push(ForgePopulationSelection {
             actor: snapshot.actor,
@@ -185,6 +218,14 @@ impl ChannelRuntimeV1 {
             .collect();
         let census = ForgePopulationCensus {
             now_micros,
+            due_micros: self.forge_next_tick_micros,
+            seed: draw.seed,
+            artifact_digest: self.content.server_artifact_digest(),
+            population_tick_micros: super::POPULATION_TICK_MICROS,
+            fiendish_slots: self.forge_fiends.clone(),
+            influenced_count: 0,
+            influenced_available_slots: 0,
+            candidates: Vec::new(),
             selected: Vec::new(),
             retained: Vec::new(),
             fiendish_vacancy: 0,

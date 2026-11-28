@@ -37,7 +37,13 @@ async fn qualified_draw(
     request: &[u8],
 ) -> Result<serde_json::Value, &'static str> {
     use crate::durability::{DurabilityError, fresh_admission::FreshAdmissionStore};
-    use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
+    use crate::foundation::{
+        ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
+    };
+    use oteryn_gameplay_domain::domain::forge_creature::{
+        FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, INFLUENCED_SIMULTANEOUS_MAX,
+        influenced_available_slots,
+    };
     use std::time::Duration;
     use tokio::time::{Instant, timeout_at};
 
@@ -101,28 +107,57 @@ async fn qualified_draw(
     .await
     .map_err(|_| "deadline")??;
     let id = |actor: ExactActorRef| super::uuid_text(&actor.placement_identity());
+    let position =
+        |MovementLocalPosition { x, y, floor }| serde_json::json!({"x": x, "y": y, "floor": floor});
     let selected: Vec<_> = census
         .selected
         .into_iter()
         .map(|selection| {
-            let position = selection.position;
             serde_json::json!({
                 "id": id(selection.actor),
+                "generation": selection.actor.actor_local_generation(),
                 "stacks": selection.kind.reward_stacks(),
                 "creature_key": selection.creature_key,
-                "position": {"x": position.x, "y": position.y, "floor": position.floor},
+                "position": position(selection.position),
             })
         })
         .collect();
     let retained: Vec<_> = census
         .retained
         .into_iter()
-        .map(|(actor, kind)| serde_json::json!({"id": id(actor), "stacks": kind.reward_stacks()}))
+        .map(|(actor, kind)| serde_json::json!({
+            "id": id(actor), "generation": actor.actor_local_generation(), "stacks": kind.reward_stacks()
+        }))
         .collect();
     let eligible: Vec<_> = census
         .eligible
         .into_iter()
-        .map(|(identity, actor)| serde_json::json!({"id": id(actor), "spawn_identity": identity}))
+        .map(|(identity, actor)| serde_json::json!({
+            "id": id(actor), "generation": actor.actor_local_generation(), "spawn_identity": identity
+        }))
+        .collect();
+    let candidates: Vec<_> = census
+        .candidates
+        .into_iter()
+        .map(|candidate| {
+            serde_json::json!({
+                "id": id(candidate.actor),
+                "generation": candidate.actor.actor_local_generation(),
+                "spawn_identity": candidate.spawn_identity,
+                "stacks": candidate.kind.map(|kind| kind.reward_stacks()),
+                "owned": candidate.owned,
+                "forge_difficulty": candidate.forge_difficulty,
+                "creature_key": candidate.creature_key,
+                "position": position(candidate.position),
+            })
+        })
+        .collect();
+    let fiendish_slots: Vec<_> = census
+        .fiendish_slots
+        .into_iter()
+        .map(|(actor, due)| serde_json::json!({
+            "id": id(actor), "generation": actor.actor_local_generation(), "replacement_due_micros": due
+        }))
         .collect();
     let excluded_owned_summons: Vec<_> = census
         .excluded_owned_summons
@@ -131,6 +166,18 @@ async fn qualified_draw(
         .collect();
     Ok(serde_json::json!({
         "now_micros": census.now_micros,
+        "due_micros": census.due_micros,
+        "seed": census.seed,
+        "artifact_digest": crate::node::operator_files::hex(&census.artifact_digest),
+        "population_tick_micros": census.population_tick_micros,
+        "fiendish_respawn_micros": FIENDISH_RESPAWN_MICROS,
+        "fiendish_cap": FIENDISH_SIMULTANEOUS_MAX,
+        "influenced_cap": INFLUENCED_SIMULTANEOUS_MAX,
+        "influenced_per_tick_cap": influenced_available_slots(0),
+        "influenced_count": census.influenced_count,
+        "influenced_available_slots": census.influenced_available_slots,
+        "fiendish_slots": fiendish_slots,
+        "candidates": candidates,
         "selected": selected,
         "retained": retained,
         "fiendish_vacancy": census.fiendish_vacancy,

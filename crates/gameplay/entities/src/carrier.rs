@@ -128,7 +128,8 @@ mod fixtures;
 mod forge_creature;
 #[cfg(feature = "qualification-spawn")]
 pub use forge_creature::{
-    ForgePopulationCensus, ForgePopulationDrawRefusal, ForgePopulationSelection,
+    ForgePopulationCandidate, ForgePopulationCensus, ForgePopulationDrawRefusal,
+    ForgePopulationSelection,
 };
 mod hazard;
 
