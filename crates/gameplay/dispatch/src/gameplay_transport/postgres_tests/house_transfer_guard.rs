@@ -16,6 +16,7 @@ struct GuardProbe<'a, A> {
     admitted: AdmittedSession,
     steps: Cell<usize>,
     activity_busy: Cell<bool>,
+    house_input_known_clear: bool,
     commands: crate::gameplay_transport::session_ingress::SessionCommands,
 }
 
@@ -36,7 +37,11 @@ impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for GuardProbe<'_, A> {
         &self,
         _: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {
-        self.owner.house_transfer_input(self.admitted).await
+        if self.house_input_known_clear {
+            Ok(())
+        } else {
+            self.owner.house_transfer_input(self.admitted).await
+        }
     }
     async fn activity_transfer_input(
         &self,
@@ -148,15 +153,15 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                     admitted,
                     steps: Cell::new(0),
                     activity_busy: Cell::new(false),
+                    // The donor bypasses the house guard with a continuity field that
+                    // this branch does not have. Model known-clear input at the probe.
+                    house_input_known_clear: require_typed_busy,
                     commands: Default::default(),
                 };
                 let mut transport = admitted;
                 // Only durable guard calls are delegated. Snapshot/step fixtures keep
                 // this test at the guard seam, through the production command dispatcher.
                 transport.continuity = SessionContinuity::FRESH;
-                if require_typed_busy {
-                    transport.continuity.house_input_pending = Some(false);
-                }
                 transport.first_entry = FirstEntryOutcome::Positioned;
                 let (mut server, mut client) = tokio::io::duplex(1 << 20);
                 let held = h.root.try_issue_semantic_pass()?;
