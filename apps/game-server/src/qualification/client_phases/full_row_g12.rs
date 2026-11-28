@@ -65,13 +65,18 @@ async fn accepted(
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
     let (status, payload) = send(client, capability, command, payload).await?;
+    require_accepted(command, status)?;
+    Ok(payload)
+}
+
+fn require_accepted(command: u32, status: CommandStatus) -> TestResult {
     if status != CommandStatus::Accepted {
         return Err(format!(
             "step=command-{command} observed=status:{status:?} needed=accepted-reply"
         )
         .into());
     }
-    Ok(payload)
+    Ok(())
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
@@ -92,7 +97,11 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
         &request,
     )
     .await?;
-    let state = wire::State::decode(&payload).ok_or("step=state observed=decode-failed")?;
+    decode_state(definition, &payload)
+}
+
+fn decode_state(definition: u32, payload: &[u8]) -> TestResult<wire::State> {
+    let state = wire::State::decode(payload).ok_or("step=state observed=decode-failed")?;
     if state.definition != definition {
         return Err(format!("step=state observed=echo-{}", state.definition).into());
     }
@@ -104,78 +113,19 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
     Ok(state)
 }
 
-// Command 660 has no typed Busy payload. In this single-row run it has one
-// producer, so only a unique matching guard event written during this request
-// can distinguish pre-dispatch contention from another empty rejection.
-fn catalogue_holder_busy(log: &str, command_id: u64) -> Option<&str> {
-    let suffix = format!(
-        "guard=house_transfer_input kind=holder_busy command_type=660 command_id={command_id}"
-    );
-    let mut matching = log.lines().filter_map(|line| {
-        let (head, fields) = line.split_once("event=command_guard_deferred ")?;
-        let fields = fields.strip_prefix("trace=")?;
-        let (trace, reason) = fields.split_once(' ')?;
-        (head.contains("module=gameplay_transport ") && reason == suffix).then_some(trace)
-    });
-    let trace = matching.next()?;
-    matching.next().is_none().then_some(trace)
-}
-
 async fn catalogue_page(
     client: &mut DevClientSession,
     offset: u32,
 ) -> TestResult<catalogue::ProficiencyCataloguePage> {
-    let capability = catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1;
-    let command = catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE;
-    gate(client, capability)?;
-    let payload = offset.to_be_bytes();
-    let log_path = (std::env::var("OTERYN_E2E_ROW_BATCH").as_deref() == Ok("244:1"))
-        .then(|| std::env::var_os("NODE_BOOT_CAST_EVIDENCE_LOG"))
-        .flatten();
-    let mut attempt = 1;
-    let page = loop {
-        let mut log = log_path.as_ref().and_then(|path| {
-            use std::io::{Seek, SeekFrom};
-            let mut file = std::fs::File::open(path).ok()?;
-            file.seek(SeekFrom::End(0)).ok()?;
-            Some(file)
-        });
-        let reply = client
-            .session_mut()
-            .gated_command(capability, command, &payload)
-            .await?;
-        evidence(&format!(
-            "G12_CHECK step=catalogue offset={offset} attempt={attempt} command_id={} server_sequence={} status={:?} payload_bytes={}",
-            reply.command_id,
-            reply.server_sequence,
-            reply.status,
-            reply.payload.len()
-        ));
-        client.service_liveness(Duration::from_millis(50)).await?;
-        if reply.status == CommandStatus::Accepted {
-            break catalogue::ProficiencyCataloguePage::decode(&reply.payload)
-                .ok_or("step=catalogue observed=decode-failed")?;
-        }
-        if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
-            return Err(format!("step=catalogue observed=status:{:?}", reply.status).into());
-        }
-        let mut observed = String::new();
-        if let Some(file) = log.as_mut() {
-            use std::io::Read;
-            file.take(1024 * 1024).read_to_string(&mut observed)?;
-        }
-        let trace = catalogue_holder_busy(&observed, reply.command_id)
-            .ok_or("step=catalogue observed=unattributed-refusal")?;
-        evidence(&format!(
-            "G12_CHECK step=catalogue-holder-busy attempt={attempt} command_id={} server_sequence={} trace={trace}",
-            reply.command_id, reply.server_sequence
-        ));
-        if attempt == 3 {
-            return Err("step=catalogue observed=holder-busy-attempt-limit".into());
-        }
-        attempt += 1;
-        client.service_liveness(Duration::from_millis(250)).await?;
-    };
+    let payload = accepted(
+        client,
+        catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1,
+        catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
+        &offset.to_be_bytes(),
+    )
+    .await?;
+    let page = catalogue::ProficiencyCataloguePage::decode(&payload)
+        .ok_or("step=catalogue observed=decode-failed")?;
     if page.offset != offset || page.entries.is_empty() {
         return Err(format!(
             "step=catalogue observed=page-offset:{};expected:{offset};entries:{}",
@@ -190,6 +140,7 @@ async fn catalogue_page(
 async fn weapon_entry(
     client: &mut DevClientSession,
     definitions: &[u32],
+    check_page_zero_state: bool,
 ) -> TestResult<catalogue::ProficiencyCatalogueEntry> {
     let index = provisioning::item_index()?;
     let keys: Vec<_> = definitions
@@ -208,6 +159,14 @@ async fn weapon_entry(
     let first = catalogue_page(client, 0).await?;
     if first.entries.iter().all(|entry| entry.definition == 0) {
         return Err("step=catalogue observed=no-weapon-definitions-on-page-zero".into());
+    }
+    if check_page_zero_state {
+        let mut checked = 0;
+        for entry in first.entries.iter().filter(|entry| entry.definition != 0) {
+            state(client, entry.definition).await?;
+            checked += 1;
+        }
+        evidence(&format!("G12_CHECK step=page-zero-state checked={checked}"));
     }
     let page = if offset == 0 {
         first
@@ -277,6 +236,33 @@ async fn earn_experience(
     Ok(())
 }
 
+// Global Weapon Proficiency: standard unlock is 1,750 XP. The Scorcher
+// level one offers 2 mana on hit.
+fn check_scorcher_offer(entry: &catalogue::ProficiencyCatalogueEntry) -> TestResult {
+    if entry.weapon != "oteryn:item.tibia.i21348"
+        || entry.thresholds[0] != 1_750
+        || entry.levels.len() != 3
+        || entry.levels[0].perks != ["mana on hit (value: 2)"]
+    {
+        return Err(format!(
+            "step=perk observed=wrong-scorcher-offer weapon={} threshold={} first={:?}",
+            entry.weapon,
+            entry.thresholds[0],
+            entry.levels.first()
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn has_exact_selection(entry: &catalogue::ProficiencyCatalogueEntry) -> bool {
+    entry
+        .levels
+        .iter()
+        .map(|slot| slot.selected)
+        .eq([Some(0), None, None])
+}
+
 async fn body(
     client: &mut DevClientSession,
     catalyst: NonZeroU32,
@@ -295,8 +281,13 @@ async fn body(
         })
         .map(|entry| entry.item.item_definition_ref.get())
         .collect();
-    let initial = weapon_entry(client, &definitions).await?;
+    let equipped = provisioning::item_reference(&provisioning::item_index()?, 21348)?.get();
+    if !definitions.contains(&equipped) {
+        return Err("step=fixture observed=scorcher-not-equipped".into());
+    }
+    let initial = weapon_entry(client, &[equipped], true).await?;
     state(client, initial.definition).await?;
+    check_scorcher_offer(&initial)?;
     evidence(&format!(
         "G12_CHECK step=initial-track definition={} experience={}",
         initial.definition, initial.experience
@@ -306,7 +297,7 @@ async fn body(
     }
     earn_experience(client, catalyst, initial.definition).await?;
     evidence("G12_CHECK step=catalyst-committed-and-debited");
-    let entry = weapon_entry(client, &[initial.definition]).await?;
+    let entry = weapon_entry(client, &[initial.definition], false).await?;
     if entry.experience != CATALYST_EXPERIENCE {
         return Err(format!(
             "step=catalyst observed=xp:{};expected:{CATALYST_EXPERIENCE}",
@@ -315,21 +306,11 @@ async fn body(
         .into());
     }
     let level = 0;
-    let first_perk = entry
-        .levels
-        .first()
-        .ok_or("step=perk observed=no-first-level")?;
-    if initial.thresholds[0] <= initial.experience
-        || entry.thresholds[0] != initial.thresholds[0]
-        || entry.thresholds[0] > entry.experience
-        || first_perk.selected.is_some()
-        || first_perk
-            .perks
-            .first()
-            .is_none_or(|label| label.is_empty())
-    {
-        return Err("step=perk observed=first-ordinary-offer-not-unlocked".into());
+    check_scorcher_offer(&entry)?;
+    if entry.levels.iter().any(|slot| slot.selected.is_some()) {
+        return Err("step=perk observed=selection-before-command".into());
     }
+    let expected = [Some(0), None, None];
     let before = state(client, entry.definition).await?;
     let request = catalogue::SelectPerkRequest {
         definition: std::num::NonZeroU32::new(entry.definition).ok_or("step=perk observed=zero")?,
@@ -349,11 +330,10 @@ async fn body(
     .await?;
     let reply = catalogue::SelectPerkReply::decode(&payload)
         .ok_or("step=perk observed=reply-decode-failed")?;
-    let chosen = reply.selections.get(usize::from(level)).copied();
-    if reply.result != catalogue::SelectPerkResult::Accepted || chosen != Some(Some(0)) {
+    if reply.result != catalogue::SelectPerkResult::Accepted || reply.selections != expected {
         return Err(format!(
-            "step=perk observed=reply:{:?}-selection:{chosen:?}",
-            reply.result
+            "step=perk observed=reply:{:?}-selections:{:?}",
+            reply.result, reply.selections
         )
         .into());
     }
@@ -365,16 +345,11 @@ async fn body(
         )
         .into());
     }
-    let selected = weapon_entry(client, &[entry.definition]).await?;
-    if selected.experience != entry.experience
-        || selected
-            .levels
-            .get(usize::from(level))
-            .map(|slot| slot.selected)
-            != Some(Some(0))
-    {
+    let selected = weapon_entry(client, &[entry.definition], false).await?;
+    if selected.experience != entry.experience || !has_exact_selection(&selected) {
         return Err("step=perk observed=live-catalogue-selection-or-experience-mismatch".into());
     }
+    check_scorcher_offer(&selected)?;
     Ok((entry.definition, level, after.revision, entry.experience))
 }
 
@@ -424,19 +399,13 @@ async fn durable_selection(
     experience: u32,
     catalyst: NonZeroU32,
 ) -> TestResult {
-    let entry = weapon_entry(client, &[definition]).await?;
+    let entry = weapon_entry(client, &[definition], false).await?;
     if entry.experience != experience || catalyst_quantity(client, catalyst)? != 0 {
         return Err("step=relog observed=catalyst-debit-or-proficiency-lost".into());
     }
-    let selected = entry
-        .levels
-        .get(usize::from(level))
-        .map(|slot| slot.selected);
-    if selected != Some(Some(0)) {
-        return Err(format!(
-            "step=relog observed=selection:{selected:?} needed=durable-perk-0-at-level-{level}"
-        )
-        .into());
+    check_scorcher_offer(&entry)?;
+    if !has_exact_selection(&entry) {
+        return Err(format!("step=relog observed=wrong-selection-vector-for-level-{level}").into());
     }
     let after = state(client, definition).await?;
     if after.revision != revision {
@@ -454,15 +423,58 @@ mod tests {
     use super::*;
 
     #[test]
-    fn catalogue_busy_requires_unique_matching_guard_event() {
-        let busy = "oteryn-game-server ts=1 level=warn module=gameplay_transport event=command_guard_deferred trace=abc guard=house_transfer_input kind=holder_busy command_type=660 command_id=1";
-        assert_eq!(catalogue_holder_busy(busy, 1), Some("abc"));
-        assert_eq!(catalogue_holder_busy(busy, 2), None);
-        assert_eq!(
-            catalogue_holder_busy(&busy.replace("holder_busy", "deadline"), 1),
-            None
+    fn first_catalogue_rejection_and_wrong_state_echo_fail() -> TestResult {
+        assert!(
+            require_accepted(
+                catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
+                CommandStatus::Rejected
+            )
+            .is_err()
         );
-        assert_eq!(catalogue_holder_busy(&format!("{busy}\n{busy}"), 1), None);
+        let state = wire::State {
+            definition: 42,
+            revision: 0,
+            slots: [None, None],
+            modify_dust: [0; 2],
+            rank_dust: [0; 10],
+            reshape_dust: 0,
+            clear_dust: 0,
+            orbs: 0,
+        };
+        let bytes = state.encode().ok_or("state encode failed")?;
+        assert_eq!(decode_state(42, &bytes)?, state);
+        assert!(decode_state(43, &bytes).is_err());
+        assert!(decode_state(42, &bytes[..4]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_wrong_scorcher_threshold_offer_and_extra_selection() -> TestResult {
+        let mut entry = catalogue::ProficiencyCatalogueEntry {
+            definition: 1,
+            weapon: "oteryn:item.tibia.i21348".into(),
+            name: "The Scorcher".into(),
+            experience: 5_000,
+            thresholds: [1_750; 9],
+            levels: vec![
+                catalogue::ProficiencyCatalogueLevel {
+                    selected: None,
+                    perks: vec!["mana on hit (value: 2)".into()],
+                };
+                3
+            ],
+        };
+        check_scorcher_offer(&entry)?;
+        entry.thresholds[0] = 1_751;
+        assert!(check_scorcher_offer(&entry).is_err());
+        entry.thresholds[0] = 1_750;
+        entry.levels[0].perks[0] = "wrong perk".into();
+        assert!(check_scorcher_offer(&entry).is_err());
+        entry.levels[0].selected = Some(0);
+        assert!(has_exact_selection(&entry));
+        entry.levels[1].selected = Some(0);
+        assert!(!has_exact_selection(&entry));
+        Ok(())
     }
 
     #[test]
