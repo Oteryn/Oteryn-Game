@@ -308,7 +308,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tracker_checks_reject_missing_stale_and_wrong_lists() {
+    fn tracker_checks_reject_missing_stale_and_wrong_lists() -> TestResult {
         let tracked = expected_bestiary(&[BAT, RAT]);
         let empty = expected_bestiary(&[]);
         let boss = tr::TrackerSnapshot {
@@ -316,9 +316,9 @@ mod tests {
             entries: Vec::new(),
         };
         let frame = |list: &tr::TrackerSnapshot, bosses: &tr::TrackerSnapshot| {
-            tr::encode_domain_snapshot(list, bosses).unwrap()
+            tr::encode_domain_snapshot(list, bosses).ok_or("test tracker snapshot is not encodable")
         };
-        let valid = frame(&tracked, &boss);
+        let valid = frame(&tracked, &boss)?;
         assert!(expect_login_snapshot(Some((1, 1, &valid)), &tracked).is_ok());
         assert!(expect_login_snapshot(None, &tracked).is_err());
         assert!(expect_login_snapshot(Some((1, 2, &valid)), &tracked).is_err());
@@ -337,7 +337,7 @@ mod tests {
             spurious,
             wrong_progress,
         ] {
-            let payload = frame(&wrong, &boss);
+            let payload = frame(&wrong, &boss)?;
             assert!(expect_login_snapshot(Some((1, 1, &payload)), &tracked).is_err());
             assert!(
                 expect_command_snapshot((CommandStatus::Accepted, Some(wrong)), &tracked, "test")
@@ -351,12 +351,14 @@ mod tests {
         assert!(expect_durable(&[(1, RAT.to_owned())], &[BAT], "pre-add").is_err());
         assert!(
             expect_durable(
-                &[(1, RAT.to_owned()), (2, "unexpected".to_owned())],
+                &[(1, BAT.to_owned()), (1, RAT.to_owned()), (2, "unexpected".to_owned())],
                 &[BAT, RAT],
                 "test"
             )
             .is_err()
         );
+        assert!(expect_durable(&[(1, RAT.to_owned())], &[BAT, RAT], "lost-bat").is_err());
+        Ok(())
     }
 
     #[test]
@@ -364,10 +366,10 @@ mod tests {
         use oteryn_protocol_oteryn::logout::LogoutResult;
 
         assert!(expect_first_logout(Some(LogoutResult::Accepted)).is_ok());
-        let error = expect_first_logout(Some(LogoutResult::Busy)).unwrap_err();
+        let result = expect_first_logout(Some(LogoutResult::Busy)).map_err(|error| error.to_string());
         assert_eq!(
-            error.to_string(),
-            "step=logout-first-attempt;observed=Some(Busy)"
+            result,
+            Err("step=logout-first-attempt;observed=Some(Busy)".to_owned())
         );
     }
 
