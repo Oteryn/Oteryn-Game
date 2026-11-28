@@ -386,20 +386,26 @@ pub(super) async fn consume_reward_inputs(
         .map(|i| i.item.as_str())
         .collect();
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
-    if callback.consumes_fish_stack() {
-        keys.extend(["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"]);
-    }
+    let fish_id = if callback.consumes_fish_stack() {
+        let Some(selected) = carried_use else {
+            return Ok(false);
+        };
+        Some(sqlx::types::Uuid::from_bytes(selected.source))
+    } else {
+        None
+    };
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$4::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
         AND (i.definition_production_key<>'oteryn:item.tibia.i4837'
              OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p
                 WHERE p.item_instance_id=i.item_instance_id
                   AND p.definition_production_key=i.definition_production_key
                   AND p.expires_at_unix_ms>floor(extract(epoch FROM statement_timestamp())*1000)::bigint))
         ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
-    if let Some(use_) = carried_use {
+        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).bind(fish_id).fetch_all(&mut **tx).await?;
+    let tool_use = carried_use.filter(|_| fish_id.is_none());
+    if let Some(use_) = tool_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
         if !rows.iter().any(|row| {
             row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
@@ -431,12 +437,7 @@ pub(super) async fn consume_reward_inputs(
             return Ok(false);
         }
     }
-    let inventory_rows = if callback.consumes_fish_stack() {
-        &rows[..rows.len().min(1)]
-    } else {
-        &rows
-    };
-    if !reward_inventory::holds(inventory_rows, &callback.inventory)? {
+    if !reward_inventory::holds(&rows, &callback.inventory)? {
         return Ok(false);
     }
     if callback.exact_take {
@@ -476,7 +477,7 @@ pub(super) async fn consume_reward_inputs(
     let mut inputs = Vec::new();
     for row in rows {
         let key: String = row.try_get("definition_production_key")?;
-        if let Some(use_) = carried_use {
+        if let Some(use_) = tool_use {
             let selected = if callback.carried_item.as_deref() == Some(key.as_str()) {
                 Some(use_.source)
             } else if callback.carried_target.as_deref() == Some(key.as_str()) {

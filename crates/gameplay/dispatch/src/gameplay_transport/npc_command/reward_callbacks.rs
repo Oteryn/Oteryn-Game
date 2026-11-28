@@ -231,6 +231,7 @@ pub(super) fn prepare(
     let mut failure_reply = Vec::new();
     let mut failure_topic = None;
     let mut refused = false;
+    let mut selected_fish = None;
     let step = quest_dialogue::prepare(
         admission,
         actor,
@@ -352,11 +353,14 @@ pub(super) fn prepare(
                     (c.quest != TWENTY_MILES || meets_requirements(c))
                         && c.inventory.iter().all(|rule| {
                             inventory.is_some_and(|facts| {
-                                rule.holds(if c.consumes_fish_stack() {
-                                    &facts.first_fish
+                                if c.consumes_fish_stack() {
+                                    facts
+                                        .first_fish
+                                        .as_ref()
+                                        .is_some_and(|(_, stack)| rule.holds(stack))
                                 } else {
-                                    &facts.quantities
-                                })
+                                    rule.holds(&facts.quantities)
+                                }
                             })
                         })
                 });
@@ -377,6 +381,9 @@ pub(super) fn prepare(
                     // Falling through would return the ordinary dialogue's Ok.
                     failure_reply = callback.failure_reply.clone();
                     failure_topic = callback.failure_topic.or(failure_topic);
+                    if callback.consumes_fish_stack() {
+                        selected_fish = Some(inventory?.first_fish.as_ref()?.0);
+                    }
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
@@ -556,7 +563,8 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| {
+    step.map(|mut step| {
+        step.selected_fish = selected_fish;
         step.with_failure_reply(failure_reply, failure_topic)
             .with_refusal(refused)
     })

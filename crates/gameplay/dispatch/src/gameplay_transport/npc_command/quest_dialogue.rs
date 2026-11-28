@@ -145,6 +145,7 @@ impl State {
 }
 
 pub(super) struct Step {
+    pub(super) selected_fish: Option<[u8; 16]>,
     context: Context,
     topic: Topic,
     next_topic: Option<Topic>,
@@ -213,6 +214,7 @@ pub(super) fn prepare(
     let tracks = copy.read_tracks(admission.quest_catalogue.as_deref()?)?;
     let choice = select(&context, &topic, fresh_conversation, &tracks)?;
     Some(Step {
+        selected_fish: None,
         context,
         topic,
         next_topic: choice.next_topic,
@@ -481,6 +483,19 @@ pub(super) async fn apply(
     {
         return rejected();
     }
+    let carried_use = if let Some(source) = step.selected_fish {
+        let Ok(intent) = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&intent)
+        else {
+            return rejected();
+        };
+        Some(crate::durability::reward_claim_mint::QuestCarriedUse {
+            source,
+            recipe_target: None,
+            intent,
+        })
+    } else {
+        None
+    };
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -544,7 +559,7 @@ pub(super) async fn apply(
                 weights: &weights,
                 fee_payment: fee_payment.as_ref(),
                 actor_conditions: actor_conditions.as_ref(),
-                carried_use: None,
+                carried_use: carried_use.as_ref(),
                 creature_use: None,
                 peer_use: None,
             },

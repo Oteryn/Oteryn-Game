@@ -156,7 +156,8 @@ pub(crate) async fn apply(
             u.recipe_target
                 .is_some_and(|target| target == u.source || target == [0; 16])
         })
-        || callback.carried_item.is_some() != admission.carried_use.is_some()
+        || (callback.carried_item.is_some() || callback.consumes_fish_stack())
+            != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })

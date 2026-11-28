@@ -54,6 +54,7 @@ const TRACKS: [(&str, i64); 2] = [
 enum Case {
     Trout,
     PerchResume,
+    ReversedStacks(&'static str),
     HistoricalReceipt,
     EmbeddedKeyword,
     KeywordPrefix,
@@ -68,6 +69,16 @@ fn sinatuki_exchange_postgres_dispatch() -> TestResult {
 #[test]
 fn sinatuki_exchange_postgres_resume() -> TestResult {
     run_case("sinatuki_resume", Case::PerchResume)
+}
+
+#[test]
+fn sinatuki_debits_first_trout_with_lower_uuid_trout_behind_it() -> TestResult {
+    run_case("sinatuki_trout_order", Case::ReversedStacks(TROUT))
+}
+
+#[test]
+fn sinatuki_debits_first_trout_with_lower_uuid_perch_behind_it() -> TestResult {
+    run_case("sinatuki_mixed_order", Case::ReversedStacks(PERCH))
 }
 
 #[test]
@@ -203,7 +214,9 @@ fn scenario(name: &str, case: Case) -> TestResult {
             Case::EmbeddedKeyword => Some(("nupi anupi", Some(&[]))),
             Case::KeywordPrefix => Some(("nupix", Some(&[HAND_IN]))),
             Case::MissingDonorPrerequisite => Some(("nupi", None)),
-            Case::Trout | Case::PerchResume | Case::HistoricalReceipt => None,
+            Case::Trout | Case::PerchResume | Case::ReversedStacks(_) | Case::HistoricalReceipt => {
+                None
+            }
         };
         if let Some((text, reply)) = keyword_case {
             add_item(&h, 201, TROUT, 100, 1).await?;
@@ -221,6 +234,37 @@ fn scenario(name: &str, case: Case) -> TestResult {
             drop(seal);
             return h.cleanup().await;
         }
+        if let Case::ReversedStacks(later_species) = case {
+            add_item(&h, 201, TROUT, 98, 1).await?;
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+            let contribution = "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/qc/sinatuki/contribution'";
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(contribution)
+                    .bind(id(41).as_slice())
+                    .fetch_one(&h.pool)
+                    .await?,
+                98
+            );
+            add_item(&h, 202, later_species, 100, 2).await?;
+            add_item(&h, 203, TROUT, 1, 3).await?;
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+            for (seed, expected) in [(203, 0), (202, 100)] {
+                let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(seed).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(quantity, expected, "item {seed}");
+            }
+            assert_eq!(carried(&h, later_species).await?, 100);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(contribution)
+                    .bind(id(41).as_slice())
+                    .fetch_one(&h.pool)
+                    .await?,
+                99
+            );
+            assert_eq!(quest_state(&h).await?, (Some(1), false, 0));
+            drop(seal);
+            return h.cleanup().await;
+        }
         let resume = matches!(case, Case::PerchResume);
         let fish = if resume { PERCH } else { TROUT };
 
@@ -234,7 +278,7 @@ fn scenario(name: &str, case: Case) -> TestResult {
             assert_eq!(quest_state(&h).await?, (None, false, 0));
         }
         let first_stack = if resume { 98 } else { 49 };
-        add_item(&h, 202, fish, first_stack, 2).await?;
+        add_item(&h, 202, fish, first_stack, 8).await?;
         if !resume {
             add_item(&h, 206, PERCH, 50, 6).await?;
         }
