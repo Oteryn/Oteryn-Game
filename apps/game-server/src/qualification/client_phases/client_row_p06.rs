@@ -52,7 +52,7 @@ async fn send(
     Ok((response, current))
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(mut client: DevClientSession) -> TestResult<String> {
     let roots: Vec<_> = ["E2E_ALL_CAPTURE_DIR", "NODE_BOOT_P06_CAPTURE_DIR"]
         .into_iter()
         .filter_map(std::env::var_os)
@@ -61,7 +61,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if roots.is_empty() {
         return Err("Wheel replay capture directory absent".into());
     }
-    let mut client = connect_world(clients, 0x28).await?;
+    let atelier_v2 = client.selected_capabilities().contains(
+        &oteryn_protocol_oteryn::atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+    );
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
@@ -87,9 +89,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         occurrence,
         expected_revision: initial.revision + 99,
         points,
-        vessels: None,
+        vessels: (!atelier_v2).then_some([None; 4]),
     })
     .map_err(|error| format!("save encoder: {error:?}"))?;
+    capture(&roots, "p06-stale-request.bin", &payload)?;
     let (stale, after) = send(&mut client, payload, "stale", &roots).await?;
     let receipt = wheel::decode_wheel_reply(&stale.payload)
         .map_err(|error| format!("stale receipt: {error:?}"))?;
@@ -103,7 +106,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stale save was not refused unchanged: {receipt:?} {after:?}").into());
     }
     let expected = format!(
-        "revision={}\nallocated={}\ncore_slot={}\nstale_refused={}\nstale_current_revision={}\n",
+        "atelier_v2={atelier_v2}\nrevision={}\nallocated={}\ncore_slot={}\nstale_refused={}\nstale_current_revision={}\n",
         initial.revision,
         initial.points.iter().map(|p| u32::from(*p)).sum::<u32>(),
         initial.points[CORE_SLOT],
@@ -119,15 +122,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
-        .await
-    {
-        Ok(Ok(expected)) => evidence(&format!(
+    match verdict::observe(run_capture(clients)).await {
+        Ok(expected) => evidence(&format!(
             "e2e_all scenario=P06.client status=CAPTURED evidence={expected}"
         )),
-        Ok(Err(error)) => evidence(&format!(
+        Err(error) => evidence(&format!(
             "e2e_all scenario=P06.client status=FAIL evidence={error}"
         )),
-        Err(_) => evidence("e2e_all scenario=P06.client status=FAIL evidence=timeout"),
     }
+}
+
+async fn run_capture(clients: &SeamClients<'_>) -> TestResult<String> {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P06_ACCOUNT").await?;
+    let scope = dedicated.clients(clients);
+    let setup = async {
+        if e2e_row_selected(57) {
+            // In an aggregate run the preceding full row has already bought promotion and reset.
+            full_row_p06::connect_eligible(&scope, 0x28).await
+        } else {
+            full_row_p06::prepare(&scope).await
+        }
+    };
+    let result = async {
+        let client = verdict::indexed_timeout(Duration::from_secs(360), setup)
+            .await.map_err(|_| "Wheel capture preparation timed out")??;
+        verdict::indexed_timeout(Duration::from_secs(120), journey(client))
+            .await.map_err(|_| "Wheel capture journey timed out")?
+    }.await;
+    let cleanup = release_row_characters(&scope).await;
+    result.and_then(|expected| cleanup.map(|()| expected))
 }

@@ -17,6 +17,7 @@ struct Captured {
     query: Frames,
     stale: Frames,
     expected: String,
+    stale_request: Option<Vec<u8>>,
 }
 
 fn occurrence(byte: u8) -> [u8; 16] {
@@ -64,8 +65,9 @@ fn fixture() -> Result<Captured, Error> {
             atelier: atelier_frame(4)?,
             resources: None,
         },
+        stale_request: None,
         expected:
-            "revision=4\nallocated=0\ncore_slot=0\nstale_refused=true\nstale_current_revision=4\n"
+            "atelier_v2=false\nrevision=4\nallocated=0\ncore_slot=0\nstale_refused=true\nstale_current_revision=4\n"
                 .into(),
     })
 }
@@ -84,6 +86,7 @@ fn captured() -> Result<Captured, Error> {
         })
     };
     Ok(Captured {
+        stale_request: Some(std::fs::read(path.join("p06-stale-request.bin"))?),
         query: frames("query")?,
         stale: frames("stale")?,
         expected: std::fs::read_to_string(path.join("p06-expected.txt"))?,
@@ -116,6 +119,7 @@ fn e2e_p06_replays_query_and_stale_revision_save() -> Result<(), Error> {
     let allocated: u32 = value(e, "allocated")?.parse()?;
     let mut panel = WheelPanel {
         selected: true,
+        atelier_v2: value(e, "atelier_v2")?.parse()?,
         ..WheelPanel::default()
     };
     let refresh = request(&mut panel, Intent::Refresh, occurrence(1)).ok_or("refresh")?;
@@ -153,6 +157,18 @@ fn e2e_p06_replays_query_and_stale_revision_save() -> Result<(), Error> {
         (sent.action, sent.expected_revision, sent.points[CORE_SLOT]),
         (1, revision, 25)
     );
+    if let Some(payload) = captured.stale_request {
+        let attempted = wire(wheel::decode_wheel_request(&payload))?;
+        assert_ne!(attempted.expected_revision, revision);
+        assert_eq!(
+            attempted,
+            wheel::WheelAllocationRequest {
+                expected_revision: attempted.expected_revision,
+                occurrence: attempted.occurrence,
+                ..sent
+            }
+        );
+    }
     assert!(apply_result(&mut panel, &response(161, &captured.stale)));
     assert_eq!(
         panel.feedback,

@@ -412,14 +412,14 @@ async fn use_castle_gate(
     Ok(())
 }
 
-async fn connect_eligible(clients: &SeamClients<'_>, tag: u8) -> TestResult<DevClientSession> {
+pub(super) async fn connect_eligible(clients: &SeamClients<'_>, tag: u8) -> TestResult<DevClientSession> {
     let client = connect_character(clients, tag, 0).await?;
     // The synthetic account has no Platform refresh route, and logout releases its cached view.
     character_prep::grant_premium(&client).await?;
     Ok(client)
 }
 
-async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+pub(super) async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "P06.full",
         "q_p06,sorcerer-level-300,premium,20000-promotion-gold",
