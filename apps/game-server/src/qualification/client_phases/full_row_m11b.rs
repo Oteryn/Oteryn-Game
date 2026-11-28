@@ -26,7 +26,9 @@ const ROPE_TOPS: &[u32] = &[12935];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, evidence_text) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => {
@@ -66,19 +68,23 @@ fn rope_spots(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
     let mut spots = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
-            let rope = tile.items.iter().filter(|item| item.depth == 0).any(|item| {
-                crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
-                    .is_some_and(|id| {
-                        let id = u32::from(id);
-                        let ground = manifest.palette[item.palette as usize].terrain.is_some_and(
-                            |terrain| {
-                                terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
-                            },
-                        );
-                        (ground && ROPE_GROUNDS.contains(&id))
-                            || (!ground && ROPE_TOPS.contains(&id))
-                    })
-            });
+            let rope = tile
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .any(|item| {
+                    crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
+                        .is_some_and(|id| {
+                            let id = u32::from(id);
+                            let ground = manifest.palette[item.palette as usize]
+                                .terrain
+                                .is_some_and(|terrain| {
+                                    terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
+                                });
+                            (ground && ROPE_GROUNDS.contains(&id))
+                                || (!ground && ROPE_TOPS.contains(&id))
+                        })
+                });
             if rope {
                 spots.push(TilePos {
                     x: tile.x,
@@ -111,12 +117,115 @@ fn has_static_landing(rope: TilePos, walkable: impl Fn(TilePos) -> bool) -> bool
             if (dx, dy) == (0, 0) {
                 return false;
             }
-            let (Some(x), Some(y)) = (rope.x.checked_add_signed(dx), rope.y.checked_add_signed(dy)) else {
+            let (Some(x), Some(y)) = (rope.x.checked_add_signed(dx), rope.y.checked_add_signed(dy))
+            else {
                 return false;
             };
             walkable(TilePos { x, y, floor })
         })
     })
+}
+
+// Follow the selected route exactly. The committed server wait schedules the next
+// step while the client continues servicing pushed state and liveness frames.
+pub(super) async fn walk_to_rope(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    use oteryn_dev_client::EntityKind;
+
+    evidence(&format!("M11B_ROUTE steps={}", path.len()));
+    for (index, &direction) in path.iter().enumerate() {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("M11b route has no landing")?;
+        evidence(&format!(
+            "M11B_STEP_SEND index={index} from={from:?} expected={expected:?} direction={direction:?} server_sequence={}",
+            client.last_server_sequence(),
+        ));
+        let mut outcome = client.step(direction).await?;
+        evidence(&format!(
+            "M11B_STEP_REPLY index={index} command={} server_sequence={} disposition={:?} wait_ms={}",
+            outcome.command_id,
+            outcome.result_server_sequence,
+            outcome.disposition,
+            outcome.step_wait_ms,
+        ));
+        if outcome.disposition == StepDisposition::Blocked {
+            if tile(client.world_spatial().actor_position)? != from {
+                return Err("M11b blocked step moved the actor".into());
+            }
+            let blocker = client.world_entities().and_then(|entities| {
+                entities.iter().find(|actor| {
+                    matches!(actor.kind, EntityKind::Creature | EntityKind::Npc | EntityKind::Player)
+                        && tile(actor.position).ok() == Some(expected)
+                })
+            }).map(|actor| actor.entity).ok_or_else(|| {
+                format!("BLOCKER-SERVER M11b blocked with no occupant at {expected:?} command={} server_sequence={}",
+                    outcome.command_id, outcome.result_server_sequence)
+            })?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+            loop {
+                client.service_liveness(Duration::from_millis(50)).await?;
+                let entities = client.world_entities().ok_or("M11b occupant view lost")?;
+                let position = entities
+                    .iter()
+                    .find(|actor| actor.entity == blocker)
+                    .map(|actor| tile(actor.position))
+                    .transpose()?;
+                if position != Some(expected) {
+                    if entities.iter().any(|actor| {
+                        matches!(
+                            actor.kind,
+                            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+                        ) && tile(actor.position).ok() == Some(expected)
+                    }) {
+                        return Err(format!(
+                            "M11b landing acquired a new occupant at {expected:?}"
+                        )
+                        .into());
+                    }
+                    evidence(&format!(
+                        "M11B_STEP_CLEAR index={index} blocker={blocker:?} position={position:?} server_sequence={}",
+                        client.last_server_sequence()
+                    ));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("M11b occupant {blocker:?} stayed at {expected:?}").into());
+                }
+            }
+            outcome = client.step(direction).await?;
+            evidence(&format!(
+                "M11B_STEP_AFTER_CLEAR index={index} command={} server_sequence={} disposition={:?}",
+                outcome.command_id, outcome.result_server_sequence, outcome.disposition
+            ));
+        }
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "M11b step {index} failed from={from:?} expected={expected:?}: {outcome:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+        if index + 1 < path.len() && outcome.step_wait_ms > 0 {
+            let until = tokio::time::Instant::now()
+                + Duration::from_millis(u64::from(outcome.step_wait_ms));
+            while let Some(remaining) = until.checked_duration_since(tokio::time::Instant::now()) {
+                if remaining.is_zero() {
+                    break;
+                }
+                client
+                    .service_liveness(remaining.min(Duration::from_millis(50)))
+                    .await?;
+            }
+        }
+        client.take_events();
+    }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -138,7 +247,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     .is_some_and(|tile| tile.walkable() && world.enterable(landing))
             })
     }).ok_or("step=rope-route missing=reachable-rope-spot-with-walkable-upstairs-neighbour owner=crates/gameplay/spell/src/spell/world_execution.rs:482")?;
-    walk(&mut client, world, &path).await?;
+    walk_to_rope(&mut client, world, &path).await?;
     let rope = tile(client.world_spatial().actor_position)?;
     if spots.binary_search(&rope).is_err() {
         return Err("step-1:STEP replies did not finish on rope spot".into());
@@ -222,9 +331,18 @@ mod tests {
     use super::*;
     #[test]
     fn rope_planner_requires_an_upstairs_neighbour() {
-        let rope = TilePos { x: 5, y: 6, floor: -8 };
+        let rope = TilePos {
+            x: 5,
+            y: 6,
+            floor: -8,
+        };
         assert!(!has_static_landing(rope, |at| at == TilePos { floor: -7, ..rope }));
-        assert!(has_static_landing(rope, |at| at == TilePos { x: 6, y: 7, floor: -7 }));
+        assert!(has_static_landing(rope, |at| at
+            == TilePos {
+                x: 6,
+                y: 7,
+                floor: -7
+            }));
         assert!(!has_static_landing(TilePos { floor: 0, ..rope }, |_| true));
     }
 
