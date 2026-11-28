@@ -82,7 +82,7 @@ async fn prey_state(
         .map_err(|error| format!("step-4 prey reply decode observed={error:?}").into())
 }
 
-fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
+pub(super) fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
     use crate::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let content = crate::content::daily_reward::DailyRewardContent::catalogue()
