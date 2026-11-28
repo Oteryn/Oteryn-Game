@@ -173,6 +173,14 @@ fn reset_scope<T: Stepper>(
 }
 
 impl PlayLink {
+    #[cfg(feature = "qualification-i09")]
+    pub(crate) fn qualification_scope_ready(&self, session: [u8; 16]) -> bool {
+        let mailbox = lock(&self.mailbox);
+        mailbox.scope_session == Some(session)
+            && !mailbox.scope_pending
+            && !mailbox.scope_initialize
+    }
+
     pub(super) fn scope_presented(&self, session: [u8; 16]) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.scope_pending
@@ -260,6 +268,20 @@ mod tests {
         mailbox.scope_pending = true;
         mailbox.activity_reset_commands = true;
         session
+    }
+
+    #[cfg(feature = "qualification-i09")]
+    #[test]
+    fn i09_scope_must_be_presented_and_initialized_before_click() {
+        let (link, _, outbox) = crate::play::play_channel();
+        let session = pending(&link);
+        lock(&link.mailbox).scope_session = Some(session);
+        assert!(!link.qualification_scope_ready(session));
+        link.scope_presented(session);
+        assert!(!link.qualification_scope_ready(session));
+        assert!(outbox.scope_needs_initialize());
+        assert!(link.qualification_scope_ready(session));
+        assert!(!link.qualification_scope_ready(id(9)));
     }
 
     #[test]

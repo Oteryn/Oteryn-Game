@@ -176,9 +176,8 @@ pub(super) fn mouse(app: &mut App, point: Vec2) {
 }
 
 #[cfg(feature = "qualification-i09")]
-pub(in crate::bevy_shell) fn qualification_right_click(
+pub(in crate::bevy_shell) fn qualification_input(
     view: PlayView,
-    tile: oteryn_renderer::TileCoord,
 ) -> Result<
     (
         App,
@@ -204,7 +203,6 @@ pub(in crate::bevy_shell) fn qualification_right_click(
         .as_ref()
         .ok_or("active play")?
         .view;
-    let [x, y] = view.scene().view().tile_to_screen(tile);
     let (w, h) = view.scene().view().viewport_px();
 
     use bevy::camera::{ComputedCameraValues, RenderTargetInfo};
@@ -238,6 +236,27 @@ pub(in crate::bevy_shell) fn qualification_right_click(
     app.world_mut().resource_mut::<WorldViewport>().size = UVec2::new(w, h);
     app.world_mut().resource_mut::<InputFocus>().clear();
     app.world_mut().entity_mut(pointer).despawn();
+    Ok((app, commands, outbox))
+}
+
+#[cfg(feature = "qualification-i09")]
+pub(in crate::bevy_shell) fn qualification_right_click(
+    app: &mut App,
+    tile: oteryn_renderer::TileCoord,
+) -> TestResult {
+    let view = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("active play")?
+        .view;
+    let [x, y] = view.scene().view().tile_to_screen(tile);
+    let world = app.world().resource::<GameRegions>().world;
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())?;
     let click = Vec2::new(x + 1., y + 1.);
     use bevy::picking::pointer::{PointerAction, PointerInput};
     let target = bevy::window::WindowRef::Entity(window)
@@ -262,7 +281,7 @@ pub(in crate::bevy_shell) fn qualification_right_click(
     {
         return Err("I09 UI picking did not hit the world".into());
     }
-    mouse(&mut app, click);
+    mouse(app, click);
     app.update();
-    Ok((app, commands, outbox))
+    Ok(())
 }

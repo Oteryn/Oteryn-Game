@@ -138,4 +138,4 @@ mod tests;
 #[cfg(any(test, feature = "qualification-i09"))]
 mod qualification;
 #[cfg(feature = "qualification-i09")]
-pub(in crate::bevy_shell) use qualification::qualification_right_click;
+pub(in crate::bevy_shell) use qualification::{qualification_input, qualification_right_click};

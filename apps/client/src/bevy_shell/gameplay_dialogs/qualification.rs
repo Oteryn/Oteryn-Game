@@ -80,30 +80,15 @@ pub async fn rotate_live_chair<S: SessionStream + Send>(
 ) -> Result<(Session<S>, RotateProof)> {
     let view = PlayView::new(TileCoord::new(actor.x, actor.y), actor.floor, &[])?
         .with_join_scene(&session)?;
-    let tile = TileCoord::new(target.x, target.y);
-    if displayed_chair(&view, tile, ordinal) != Some((2358, 0)) {
-        return Err("I09 native scene did not initially display chair 2358".into());
-    }
+    let session_id = *session.join_snapshot().game_session_id.as_bytes();
     let textures = ChairTextures::load(target)?;
-    textures.check(&view, target, false)?;
-    let (mut app, commands, outbox) =
-        crate::bevy_shell::input::hits::qualification_right_click(view, tile)?;
+    let (mut app, commands, outbox) = crate::bevy_shell::input::hits::qualification_input(view)?;
     install_test_dialogs(&mut app);
-    app.update();
-    let owner = app.world().non_send::<HostOwner>();
-    let play = owner
-        .play
-        .as_ref()
-        .ok_or("I09 native play missing before click")?;
-    if play.link.world_context_feedback().is_some() {
-        return Err("I09 native feedback already present before Rotate".into());
-    }
-    click_rotate(&mut app)?;
     let (session, observed, trace) = TRACE
         .scope(RefCell::new(Trace::default()), async move {
             let (session, observed) = tokio::join!(
                 crate::play::qualification_run_session(session, commands, outbox),
-                observe_rotation(app, target, ordinal, textures),
+                observe_rotation(app, session_id, target, ordinal, textures),
             );
             (session, observed, TRACE.with(|trace| trace.take()))
         })
@@ -158,38 +143,73 @@ pub async fn rotate_live_chair<S: SessionStream + Send>(
 
 async fn observe_rotation(
     mut app: App,
+    session_id: [u8; 16],
     target: ActorPosition,
     ordinal: u8,
     textures: ChairTextures,
 ) -> Result {
     let tile = TileCoord::new(target.x, target.y);
-    tokio::time::timeout(Duration::from_secs(5), async {
-        loop {
-            app.update();
-            {
-                let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-                let play = owner.play.as_mut().ok_or("I09 native play missing")?;
-                play.view
-                    .tick(&play.link)
-                    .map_err(|error| format!("I09 native play ended: {error:?}"))?;
-                let feedback = play.link.world_context_feedback();
+    // The row deadline bounds native startup and dispatch. Preserve the existing
+    // five-second map observation window from the terminal USE feedback.
+    let mut map_deadline = None;
+    let mut clicked = false;
+    loop {
+        app.update();
+        let ready_to_click = {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let play = owner.play.as_mut().ok_or("I09 native play missing")?;
+            play.view
+                .tick(&play.link)
+                .map_err(|error| format!("I09 native play ended: {error:?}"))?;
+            let feedback = play.link.world_context_feedback();
+            let orientation = displayed_chair(&play.view, tile, ordinal);
+            if clicked {
                 if rotate_presented(
+                    &mut map_deadline,
+                    tokio::time::Instant::now(),
                     feedback.as_deref(),
-                    displayed_chair(&play.view, tile, ordinal),
+                    orientation,
                 )? {
                     return textures.check(&play.view, target, true);
                 }
+                false
+            } else if play.link.qualification_scope_ready(session_id) {
+                if orientation != Some((2358, 0)) || feedback.is_some() {
+                    return Err(format!(
+                        "I09 native Rotate pre-state differs: orientation={orientation:?} feedback={feedback:?}"
+                    ).into());
+                }
+                textures.check(&play.view, target, false)?;
+                true
+            } else {
+                false
             }
-            tokio::time::sleep(Duration::from_millis(20)).await;
+        };
+        if ready_to_click {
+            crate::bevy_shell::input::hits::qualification_right_click(&mut app, tile)?;
+            click_rotate(&mut app)?;
+            clicked = true;
         }
-    })
-    .await
-    .map_err(|_| "I09 native feedback or displayed chair orientation missing")?
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
 }
 
-fn rotate_presented(feedback: Option<&str>, orientation: Option<(u16, u64)>) -> Result<bool> {
+fn rotate_presented(
+    map_deadline: &mut Option<tokio::time::Instant>,
+    now: tokio::time::Instant,
+    feedback: Option<&str>,
+    orientation: Option<(u16, u64)>,
+) -> Result<bool> {
+    if map_deadline.is_some_and(|deadline| now >= deadline) {
+        return Err(format!(
+            "I09 native Rotate committed without the expected displayed orientation: {orientation:?}"
+        ).into());
+    }
     match feedback {
-        Some("Use: completed") => Ok(orientation == Some((2359, 1))),
+        Some("Use: completed") => {
+            map_deadline.get_or_insert(now + Duration::from_secs(5));
+            Ok(orientation == Some((2359, 1)))
+        }
         None | Some("Waiting for server") => Ok(false),
         Some(feedback) => Err(format!("I09 native Rotate feedback: {feedback}").into()),
     }
@@ -198,15 +218,59 @@ fn rotate_presented(feedback: Option<&str>, orientation: Option<(u16, u64)>) -> 
 #[cfg(test)]
 #[test]
 fn i09_native_requires_both_feedback_and_projected_orientation() -> Result {
-    assert!(!rotate_presented(None, Some((2359, 1)))?);
+    let mut deadline = None;
+    let opened = tokio::time::Instant::now();
+    let received = opened + Duration::from_secs(6);
+    let completed = Some("Use: completed");
     assert!(!rotate_presented(
+        &mut deadline,
+        opened,
+        None,
+        Some((2359, 1))
+    )?);
+    assert!(!rotate_presented(
+        &mut deadline,
+        received,
         Some("Waiting for server"),
         Some((2359, 1)),
     )?);
-    assert!(!rotate_presented(Some("Use: completed"), Some((2358, 0)))?);
-    assert!(!rotate_presented(Some("Use: completed"), Some((2359, 0)))?);
-    assert!(rotate_presented(Some("Target changed"), Some((2359, 1))).is_err());
-    assert!(rotate_presented(Some("Use: completed"), Some((2359, 1)))?);
+    assert!(deadline.is_none());
+    assert!(!rotate_presented(
+        &mut deadline,
+        received,
+        completed,
+        Some((2358, 0))
+    )?);
+    assert!(!rotate_presented(
+        &mut deadline,
+        received,
+        completed,
+        Some((2359, 0))
+    )?);
+    assert!(
+        rotate_presented(
+            &mut deadline,
+            received,
+            Some("Target changed"),
+            Some((2359, 1)),
+        )
+        .is_err()
+    );
+    assert!(rotate_presented(
+        &mut deadline,
+        received + Duration::from_secs(4),
+        completed,
+        Some((2359, 1)),
+    )?);
+    assert!(
+        rotate_presented(
+            &mut deadline,
+            received + Duration::from_secs(5),
+            completed,
+            Some((2359, 1)),
+        )
+        .is_err()
+    );
     Ok(())
 }
 
