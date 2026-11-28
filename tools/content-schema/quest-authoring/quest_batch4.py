@@ -513,7 +513,11 @@ def validate_callback(callback, directory):
         seen.add(location)
     item = callback.get('item_on_target')
     if item is not None:
-        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives', 'on_step'}, key + ': item_on_target')
+        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives', 'on_step', 'selected_instance'}, key + ': item_on_target')
+        selected = item.get('selected_instance', False)
+        require(type(selected) is bool and (not selected or (
+            callback['trigger'] == 'use' and callback.get('requires_world_admission') is True
+            and callback['selector'].get('native') is not None)), key + ': invalid selected tool')
         automatic = item.get('on_step', False)
         require(type(automatic) is bool, key + ': invalid automatic STEP input')
         trigger_matches = (callback['trigger'] == 'use' and not automatic) or (

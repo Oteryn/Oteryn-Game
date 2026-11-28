@@ -140,6 +140,8 @@ mod first_entry_tests;
 mod offence_tests;
 #[path = "equipment_effects_owner_tests/postgres_scenario.rs"]
 mod postgres_scenario;
+#[path = "equipment_effects_owner_tests/source_parity_tests.rs"]
+mod source_parity_tests;
 
 #[test]
 fn dmg3_installed_protection_tiers_expiry_custody_and_catalogue() -> TestResult {
@@ -476,6 +478,64 @@ fn t174_equipped_vibrancy_reaches_condition_projection() -> TestResult {
                 0
             );
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_equipment_worn_death_ring_penalty_applies_once() -> TestResult {
+    use oteryn_gameplay_content::content::item_abilities::AbilitySkill;
+    let content = native(&input()?)?;
+    let equipment = snapshot(&content, "oteryn:item.tibia.i6299", 8);
+    let effects = equipment_effects(&equipment, &content).ok_or("Death Ring effects")?;
+    assert_eq!(effects.skills.get(&AbilitySkill::Shield), Some(&-10));
+    Ok(())
+}
+
+#[test]
+fn crystal_equipment_timed_protection_reaches_combat_effects() -> TestResult {
+    use crate::content::ReferenceResistanceKind as Kind;
+    let content = native(&input()?)?;
+    for (id, slot, element, percent) in [
+        (23474, 1, Kind::Energy, 8),
+        (23477, 4, Kind::Energy, 10),
+        (22061, 7, Kind::Physical, 6),
+        (22127, 1, Kind::Physical, 4),
+        (22128, 1, Kind::Physical, 4),
+        (22129, 1, Kind::Physical, 4),
+        (22130, 1, Kind::Physical, 4),
+        (22132, 1, Kind::Physical, 4),
+    ] {
+        let equipment = snapshot(&content, &format!("oteryn:item.tibia.i{id}"), slot);
+        let effects = equipment_effects(&equipment, &content).ok_or("timed gear effects")?;
+        assert_eq!(
+            effects
+                .protections
+                .get(&element)
+                .map(|ratio| (ratio.numerator, ratio.denominator)),
+            Some((percent, 1)),
+            "Item {id}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_equipment_shrine_offers_declared_families() -> TestResult {
+    let content = native(&input()?)?;
+    for (id, slots) in [(3101, 1), (31577, 1), (50167, 2)] {
+        let policy = content
+            .item_policy_for_source_id(id)
+            .ok_or("equipment policy")?;
+        let allowance =
+            crate::gameplay_transport::imbuement::allowance(&policy.record().semantics.imbuement)
+                .ok_or_else(|| format!("Item {id} missing shrine allowance"))?;
+        assert_eq!(allowance.slot_count, slots, "Item {id}");
+        assert_eq!(
+            allowance.offers.is_empty(),
+            id == 3101,
+            "Item {id} shrine offers"
+        );
     }
     Ok(())
 }

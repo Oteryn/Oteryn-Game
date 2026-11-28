@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.billy",
+      "keywords": [
+        "pan"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Did you find a pan for me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lee_delle",
+      "keywords": [
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Bring me a honey flower from the island and I will give you a piece of armour."
+      ]
+    }
+  ]
+}

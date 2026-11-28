@@ -123,7 +123,7 @@ where
             session,
             command,
             dispatch,
-            result,
+            (Vec::new(), result),
             CommandOutcome {
                 second_logout: false,
                 lost_while_logging_out: None,
@@ -390,12 +390,18 @@ where
     }
     // The STEP itself is already committed even if its follow-up callback is uncertain.
     // USE has no terminal effect result until the callback receipt is reconciled.
-    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
-        && authority
-            .quest_callback_unresolved(session.admitted.game_session_id)
-            .await
-    {
-        dispatch = route::command_unavailable(command, "use_item_callback_unavailable");
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
+        let game_session_id = session.admitted.game_session_id;
+        if matches!(dispatch, Dispatch::Unavailable)
+            && authority.session_commands().is_some_and(|ledger| {
+                ledger.has_use_receipt_owner(game_session_id, command.command_id)
+            })
+        {
+            return Err(ServeEnd::server("use_item_receipt_pending"));
+        }
+        if authority.quest_callback_unresolved(game_session_id).await {
+            return Err(ServeEnd::server("use_item_callback_unavailable"));
+        }
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
@@ -407,6 +413,19 @@ where
         Dispatch::Vip(None) => route::command_unavailable(command, "vip_outcome_unavailable"),
         other => other,
     };
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
+    let cooldown_frames = cooldowns::frames(
+        authority,
+        session.cooldowns.as_ref(),
+        &mut session.admitted.continuity,
+        cast_revision,
+    )?;
+    session.sequence = session.admitted.continuity.server_sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     // The refusal is a command receipt only. It must never emit owner effects.
@@ -417,7 +436,13 @@ where
         result::encode(session, command, &mut dispatch)?
     };
     outbound::finish(
-        stream, authority, session, command, dispatch, result, outcome,
+        stream,
+        authority,
+        session,
+        command,
+        dispatch,
+        (cooldown_frames, result),
+        outcome,
     )
     .await?;
     if no_path {
@@ -521,7 +546,9 @@ pub(super) fn guard_refusal(
                 .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
             Dispatch::Reply(rejected, payload)
         }
-        COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY => {
+        COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY
+        | oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+        | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
             Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
         }
         _ if GATED

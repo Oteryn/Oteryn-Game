@@ -598,6 +598,7 @@ def validate_record(record):
                     "Soulpit static Terrain differs from its qualified official source"
                 ]
             )
+        import crystal_delta_ground
         import grizzly_ground
         import sugar_room
         import summer_ground
@@ -608,6 +609,15 @@ def validate_record(record):
                 []
                 if record in expected
                 else ["Sugar room differs from its exact official source"]
+            )
+        if record["provenance"]["source_item_id"] in crystal_delta_ground.GROUND_SPEEDS:
+            expected = json.loads(
+                crystal_delta_ground.outputs()[crystal_delta_ground.SHARD]
+            )["records"]
+            return (
+                []
+                if record in expected
+                else ["Crystal spawn ground differs from its exact official source"]
             )
         ground = (
             grizzly_ground

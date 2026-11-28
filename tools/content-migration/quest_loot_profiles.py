@@ -160,7 +160,7 @@ def project(fact, record, binding, *, source_charges_absent=False):
     result = copy.deepcopy(fact)
     result['materializable'] = True
     result['container_capacity'] = capacity
-    charges = semantics['charges']
+    charges = semantics.get('charges', corpse.grizzly.source.U)
     if charges.get('state') == 'KNOWN':
         count = charges['value']['count']
         if count.get('state') != 'KNOWN' or type(count.get('value')) is not int or not 1 <= count['value'] <= 65535:

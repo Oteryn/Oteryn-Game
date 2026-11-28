@@ -34,6 +34,7 @@ mod spell_catalog;
 mod spell_repair;
 mod target_move;
 use command::CommandOutcome;
+mod cooldowns;
 mod effects;
 mod native_cues;
 mod outbound;
@@ -75,6 +76,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cooldowns: Option<cooldowns::CooldownFeed>,
     cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,

@@ -66,13 +66,14 @@ pub(super) async fn finish<S, A>(
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: Dispatch,
-    mut result: Vec<u8>,
+    batch: (Vec<Vec<u8>>, Vec<u8>),
     mut outcome: CommandOutcome,
 ) -> Result<(), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let (mut cooldown_frames, mut result) = batch;
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
@@ -107,6 +108,10 @@ where
         // Retain the committed semantic result before awaiting the spatial and map
         // writes. Replay encodes that result at the resumed stream's next sequence
         // after its snapshot. The original reply gets its live sequence below.
+        cooldowns::write_batch(stream, &cooldown_frames, None)
+            .await
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
+        cooldown_frames.clear();
         let published = Box::pin(emit_command_relocation(
             stream,
             authority,
@@ -148,7 +153,9 @@ where
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
         // committed release keeps this a logout end.
-        if write_frame(stream, &result).await.is_ok()
+        if cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
+            .await
+            .is_ok()
             && (!outcome.second_logout
                 || send_error(
                     stream,
@@ -166,9 +173,9 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    write_frame(stream, &result)
+    cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
         .await
-        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
+        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     if let Some(relocation_seq) = relocation_seq {
         operator_event(&format!(
             "event=use_relocation_published command_id={} relocation_seq={relocation_seq} use_result_seq={result_sequence}",

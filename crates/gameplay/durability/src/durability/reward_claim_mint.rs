@@ -126,6 +126,7 @@ pub use chest::with_stalled_reward_chest_commit;
 mod claimed;
 mod cake;
 mod contents;
+mod whisper_moss;
 pub mod falcon;
 pub(in crate::durability) mod fathers_burden;
 mod fluid;
@@ -800,6 +801,9 @@ fn validate_claim_intent(
             RewardClaimRefusal::RewardIsContainer,
         ));
     }
+    if whisper_moss::is_replacement(&request.claim.production_key) {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
     intent_binding(request, fence.character_id)
 }
 
@@ -824,15 +828,32 @@ async fn reserve_reward_claim(
     holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
     deadline: tokio::time::Instant,
     admission: &ClaimMintAdmission<'_>,
-    intent_binding: [u8; 33],
-    request: RewardClaimMintRequest,
+    original_binding: [u8; 33],
+    mut request: RewardClaimMintRequest,
 ) -> Pass<RewardClaimMintCandidate> {
     let fence = admission.fence;
     let mut tx = begin_semantic_transaction(holder, deadline).await?;
     assert_recovery_fence(&mut tx, &admission.recovery).await?;
     lock_admission_relations(&mut tx).await?;
     lock_cause(&mut tx, request.command).await?;
-    if let Some(row) = load_reservation(&mut tx, request.command).await? {
+    let stored_row = load_reservation(&mut tx, request.command).await?;
+    if whisper_moss::is_original(&request) {
+        let stored = stored_row.as_ref()
+            .map(|row| row.try_get::<String, _>("claim_production_key"))
+            .transpose()?;
+        if let Some(key) = whisper_moss::resolve(&mut tx, fence.character_id, stored).await? {
+            request.claim.production_key = key;
+        }
+    }
+    let intent_binding = if whisper_moss::is_replacement(&request.claim.production_key) {
+        match intent_binding(&request, fence.character_id) {
+            Ok(binding) => binding,
+            Err(error) => return Ok(Err(error)),
+        }
+    } else {
+        original_binding
+    };
+    if let Some(row) = stored_row {
         let stored: Vec<u8> = row.try_get("intent_binding")?;
         if stored != intent_binding {
             return Ok(Err(RewardClaimMintError::ConflictingCause));
@@ -1184,6 +1205,11 @@ async fn admit(
     let granter =
         FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
             .await?;
+    if whisper_moss::is_replacement(&request.claim.production_key)
+        && !whisper_moss::permits(tx, fence.character_id, &reservation.world_id, request).await?
+    {
+        return Ok(Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)));
+    }
     let already_claimed: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_reward_claims \
                          WHERE character_id = encode($1,'hex')::uuid \
@@ -1507,7 +1533,7 @@ async fn load_reservation(
     command: CommandRef,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
-        "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
+        "SELECT intent_binding, claim_production_key, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
                 work_units_used, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan, backpack_outputs, additional_capacity, additional_plan \
            FROM game_reward_claim_mint_reservations \
@@ -2040,7 +2066,9 @@ mod tests {
         assert!(plan(&coin, 100, false, &full[..19], 20).is_ok());
     }
 
-    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+    pub(super) fn request(
+        achievement: Option<(&str, AchievementCatalogueLookup)>,
+    ) -> RewardClaimMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         RewardClaimMintRequest {
             backpack_outputs: false,

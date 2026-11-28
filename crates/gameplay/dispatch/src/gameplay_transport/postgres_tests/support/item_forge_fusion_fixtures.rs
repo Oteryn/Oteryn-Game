@@ -469,7 +469,10 @@ async fn fusion(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     seed_bank(h).await?;
-    seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
+    // This replica has a source-backed Forge profile and needs a native Item
+    // admission plus the immutable SQL projection to complete a paid fusion.
+    const REPLICA: &str = "oteryn:item.tibia.i25973";
+    seed_items(h, &[(101, REPLICA, 1, 0), (102, REPLICA, 1, 0)]).await?;
     let mut action = pair(Operation::Fusion, 120, 101, 102);
     action.request.occurrence =
         occurrence_for(h, 120, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;

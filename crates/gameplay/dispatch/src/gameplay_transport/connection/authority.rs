@@ -862,6 +862,16 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn destroy_map_bars(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: super::super::house_destroy::wooden_bars::Target,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<UseOutcome>> + Send + '_>> {
+        Box::pin(async { None })
+    }
+
     fn observe_house_destroy(
         &self,
         _actor: ExactActorRef,
@@ -1666,6 +1676,26 @@ pub trait FreshAdmissionAuthority {
         _game_session_id: GameSessionId,
     ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
         async { None }
+    }
+
+    fn observe_join_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> impl Future<Output = super::super::spell_cooldowns::JoinVitals> {
+        async move {
+            let vitals = if house {
+                self.observe_house_vitals(actor, admitted).await
+            } else {
+                self.observe_vitals(actor, admitted.game_session_id).await
+            };
+            (vitals, None)
+        }
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        0
     }
 
     fn observe_house_vitals(

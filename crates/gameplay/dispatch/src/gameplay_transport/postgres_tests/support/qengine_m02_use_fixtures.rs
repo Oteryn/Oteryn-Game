@@ -71,7 +71,7 @@ pub(super) async fn exercise(
         .await?;
     eprintln!("M02_NATIVE_USE_POSTGRES {version} wrong_order={wrong_order}");
     assert_eq!(callback.key, format!("oteryn:quest-callback/{NAME}"));
-    assert!(!callback.has_personal_state());
+    assert!(callback.has_personal_state());
     assert_nomads_catalogue(owner);
     let before = footprint(h).await?;
     assert_eq!(
@@ -97,7 +97,7 @@ pub(super) async fn exercise(
         }
     }
     let items_before: Vec<(String,i64)> = sqlx::query_as("SELECT item_instance_id::text, quantity FROM game_item_instances ORDER BY item_instance_id").fetch_all(&h.pool).await?;
-    assert_layers(owner, admitted, callback, wrong_order).await?;
+    assert_layers(owner, admitted, callback, wrong_order, [3, 3]).await?;
     let expected = if wrong_order {
         UseDisposition::Rejected
     } else {
@@ -108,31 +108,76 @@ pub(super) async fn exercise(
         expected,
         "same quantities must still obey live stack order"
     );
-    assert_eq!(
-        use_window(owner, admitted, 4).await?,
-        expected,
-        "repeat remains a physical observation"
-    );
+    let committed = i64::from(!wrong_order);
+    let after = (before.0 + committed, before.1 + committed);
     assert_eq!(
         footprint(h).await?,
-        before,
-        "no fabricated personal progress or quest receipt"
+        after,
+        "only a successful arrangement records one track and one receipt"
     );
     assert_eq!(items_before,sqlx::query_as::<_,(String,i64)>("SELECT item_instance_id::text, quantity FROM game_item_instances ORDER BY item_instance_id").fetch_all(&h.pool).await?,"observation cannot consume or mint");
     if !wrong_order {
-        mint(owner, h, 33216, 2471, 1210).await?;
+        let proof: (i64, i64) = sqlx::query_as(
+            "SELECT count(*), max(values_after[array_position(track_keys,$1)])
+             FROM game_character_quest_receipts WHERE transition_key=$2",
+        ).bind("oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured")
+            .bind(&callback.key).fetch_one(&h.pool).await?;
+        assert_eq!(proof, (1, 1));
+        let extra = mint(owner, h, 33216, 2471, 1210).await?;
+        assert_layers(owner, admitted, callback, true, [3, 4]).await?;
         assert_eq!(
-            use_window(owner, admitted, 4).await?,
+            use_window(owner, admitted, 3).await?,
             UseDisposition::Committed,
             "retained terminal wire replay precedes fresh selection after layout drift"
         );
         assert_eq!(
-            use_window(owner, admitted, 5).await?,
+            use_window(owner, admitted, 4).await?,
             UseDisposition::Rejected,
             "an extra live root invalidates the previously accepted layout"
         );
-        assert_eq!(footprint(h).await?, before);
+        pick_up_extra_crate(owner, admitted, h, extra).await?;
+        assert_layers(owner, admitted, callback, false, [3, 3]).await?;
+        assert_eq!(footprint(h).await?, after);
     }
+    assert_eq!(
+        use_window(owner, admitted, if wrong_order { 4 } else { 5 }).await?,
+        UseDisposition::Rejected,
+        "personal completion cannot be earned twice"
+    );
+    assert_eq!(footprint(h).await?, after);
+    Ok(())
+}
+
+async fn pick_up_extra_crate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    item: [u8; 16],
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+    let session = admitted.game_session_id;
+    let fence = owner.current_quest_fence(session).await.map_err(|()| "crate fence")?
+        .ok_or("crate fence")?.item_fence();
+    if owner.root.read_character_backpack(owner.character, fence.character_id).await.map_err(debug)?.is_none() {
+        super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
+    }
+    let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
+    let permit = owner.spell_lane_permit().await.ok_or("crate writer lane")?;
+    owner.root.commit_item_loop_move(
+        &permit, owner.character, owner.holder, &fence,
+        CommandRef::new(session, CommandId::new(1_211).map_err(debug)?),
+        &NativeItemWeights(native),
+        LoopMoveRequest {
+            item,
+            count: None,
+            pickup_cell: Some(crate::durability::map_item_mint_audit::map_item_spatial_position(33216, 32854, -9)),
+            destination: LoopDestination::MainBackpack,
+        },
+    ).await.map_err(debug)?.map_err(debug)?;
+    owner.states.loop_ground.invalidate();
     Ok(())
 }
 
@@ -204,7 +249,7 @@ pub(super) async fn mint(
     x: u16,
     item: u32,
     ordinal: u32,
-) -> TestResult {
+) -> TestResult<[u8; 16]> {
     let (generation, content, frame) = {
         let runtime = owner.runtime.lock().await;
         (
@@ -273,16 +318,14 @@ pub(super) async fn mint(
         .await
         .map_err(debug)?;
     let permit = owner.spell_lane_permit().await.ok_or("Ground MINT lane")?;
-    assert!(matches!(
-        h.root
-            .commit_item_mint(&permit, owner.character, &h.node, &mut candidate)
-            .await
-            .map_err(debug)?,
-        ItemMintOutcome::Committed(_)
-    ));
+    let ItemMintOutcome::Committed(receipt) = h.root
+        .commit_item_mint(&permit, owner.character, &h.node, &mut candidate)
+        .await.map_err(debug)? else {
+            return Err("fixture crate mint did not commit".into());
+        };
     // Fixture MINT stands in for a committed drop; the ordinary writer owns the same invalidation.
     owner.states.loop_ground.invalidate();
-    Ok(())
+    Ok(receipt.item_instance_id)
 }
 
 async fn assert_layers(
@@ -290,6 +333,7 @@ async fn assert_layers(
     admitted: &AdmittedSession,
     callback: &Callback,
     wrong_order: bool,
+    root_counts: [usize; 2],
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let context = {
@@ -349,7 +393,7 @@ async fn assert_layers(
         crate::gameplay_transport::loop_move::loop_ground(owner, map.overlay.base(), Some(index))
             .await
             .ok_or("live Ground projection")?;
-    for x in [33215, 33216] {
+    for (x, count) in [33215, 33216].into_iter().zip(root_counts) {
         let at = crate::map::overlay::TilePos {
             x,
             y: 32854,
@@ -368,7 +412,7 @@ async fn assert_layers(
         );
         assert_eq!(
             tile.added().len(),
-            3,
+            count,
             "live projection retains every durable root"
         );
     }

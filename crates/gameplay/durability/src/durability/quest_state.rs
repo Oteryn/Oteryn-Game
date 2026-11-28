@@ -41,7 +41,7 @@ use std::sync::Arc;
 use oteryn_gameplay_quests::quest::{
     QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07,
     QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue,
-    QuestTrackChange, valid_quest_key,
+    QuestTrackChange, valid_quest_key, venore_predecessor,
 };
 use oteryn_simulation_determinism::ExactI64;
 use sha2::{Digest, Sha256};
@@ -376,6 +376,8 @@ impl QuestStateCopy {
                         catalogue, &track.quest, &state.definition_hash))
                     .and_then(|defaults| defaults.get(&track.key))
                     .copied().unwrap_or(track.initial);
+                let initial = venore_predecessor::inherited_value(&track.key, &self.tracks)
+                    .unwrap_or(initial);
                 (initial != -1).then_some((track.key.clone(), initial))
             }).collect();
         if self.tracks.len().saturating_add(missing.len()) > QUESTSTATE0_RL_08_TRACKS {
@@ -735,6 +737,7 @@ pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_doors;
 pub mod kill_objectives;
+pub mod carlos_trade;
 mod persist;
 mod planegazer_finale;
 pub mod native_kills;
@@ -767,6 +770,86 @@ mod owned_items;
 mod world_access;
 mod writer;
 use storage::*;
+
+/// Credit an in-order Postman passage under the paid travel owner's Character root lock.
+pub(super) async fn credit_postman_passage(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    passage: (i64, i64),
+    catalogue: &QuestStateCatalogue,
+) -> StoredResult<CharacterRevision> {
+    use oteryn_gameplay_content::content::npc_catalogue::travel::POSTMAN_TOUR_TRACK;
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
+    };
+
+    const QUEST: &str = "oteryn:quest.the_postman_missions_quest";
+    let (stage, next_stage) = passage;
+    let state = sqlx::query(
+        "SELECT q.pinned_content_revision, q.definition_hash
+         FROM game_character_quest_states q
+         JOIN game_character_quest_tracks t USING (character_id, quest_key)
+         WHERE q.character_id = encode($1,'hex')::uuid AND q.quest_key = $2
+           AND t.track_key = $3 AND t.value = $4",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(QUEST)
+    .bind(POSTMAN_TOUR_TRACK)
+    .bind(stage)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(state) = state else {
+        return Ok(fence.expected_character_revision);
+    };
+    let pin: String = state.try_get("pinned_content_revision")?;
+    let hash = state
+        .try_get::<Vec<u8>, _>("definition_hash")?
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if catalogue.definition_hash(QUEST) != Some(hash)
+        && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(catalogue, QUEST, &hash).is_none()
+    {
+        return Ok(fence.expected_character_revision);
+    }
+    let transition = QuestTransition {
+        key: "oteryn:quest-transition/postman/complete-tour-passage".into(),
+        quest: QUEST.into(),
+        effects: vec![QuestEffect {
+            track: POSTMAN_TOUR_TRACK.into(),
+            from: QuestComparison::Eq(stage),
+            effect: QuestEffectKind::Add(next_stage - stage),
+        }],
+        completes: false,
+        experience: None,
+        world_change: None,
+    };
+    let request = QuestTransitionRequest {
+        transition_key: transition.key.clone(),
+        cause: QuestCause::Command(command),
+    };
+    let binding = request_binding(fence.character_id, &request);
+    let revision = persist::persist(
+        tx,
+        persist::QuestWrite {
+            character: fence.character_id,
+            root_revision: fence.expected_character_revision.get(),
+            request: &request,
+            transition: &transition,
+            pin: &pin,
+            hash: &hash,
+            changes: &[QuestTrackChange {
+                track: POSTMAN_TOUR_TRACK.into(),
+                before: stage,
+                after: next_stage,
+            }],
+            binding: &binding,
+            state_exists: true,
+        },
+    )
+    .await?;
+    CharacterRevision::new(revision).map_err(|_| DurabilityError::InvalidStoredState)
+}
 
 /// The caller holds the Character root lock, as do all QuestState writers.
 pub(super) async fn inquisition_blessing_eligible(

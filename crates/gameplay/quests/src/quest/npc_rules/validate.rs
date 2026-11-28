@@ -279,6 +279,15 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     NpcRuleGuard::Item {
                         item, count, op, ..
                     } => valid_quest_key(item) && *count > 0 && *op != NpcComparison::Between,
+                    NpcRuleGuard::ItemTotal {
+                        items: [first, second],
+                        minimum,
+                    } => {
+                        first != second
+                            && valid_quest_key(first)
+                            && valid_quest_key(second)
+                            && (1..=100).contains(minimum)
+                    }
                     NpcRuleGuard::Money { amount, .. } => *amount > 0,
                     NpcRuleGuard::Equipped { slot, item } => {
                         valid_quest_key(item)
@@ -341,6 +350,9 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     NpcRuleEffect::TakeItem { item, count, .. }
                     | NpcRuleEffect::GiveItem { item, count, .. } => {
                         valid_quest_key(item) && *count > 0
+                    }
+                    NpcRuleEffect::TakeAllItems { items: [first, second] } => {
+                        first != second && valid_quest_key(first) && valid_quest_key(second)
                     }
                     NpcRuleEffect::TakeMoney { amount, .. }
                     | NpcRuleEffect::GiveMoney { amount, .. } => *amount > 0,

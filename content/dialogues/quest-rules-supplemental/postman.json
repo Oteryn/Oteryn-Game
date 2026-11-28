@@ -1,0 +1,3989 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.postman",
+  "quest": "oteryn:quest.the_postman_missions_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/door",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:297"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_benjamin",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benjamin.lua:71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_chrystal",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chrystal.lua:62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_dove",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dove.lua:62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_kroox",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kroox.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_liane",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/liane.lua:71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 6,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:83"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:90"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 13,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:107"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:113"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:117"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/postman/kevin/join",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Our post officers earn their rank. Would you like to join?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:73"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/tour_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "You finished the route. Will you take another assignment?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:76"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/mailbox_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "The mailbox is working again. Are you ready for your next assignment?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:79"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/mailbox_promotion_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "The mailbox is working again. Are you ready for your next assignment?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:79"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bill_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "You found the magician. Are you ready for another assignment?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:83"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bones_prompt",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Do you bring all bones for our officers' safety fund at once?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:86"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bones_complete",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You have collected all the 20 bones needed. Excellent! Now let's talk about further missions if you are interested."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:228"
+      ],
+      "topics": [
+        13
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item_total",
+          "items": [
+            "oteryn:item.tibia.i3115",
+            "oteryn:item.tibia.i3116"
+          ],
+          "minimum": 20
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_all_items",
+          "items": [
+            "oteryn:item.tibia.i3115",
+            "oteryn:item.tibia.i3116"
+          ]
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bones_missing",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You don't have it..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:233"
+      ],
+      "topics": [
+        13
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/present_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Dermot got the present safely. Can I ask for your help again?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:90"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/measurements_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "You have the measurements. Will you take another job?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:93"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 21
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/uniform_pending",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Finish arranging the uniforms before taking another mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:96"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "lt",
+          "value": 10
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/uniforms_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Good work on the uniforms. Ask me about advancing."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:99"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 13
+        },
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/uniforms_order",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Tell Hugo to make the uniforms. Come back when he has the order."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:103"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 11
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/waldo_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "So Waldo died. Did you recover his post horn?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:107"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 23
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/santa_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Santa has his letters. Can you make another delivery?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:110"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 26
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/markwin_report",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Markwin got his letter. That was your final assignment."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:113"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/finished",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "You have completed all the missions and earned the title Archpostman."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:117"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/final_rank_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Your assignments are complete. Would you like to advance?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:120"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 27
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/waldo_rank_needed",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Are you ready for another mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:123"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/santa_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Are you ready for another mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:126"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 25
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/measurements_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Can you help us gather the officers’ measurements?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:132"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 19
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/uniform_rank_needed",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Ready for more work? Ask me about advancement first."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:135"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/present_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "The safety fund has enough bones. Are you interested in another mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:138"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bone_rank_needed",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "The safety fund has enough bones. Ask me about advancement first."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:141"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bone_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "You found the magician. Shall we start another task?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:144"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bill_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Are you ready for another mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:150"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/pattern_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Ask Talphion in Kazordoon for the technical details of the dress pattern and report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:155"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/pattern_4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Talphion sent his instructions. Ask Queen Eloise in Carlin about the uniform colours."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:159"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/pattern_10",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Tell Hugo to make the uniforms. Come back when he has the order."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:167"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 11
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/noodles_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "The queen sent the colours. Can you find out which smells repel the royal dog?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:163"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 18
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_2_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "advancement"
+      ],
+      "reply": [
+        "Your work has earned you a promotion. Do you accept?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:173"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_3_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "advancement"
+      ],
+      "reply": [
+        "Your work has earned you a promotion. Do you accept?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:176"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_4_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "advancement"
+      ],
+      "reply": [
+        "Your work has earned you a promotion. Do you accept?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:179"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 24
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_5_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "advancement"
+      ],
+      "reply": [
+        "Your work has earned you a promotion. Do you accept?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:182"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 27
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Will you do some work to prove yourself?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:188"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "The first task has several stops. Are you ready to take the directions?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:191"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Sail with Captain Bluebear from Thais to Carlin. Understood?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:194"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Then take Uzon’s carpet from the Femor Hills to Edron. Understood?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:197"
+      ],
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_5",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "From Edron, sail with Captain Seahorse to Venore. Understood?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:200"
+      ],
+      "topics": [
+        5
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/instructions_6",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Finally, take Brodrosch’s transport to Cormaya. Can you report back afterwards?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:203"
+      ],
+      "topics": [
+        6
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_tour",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Come back and ask me about your mission once you have travelled all four routes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:206"
+      ],
+      "topics": [
+        7
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_mailbox",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Take a crowbar to the mountain on Folda and fix the jammed mailbox."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:210"
+      ],
+      "topics": [
+        8
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "value": 6
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You are now an Assistant Postofficer. Ready to deliver a bill?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:215"
+      ],
+      "topics": [
+        9
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_bill",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Find David Brassacres in Venore and deliver this bill. He may try to hide his identity."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:219"
+      ],
+      "topics": [
+        10
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3216",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_bones",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Collect twenty bones for our officers to use when they encounter aggressive dogs."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:224"
+      ],
+      "topics": [
+        11
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "ge",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You are now a full postman. Please accept your officer’s hat."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:241"
+      ],
+      "topics": [
+        14
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "value": 2
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3576",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 15
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_present",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Bring the unopened present from the room to Dermot on Fibula."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:246"
+      ],
+      "topics": [
+        15
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_uniforms",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Talk to Hugo Chief in Venore about making new uniforms."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:250"
+      ],
+      "topics": [
+        16
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_noodles",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Show Noodles a banana skin, dirty fur and mouldy cheese. Ask if he likes each smell."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:255"
+      ],
+      "topics": [
+        18
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Collect the uniform measurements from Benjamin, Lokur, Dove, Liane, Chrystal and Olrik."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:259"
+      ],
+      "topics": [
+        19
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You are now a Grand Postman and qualify for reduced fares."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:263"
+      ],
+      "topics": [
+        20
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 19
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/waldo_instructions",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Courier Waldo has disappeared. Will you look for him?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:267"
+      ],
+      "topics": [
+        21
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_waldo",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Search under the troll mountain east of Thais. Bring back Waldo or his post horn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:270"
+      ],
+      "topics": [
+        22
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "eq",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 9
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/recover_waldo",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Thank you for bringing back his horn. We will honour him."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:275"
+      ],
+      "topics": [
+        23
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3219",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You are now a Grand Postman for Special Operations. Here is your post horn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:282"
+      ],
+      "topics": [
+        24
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "value": 4
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i2957",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_santa",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Take the letterbag from the room and deliver it to Santa’s mailbox on Vega."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:287"
+      ],
+      "topics": [
+        25
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/start_markwin",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Deliver this letter from Markwin’s mother to him in Mintwallin. Be careful."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:291"
+      ],
+      "topics": [
+        26
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3220",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/rank_5",
+      "completes": true,
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You are now an Archpostman. You may use guild mailboxes in dangerous places."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:297"
+      ],
+      "topics": [
+        27
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/door",
+          "value": 1
+        },
+        {
+          "kind": "achievement",
+          "name": "Archpostman"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/advancement_required",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Ask me about advancement before taking another assignment."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:303"
+      ],
+      "topics": [
+        28
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/hat_0",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "hat"
+      ],
+      "reply": [
+        "What do you want?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:76"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/hat_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "hat"
+      ],
+      "reply": [
+        "There is nothing unusual about my hat."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:79"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/hat_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "hat"
+      ],
+      "reply": [
+        "Stop asking about the hat."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:82"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/hat_4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "hat"
+      ],
+      "reply": [
+        "Fine. You have found David Brassacres."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:85"
+      ],
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/hat_5",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "hat"
+      ],
+      "reply": [
+        "Are you here for something specific?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:88"
+      ],
+      "topics": [
+        5
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/bill",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "bill"
+      ],
+      "reply": [
+        "Another bill? Are you here to give it to me?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:65"
+      ],
+      "topics": [
+        6
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/a_strange_fellow/bill_received",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.a_strange_fellow",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "I suppose I have to take it. Please leave me alone now."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_fellow.lua:70"
+      ],
+      "topics": [
+        7
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3216",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/dermot/present",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.dermot",
+      "trigger": "say",
+      "keywords": [
+        "present"
+      ],
+      "reply": [
+        "A present for me? Are you sure?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dermot.lua:62"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/dermot/present_received",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.dermot",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Thank you for bringing the present."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dermot.lua:71"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3218",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/hugo/uniforms",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.hugo",
+      "trigger": "say",
+      "keywords": [
+        "uniforms"
+      ],
+      "reply": [
+        "My dog ate the old pattern. You’ll have to find us another one."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hugo.lua:118"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/hugo/pattern",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.hugo",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Kevin found the old pattern. Ask him where he got it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hugo.lua:123"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/hugo/order",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.hugo",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Fine, I’ll make the uniforms to your specifications."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hugo.lua:126"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 12
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/talphion/pattern_0",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.talphion",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Dress flatten? What do you want flattened?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/talphion.lua:62"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/talphion/pattern_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.talphion",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Dress pattern? I can barely hear you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/talphion.lua:65"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/talphion/pattern_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.talphion",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Which dress pattern?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/talphion.lua:68"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/talphion/pattern_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.talphion",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "Do you mean the postal uniforms?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/talphion.lua:71"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/talphion/pattern_4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.talphion",
+      "trigger": "say",
+      "keywords": [
+        "dress pattern"
+      ],
+      "reply": [
+        "I designed those uniforms. I’ll send Kevin a copy of the pattern."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/talphion.lua:74"
+      ],
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/queen_eloise/uniforms",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.queen_eloise",
+      "trigger": "say",
+      "keywords": [
+        "uniforms"
+      ],
+      "reply": [
+        "I remember the uniforms. I’ll mail Mr. Postner the colour samples."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/queen_eloise.lua:174"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/benjamin/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.benjamin",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "Here are the measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benjamin.lua:71"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_benjamin",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_benjamin",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/ninos/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.ninos",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "Here are the measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ninos.lua:71"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_benjamin",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_benjamin",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/chrystal/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.chrystal",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "Here are the measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chrystal.lua:62"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_chrystal",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_chrystal",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kroox/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kroox",
+      "trigger": "say",
+      "keywords": [
+        "lokurs measurements"
+      ],
+      "reply": [
+        "Here are the measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kroox.lua:70"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_kroox",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_kroox",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/dove/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.dove",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "Will you give me some grapes in exchange for my measurements?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dove.lua:62"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_dove",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/dove/measurements_received",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.dove",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Thank you. Here are my measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dove.lua:71"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_dove",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3592",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_dove",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/liane/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.liane",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "Will you bring me twelve arrows to drive the hawks away from my pigeons?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/liane.lua:71"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_liane",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/liane/measurements_received",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.liane",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Thank you. Here are my measurements for the uniform."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/liane.lua:80"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_liane",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3447",
+          "count": 12
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_liane",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/lokur/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.lokur",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "My armorer Kroox knows my measurements. Ask him for them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lokur.lua:100"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_kroox",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/markwin/letter",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.markwin",
+      "trigger": "say",
+      "keywords": [
+        "letter"
+      ],
+      "reply": [
+        "Did my mother send me a letter? Can I have it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:89"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3220",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/markwin/letter_received",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.markwin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Thank you for bringing my mother’s letter."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:101"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3220",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission10",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "inventory_failure_reply": [
+        "We cannot make the exchange right now."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "banana skin"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:66"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3104",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Woof!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:88"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "dirty fur"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:73"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 8
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3105",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Woof!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:92"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "mouldy cheese"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:80"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 9
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3120",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Meeep! Grrrrr! <spits>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:96"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "My measurements? Listen, lets make that a bit more exciting ... No, no, not what you think! I mean let's gamble. I will roll a dice. If I roll a 6 you win and I'll tell you what you need to know, else I win and get 5 gold. Deal? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:63"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/measurements_unavailable",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:66"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/roll",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Ok, here we go ... {roll}! You have won! How lucky you are! So listen ...<tells you what you need to know> ",
+        "Ok, here we go ... {roll}! You lose! Try again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:70"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "money",
+          "amount": 5,
+          "include_bank": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_money",
+          "amount": 5,
+          "include_bank": true
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/a_strange_fellow.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "a942d86e6ce1066564a14f4976b4af1926b22807b1c7ae7beb338ec2097d8b01"
+    },
+    {
+      "path": "data-global/npc/benjamin.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "e4fa22b9828e647d40a822f57444e3382df9751ea90b99165c28437384264642"
+    },
+    {
+      "path": "data-global/npc/chrystal.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "302f4b30df18574e53232870903057d8e41388ef0cffc959f37bd4837e42cca2"
+    },
+    {
+      "path": "data-global/npc/dermot.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+    },
+    {
+      "path": "data-global/npc/dove.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "668aa638288159597eae20618cd40d34b11193c644ffcfdbceb65d253e7cc2d0"
+    },
+    {
+      "path": "data-global/npc/hugo.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+    },
+    {
+      "path": "data-global/npc/kevin.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "7f3a304002acd6277bc8981f0e07e045e84eda518cbdb46f245e0e6b898f9691"
+    },
+    {
+      "path": "data-global/npc/kroox.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497"
+    },
+    {
+      "path": "data-global/npc/liane.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "f8fce5ff7fbfa154bb927de1911bd7dfc9b37dd86ac941db3ea652baf1eaccce"
+    },
+    {
+      "path": "data-global/npc/lokur.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "e677cdeced5eda997c0be4e6c10fac0bee9d4f33ea6d67ad744a8f06d1e3498a"
+    },
+    {
+      "path": "data-global/npc/markwin.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "7d00de2d3af78f0d31a3ad3b355bc3031d7a077be09fdd2dd7fc6fb8aebf76c6"
+    },
+    {
+      "path": "data-global/npc/ninos.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "c4f5d4de63577e1c48efcd9683ad86cd2c9790fa4ca0687a38a70c98032adc72"
+    },
+    {
+      "path": "data-global/npc/noodles.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "963276766d4a122f8fa4514e064174da4b11f401448cc56395e1034330e3d287"
+    },
+    {
+      "path": "data-global/npc/queen_eloise.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e"
+    },
+    {
+      "path": "data-global/npc/talphion.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "558faa966e6f787d8c7af599f5cf675ce8ac64db638729585fd829e51f7eb901"
+    }
+  ]
+}

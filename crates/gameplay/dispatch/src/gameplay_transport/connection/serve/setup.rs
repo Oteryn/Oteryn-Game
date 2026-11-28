@@ -204,6 +204,12 @@ where
         payloads.push(message.map_err(|()| ServeEnd::server("join_snapshot_unavailable"))?);
     }
     native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
+    cooldowns::snapshot(
+        authority,
+        admitted,
+        initial.cooldowns.as_mut(),
+        &mut payloads,
+    )?;
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -304,6 +310,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        cooldowns,
         spell_catalog,
         overlay_served,
         notices_selected,
@@ -480,6 +487,7 @@ async fn live<A: FreshAdmissionAuthority>(
         .unwrap_or(0);
     record_join_progress("live_ready", admitted.first_entry);
     Ok(ServeState {
+        cooldowns,
         input_after_refresh: false,
         next_periodic_refresh: 0,
         activity_ack: None,

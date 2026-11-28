@@ -92,6 +92,13 @@ tokio::task_local! {
 }
 
 #[cfg(test)]
+pub(super) fn native_ai_seed_for_test(seed: [u8; 32]) -> [u8; 32] {
+    NATIVE_PROFILE_TEST_SEED
+        .try_with(|seed| *seed)
+        .unwrap_or(seed)
+}
+
+#[cfg(test)]
 pub(super) async fn with_native_ai_seed<T>(
     seed: [u8; 32],
     turn: impl std::future::Future<Output = T>,
@@ -411,7 +418,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let seed = native.source_digest();
                 #[cfg(test)]
-                let seed = NATIVE_PROFILE_TEST_SEED.try_with(|seed| *seed).unwrap_or(seed);
+                let seed = native_ai_seed_for_test(seed);
                 let root = GameplayDecisionRoot::from_bytes(seed);
                 let bloodjaw_players = if wave_enabled {
                     bloodjaw_targeting::current_players(runtime, states)
