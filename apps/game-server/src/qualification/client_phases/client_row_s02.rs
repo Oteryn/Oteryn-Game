@@ -106,8 +106,28 @@ async fn party(client: &mut DevClientSession, intent: Option<PartyIntent>) -> Te
     reply.view.ok_or_else(|| "party view absent".into())
 }
 
-/// The raw icon reply plus the (shield, skull) it carries for `target`.
-async fn icon(client: &mut DevClientSession, target: EntityRef) -> TestResult<(Vec<u8>, u8, u8)> {
+/// Keep the raw reply and record every decoded icon in its original order.
+async fn icon(
+    client: &mut DevClientSession,
+    target: EntityRef,
+    view: &str,
+) -> TestResult<(Vec<u8>, u8, u8, String, String)> {
+    use std::fmt::Write as _;
+    const SHIELDS: [&str; 12] = [
+        "None",
+        "Invitation blue",
+        "Invitation yellow",
+        "Member",
+        "Leader",
+        "Shared member",
+        "Shared leader",
+        "Inactive blinking member",
+        "Inactive blinking leader",
+        "Inactive member",
+        "Inactive leader",
+        "Outsider gray",
+    ];
+    const SKULLS: [&str; 7] = ["None", "Yellow", "Green", "White", "Red", "Black", "Orange"];
     let reply = client
         .session_mut()
         .gated_command(
@@ -125,7 +145,28 @@ async fn icon(client: &mut DevClientSession, target: EntityRef) -> TestResult<(V
         .iter()
         .find(|entry| entry.entity == target)
         .ok_or("target absent from the icon reply")?;
-    Ok((reply.payload, found.shield, found.skull))
+    let mut rows = String::new();
+    for entry in &icons {
+        let identity = entry.entity.identity;
+        let generation = entry.entity.generation;
+        let shield = entry.shield;
+        let skull = entry.skull;
+        let shield_label = SHIELDS
+            .get(usize::from(shield))
+            .ok_or("unknown party shield")?;
+        let skull_label = SKULLS.get(usize::from(skull)).ok_or("unknown skull")?;
+        writeln!(
+            rows,
+            "{view}\t{}\t{generation}\t{shield}\t{skull}\tEntity {identity:02x?} / {generation} | Shield: {shield_label} | Skull: {skull_label}",
+            hex(&identity),
+        )?;
+    }
+    let receipt = format!(
+        "{view}_session={}\n{view}_command={}\n{view}_sequence={}\n",
+        hex(client.join_snapshot().game_session_id.as_bytes()),
+        reply.command_id, reply.server_sequence,
+    );
+    Ok((reply.payload, found.shield, found.skull, rows, receipt))
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -187,7 +228,8 @@ async fn journey(clients: &SeamClients<'_>, captures: &Path) -> TestResult {
     wait_for_pair_visibility(&mut leader, &mut peer, leader_ref, peer_ref).await?;
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;
-    let (invited_bytes, invited_shield, invited_skull) = icon(&mut leader, peer_ref).await?;
+    let (invited_bytes, invited_shield, invited_skull, invited_rows, invited_receipt) =
+        icon(&mut leader, peer_ref, "invited").await?;
     if (invited_shield, invited_skull) != (2, 0) {
         return Err(format!("inviter icons observed={invited_shield}/{invited_skull}").into());
     }
@@ -202,8 +244,10 @@ async fn journey(clients: &SeamClients<'_>, captures: &Path) -> TestResult {
         .ok_or("peer lacks the invitation")?
         .handle;
     party(&mut peer, Some(PartyIntent::Accept(handle))).await?;
-    let (member_bytes, peer_shield, peer_skull) = icon(&mut leader, peer_ref).await?;
-    let (leader_bytes, leader_shield, leader_skull) = icon(&mut peer, leader_ref).await?;
+    let (member_bytes, peer_shield, peer_skull, member_rows, member_receipt) =
+        icon(&mut leader, peer_ref, "member").await?;
+    let (leader_bytes, leader_shield, leader_skull, leader_rows, leader_receipt) =
+        icon(&mut peer, leader_ref, "leader").await?;
     if (peer_shield, peer_skull) != (3, 0) || (leader_shield, leader_skull) != (4, 0) {
         return Err(format!(
             "joined icons observed={peer_shield}/{peer_skull} {leader_shield}/{leader_skull}"
@@ -213,7 +257,7 @@ async fn journey(clients: &SeamClients<'_>, captures: &Path) -> TestResult {
     std::fs::write(captures.join(CAPTURES[1]), member_bytes)?;
     std::fs::write(captures.join(CAPTURES[2]), leader_bytes)?;
     let expected = format!(
-        "peer_identity={}\npeer_generation={}\nleader_identity={}\nleader_generation={}\ninvited_shield={invited_shield}\ninvited_skull={invited_skull}\nmember_shield={peer_shield}\nmember_skull={peer_skull}\nleader_shield={leader_shield}\nleader_skull={leader_skull}\n",
+        "peer_identity={}\npeer_generation={}\nleader_identity={}\nleader_generation={}\ninvited_shield={invited_shield}\ninvited_skull={invited_skull}\nmember_shield={peer_shield}\nmember_skull={peer_skull}\nleader_shield={leader_shield}\nleader_skull={leader_skull}\n{invited_receipt}{member_receipt}{leader_receipt}\n{invited_rows}{member_rows}{leader_rows}",
         hex(&peer_ref.identity),
         peer_ref.generation,
         hex(&leader_ref.identity),
