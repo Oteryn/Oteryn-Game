@@ -2107,12 +2107,9 @@ impl IssuedSemanticPass {
             return result;
         }
 
-        // SQLx takes a system-clock deadline, so transfer only the remaining budget.
-        let release_deadline =
-            Instant::now() + self.deadline.saturating_duration_since(TokioInstant::now());
         let disposition = self
             .holder
-            .return_to_pool_observed_until(release_deadline)
+            .return_to_pool_observed_until(self.deadline)
             .await;
         drop(self.holder);
         if matches!(disposition, PoolConnectionReturnDisposition::ReturnedToIdle) {
