@@ -4,7 +4,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastDisposition, SpellTarget};
-use super::full_row_c10::{prepare_caster, progress, soul_spell};
+use super::full_row_c10::{prepare_caster, progress, record_cast_evidence, soul_spell};
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::time::Duration;
@@ -48,6 +48,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spell = soul_spell(&mut client).await?;
     let index = NonZeroU32::new(spell.cast_index).ok_or("C10 client zero cast index")?;
     let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+    record_cast_evidence("C10.client", &spell, &cast);
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("C10 client cast reply: {cast:?}").into());
     }
@@ -56,6 +57,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .filter(|delta| delta.value.soul == expected)
         .ok_or("C10 client cast did not carry the exact soul debit")?;
     let refused = client.cast_spell(index, SpellTarget::None, false).await?;
+    record_cast_evidence("C10.client", &spell, &refused);
     if refused.disposition != SpellCastDisposition::CoolingDown
         || client.actor_vitals() != Some(&debit.value)
     {

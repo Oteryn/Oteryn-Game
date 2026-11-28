@@ -138,6 +138,14 @@ pub(super) async fn prepare_caster(
     Ok(client)
 }
 
+pub(super) fn record_cast_evidence(row: &str, spell: &spell_wire::SpellCatalogEntry, cast: &oteryn_dev_client::CastOutcome) {
+    // The catalogue exposes the invocation and cast index. The pinned source supplies this key.
+    evidence(&format!(
+        "C10_CAST_FRAME row={row} source_spell_key=candidate:spell/light_magic_missile_rune words={:?} cast_index={} {cast:?}",
+        spell.words, spell.cast_index,
+    ));
+}
+
 pub(super) async fn soul_spell(client: &mut DevClientSession) -> TestResult<spell_wire::SpellCatalogEntry> {
     let snapshot = client.session_mut().gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step soul debit: admitted spell catalogue missing")?;
@@ -178,6 +186,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let spell = soul_spell(&mut client).await?;
     let before = client.actor_vitals().copied().ok_or("step soul debit: vitals absent")?;
     let cast = client.cast_spell(NonZeroU32::new(spell.cast_index).ok_or("step soul debit: zero cast index")?, SpellTarget::None, false).await?;
+    record_cast_evidence("C10.full", &spell, &cast);
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("step soul debit: server reply={cast:?}").into());
     }
@@ -190,6 +199,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let held = client.inventory().cloned();
     let refused = client.cast_spell(NonZeroU32::new(spell.cast_index).ok_or("step cooldown refusal: zero index")?, SpellTarget::None, false).await?;
+    record_cast_evidence("C10.full", &spell, &refused);
     if refused.disposition != SpellCastDisposition::CoolingDown
         || client.actor_vitals().is_none_or(|v| v.soul != after)
         || client.inventory().cloned() != held
