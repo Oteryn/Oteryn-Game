@@ -67,7 +67,7 @@ async fn quote(
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
     // The quote and settlement both run under the fenced Character root lock.
-    // Crystal (Global silent for carpets and exact item id): chemar.lua:62-64,
+    // Crystal (Global silent for carpets and the custody predicate): chemar.lua:62-64,
     // petros.lua:53-55. Reuse the bounded carried projection, including nested bags.
     if matches!(route.service.as_str(), "oteryn:service.travel.chemar" | "oteryn:service.travel.petros") {
         let has_cheese: bool = sqlx::query_scalar(
