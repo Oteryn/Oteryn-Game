@@ -11,8 +11,8 @@
 //!    for a new attack, and no monster-attributed damage or HP loss. After expiry, require
 //!    that the same target can be selected and cleared.
 //! 4. After the window, require a new monster-attributed damage frame and HP loss. Then send
-//!    LOGOUT while in fight and require the server's refusal; retry only until the ordinary
-//!    combat lock expires and require an accepted logout.
+//!    LOGOUT while in fight and require the server's refusal; wait for the ordinary combat
+//!    lock to expire and require an accepted logout on the first request.
 //! 5. Freshly admit, return to the same Rat approach with STEP, and check that the
 //!    fresh-login protection suppresses monster damage, then require damage after its
 //!    expiry. This re-check proves that logout did not durably retain or extend the reconnect
@@ -551,24 +551,24 @@ async fn require_damage(
 
 async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
-            Some(
-                oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }
-                | oteryn_protocol_oteryn::logout::LogoutResult::Busy,
-            ) if tokio::time::Instant::now() < deadline => {
-                client.service_liveness(Duration::from_millis(250)).await?;
-            }
-            _ => {
-                return Err(format!(
-                    "step=4 eventual logout observed={reply:?} need=Accepted after combat expiry"
-                )
-                .into());
-            }
+    while !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| !state.in_fight)
+    {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("step=logout-lock need=served-combat-clearance".into());
         }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(100)))
+            .await?;
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={reply:?} need=Accepted after combat expiry").into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
