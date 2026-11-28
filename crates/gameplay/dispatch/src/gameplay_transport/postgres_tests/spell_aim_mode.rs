@@ -171,6 +171,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     };
     assert!(i64::from(facts.max_mana) >= MANA, "max mana");
     let targets;
+    let moving_rat;
     let rat_health;
     let caster;
     {
@@ -198,11 +199,11 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
         // Start at full fixture health so the hit changes the wire percentage without killing.
-        // The front rat stands at the aimed wave's origin. The second stands one tile deeper.
+        // The front rat stays at the wave's origin. The other starts beside its impact tile.
         rat_health = u64::try_from(runtime.companion_policy("oteryn:creature.rat").map_err(debug)?.maximum_health)?;
         runtime
             .realize_activation_spawns(
-                [(1, 0), (2, 0)]
+                [(1, 0), (2, 1)]
                     .map(|(dx, dy)| (
                         vec![(caster.x + dx, caster.y + dy, caster.floor)],
                         60_000,
@@ -220,6 +221,15 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             .map(|creature| creature.actor)
             .collect::<Vec<_>>();
         assert_eq!(targets.len(), 2);
+        moving_rat = targets
+            .iter()
+            .copied()
+            .find(|target| {
+                runtime
+                    .read_actor_position(*target)
+                    .is_ok_and(|at| at.position().y == caster.y + 1)
+            })
+            .ok_or("moving rat")?;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -375,7 +385,22 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     let commands = [(actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, payload)];
     let (cast, spectator_frames) =
         crate::gameplay_transport::connection::observe_test_spell_damage(
-            &owner, observer, exchange(&owner, &mut admitted, &commands)
+            &owner, observer, async {
+                // The spectator has its initial cut, and no refresh runs between the move
+                // and the hit. The caster joins after the move and sees the impact tile.
+                let mut runtime = deps.runtime.lock().await;
+                let before = runtime.read_actor_position(moving_rat).map_err(debug)?;
+                let destination = crate::foundation::MovementLocalPosition {
+                    y: caster.y,
+                    ..before.position()
+                };
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(before, destination)
+                    .map_err(debug)?;
+                drop(runtime);
+                exchange(&owner, &mut admitted, &commands).await
+            }
         ).await?;
     let (results, caster_frames) = cast?;
     assert!(admitted.continuity.combat.sent.is_some_and(|state| state.in_fight),
@@ -508,7 +533,7 @@ fn assert_damage_then_health(
     percent: u8,
 ) -> TestResult {
     use oteryn_protocol_oteryn::{decode_state_delta, presentation as cues, world_spatial_entities as spatial};
-    let mut saw_damage = false;
+    let mut impact = None;
     while !frames.is_empty() {
         let length = u32::from_be_bytes(frames.get(..4).ok_or("frame length")?.try_into()?) as usize;
         let envelope = decode_wire_envelope(frames.get(4..4 + length).ok_or("frame")?)?;
@@ -518,19 +543,26 @@ fn assert_damage_then_health(
         }
         let delta = decode_state_delta(envelope.payload())?;
         if delta.domain_id == cues::STATE_DOMAIN_WORLD_PRESENTATION {
-            saw_damage |= cues::decode_presentation_batch(delta.payload).map_err(debug)?.iter().any(
-                |event| matches!(event.kind, cues::PresentationEventKind::ValueText { target: shown, primary, .. }
-                    if shown == target && primary.value == damage)
-            );
+            for event in cues::decode_presentation_batch(delta.payload).map_err(debug)? {
+                if let cues::PresentationEventKind::ValueText { target: shown, position, primary, .. } = event.kind
+                    && shown == target && primary.value == damage
+                {
+                    impact = Some(position);
+                }
+            }
         } else if delta.domain_id == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
             let update = spatial::decode_world_spatial_entities_delta(delta.payload).map_err(debug)?;
             for entry in update.update {
                 if entry.entity == target && matches!(entry.detail, spatial::EntityDetail::Actor { health_percent, .. } if health_percent == percent) {
-                    assert!(saw_damage, "the creature health must follow its damage text");
+                    let impact = impact.ok_or("the creature health must follow its damage text")?;
+                    assert_eq!(
+                        entry.position, impact,
+                        "the damaged generation must be at its impact tile"
+                    );
                     return Ok(());
                 }
             }
         }
     }
-    Err(format!("missing creature health {percent} after damage {damage}, saw_damage={saw_damage}").into())
+    Err(format!("missing creature health {percent} after damage {damage}, impact={impact:?}").into())
 }

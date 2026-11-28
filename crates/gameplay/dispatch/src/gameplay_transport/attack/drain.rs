@@ -2136,9 +2136,7 @@ fn draw_swing_damage(
         ..
     } = *selected;
     if selected.weapon.ranged.is_some() && runtime.contains_live_creature(target) {
-        entry
-            .state
-            .record_hit(swing.at, constants.in_fight_micros());
+        entry.record_fight_deadline(runtime, swing.at, constants, CombatLockCause::Attack);
     }
     let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
     let (formula, attack_value, revision) = if let Some(ranged) = &selected.weapon.ranged {
@@ -2190,9 +2188,7 @@ fn draw_swing_damage(
     )?;
     let creature = runtime.contains_live_creature(target);
     if creature {
-        entry
-            .state
-            .record_hit(swing.at, constants.in_fight_micros());
+        entry.record_fight_deadline(runtime, swing.at, constants, CombatLockCause::Attack);
     }
     swing_lands(damage).then_some((damage, revision))
 }

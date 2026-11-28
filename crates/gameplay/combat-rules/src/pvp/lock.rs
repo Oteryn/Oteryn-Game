@@ -71,6 +71,14 @@ impl CombatLock {
         }
     }
 
+    pub fn logout_until(&self) -> Option<SemanticTimeMicros> {
+        self.logout_until
+    }
+
+    pub fn pz_until(&self) -> Option<SemanticTimeMicros> {
+        self.pz_until
+    }
+
     pub fn pz_block_running(&self, now: SemanticTimeMicros) -> bool {
         running(self.pz_until, now)
     }

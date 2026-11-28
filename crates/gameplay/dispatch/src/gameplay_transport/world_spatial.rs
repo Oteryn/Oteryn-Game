@@ -301,6 +301,8 @@ pub struct SessionVisibility {
     published: Option<([u8; 32], ActorPosition)>,
 }
 
+pub(super) struct CreatureHealthNeedsVisibility;
+
 impl SessionVisibility {
     /// Only an actor incarnation actually sent in this session's view can be examined.
     pub(crate) fn shows(&self, entity: EntityRef) -> bool {
@@ -360,21 +362,24 @@ impl SessionVisibility {
         })
     }
 
-    /// Health updates reuse the exact incarnations and metadata already on the wire.
+    /// Reuse stationary records. Let normal visibility publish a moved incarnation with
+    /// its current position and health together, including a leave if it moved out of view.
     pub(super) fn refresh_creature_health(
         &mut self,
         channel: &ChannelEntities,
-    ) -> Option<WorldSpatialEntitiesDelta> {
-        let (content_generation, actor_position) = self.published?;
+    ) -> Result<Option<WorldSpatialEntitiesDelta>, CreatureHealthNeedsVisibility> {
+        let Some((content_generation, actor_position)) = self.published else {
+            return Ok(None);
+        };
         if content_generation != channel.content_generation {
-            return None;
+            return Ok(None);
         }
         let mut update = Vec::new();
         for current in &channel.entities {
             if current.kind != VisibleKind::Creature {
                 continue;
             }
-            let Some(shown) = self.entities.get_mut(&current.identity) else {
+            let Some(mut shown) = self.entities.get(&current.identity).copied() else {
                 continue;
             };
             if shown.entity.generation != current.generation || shown.kind != EntityKind::Creature {
@@ -386,18 +391,26 @@ impl SessionVisibility {
                 continue;
             };
             if *health_percent != current.health_percent {
+                if shown.position != current.position {
+                    return Err(CreatureHealthNeedsVisibility);
+                }
                 *health_percent = current.health_percent;
-                update.push(*shown);
+                update.push(shown);
             }
         }
+        // A moved entity may abort this whole delta. Update the published cut only
+        // after every candidate has been checked.
+        for entry in &update {
+            self.entities.insert(entry.entity.identity, *entry);
+        }
         update.sort_unstable_by_key(|entry| entry.entity);
-        (!update.is_empty()).then_some(WorldSpatialEntitiesDelta {
+        Ok((!update.is_empty()).then_some(WorldSpatialEntitiesDelta {
             content_generation,
             actor_position,
             enter: Vec::new(),
             update,
             leave: Vec::new(),
-        })
+        }))
     }
 
     /// Reuse published names for exact incarnations and defer actors without a name.

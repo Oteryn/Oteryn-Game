@@ -88,7 +88,7 @@ mod tests {
     }
 
     #[test]
-    fn combat_fact_reads_the_real_actor_session_hit_and_exact_expiry()
+    fn combat_fact_reads_exact_expiry_and_logs_each_renewal_cause()
     -> Result<(), Box<dyn std::error::Error>> {
         fn error(e: impl std::fmt::Debug) -> String {
             format!("{e:?}")
@@ -122,12 +122,24 @@ mod tests {
         runtime
             .initialize_first_entry_position(actor)
             .map_err(error)?;
-        let states = ChannelSpellStates::default();
+        let mut states = ChannelSpellStates::default();
         let mut attack = ChannelAttackStates::default();
         let now = SemanticTimeMicros::from_micros(10);
         let absent = CombatLockFact::read(&states, &attack, actor, session, now);
         assert_eq!(absent.pve_in_fight_until, None);
-        attack.record_hit_taken(&runtime, actor, session, now);
+        use super::super::pvp_live::{CombatLockCause, record_pvp_hit};
+        let earlier = SemanticTimeMicros::from_micros(5);
+        let lines = oteryn_error_codes::capture(|| {
+            attack.record_fight_activity(
+                &runtime,
+                actor,
+                session,
+                earlier,
+                CombatLockCause::Attack,
+            );
+            attack.record_hit_taken(&runtime, actor, session, now);
+            attack.record_hit_taken(&runtime, actor, session, now);
+        });
         let actual = attack
             .in_fight_until(actor, session, now)
             .ok_or("missing actual hit")?;
@@ -145,6 +157,55 @@ mod tests {
             CombatLockFact::read(&states, &attack, actor, session, actual).pve_in_fight_until,
             None
         );
+        let pvp_lines = oteryn_error_codes::capture(|| {
+            record_pvp_hit(
+                &runtime,
+                &mut states,
+                actor,
+                session,
+                now,
+                CombatLockCause::Attack,
+                true,
+            );
+            record_pvp_hit(
+                &runtime,
+                &mut states,
+                actor,
+                session,
+                now,
+                CombatLockCause::Attack,
+                true,
+            );
+        });
+        let lock = super::super::pvp_live::lock_mut(&mut states, actor, session);
+        let pz = lock.pz_until().ok_or("missing PZ expiry")?;
+        let logout = lock.logout_until().ok_or("missing PvP logout expiry")?;
+        let tile = runtime
+            .read_actor_position(actor)
+            .map_err(error)?
+            .position();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(pvp_lines.len(), 2);
+        let attack_until = actual.get() - (now.get() - earlier.get());
+        for (line, cause, kind, expiry) in [
+            (&lines[0], "attack", "in_fight", attack_until),
+            (&lines[1], "damage", "in_fight", actual.get()),
+            (&pvp_lines[0], "attack", "pvp_logout", logout.get()),
+            (&pvp_lines[1], "aggressor", "pz", pz.get()),
+        ] {
+            let parsed = oteryn_error_codes::parse_line(line).map_err(error)?;
+            assert_eq!(parsed.level, oteryn_error_codes::Level::Info);
+            assert_eq!(parsed.event, "transport_diagnostic");
+            let expected = format!(
+                "combat_lock_renewed actor={}/{} cause={cause} lock={kind} expires_at_us={expiry} tile=({},{},{})",
+                actor.actor_local_id(),
+                actor.actor_local_generation(),
+                tile.x,
+                tile.y,
+                tile.floor.unsigned_abs()
+            );
+            assert_eq!(parsed.detail.as_deref(), Some(expected.as_str()));
+        }
         Ok(())
     }
 }

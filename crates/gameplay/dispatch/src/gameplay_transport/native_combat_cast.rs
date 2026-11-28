@@ -3225,7 +3225,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
                 if spell.aggressive {
-                    attack.record_fight_activity(&runtime, actor, session, at);
+                    attack.record_fight_activity(&runtime, actor, session, at,
+                        super::super::pvp_live::CombatLockCause::Attack);
                 }
                 for effect in &batch.effects {
                     if effect.health.is_some_and(|h| h.committed_health_loss().is_some())

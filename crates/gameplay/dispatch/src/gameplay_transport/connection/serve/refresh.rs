@@ -701,40 +701,11 @@ where
         }
     }
     // VIS-3: entities that moved, entered or left without this actor's step.
-    let Some(view) = session.visibility.as_mut() else {
+    if session.visibility.is_none() {
         return Ok(());
-    };
-    *step = "entity_names";
-    let projection = match Box::pin(crate::gameplay_transport::entity_names::observe_result(
-        authority,
-        session.actor,
-        session.admitted.continuity.selected_capabilities,
-    ))
-    .await
-    {
-        Ok(channel) => {
-            *step = "appearances";
-            Box::pin(session.appearances.refresh_result(
-                stream,
-                authority,
-                session.actor,
-                &mut session.admitted,
-                view,
-                &channel,
-                session.item_view.as_mut(),
-                (session.sequence, session.revision),
-                false,
-            ))
-            .await
-        }
-        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
-        Err(_) => return Err(ServeEnd::server("state_projection_unavailable")),
-    };
-    match projection {
-        Ok((to_sequence, to_revision)) => {
-            session.sequence = to_sequence;
-            session.revision = to_revision;
-            session.admitted.continuity.spatial_revision = session.revision;
+    }
+    match visible_entities(stream, authority, session, step).await {
+        Ok(()) => {
             *step = "party_skull";
             party_skull::refresh(stream, authority, session).await?;
             inventory_capacity::refresh(stream, authority, session).await?;
@@ -833,6 +804,48 @@ where
     Ok(())
 }
 
+async fn visible_entities<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    step: &mut &'static str,
+) -> Result<(), ObservationError> {
+    let Some(view) = session.visibility.as_mut() else {
+        return Ok(());
+    };
+    *step = "entity_names";
+    let projection = match Box::pin(crate::gameplay_transport::entity_names::observe_result(
+        authority,
+        session.actor,
+        session.admitted.continuity.selected_capabilities,
+    ))
+    .await
+    {
+        Ok(channel) => {
+            *step = "appearances";
+            Box::pin(session.appearances.refresh_result(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                view,
+                &channel,
+                session.item_view.as_mut(),
+                (session.sequence, session.revision),
+                false,
+            ))
+            .await
+        }
+        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
+        Err(_) => return Err(ObservationError::Unavailable),
+    };
+    let (sequence, revision) = projection?;
+    session.sequence = sequence;
+    session.revision = revision;
+    session.admitted.continuity.spatial_revision = revision;
+    Ok(())
+}
+
 async fn creature_health<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     authority: &A,
@@ -844,8 +857,26 @@ async fn creature_health<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     let Some(channel) = authority.observe_visible_entities(session.actor).await else {
         return Ok(());
     };
-    let Some(mut delta) = view.refresh_creature_health(&channel) else {
-        return Ok(());
+    let mut delta = match view.refresh_creature_health(&channel) {
+        Ok(Some(delta)) => delta,
+        Ok(None) => return Ok(()),
+        Err(_) => {
+            return match Box::pin(visible_entities(
+                stream,
+                authority,
+                session,
+                &mut "creature_health",
+            ))
+            .await
+            {
+                Ok(()) | Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {
+                    Ok(())
+                }
+                Err(ObservationError::Unavailable) => {
+                    Err(ServeEnd::server("creature_health_projection_unavailable"))
+                }
+            };
+        }
     };
     if session
         .selected_capabilities
