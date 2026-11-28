@@ -131,6 +131,17 @@ fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditE
     }
 }
 
+fn corpse_placement_max(ground: &OneItemGroundV1) -> u64 {
+    // The player death mint uses the occurrence UUID for both fields.
+    if ground.corpse_ref == ground.native_room_placement_context
+        && check_uuid_v7(&ground.corpse_ref).is_ok()
+    {
+        super::item_mint::player_death::PLAYER_CORPSE_ITEMS_MAX as u64
+    } else {
+        mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX
+    }
+}
+
 /// Complete closed `DECAY_RETIRE` shape, conservation (the whole before
 /// quantity retires to exactly 0) and every registered bound.
 pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
@@ -142,9 +153,6 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
     }
     if value.world_reset.is_some() {
         return world_reset::check(value);
-    }
-    if value.ground_container_entry.is_some() {
-        return Err(AuditError::InvalidInput);
     }
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -167,6 +175,16 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
     {
         return Err(AuditError::InvalidInput);
     }
+    if let Some(entry) = &value.ground_container_entry {
+        world_reset::check_entry(entry, &before.item_instance_id)?;
+        if entry.tree_root_item_instance_id.as_ref() != Some(&cause.corpse_item_instance_id)
+            || entry.parent_item_instance_id == cause.corpse_item_instance_id
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        DECAY_RETIRE_USAGE.check()?;
+        return Ok(DecayRetireShape::GroundContainerEntry);
+    }
     let shape = match value.corpse_entry.as_ref() {
         None => {
             // The corpse's own step retires the corpse named by the cause.
@@ -177,12 +195,11 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
         }
         Some(entry) => {
             // An entry's step: a direct entry of the cause's corpse, never
-            // the corpse itself, at a GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX
-            // ordinal.
+            // the corpse itself, at an ordinal allowed for that body.
+            let max = corpse_placement_max(ground);
             if entry.corpse_item_instance_id != cause.corpse_item_instance_id
                 || entry.corpse_item_instance_id == before.item_instance_id
-                || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
-                    .contains(&entry.placement_ordinal)
+                || !(1..=max).contains(&entry.placement_ordinal)
             {
                 return Err(AuditError::InvalidInput);
             }

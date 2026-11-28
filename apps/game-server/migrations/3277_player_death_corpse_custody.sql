@@ -19,7 +19,7 @@ ALTER TABLE game_player_death_item_records
  ADD CONSTRAINT game_player_death_corpse_destination CHECK (
   (destination_corpse_id IS NULL AND destination_ordinal IS NULL AND replacement_bag_id IS NULL)
   OR (operation=1 AND destination_corpse_id IS NOT NULL AND destination_corpse_id<>item_instance_id
-      AND destination_ordinal IS NOT NULL AND destination_ordinal>0
+      AND destination_ordinal IS NOT NULL AND destination_ordinal BETWEEN 1 AND 550
       AND (replacement_bag_id IS NOT NULL)=(source_slot=9)));
 CREATE INDEX game_player_death_items_corpse_idx ON game_player_death_item_records(destination_corpse_id)
  WHERE destination_corpse_id IS NOT NULL;
@@ -147,6 +147,11 @@ BEGIN
  anchor:='IF NOT EXISTS (';
  amended:=replace(body,anchor,'IF NOT game_player_death_corpse_custody(NEW.placed_transaction_id) AND NOT EXISTS (');
  IF body=amended THEN RAISE EXCEPTION 'corpse entry insertion guard changed'; END IF;
+ body:=amended;
+ -- The player loss proof has a separate bound of one carried inventory.
+ amended:=replace(body,'NEW.parent_item_instance_id) > 48 THEN',
+  'NEW.parent_item_instance_id) > (CASE WHEN game_player_death_corpse_custody(NEW.placed_transaction_id) THEN 550 ELSE 48 END) THEN');
+ IF body=amended THEN RAISE EXCEPTION 'corpse entry capacity guard changed'; END IF;
  EXECUTE amended;
 
  body:=pg_get_functiondef('game_source_corpse_mint_proven()'::regprocedure);
@@ -188,6 +193,19 @@ BEGIN
 END
 $migration$;
 
+-- Player corpses can contain a full carried inventory. Ordinary corpse
+-- admission still enforces its own 48-entry limit above.
+ALTER TABLE game_item_decay_retire_reservations
+ DROP CONSTRAINT game_retire_placement_ordinal,
+ ADD CONSTRAINT game_retire_placement_ordinal CHECK (
+  placement_ordinal BETWEEN 1 AND 18446744073709551615
+  AND (cause_kind<>'CORPSE_DECAY' OR placement_ordinal<=550));
+ALTER TABLE game_item_decay_retire_receipts
+ DROP CONSTRAINT game_retire_placement_ordinal,
+ ADD CONSTRAINT game_retire_placement_ordinal CHECK (
+  placement_ordinal BETWEEN 1 AND 18446744073709551615
+  AND (cause_kind<>'CORPSE_DECAY' OR placement_ordinal<=550));
+
 -- A previously looted ItemInstance can become a death loss again. The proof
 -- is unique in its physical transaction, the key all existing consumers use.
 ALTER TABLE game_item_corpse_entry_removal_evidence
@@ -208,12 +226,20 @@ BEGIN
     ) THEN
         SELECT r.corpse_top_damage_character_id$arm$);
  IF body=amended THEN RAISE EXCEPTION 'corpse transfer exclusivity guard changed'; END IF;
+ body:=amended;
+ amended:=replace(body,'corpse_ev.channel_id = v.channel_id',
+  '(corpse_ev.scope_kind,corpse_ev.channel_id,corpse_ev.instance_id) IS NOT DISTINCT FROM (v.scope_kind,v.channel_id,v.instance_id)');
+ IF body=amended THEN RAISE EXCEPTION 'corpse transfer removal scope proof changed'; END IF;
  EXECUTE amended;
 
  body:=pg_get_functiondef('game_item_loop_line_admit()'::regprocedure);
  amended:=replace(body,'OR cr.corpse_top_damage_character_id=r.character_id',
   'OR cr.loot_table_family=''PlayerDeath'' OR cr.corpse_top_damage_character_id=r.character_id');
  IF body=amended THEN RAISE EXCEPTION 'quick loot exclusivity guard changed'; END IF;
+ body:=amended;
+ amended:=replace(body,'cg.channel_id=r.channel_id',
+  '(cg.scope_kind,cg.channel_id,cg.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id)');
+ IF body=amended THEN RAISE EXCEPTION 'quick loot source scope proof changed'; END IF;
  EXECUTE amended;
 END
 $migration$;
@@ -231,6 +257,47 @@ BEGIN
   game_player_death_items_complete(substring(m.loot_table_production_key from 14)::uuid)
  ELSE TRUE END$arm$);
  IF body=amended THEN RAISE EXCEPTION 'corpse retirement deadline lookup changed'; END IF;
+ EXECUTE amended;
+END
+$migration$;
+
+-- The pit reuses carried limits for ordinary Ground roots. For a proven
+-- player body the extra outer edge and equipment do not consume that budget.
+DO $migration$
+DECLARE body TEXT; amended TEXT; batch_oid OID;
+BEGIN
+ SELECT oid INTO STRICT batch_oid FROM pg_proc
+  WHERE pronamespace=current_schema()::regnamespace AND proname='game_player_death_retire_entries';
+ body:=pg_get_functiondef(batch_oid);
+ amended:=replace(body,'n>500',$arm$n>(CASE WHEN p_cause_kind='ARENA_RESET' AND EXISTS (
+   SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=p_root
+    AND m.loot_table_family='PlayerDeath' AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
+ ) THEN 550 ELSE 500 END)$arm$);
+ IF body=amended THEN RAISE EXCEPTION 'pit retirement batch proof changed'; END IF;
+ EXECUTE amended;
+
+ body:=pg_get_functiondef('game_arena_reset_capture_edge()'::regprocedure);
+ amended:=replace(body,'FOR level IN 1..8 LOOP',$arm$
+ FOR level IN 1..(CASE WHEN EXISTS (
+   SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=v.ground_root_item_instance_id
+    AND m.loot_table_family='PlayerDeath' AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
+ ) THEN 9 ELSE 8 END) LOOP$arm$);
+ IF body=amended THEN RAISE EXCEPTION 'pit retirement depth proof changed'; END IF;
+ EXECUTE amended;
+
+ body:=pg_get_functiondef('game_arena_reset_item_proven(uuid)'::regprocedure);
+ amended:=replace(body,'count(*)>500',$arm$count(*)>CASE WHEN EXISTS (
+  SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=p_item
+   AND m.loot_table_family='PlayerDeath' AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
+ ) THEN 550 ELSE 500 END$arm$);
+ IF body=amended THEN RAISE EXCEPTION 'pit retirement size proof changed'; END IF;
+ body:=amended;
+ amended:=replace(body,'CASE WHEN bool_and(e.entry_kind=3) THEN 48 ELSE 20 END',
+  $arm$CASE WHEN bool_and(e.entry_kind=3) THEN
+    CASE WHEN EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=p_item
+       AND m.loot_table_family='PlayerDeath' AND m.loot_purpose_key='CORPSE_MATERIALIZATION') THEN 550 ELSE 48 END
+    ELSE 20 END$arm$);
+ IF body=amended THEN RAISE EXCEPTION 'pit retirement fanout proof changed'; END IF;
  EXECUTE amended;
 END
 $migration$;

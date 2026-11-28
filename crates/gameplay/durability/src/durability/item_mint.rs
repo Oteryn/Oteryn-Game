@@ -2281,7 +2281,7 @@ async fn corpse_cap_recount(
            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
           WHERE g.world_id = encode($1,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
             AND g.instance_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
-            AND r.loot_purpose_key = $3 AND i.lifecycle = 1",
+            AND r.loot_purpose_key = $3 AND r.loot_table_family <> 'PlayerDeath' AND i.lifecycle = 1",
     )
     .bind(death.world_id.as_bytes().as_slice())
     .bind(death.channel_bytes())

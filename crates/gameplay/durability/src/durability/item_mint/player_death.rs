@@ -9,6 +9,12 @@ pub(in crate::durability) const PLAYER_DEATH_MINT_CAUSE: &str = "player_death_co
 // selection and timings require Global evidence.
 const DEAD_HUMAN: &str = "oteryn:item.tibia.i4240";
 
+// Main backpack plus 500 descendants, nine equipment slots, and up to
+// twenty ammunition entries in each of the two hand slots.
+pub(in crate::durability) const PLAYER_CORPSE_ITEMS_MAX: usize =
+    1 + crate::durability::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX as usize
+      + 9 + 2 * crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX as usize;
+
 pub(in crate::durability) async fn mint_player_death_corpse(
     tx: &mut audit::Type2Transaction<'_>,
     permit: &SpellLanePermit,
@@ -57,9 +63,6 @@ pub(in crate::durability) async fn mint_player_death_corpse(
     let corpse = if let Some(corpse) = corpse {
         *corpse.as_bytes()
     } else {
-        if corpse_cap_recount(tx, &cause.death).await? >= COMBAT01_CORPSES_PER_SCOPE_MAX {
-            return Err(PlayerDeathItemError::StaleState);
-        }
         let request = ItemMintRequest {
             cause,
             item: TypedDefinitionRef {
@@ -124,7 +127,7 @@ pub(in crate::durability) async fn mint_player_death_corpse(
          ) ORDER BY ordinal LIMIT 1",
     )
     .bind(corpse.as_slice())
-    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX))
+    .bind(PLAYER_CORPSE_ITEMS_MAX as i64)
     .fetch_optional(&mut ***tx)
     .await?
     .ok_or(PlayerDeathItemError::StaleState)?;

@@ -157,7 +157,7 @@ fn check(
             || !value.typed_sink.is_empty()
             || value.drop_channel_id.is_some() == value.instance_scope.is_some()
             || corpse.parent_item_instance_id == value.item_instance
-            || !(1..=u64::from(crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX))
+            || !(1..=super::super::item_mint::player_death::PLAYER_CORPSE_ITEMS_MAX as u64)
                 .contains(&corpse.placement_ordinal)
             || (slot == super::BACKPACK_SLOT) != value.replacement_bag.is_some()
         {

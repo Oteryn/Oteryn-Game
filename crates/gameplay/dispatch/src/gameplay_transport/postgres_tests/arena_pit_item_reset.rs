@@ -76,6 +76,7 @@ enum ResetCase {
     Top,
     Container,
     CorpseLoot,
+    PlayerCorpse,
     NativeFloor,
     ProjectionRetry,
     FreshStatus,
@@ -101,6 +102,11 @@ fn arena_leave_while_reset_refused_cancels_pending_entry() -> TestResult {
 #[test]
 fn arena_wire_entry_retires_corpse_and_loot() -> TestResult {
     run_reset_case(ResetCase::CorpseLoot, "arena_wire_entry_retires_corpse_and_loot")
+}
+
+#[test]
+fn svargrond_pit_reset_retires_limit_sized_player_death_backpack() -> TestResult {
+    run_reset_case(ResetCase::PlayerCorpse, "svargrond_pit_reset_retires_limit_sized_player_death_backpack")
 }
 
 #[test]
@@ -272,7 +278,9 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
             )
             .await?;
         }
-        let (entry_table, child_count) = if case == ResetCase::CorpseLoot {
+        let (entry_table, child_count) = if case == ResetCase::PlayerCorpse {
+            ("game_item_corpse_container_entries", 501)
+        } else if case == ResetCase::CorpseLoot {
             (
                 "game_item_corpse_container_entries",
                 i64::from(crate::durability::item_mint::CORPSE_CONTAINER_ENTRIES_MAX),
@@ -280,7 +288,7 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
         } else {
             ("game_item_nested_entries", 1)
         };
-        let tree = if matches!(case, ResetCase::Container | ResetCase::CorpseLoot) {
+        let tree = if matches!(case, ResetCase::Container | ResetCase::CorpseLoot | ResetCase::PlayerCorpse) {
             super::quest_world_callbacks_fixtures::input_item(
                 &owner, fence,
                 &Offering {
@@ -297,6 +305,9 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
                  JOIN game_item_ground_locations g USING(item_instance_id)
                  WHERE i.definition_production_key='oteryn:item.tibia.i2854'"
             ).fetch_one(&mut *tx).await?;
+            if case == ResetCase::PlayerCorpse {
+                seed_player_corpse_tree(&mut tx, &root).await?;
+            } else {
             sqlx::query(sqlx::AssertSqlSafe(format!(
                 "WITH child AS (
                     INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
@@ -312,6 +323,7 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
                  SELECT item_instance_id,world_id,$1::uuid,row_number() OVER (ORDER BY item_instance_id),
                     game_character_uuid_v7() FROM child"
             ))).bind(&root).bind(child_count).execute(&mut *tx).await?;
+            }
             tx.commit().await?;
             Some(root)
         } else {
@@ -622,4 +634,49 @@ async fn ground_roots(h: &Harness) -> TestResult<i64> {
         "SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
          WHERE i.definition_production_key IN ('oteryn:item.tibia.i3031', 'oteryn:item.tibia.i3035')",
     ).fetch_one(&h.pool).await?)
+}
+
+async fn seed_player_corpse_tree(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, root: &str,
+) -> TestResult {
+    sqlx::query(
+        "UPDATE game_item_mint_receipts SET loot_table_family='PlayerDeath',
+         loot_table_production_key='oteryn:death.'||encode(uuid_send(item_instance_id),'hex'),
+         loot_purpose_key='CORPSE_MATERIALIZATION',materialized_at=committed_at
+         WHERE item_instance_id=$1::uuid",
+    ).bind(root).execute(&mut **tx).await?;
+    sqlx::query(
+        "UPDATE game_item_ground_locations SET
+            map_revision='map:'||encode(sha256(convert_to(map_revision,'UTF8')),'hex'),
+            spatial_position=substring(spatial_position for 8)||int2send(7::smallint),
+            corpse_ref=uuid_send(item_instance_id),
+            native_room_placement_context=uuid_send(item_instance_id)
+         WHERE item_instance_id=$1::uuid",
+    ).bind(root).execute(&mut **tx).await?;
+    // One direct backpack, a chain to carried depth eight, and enough other
+    // branches to hit the 500-descendant limit without exceeding local fanout.
+    sqlx::query(
+        "WITH nodes AS MATERIALIZED (
+            SELECT n,game_character_uuid_v7() AS item,game_character_uuid_v7() AS txn,
+                CASE WHEN n<=8 THEN n-1 WHEN n<28 THEN 0 ELSE (n-9)/19+8 END AS parent,
+                CASE WHEN n<=8 THEN 1 ELSE (n-9)%19+2 END AS ordinal
+            FROM generate_series(0,500) n
+         ), items AS (
+            INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+            SELECT nodes.item,i.world_id,'Item','oteryn:item.tibia.i2854','definition-r1',1,1,nodes.txn
+            FROM nodes CROSS JOIN game_item_instances i WHERE i.item_instance_id=$1::uuid
+            RETURNING item_instance_id,world_id
+         ), direct AS (
+            INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,
+                placement_ordinal,placed_transaction_id)
+            SELECT n.item,i.world_id,$1::uuid,1,n.txn FROM nodes n JOIN items i ON i.item_instance_id=n.item
+            WHERE n.n=0
+         )
+         INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,
+            placement_ordinal,placed_transaction_id)
+         SELECT n.item,i.world_id,p.item,n.ordinal,n.txn FROM nodes n JOIN nodes p ON p.n=n.parent
+            JOIN items i ON i.item_instance_id=n.item WHERE n.n>0",
+    ).bind(root).execute(&mut **tx).await?;
+    Ok(())
 }

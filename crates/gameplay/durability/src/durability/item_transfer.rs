@@ -787,7 +787,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         corpse_item_instance_id: [u8; 16],
     ) -> Result<Option<Vec<BackpackEntry>>> {
-        use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
+        use super::item_mint::{CORPSE_CONTAINER_ENTRIES_MAX, player_death::PLAYER_CORPSE_ITEMS_MAX};
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
@@ -796,25 +796,29 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let live_corpse: bool = sqlx::query_scalar(
-                        "SELECT EXISTS ( \
-                           SELECT 1 FROM game_item_mint_receipts r \
+                    let player_corpse: Option<bool> = sqlx::query_scalar(
+                        "SELECT r.loot_table_family='PlayerDeath' FROM game_item_mint_receipts r \
                              JOIN game_item_ground_locations g \
                                ON g.item_instance_id = r.item_instance_id \
                              JOIN game_item_instances i \
                                ON i.item_instance_id = r.item_instance_id \
                             WHERE r.item_instance_id = encode($1,'hex')::uuid \
                               AND r.loot_purpose_key = $2 \
-                              AND i.lifecycle = 1)",
+                              AND i.lifecycle = 1",
                     )
                     .bind(corpse_item_instance_id.as_slice())
                     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-                    .fetch_one(&mut *tx)
+                    .fetch_optional(&mut *tx)
                     .await?;
-                    if !live_corpse {
+                    let Some(player_corpse) = player_corpse else {
                         commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
-                    }
+                    };
+                    let limit = if player_corpse {
+                        PLAYER_CORPSE_ITEMS_MAX
+                    } else {
+                        CORPSE_CONTAINER_ENTRIES_MAX as usize
+                    };
                     let rows = sqlx::query(
                         "SELECT e.item_instance_id::text, e.placement_ordinal::text, \
                                 i.definition_family, i.definition_production_key, \
@@ -826,10 +830,10 @@ impl DurabilityRoot {
                           ORDER BY e.placement_ordinal ASC LIMIT $2",
                     )
                     .bind(corpse_item_instance_id.as_slice())
-                    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX) + 1)
+                    .bind(limit as i64 + 1)
                     .fetch_all(&mut *tx)
                     .await?;
-                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX as usize {
+                    if rows.len() > limit {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let entries = rows
@@ -1054,9 +1058,15 @@ async fn admit(
         return Ok(Err(ItemTransferError::AuthorityRejected));
     }
 
-    // ContainerSlot locks the complete incoming/carried union once, before
-    // load_source reacquires the already-held root Item lock.
-    let tree = if request.destination == ItemTransferDestination::ContainerSlot {
+    // Slot promotion and corpse loot lock the incoming tree and the carried
+    // inventory before load_source reacquires the already-held root lock.
+    let equip = request.destination == ItemTransferDestination::ContainerSlot;
+    let from_player_corpse = if equip {
+        false
+    } else {
+        is_player_corpse_entry(tx, request.source_item_instance_id).await?
+    };
+    let tree = if equip || from_player_corpse {
         match container_slot_tree::lock_tree(tx, fence, request).await? {
             Ok(tree) => Some(tree),
             Err(error) => return Ok(Err(error)),
@@ -1069,6 +1079,13 @@ async fn admit(
             ItemTransferRefusal::SourceNotOnGround,
         )));
     };
+    if !equip {
+        let still_player_corpse = source.corpse.is_some()
+            && is_player_corpse_entry(tx, request.source_item_instance_id).await?;
+        if from_player_corpse != still_player_corpse {
+            return Err(DurabilityError::Unavailable);
+        }
+    }
     if let Err(error) = source_eligibility(tx, fence, request, &source).await? {
         return Ok(Err(error));
     }
@@ -1103,10 +1120,6 @@ async fn admit(
             ItemTransferRefusal::WeightGenerationMismatch,
         )));
     }
-    let incoming = tree.as_ref().map_or_else(
-        || std::slice::from_ref(&source.item),
-        |tree| tree.items.as_slice(),
-    );
     if let Err(refusal) = check_incoming_capacity_core(
         tx,
         fence.character_id,
@@ -1114,8 +1127,7 @@ async fn admit(
         &request.item,
         &source.item,
         weights,
-        incoming,
-        tree.as_ref().map(|tree| &tree.locked),
+        tree.as_ref(),
     )
     .await?
     {
@@ -1138,7 +1150,24 @@ async fn admit(
     if let Err(error) = transfer_shape(&plan).usage().check() {
         return Ok(Err(error.into()));
     }
+    let tree = if equip { tree } else { None };
     Ok(Ok(Admitted { plan, source, tree }))
+}
+
+async fn is_player_corpse_entry(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item: [u8; 16],
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(
+           SELECT 1 FROM game_item_corpse_container_entries e
+           JOIN game_item_mint_receipts m ON m.item_instance_id=e.parent_item_instance_id
+           WHERE e.item_instance_id=encode($1,'hex')::uuid
+             AND m.loot_table_family='PlayerDeath' AND m.loot_purpose_key='CORPSE_MATERIALIZATION')",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 /// Weigh the actual custody graph while the native Character root is locked.
@@ -1158,14 +1187,12 @@ pub(super) async fn check_incoming_capacity(
         item,
         source,
         weights,
-        std::slice::from_ref(source),
         None,
     )
     .await
 }
 
 // Reward claims retain singleton admission, including not-yet-minted sources.
-#[allow(clippy::too_many_arguments)] // Private core shares the existing singleton contract.
 async fn check_incoming_capacity_core(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
@@ -1173,8 +1200,7 @@ async fn check_incoming_capacity_core(
     item: &ItemDefinitionFacts,
     source: &InventoryItem,
     weights: &dyn ItemWeightLookup,
-    incoming_items: &[InventoryItem],
-    locked: Option<&std::collections::BTreeSet<[u8; 16]>>,
+    tree: Option<&container_slot_tree::Tree>,
 ) -> std::result::Result<std::result::Result<(), ItemTransferRefusal>, DurabilityError> {
     let source_unit_weight = match weights.weight_of(&source.definition) {
         Ok(weight) => weight,
@@ -1191,20 +1217,17 @@ async fn check_incoming_capacity_core(
     // UNION ALL with an explicit path reports corrupt cycles instead of hiding them.
     // Every location is retained for duplicate/world validation; every actual instance
     // is locked, including non-container equipment and all backpack descendants.
-    let rows = if locked.is_some() {
-        container_slot_tree::carried_rows(tx, character).await?
+    let incoming_items = tree.map_or_else(|| std::slice::from_ref(source), |tree| tree.items.as_slice());
+    let rows = if let Some(tree) = tree {
+        let rows = container_slot_tree::carried_rows(tx, character, tree.union_limit).await?;
+        if rows.len() + incoming_items.len() > tree.union_limit {
+            // Admission already proved this bound under the complete lock set.
+            return Err(DurabilityError::Unavailable);
+        }
+        rows
     } else {
         load_carried_rows(tx, character).await?
     };
-    if locked.is_some()
-        && rows
-            .len()
-            .checked_add(incoming_items.len())
-            .is_none_or(|count| count > 529)
-    {
-        // Admission already proved this bound under the complete lock set.
-        return Err(DurabilityError::Unavailable);
-    }
     let mut seen = std::collections::BTreeSet::new();
     let mut total = 0_u64;
     for row in rows {
@@ -1216,7 +1239,7 @@ async fn check_incoming_capacity_core(
             || incoming_items
                 .iter()
                 .any(|incoming| incoming.item_instance_id == item)
-            || locked.is_some_and(|ids| !ids.contains(&item))
+            || tree.is_some_and(|tree| !tree.locked.contains(&item))
             || !seen.insert(item)
         {
             return Err(DurabilityError::InvalidStoredState);

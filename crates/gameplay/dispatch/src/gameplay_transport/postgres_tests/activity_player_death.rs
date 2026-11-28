@@ -44,6 +44,7 @@ mod departed_process;
 #[derive(Clone, Copy)]
 enum Case {
     RedSkullDrop,
+    InstanceLoot,
     Amulet,
     InterruptedDrop,
     DepartedProcessDrop,
@@ -53,6 +54,14 @@ enum Case {
 fn activity_player_death_postgres_death_receipt_loss_private_ground_isolation_return_and_retirement()
 -> TestResult {
     run_case(Case::RedSkullDrop)
+}
+
+#[test]
+fn activity_player_death_corpse_allows_manual_and_targeted_instance_loot() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_with_admin(admin, Case::InstanceLoot, false)
 }
 
 #[test]
@@ -87,6 +96,10 @@ fn run_case_with_retirement_fault(case: Case, reject_retirement_commit: bool) ->
         eprintln!("ACTIVITY_PLAYER_DEATH POSTGRES_CASE_SKIPPED: no configured admin");
         return Ok(());
     };
+    run_with_admin(admin, case, reject_retirement_commit)
+}
+
+fn run_with_admin(admin: String, case: Case, reject_retirement_commit: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
@@ -280,7 +293,7 @@ async fn scenario(h: &Harness, case: Case, reject_retirement_commit: bool) -> Te
         .as_ref()
         .ok_or("immutable death item selection")?;
     match case {
-        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
+        Case::RedSkullDrop | Case::InstanceLoot | Case::InterruptedDrop | Case::DepartedProcessDrop => {
             assert_eq!(selection.lost.len(), 2);
             assert!(selection.lost.contains(&id(70)));
             assert!(selection.lost.contains(&id(75)));
@@ -563,6 +576,11 @@ async fn scenario(h: &Harness, case: Case, reject_retirement_commit: bool) -> Te
     let mut expected = selection.lost.clone();
     expected.sort_unstable();
     assert_eq!(contents.iter().map(|id| *id.as_bytes()).collect::<Vec<_>>(), expected);
+    if matches!(case, Case::InstanceLoot) {
+        return loot_in_instance(&dispatch, current, &permit, corpse_id.ok_or("player corpse")?,
+            request.death_cell.spatial_position.as_slice().try_into()?,
+            enter.destination_content.server_artifact_digest).await;
+    }
     for row in &ground {
         assert!(row.player_corpse);
         assert_eq!(row.item.runtime_scope, current.runtime_scope);
@@ -782,7 +800,7 @@ async fn scenario(h: &Harness, case: Case, reject_retirement_commit: bool) -> Te
     assert_eq!(saved, (temple.x, temple.y, temple.floor, None, None));
     if matches!(
         case,
-        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop
+        Case::RedSkullDrop | Case::InstanceLoot | Case::InterruptedDrop | Case::DepartedProcessDrop
     ) {
         // This is a current Channel session, not the stale pre-entry source fence.
         // Scope refusal therefore proves actual private Ground isolation.
@@ -908,7 +926,7 @@ async fn scenario(h: &Harness, case: Case, reject_retirement_commit: bool) -> Te
             .is_empty()
     );
     match case {
-        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
+        Case::RedSkullDrop | Case::InstanceLoot | Case::InterruptedDrop | Case::DepartedProcessDrop => {
             assert!(retired > 0);
             let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid) AND lifecycle=1")
                 .bind(id(70).as_slice()).bind(id(71).as_slice()).bind(id(75).as_slice()).bind(id(72).as_slice()).fetch_one(&h.pool).await?;
@@ -973,7 +991,7 @@ async fn seed_equipment(h: &Harness, case: Case) -> TestResult {
         .bind(id(41).as_slice()).bind(id(75).as_slice()).bind(id(42).as_slice()).bind(id(76).as_slice()).execute(&mut *tx).await?;
     if matches!(
         case,
-        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop
+        Case::RedSkullDrop | Case::InstanceLoot | Case::InterruptedDrop | Case::DepartedProcessDrop
     ) {
         sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id,skull,skull_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,clock_timestamp()+interval '1 day')")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
@@ -1154,7 +1172,7 @@ impl ItemWeightLookup for Weights {
             && definition.revision_ref == "definition-r1"
             && matches!(
                 definition.production_key.as_str(),
-                "oteryn:item.tibia.i2854" | "oteryn:item.tibia.i3031" | "oteryn:item.tibia.i3057"
+                "oteryn:item.tibia.i2854" | "oteryn:item.tibia.i2853" | "oteryn:item.tibia.i3031" | "oteryn:item.tibia.i3057"
             )
         {
             Ok(1)
@@ -1171,7 +1189,9 @@ impl ItemLoopContent for Weights {
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         self.weight_of(definition).ok()?;
         match definition.production_key.as_str() {
-            "oteryn:item.tibia.i2854" => Some(backpack_facts()),
+            "oteryn:item.tibia.i2854" | "oteryn:item.tibia.i2853" => Some(ItemDefinitionFacts {
+                definition: definition.clone(), ..backpack_facts()
+            }),
             "oteryn:item.tibia.i3031" => Some(ItemDefinitionFacts {
                 definition: definition.clone(),
                 weight: Some(1),
@@ -1232,5 +1252,78 @@ async fn revoke_instance(h: &Harness, scope: RuntimeScopeRefV1) -> TestResult {
     };
     assert_eq!(receipt.assignment.scope, scope);
     assert_eq!(receipt.assignment.state, AssignmentState::Revoked);
+    Ok(())
+}
+
+async fn loot_in_instance(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    current: CurrentCharacterItemFence,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    corpse: [u8; 16],
+    cell: [u8; 10],
+    content_digest: [u8; 32],
+) -> TestResult {
+    use crate::durability::item_loop_move::{QuickLootCommand, QuickLootInput};
+    use crate::durability::item_transfer::ItemTransferOutcome;
+    use oteryn_protocol_oteryn::quick_loot as wire;
+
+    let command = |number| -> TestResult<_> {
+        Ok(CommandRef::new(current.game_session_id, CommandId::new(number).map_err(debug)?))
+    };
+    let weights = Weights(content_digest);
+    let take = ItemTransferRequest {
+        command: command(11)?,
+        weight_generation_digest: content_digest,
+        source_item_instance_id: id(75),
+        destination: ItemTransferDestination::MainBackpack,
+        item: ItemDefinitionFacts {
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i3057".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            container_capacity: None,
+            container_slot_equip_pattern: false,
+            ..backpack_facts()
+        },
+        backpack: Some(ItemDefinitionFacts {
+            definition: TypedDefinitionRef {
+                production_key: "oteryn:item.tibia.i2853".into(),
+                ..backpack_facts().definition
+            },
+            ..backpack_facts()
+        }),
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "simulation-1".into(),
+    };
+    let mut frozen = owner.root.freeze_item_transfer(owner.character, owner.holder, current, take, &weights)
+        .await.map_err(debug)?;
+    assert!(matches!(owner.root.commit_item_transfer(permit, owner.character, owner.holder, current, &mut frozen, &weights)
+        .await.map_err(debug)?, ItemTransferOutcome::Committed(_)));
+
+    let result = owner.root.commit_quick_loot(
+        permit, owner.character, owner.holder, current, &weights,
+        QuickLootCommand {
+            command: command(12)?,
+            cell,
+            premium: false,
+            input: QuickLootInput::Legacy(wire::QuickLootRequest {
+                action: wire::QuickLootAction::Click,
+                corpse: Some(corpse),
+                category: None,
+                recipient: None,
+                recipient_id: None,
+                fallback_to_main: false,
+                filter_mode: None,
+                filter_definition_ref: None,
+            }),
+            selected_corpse: Some(corpse),
+        }
+    ).await?.map_err(debug)?;
+    let result = wire::decode_quick_loot_result(&result).map_err(debug)?;
+    assert_eq!(result.items, [wire::QuickLootItemResult { item: id(70), accepted: true }]);
+    assert!(owner.root.read_corpse_contents(owner.character, corpse).await.map_err(debug)?
+        .ok_or("live corpse")?.is_empty());
     Ok(())
 }

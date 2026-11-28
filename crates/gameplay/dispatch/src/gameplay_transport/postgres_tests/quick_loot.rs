@@ -30,15 +30,25 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
-        scenario_with_pouch(true)
+        scenario_with_pouch(true, false)
+    })
+}
+
+#[test]
+fn nearby_quick_loot_skips_player_bodies_but_explicit_click_loots() -> TestResult {
+    let Ok(_) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-player-corpse", || {
+        scenario_with_pouch(false, true)
     })
 }
 
 fn scenario() -> TestResult {
-    scenario_with_pouch(false)
+    scenario_with_pouch(false, false)
 }
 
-fn scenario_with_pouch(pouch: bool) -> TestResult {
+fn scenario_with_pouch(pouch: bool, player_corpse: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -323,6 +333,23 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             crate::durability::map_item_mint_audit::map_item_spatial_position(9, 0, 7)
                 .try_into()
                 .map_err(|_| "far cell")?;
+        if player_corpse {
+            fixture_corpse(&harness.pool, corpse_id, near, id(41), 0).await?;
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_mint_receipts SET loot_table_family='PlayerDeath' WHERE item_instance_id=$1")
+                .bind(sqlx::types::Uuid::from_bytes(corpse_id)).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let replies = wire_requests(&owner, &mut admitted, &[(3, all), (4, click)]).await?;
+            assert_eq!(replies[0], (CommandStatus::Accepted, QuickLootResult { items: Vec::new() }));
+            assert_eq!(replies[1].0, CommandStatus::Accepted);
+            assert_eq!(replies[1].1.items.len(), items.len());
+            assert!(replies[1].1.items.iter().all(|item| item.accepted));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         fixture_corpse(&harness.pool, corpse_id, far, id(41), 0).await?;
         assert_eq!(
             wire_requests(&owner, &mut admitted, &[(3, click)]).await?[0],

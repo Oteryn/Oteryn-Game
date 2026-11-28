@@ -37,11 +37,21 @@ pub(super) fn decay_message(
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
     };
     world_reset_cause::bind_message(&mut message, step.cause);
-    if let Some(death_entry) = admitted.death_entry
-        && let Some(entry) = message.ground_container_entry.as_mut()
-    {
+    if let Some(death_entry) = admitted.death_entry {
+        let entry = message.ground_container_entry.get_or_insert_with(|| {
+            // Nested decay still uses the corpse's Ground and deadline, but
+            // its custody edge names the immediate parent.
+            audit::OneItemGroundContainerEntryV1 {
+                parent_item_instance_id: death_entry.parent.to_vec(),
+                placement_ordinal: death_entry.ordinal,
+                parent_ground: Some(admitted.corpse_ground.clone()),
+                tree_root_item_instance_id: None,
+            }
+        });
         entry.parent_item_instance_id = death_entry.parent.to_vec();
+        entry.placement_ordinal = death_entry.ordinal;
         entry.tree_root_item_instance_id = Some(step.corpse_item_instance_id.to_vec());
+        message.corpse_entry = None;
     }
     message
 }

@@ -1,7 +1,7 @@
 //! The next Ground step is derived from durable locations, never a caller's list.
 use super::*;
 use crate::durability::item_decay_retire::DecayRetireStep;
-use crate::durability::item_mint::uuid_text;
+use crate::durability::item_mint::{player_death::PLAYER_CORPSE_ITEMS_MAX, uuid_text};
 use crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
 
 pub(super) async fn next(
@@ -40,9 +40,7 @@ pub(in crate::durability) async fn validate_root(
         death_tree(tx, root).await?;
         return Ok(());
     }
-    let player_corpse: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND loot_table_family='PlayerDeath' AND loot_purpose_key='CORPSE_MATERIALIZATION')")
-        .bind(root.as_slice()).fetch_one(&mut **tx).await?;
-    if player_corpse {
+    if is_player_corpse(tx, root).await? {
         return Ok(());
     }
     let invalid: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid))")
@@ -58,6 +56,11 @@ pub(in crate::durability) async fn is_death_container(
     root: [u8; 16],
 ) -> Result<bool> {
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_player_death_item_records r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.item_instance_id=encode($1,'hex')::uuid AND r.operation=1 AND g.world_id=r.world_id AND (g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id) AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id))")
+        .bind(root.as_slice()).fetch_one(&mut **tx).await?)
+}
+
+async fn is_player_corpse(tx: &mut Transaction<'_, Postgres>, root: [u8; 16]) -> Result<bool> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND loot_table_family='PlayerDeath' AND loot_purpose_key='CORPSE_MATERIALIZATION')")
         .bind(root.as_slice()).fetch_one(&mut **tx).await?)
 }
 
@@ -110,7 +113,7 @@ pub(in crate::durability) async fn death_tree(
     .await?;
     let (world, source_slot, root_definition) =
         source.ok_or(DurabilityError::InvalidStoredState)?;
-    let entries = ground_tree(tx, root, &world, false).await?;
+    let entries = ground_tree(tx, root, &world, false, false).await?;
     order_death_tree(root, source_slot, &root_definition, entries)
 }
 
@@ -120,8 +123,22 @@ pub(in crate::durability) async fn arena_tree(
     world: &[u8],
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
-    let entries = ground_tree(tx, root, world, true).await?;
-    order_ground_tree(root, entries, ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX)
+    let player_corpse = is_player_corpse(tx, root).await?;
+    let entries = ground_tree(tx, root, world, true, player_corpse).await?;
+    let (depth, count) = if player_corpse {
+        (ITEM_LOOP_DEPTH_MAX + 1, PLAYER_CORPSE_ITEMS_MAX as i64)
+    } else {
+        (ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX)
+    };
+    order_ground_tree(root, entries, depth, count, corpse_capacity(player_corpse))
+}
+
+fn corpse_capacity(player_corpse: bool) -> usize {
+    if player_corpse {
+        PLAYER_CORPSE_ITEMS_MAX
+    } else {
+        CORPSE_CONTAINER_ENTRIES_MAX as usize
+    }
 }
 
 async fn ground_tree(
@@ -129,11 +146,12 @@ async fn ground_tree(
     root: [u8; 16],
     world: &[u8],
     arena: bool,
+    player_corpse: bool,
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
     let container_capacity = crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
     let fanout = if arena {
-        container_capacity.max(CORPSE_CONTAINER_ENTRIES_MAX)
+        container_capacity.max(corpse_capacity(player_corpse) as u32)
     } else {
         container_capacity
     };
@@ -168,8 +186,8 @@ async fn ground_tree(
     .bind(root.as_slice())
     .bind(world)
     .bind(i64::from(fanout) + 1)
-    .bind(ITEM_LOOP_DEPTH_MAX + 1)
-    .bind(ITEM_LOOP_TREE_ITEMS_MAX + 2)
+    .bind(ITEM_LOOP_DEPTH_MAX + 1 + i32::from(player_corpse))
+    .bind(if player_corpse { PLAYER_CORPSE_ITEMS_MAX as i64 } else { ITEM_LOOP_TREE_ITEMS_MAX } + 2)
     .bind(arena)
     .fetch_all(&mut **tx)
     .await?;
@@ -227,7 +245,7 @@ fn order_death_tree(
         ),
         _ => (0, 0),
     };
-    order_ground_tree(root, entries, depth_limit, descendants_limit)
+    order_ground_tree(root, entries, depth_limit, descendants_limit, CORPSE_CONTAINER_ENTRIES_MAX as usize)
 }
 
 fn order_ground_tree(
@@ -235,6 +253,7 @@ fn order_ground_tree(
     mut entries: Vec<DeathTreeEntry>,
     depth_limit: i32,
     descendants_limit: i64,
+    corpse_capacity: usize,
 ) -> Result<Vec<DeathTreeEntry>> {
     use std::collections::{BTreeMap, BTreeSet};
     if entries.len() > descendants_limit as usize {
@@ -254,13 +273,13 @@ fn order_ground_tree(
             .entry(entry.parent)
             .or_insert_with(|| (is_corpse, BTreeSet::new()));
         let capacity = if is_corpse {
-            CORPSE_CONTAINER_ENTRIES_MAX
+            corpse_capacity
         } else {
-            crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX
+            crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX as usize
         };
         if *corpse != is_corpse
             || !ordinals.insert(entry.ordinal)
-            || ordinals.len() > capacity as usize
+            || ordinals.len() > capacity
         {
             return Err(DurabilityError::InvalidStoredState);
         }

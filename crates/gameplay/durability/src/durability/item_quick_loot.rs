@@ -51,24 +51,26 @@ pub(super) async fn assert_corpse_source(
     corpse: [u8; 16],
     cell: [u8; 10],
 ) -> LoopResult<()> {
-    let (world, channel) =
-        scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+    let scope = fence.runtime_scope;
+    let (scope_kind, channel, instance) = crate::durability::item_mint::ground_scope_columns(scope);
     let allowed: bool = sqlx::query_scalar("SELECT EXISTS (
         SELECT 1 FROM game_item_corpse_container_entries e
         JOIN game_item_ground_locations g ON g.item_instance_id=e.parent_item_instance_id
         JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id
         JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id
         WHERE e.item_instance_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=encode($2,'hex')::uuid
-          AND g.world_id=encode($3,'hex')::uuid AND g.channel_id=encode($4,'hex')::uuid
+          AND g.world_id=encode($3,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($4,'hex')::uuid
+          AND g.scope_kind=$8 AND g.instance_id IS NOT DISTINCT FROM encode($9,'hex')::uuid
           AND g.runtime_scope_ownership_generation=$5::text::numeric AND g.spatial_position=$6
           AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
           AND (floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000
             OR r.loot_table_family='PlayerDeath' OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid
             OR EXISTS (SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id)
                 WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)))")
-        .bind(item.as_slice()).bind(corpse.as_slice()).bind(world.as_bytes().as_slice())
-        .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
-        .bind(cell.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        .bind(item.as_slice()).bind(corpse.as_slice()).bind(scope.world_id().as_bytes().as_slice())
+        .bind(channel.map(|id| id.to_vec())).bind(fence.scope_ownership_generation.get().to_string())
+        .bind(cell.as_slice()).bind(fence.character_id.as_bytes().as_slice())
+        .bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
     if allowed {
         Ok(())
     } else {
@@ -193,8 +195,9 @@ impl DurabilityRoot {
                 if legacy {
                     assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
                 }
-                let (world, channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
-                let world = *world.as_bytes();
+                let scope = fence.runtime_scope;
+                let (scope_kind, channel, instance) = crate::durability::item_mint::ground_scope_columns(scope);
+                let world = *scope.world_id().as_bytes();
                 let mut settings = settings_owner::load(&mut tx, fence.character_id.as_bytes()).await?;
                 if matches!(request.action,QuickLootAction::FilterAdd | QuickLootAction::FilterRemove | QuickLootAction::FilterClear | QuickLootAction::FilterSelect) {
                     let mode=request.filter_mode.ok_or(LoopError::Refused(LoopMoveRefusal::Rejected))?;
@@ -312,9 +315,10 @@ impl DurabilityRoot {
                         cells.push([x.to_be_bytes().as_slice(),y.to_be_bytes().as_slice(),&cell[8..10]].concat());
                     }
                 }}
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.loot_table_family='PlayerDeath' OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
-                    .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.loot_table_family='PlayerDeath' OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.scope_kind=$8 AND g.instance_id IS NOT DISTINCT FROM encode($9,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) AND (r.loot_table_family<>'PlayerDeath' OR ($10 AND $5 IS NOT NULL)) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
+                    .bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
+                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice())
+                    .bind(scope_kind).bind(instance.map(|id| id.to_vec())).bind(request.action == QuickLootAction::Click).fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;

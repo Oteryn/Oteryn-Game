@@ -2461,7 +2461,11 @@ impl DurabilityRoot {
                                  OR sa.transaction_id IS NOT NULL \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
-                          LIMIT $3",
+                          LIMIT ($3 + (SELECT count(*) FROM game_item_ground_locations player
+                              JOIN game_item_mint_receipts receipt USING(item_instance_id)
+                              WHERE (player.world_id,player.scope_kind,player.channel_id,player.instance_id)
+                                IS NOT DISTINCT FROM (encode($1,'hex')::uuid,$4,encode($2,'hex')::uuid,encode($5,'hex')::uuid)
+                                AND receipt.loot_table_family='PlayerDeath' AND receipt.loot_purpose_key='CORPSE_MATERIALIZATION'))",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.map(|id| id.to_vec()))
@@ -2519,10 +2523,10 @@ impl DurabilityRoot {
                     // never substitute the base placement ordinal or invent a missing one.
                     let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if rows.len() > bound {
+                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
+                    if items.iter().filter(|item| !item.player_corpse).count() > bound {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
                     super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(items)
                 })

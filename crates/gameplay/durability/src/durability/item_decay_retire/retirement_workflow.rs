@@ -498,7 +498,7 @@ impl DurabilityRoot {
                     .fetch_one(&mut *tx)
                     .await?;
                     let rows = sqlx::query(
-                        "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
+                        "SELECT g.item_instance_id::text, r.materialized_at, r.loot_table_family='PlayerDeath' AS player_corpse, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
                            FROM game_item_ground_locations g \
                            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
                            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
@@ -508,7 +508,11 @@ impl DurabilityRoot {
                             AND r.loot_purpose_key = $3 AND r.draw_ordinal = 0 \
                             AND i.lifecycle = 1 \
                           ORDER BY r.materialized_at, g.item_instance_id \
-                          LIMIT $4",
+                          LIMIT ($4 + (SELECT count(*) FROM game_item_ground_locations player
+                              JOIN game_item_mint_receipts receipt USING(item_instance_id)
+                              WHERE (player.world_id,player.scope_kind,player.channel_id,player.instance_id)
+                                IS NOT DISTINCT FROM (encode($1,'hex')::uuid,$5,encode($2,'hex')::uuid,encode($6,'hex')::uuid)
+                                AND receipt.loot_table_family='PlayerDeath' AND receipt.loot_purpose_key=$3))",
                     )
                     .bind(scope.world_id().as_bytes().as_slice())
                     .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
@@ -518,11 +522,13 @@ impl DurabilityRoot {
                     .bind(scope.instance_id().map(|id| id.to_vec()))
                     .fetch_all(&mut *tx)
                     .await?;
-                    if rows.len() > COMBAT01_CORPSES_PER_SCOPE {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
+                    let mut other_corpses = 0;
                     let mut corpses = Vec::with_capacity(rows.len());
                     for row in &rows {
+                        other_corpses += usize::from(!row.try_get::<bool, _>("player_corpse")?);
+                        if other_corpses > COMBAT01_CORPSES_PER_SCOPE {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
                         let materialized_at_unix_ms: Option<i64> =
                             row.try_get("materialized_at")?;
                         let materialized_at_unix_ms =
@@ -572,9 +578,9 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    // A corpse has at most 48 direct entries. Each dropped
-                    // player container has at most 500 retained descendants.
-                    const MAX_TREE_ITEMS: usize = CORPSE_CONTAINER_ENTRIES_MAX * 501;
+                    // All branches come from one carried inventory, including
+                    // any descendants retained inside a dropped container.
+                    use super::super::item_mint::player_death::PLAYER_CORPSE_ITEMS_MAX as MAX_TREE_ITEMS;
                     let rows = sqlx::query(
                         "SELECT item_instance_id::text
                          FROM game_corpse_retirement_entries(encode($1,'hex')::uuid)

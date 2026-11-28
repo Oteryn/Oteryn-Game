@@ -42,8 +42,14 @@ pub(super) fn check_entry(
         if root == item {
             return Err(AuditError::InvalidInput);
         }
-    } else if entry.placement_ordinal > mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX {
-        return Err(AuditError::InvalidInput);
+    } else {
+        let max = entry.parent_ground.as_ref().map_or(
+            mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
+            super::corpse_placement_max,
+        );
+        if entry.placement_ordinal > max {
+            return Err(AuditError::InvalidInput);
+        }
     }
     Ok(())
 }

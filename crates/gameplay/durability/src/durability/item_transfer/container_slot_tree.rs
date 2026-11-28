@@ -1,11 +1,14 @@
-//! Canonical ContainerSlot admission. Hints grant no custody authority: the
+//! Tree admission for ContainerSlot promotion and manual player-corpse loot. The
 //! complete Item lock set is acquired in one UUID order, then read again.
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 
+const SLOT_UNION_LIMIT: usize = 529;
+
 pub(super) struct Tree {
     pub items: Vec<InventoryItem>,
     pub locked: BTreeSet<[u8; 16]>,
+    pub union_limit: usize,
 }
 
 impl Tree {
@@ -72,6 +75,7 @@ fn snapshots(
 pub(super) async fn carried_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
+    union_limit: usize,
 ) -> std::result::Result<Vec<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
         "WITH RECURSIVE roots AS ( \
@@ -95,7 +99,7 @@ pub(super) async fn carried_rows(
                SELECT e.item_instance_id,e.world_id,2::smallint,to_jsonb(e) \
                  FROM game_item_nested_entries e WHERE e.parent_item_instance_id=c.item_instance_id \
              ) e ON true WHERE NOT c.cycle AND c.depth<9 \
-         ), bounded AS MATERIALIZED (SELECT * FROM carried LIMIT 530) \
+         ), bounded AS MATERIALIZED (SELECT * FROM carried LIMIT $2) \
          SELECT c.item_instance_id::text,i.definition_family,i.definition_production_key, \
                 i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS item_world, \
                 c.world_id::text AS custody_world,c.cycle,c.depth, \
@@ -104,6 +108,7 @@ pub(super) async fn carried_rows(
           ORDER BY c.item_instance_id,c.source_kind,c.placement::text",
     )
     .bind(character.as_bytes().as_slice())
+    .bind(union_limit as i64 + 1)
     .fetch_all(&mut **tx)
     .await?)
 }
@@ -152,7 +157,9 @@ pub(super) async fn lock_tree(
     }
     // Source refusals precede destination refusals (D134 included). Neither
     // this hint nor the occupied-MAIN fast path authorizes a custody write.
-    if load_slot(tx, character).await?.is_some() {
+    let equip = request.destination == ItemTransferDestination::ContainerSlot;
+    let slot = load_slot(tx, character).await?;
+    if equip && slot.is_some() {
         return Ok(Err(ItemTransferError::Refused(
             ItemTransferRefusal::ContainerSlotOccupied,
         )));
@@ -162,14 +169,26 @@ pub(super) async fn lock_tree(
     for row in &hint {
         height = height.max(row.try_get::<i32, _>("depth")?);
     }
-    if let Err(error) = check_bounds(hint.len(), height)? {
+    if let Err(error) = check_bounds(hint.len(), height + i32::from(!equip))? {
         return Ok(Err(error));
     }
-    let carried_hint_rows = carried_rows(tx, character).await?;
+    if !equip && slot.is_some() {
+        let occupied: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+            .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if occupied + hint.len() as i64 > super::super::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX {
+            return Ok(Err(ItemTransferError::CapacityExceeded));
+        }
+    }
+    let union_limit = if equip {
+        SLOT_UNION_LIMIT
+    } else {
+        super::super::item_mint::player_death::PLAYER_CORPSE_ITEMS_MAX
+    };
+    let carried_hint_rows = carried_rows(tx, character, union_limit).await?;
     if hint
         .len()
         .checked_add(carried_hint_rows.len())
-        .is_none_or(|count| count > 529)
+        .is_none_or(|count| count > union_limit)
     {
         return Ok(Err(ItemTransferError::CapacityExceeded));
     }
@@ -195,7 +214,7 @@ pub(super) async fn lock_tree(
     let rows = graph(tx, request.source_item_instance_id).await?;
     if snapshots(&rows)? != snapshots(&hint)?
         || source_hint != load_source_read(tx, request.source_item_instance_id, false).await?
-        || snapshots(&carried_hint_rows)? != snapshots(&carried_rows(tx, character).await?)?
+        || snapshots(&carried_hint_rows)? != snapshots(&carried_rows(tx, character, union_limit).await?)?
     {
         // Abort this pass. A later explicit retry pays the existing RL08 charge.
         return Err(DurabilityError::Unavailable);
@@ -271,7 +290,7 @@ pub(super) async fn lock_tree(
             ItemTransferRefusal::UnsupportedContainerCapacity,
         )));
     }
-    Ok(Ok(Tree { items, locked }))
+    Ok(Ok(Tree { items, locked, union_limit }))
 }
 
 // This accessor checks only immutable receipt evidence. Replay remains valid
