@@ -144,6 +144,38 @@ fn distance(a: TilePos, b: TilePos) -> u16 {
     }
 }
 
+async fn wait_for_creature_to_clear(
+    client: &mut DevClientSession,
+    landing: TilePos,
+) -> TestResult {
+    use oteryn_dev_client::EntityKind;
+
+    let creature = client.world_entities().and_then(|view| {
+        view.iter()
+            .find(|entry| entry.kind == EntityKind::Creature && tile(entry.position).ok() == Some(landing))
+            .map(|entry| entry.entity)
+    }).ok_or_else(|| format!("S02 blocked landing {landing:?} has no visible creature occupant"))?;
+    let budget = Duration::from_secs(5);
+    evidence(&format!("S02_MOVE wait creature={creature:?} landing={landing:?} budget_ms=5000"));
+
+    tokio::time::timeout(budget, async {
+        loop {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let Some(view) = client.world_entities() else {
+                return Err("S02 visibility lost while observing blocked landing".into());
+            };
+            let Some(observed) = view.iter().find(|entry| entry.entity == creature) else {
+                return Err(format!("S02 lost exact blocker {creature:?} before observing movement").into());
+            };
+            let position = tile(observed.position)?;
+            if position != landing && !view.iter().any(|entry| tile(entry.position).ok() == Some(landing)) {
+                evidence(&format!("S02_MOVE clear creature={creature:?} landing={landing:?} now={position:?}"));
+                return Ok(());
+            }
+        }
+    }).await.map_err(|_| format!("S02 blocker {creature:?} did not clear {landing:?} within {budget:?}"))?
+}
+
 pub(super) async fn walk_s02(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -152,7 +184,17 @@ pub(super) async fn walk_s02(
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("S02 step has no landing")?;
-        let reply = client.step(direction).await?;
+        let mut reply = client.step(direction).await?;
+        if reply.disposition == StepDisposition::Blocked
+            && tile(client.world_spatial().actor_position)? == from
+        {
+            evidence(&format!("S02_MOVE blocked direction={direction:?} from={from:?} landing={expected:?} reply={reply:?}"));
+            wait_for_creature_to_clear(client, expected).await?;
+            if tile(client.world_spatial().actor_position)? != from {
+                return Err("S02 player moved while waiting for the creature".into());
+            }
+            reply = client.step(direction).await?;
+        }
         let actual = tile(client.world_spatial().actor_position)?;
         if reply.disposition != StepDisposition::Moved
             || reply.world_spatial_delta.is_none()
