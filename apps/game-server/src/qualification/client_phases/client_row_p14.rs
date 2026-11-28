@@ -97,10 +97,15 @@ async fn offline(
         .session_mut()
         .gated_command(CAPABILITY_TRAINING_V1, COMMAND_TYPE_OFFLINE_TRAINING, &payload)
         .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("offline training status={:?}", reply.status).into());
-    }
     let decoded = training_reply(&reply.payload).ok_or("malformed training reply")?;
+    let expected = if decoded == TrainingResult::REFUSED {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if reply.status != expected {
+        return Err(format!("offline training status={:?} expected={expected:?}", reply.status).into());
+    }
     Ok((reply.payload, decoded))
 }
 

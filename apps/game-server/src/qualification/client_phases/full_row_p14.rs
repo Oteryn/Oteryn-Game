@@ -97,7 +97,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     evidence("P14_CHECK step=1 status=PASS observed=capability-54");
-    evidence("P14_CHECK step=2 status=PASS observed=accepted-frame,disposition-4,no-pool-delta");
+    evidence("P14_CHECK step=2 status=PASS observed=rejected-frame,disposition-4,no-pool-delta");
 
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
@@ -275,20 +275,25 @@ async fn training(client: &mut DevClientSession, target: ItemHandle) -> TestResu
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!(
-            "step=offline-training-command observed=status:{:?},payload:{:?} need=accepted-command-with-training-result",
-            reply.status, reply.payload
-        )
-        .into());
-    }
-    decode_training_result(&reply.payload).ok_or_else(|| {
+    let decoded = decode_training_result(&reply.payload).ok_or_else(|| {
         format!(
             "step=offline-training-reply observed=malformed:{:?} need=bounded-training-result",
             reply.payload
         )
-        .into()
-    })
+    })?;
+    let expected = if decoded == TrainingResult::REFUSED {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if reply.status != expected {
+        return Err(format!(
+            "step=offline-training-command observed=status:{:?} expected={expected:?}",
+            reply.status,
+        )
+        .into());
+    }
+    Ok(decoded)
 }
 
 fn offline_payload(target: ItemHandle) -> Vec<u8> {
