@@ -89,7 +89,11 @@ fn qh_jimmy_greeting_requires_three_assassin_deaths_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run(AMBUSH, || {
-        quest_world_callbacks_fixtures::scenario(AMBUSH, TOP_OF_THE_CITY_CRATE, false)
-    })
+    for suffix in ["", "#punctuated", "#plain"] {
+        super::kill_reward_e2e_fixtures::scenario_thread::run(AMBUSH, move || {
+            let name = format!("{AMBUSH}{suffix}");
+            quest_world_callbacks_fixtures::scenario(&name, TOP_OF_THE_CITY_CRATE, false)
+        })?;
+    }
+    Ok(())
 }

@@ -3342,6 +3342,7 @@ fn scenario_case(
         } else if super::super::qh_authored_cases_fixtures::is_case(name) {
             Box::pin(super::super::qh_authored_cases_fixtures::exercise(
                 name,
+                variant,
                 &mut owner,
                 &mut admitted,
                 &h,

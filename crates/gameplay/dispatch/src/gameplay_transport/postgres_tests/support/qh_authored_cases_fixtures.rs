@@ -174,13 +174,22 @@ pub(super) fn world(
 
 pub(super) async fn exercise(
     name: &str,
+    variant: &str,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
     match name {
         SMALL_SAPPHIRE => small_sapphire(owner, admitted, h).await,
-        AMBUSH => ambush_from_completed_pursuit(owner, admitted, h).await,
+        AMBUSH => {
+            let greeting = match variant {
+                "" => None,
+                "plain" => Some("hi"),
+                "punctuated" => Some("Hi, Jimmy!"),
+                _ => return Err(format!("unknown Jimmy greeting variant {variant}").into()),
+            };
+            ambush_from_completed_pursuit(owner, admitted, h, greeting).await
+        }
         TOP_OF_THE_CITY => top_of_the_city(owner, admitted, h).await,
         DIG | BARE | WRONG_TOOL | NO_PICK => dig(name, owner, admitted, h).await,
         _ => Err(format!("unknown qh case {name}").into()),
@@ -491,7 +500,7 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        let greeting = (!matches!(text, "hi" | "hello Jimmy")).then_some("hi");
+        let greeting = matches!(text, "quest" | "iriana").then_some("hi");
         for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
             let command_id = first + u64::try_from(offset)?;
             let payload = encode_npc_talk_intent(&NpcTalkIntent {
@@ -523,7 +532,7 @@ async fn framed_talk(
             } else {
                 CommandStatus::Accepted
             };
-            while !acknowledged || expected.is_some() && !found_line {
+            while !acknowledged || (!is_subject || expected.is_some()) && !found_line {
                 let frame = read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
@@ -539,10 +548,13 @@ async fn framed_talk(
                 } else if envelope.message_type() == MessageType::StateDelta {
                     let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
                     if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION
-                        && let Some(line) = expected
+                        && acknowledged
                     {
                         let dialogue = decode_npc_conversation(delta.payload).map_err(debug)?;
-                        found_line |= dialogue.lines.iter().any(|actual| actual == line);
+                        found_line |= match expected {
+                            Some(line) => dialogue.lines.iter().any(|actual| actual == line),
+                            None => dialogue.open.is_some_and(|(actor, _)| actor == npc_actor),
+                        };
                     }
                 }
             }
@@ -735,15 +747,7 @@ async fn top_of_the_city(
     );
 
     relocate_city(owner, admitted, city_start()).await?;
-    framed_talk(
-        owner,
-        admitted,
-        iriana,
-        "Hi, Iriana!",
-        NpcIntentDisposition::Ok,
-        Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
-    )
-    .await?;
+    assert_iriana_restart(owner, admitted, h, iriana, "Hi, Iriana!").await?;
     city_route::roof_to_door(owner, admitted, deadline).await?;
     assert_eq!(
         track(h, PURSUIT).await?,
@@ -758,7 +762,7 @@ async fn top_of_the_city(
     city_route::assert_door_does_not_hold_runtime(owner, admitted).await?;
     let jimmy_stop = city_route::enter_jimmy(owner, admitted, deadline).await?;
     city_route::assert_guest_blocked(owner, admitted, h, deadline).await?;
-    jimmy_ambush(owner, admitted, h, jimmy).await?;
+    jimmy_ambush(owner, admitted, h, jimmy, Some("hello Jimmy")).await?;
     relocate_city(owner, admitted, CELLAR).await?;
     let command = admitted.continuity.next_command_id;
     assert_eq!(
@@ -841,10 +845,32 @@ async fn completion_receipts(h: &Harness) -> TestResult<i64> {
 }
 
 
+async fn assert_iriana_restart(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    iriana: EntityRef,
+    greeting: &str,
+) -> TestResult {
+    assert_eq!(track(h, PURSUIT).await?, PURSUIT_COMPLETE + 1);
+    framed_talk(
+        owner,
+        admitted,
+        iriana,
+        greeting,
+        NpcIntentDisposition::Ok,
+        Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
+    )
+    .await?;
+    assert_eq!(track(h, PURSUIT).await?, 0);
+    Ok(())
+}
+
 async fn ambush_from_completed_pursuit(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    greeting: Option<&str>,
 ) -> TestResult {
     prepare_city(owner, admitted).await?;
     super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
@@ -853,12 +879,19 @@ async fn ambush_from_completed_pursuit(
     ).await?;
     framed_talk(owner, admitted, iriana, "quest", NpcIntentDisposition::Ok, None).await?;
     assert_eq!(track(h, CITY_STAGE).await?, 1);
+    if greeting.is_none() {
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted, &[(PURSUIT.into(), PURSUIT_COMPLETE + 1)], 119,
+        ).await?;
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        assert_iriana_restart(owner, admitted, h, iriana, "hi").await?;
+    }
     super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
         h, owner, admitted, &[(PURSUIT.into(), PURSUIT_COMPLETE)], 120,
     ).await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
     relocate_city(owner, admitted, city_route::JIMMY_STOP).await?;
-    jimmy_ambush(owner, admitted, h, jimmy).await
+    jimmy_ambush(owner, admitted, h, jimmy, greeting).await
 }
 
 async fn jimmy_ambush(
@@ -866,16 +899,30 @@ async fn jimmy_ambush(
     admitted: &mut AdmittedSession,
     h: &Harness,
     jimmy: EntityRef,
+    first_addressed: Option<&str>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode};
-    let session = admitted.game_session_id;
-    owner.open_npc_session(session).await;
-    let say = ChatIntent::Say { mode: ChatSpeechMode::Say, text: "hi".into() };
-    let result = owner.chat_speak(admitted.runtime_actor.ok_or("player")?, session,
-        admitted.continuity.next_command_id, &say).await;
-    assert_eq!(result.disposition, ChatDisposition::Ok);
-    assert!(owner.states.chat.drain(session).iter().any(|line|
-        matches!(line, ChatLine::Local { text, .. } if text == "Get him!!")));
+    assert!(owner.states.npc_conversations.jimmy_roster_for_fixture()?.is_empty());
+    if let Some(greeting) = first_addressed {
+        framed_talk(
+            owner,
+            admitted,
+            jimmy,
+            greeting,
+            NpcIntentDisposition::Ok,
+            Some("Get him!!"),
+        )
+        .await?;
+    } else {
+        let session = admitted.game_session_id;
+        owner.open_npc_session(session).await;
+        let say = ChatIntent::Say { mode: ChatSpeechMode::Say, text: "hi".into() };
+        let result = owner.chat_speak(admitted.runtime_actor.ok_or("player")?, session,
+            admitted.continuity.next_command_id, &say).await;
+        assert_eq!(result.disposition, ChatDisposition::Ok);
+        assert!(owner.states.chat.drain(session).iter().any(|line|
+            matches!(line, ChatLine::Local { text, .. } if text == "Get him!!")));
+    }
     let wave = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
     assert_eq!(wave.len(), 3);
     framed_talk(
