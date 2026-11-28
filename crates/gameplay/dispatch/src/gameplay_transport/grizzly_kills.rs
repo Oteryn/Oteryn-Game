@@ -191,9 +191,11 @@ fn freeze_at(
         for counter in &snapshot.native_counters {
             if counter.creature == creature
                 && counter.encounter_source.is_none()
-                && counter.death_area.is_none_or(|area| {
-                    death_position.is_some_and(|position| area.contains(position))
-                })
+                && oteryn_gameplay_quests::quest::native_kills::death_position_matches(
+                    &counter.transition,
+                    counter.death_area,
+                    death_position,
+                )
             {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,

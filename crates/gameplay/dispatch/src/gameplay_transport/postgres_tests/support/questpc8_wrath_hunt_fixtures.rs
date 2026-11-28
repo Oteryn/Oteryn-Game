@@ -1,5 +1,5 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::classic_quests_fixtures::{progress, talk};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::fixture::{Harness, debug, id};
 
@@ -48,8 +48,10 @@ pub(super) fn require_bindings() -> TestResult {
 
 pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, _) =
-        super::death_ml_loss_composed_fixtures::production_generation_with_pin(world_id, "content-1")?;
+    let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+        world_id,
+        "content-1",
+    )?;
     let native = controller
         .active()
         .and_then(|g| g.native_gameplay())
@@ -173,7 +175,7 @@ pub(super) async fn exercise(
     refused(owner, admitted, npc, 8002, "imperial report").await?;
     talk(owner, admitted, npc, 8003, "imperial hunt").await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 0);
-    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 0);
+    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, -1);
     super::questpc8_mystery_geometry_fixtures::arrive(
         owner,
         admitted,
@@ -226,8 +228,8 @@ pub(super) async fn exercise(
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 3);
     assert_eq!(
         progress(owner, admitted, authority, NOBLE).await?,
-        6,
-        "noble counter saturates at six"
+        -1,
+        "noble kills before the Office Job report earn no credit"
     );
     super::questpc8_mystery_geometry_fixtures::arrive(
         owner,
@@ -284,6 +286,40 @@ pub(super) async fn exercise(
     .await?;
     talk(owner, admitted, npc, 8202, "hi").await?;
     talk(owner, admitted, npc, 8203, "imperial report").await?;
+    talk(owner, admitted, npc, 8204, "yes").await?;
+    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 0);
+    refused(owner, admitted, npc, 8205, "imperial report").await?;
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33079,
+            y: 31192,
+            floor: -3,
+        },
+    )
+    .await?;
+    super::grizzly_npc_fixtures::questpc8_campaign::hunt(
+        owner,
+        admitted,
+        "oteryn:creature.lizard_noble",
+        7,
+        8110,
+    )
+    .await?;
+    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 6);
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33081,
+            y: 31220,
+            floor: -7,
+        },
+    )
+    .await?;
+    talk(owner, admitted, npc, 8210, "hi").await?;
+    talk(owner, admitted, npc, 8211, "imperial report").await?;
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 6);
     for (track, value) in [
         ("questline", 27),
@@ -301,8 +337,8 @@ pub(super) async fn exercise(
             value
         );
     }
-    talk(owner, admitted, npc, 8203, "imperial report").await?;
-    refused(owner, admitted, npc, 8204, "imperial report").await?;
+    talk(owner, admitted, npc, 8211, "imperial report").await?;
+    refused(owner, admitted, npc, 8212, "imperial report").await?;
     let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/wrath/imperial-report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     eprintln!("POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS");

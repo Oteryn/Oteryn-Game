@@ -444,6 +444,33 @@ mod tests {
     }
 
     #[test]
+    fn harlow_outbound_ferry_requires_vengoth_access() -> Result<(), Box<dyn std::error::Error>> {
+        let model = production_travel_model()?;
+        let route = production_route(&model, "harlow", "vengoth")?.ok_or("outbound ferry")?;
+        assert!(route.matches_keyword("vengoth") && route.matches_keyword("transportation"));
+        let destination = &route.route.destination;
+        assert_eq!(
+            (
+                route.route.price,
+                destination.x,
+                destination.y,
+                destination.floor
+            ),
+            (100, 32858, 31549, 7)
+        );
+        assert!(!route.held && !route.route.premium);
+        let [gate] = route.route.required_quest_tracks.as_slice() else {
+            return Err("one access gate".into());
+        };
+        assert_eq!(
+            gate.track,
+            "oteryn:quest-progress/quest/u8_4/blood_brothers/vengoth_access"
+        );
+        assert_eq!((gate.minimum, gate.maximum), (1, Some(1)));
+        Ok(())
+    }
+
+    #[test]
     fn m38_return_origin_correction_is_optional_and_preserves_exact_policy()
     -> Result<(), Box<dyn std::error::Error>> {
         let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;

@@ -71,6 +71,30 @@
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ferryman_kamil_meluna.lua:53-55:sha256:8d9b6467a86adf0a16da177fa4050ab1ed90b821d85fa414e2855ac1577aef24"
   },
   {
+    "key": "oteryn:service.travel.harlow/vengoth",
+    "keyword": "vengoth",
+    "aliases": [
+      "transportation"
+    ],
+    "price": 100,
+    "premium": false,
+    "x": 32858,
+    "y": 31549,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/vengoth_access",
+        "minimum": 1,
+        "maximum": 1
+      }
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/harlow.lua:61-71:sha256:a7b39edd4830c79d07e02ca715260a48577184cea2463002506b62796f6109e3"
+  },
+  {
     "key": "oteryn:service.travel.harlow_vengoth/yalahar",
     "keyword": "yalahar",
     "price": 0,

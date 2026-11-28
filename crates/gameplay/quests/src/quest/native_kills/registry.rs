@@ -135,6 +135,20 @@ mod daily_tests {
             assert_eq!(counter.creature, format!("oteryn:creature.{species}"));
             assert_eq!(area.minimum, minimum);
             assert_eq!(area.maximum, maximum);
+            assert_eq!(
+                super::super::death_position_matches(&key, Some(area), Some([32539, 32000, 15])),
+                tier == "lower"
+            );
+            assert!(!super::super::death_position_matches(
+                &key,
+                Some(area),
+                Some([32539, 32000, 14])
+            ));
+            assert!(!super::super::death_position_matches(
+                &key,
+                Some(area),
+                Some([32400, 32300, 15])
+            ));
             assert!(area.contains(minimum));
             assert!(area.contains(maximum));
             assert!(!area.contains([minimum[0], minimum[1], minimum[2] - 1]));

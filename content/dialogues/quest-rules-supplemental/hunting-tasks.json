@@ -530,7 +530,46 @@
       "topics": [
         1
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        }
+      ],
       "reply": [
         "Will you hunt 150 Goblins?"
       ],
@@ -696,8 +735,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "ne",
-          "value": 1
+          "op": "eq",
+          "value": 2
         }
       ],
       "reply": [
@@ -744,7 +783,52 @@
       "topics": [
         2
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
       "reply": [
         "Will you hunt 100 Trolls for Edron?"
       ],
@@ -878,7 +962,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
         },
         {
           "kind": "level",
@@ -961,8 +1045,35 @@
       "guards": [
         {
           "kind": "level",
-          "op": "lt",
-          "value": 40
+          "op": "ge",
+          "value": 20
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 39
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
         },
         {
           "kind": "storage",
@@ -1002,7 +1113,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
         },
         {
           "kind": "level",
@@ -1188,13 +1299,40 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 30
+          "value": 40
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 59
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
         },
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
-          "op": "eq",
-          "value": 0
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [

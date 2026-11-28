@@ -921,7 +921,7 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
         let level = match task {
             "trolls" | "goblins" => 6,
             "rotworms" => 20,
-            "cyclops" => 30,
+            "cyclops" => 40,
             "necromancers" => 60,
             _ => 10,
         };
@@ -1067,6 +1067,27 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
                 .any(|c| c.key == format!("oteryn:quest-reward/wrath-city/{action}"))
         );
     }
+    let report = callbacks
+        .iter()
+        .find(|c| c.key.ends_with("/wrath-city/supplies-report"))
+        .ok_or("report")?;
+    assert!(report.topic > 0 && report.matches_keyword("yes"));
+    assert!(!report.matches_keyword("supplies"));
+    let rewards = (0..100)
+        .map(|roll| {
+            report
+                .reward_for_percentile(roll)
+                .map(|reward| (reward.item.as_str(), reward.count))
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(
+        rewards,
+        [3038, 3039, 3041, 10384]
+            .map(|id| format!("oteryn:item.tibia.i{id}"))
+            .iter()
+            .map(|key| Some((key.as_str(), 1)))
+            .collect()
+    );
     let briefing = callbacks
         .iter()
         .find(|c| c.key == "oteryn:quest-reward/wrath-city/briefing")
@@ -1340,14 +1361,15 @@ fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
         .map_err(|error| error.to_string())?
         .ok_or("Daniel hunting programme")?;
     let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
-    let mut failures = Vec::new();
-    for (level, trolls, cyclops, expected) in [
-        (19, 0, 0, "goblins"),
-        (19, 2, 0, "trolls"),
-        (30, 0, 0, "rotworms"),
-        (30, 0, 2, "rotworms"),
+    for (level, trolls, initial_topic, offered, alternate) in [
+        (19, 0, 1, 1, None),
+        (19, 2, 2, 2, Some(("trolls", 1))),
+        (30, 0, 4, 4, None),
+        (39, 0, 3, 4, Some(("rotworms", 4))),
+        (40, 0, 4, 3, Some(("cyclops", 3))),
+        (59, 0, 3, 3, None),
     ] {
-        let tracks = BTreeMap::from([(phase("trolls"), trolls), (phase("cyclops"), cyclops)]);
+        let tracks = BTreeMap::from([(phase("trolls"), trolls)]);
         let input = NpcRuleInput {
             npc,
             trigger: NpcRuleTrigger::Say,
@@ -1364,67 +1386,48 @@ fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
             sex: 0,
             outfits: &BTreeMap::new(),
         };
-        let mut topic = 0;
-        for message in ["task", "no", "yes"] {
-            let plan = programme
+        let plan = |message, topic| {
+            programme
                 .plan_storage(&NpcRuleInput {
                     message,
                     topic,
                     ..input
                 })
-                .map_err(|error| error.to_string())?;
-            let Some(plan) = plan else {
-                failures.push((expected, message));
-                break;
-            };
-            topic = plan.next_topic;
-            if message == "yes" {
-                assert_eq!(topic, 0);
-                assert!(
-                    plan.track_changes
-                        .iter()
-                        .any(|change| { change.key == phase(expected) && change.after == 1 }),
-                    "{expected}"
-                );
-            } else {
-                assert!(plan.track_changes.is_empty(), "{expected}: {message}");
-            }
-        }
-        // At overlapping levels a player can also decline a Rotworms prompt
-        // opened just before reaching level 30.
-        if level == 30 && cyclops == 0 {
-            let rotworms = programme
-                .plan_storage(&NpcRuleInput { level: 29, ..input })
-                .map_err(|error| error.to_string())?
-                .ok_or("Rotworms offer at level 29")?;
-            let switch = programme
-                .plan_storage(&NpcRuleInput {
-                    message: "no",
-                    topic: rotworms.next_topic,
-                    ..input
-                })
-                .map_err(|error| error.to_string())?
-                .ok_or("Rotworms decline at level 30")?;
-            let start = programme
-                .plan_storage(&NpcRuleInput {
-                    message: "yes",
-                    topic: switch.next_topic,
-                    ..input
-                })
-                .map_err(|error| error.to_string())?;
-            if !start.is_some_and(|plan| {
-                plan.track_changes
+                .map_err(|error| error.to_string())
+        };
+        let ask = plan("task", 0)?.ok_or("missing hunt offer")?;
+        assert!(ask.track_changes.is_empty());
+        assert_eq!(ask.next_topic, offered);
+        let decline = plan("no", initial_topic)?;
+        if let Some((hunt, topic)) = alternate {
+            let switch = decline.ok_or("missing eligible alternate")?;
+            assert!(switch.track_changes.is_empty());
+            assert_eq!(switch.next_topic, topic);
+            let acceptance = plan("yes", topic)?.ok_or("missing acceptance")?;
+            assert_eq!(acceptance.next_topic, 0);
+            assert!(
+                acceptance
+                    .track_changes
                     .iter()
-                    .any(|change| change.key == phase("cyclops") && change.after == 1)
-            }) {
-                failures.push(("cyclops", "yes"));
-            }
+                    .any(|change| change.key == phase(hunt) && change.after == 1)
+            );
+        } else {
+            assert!(
+                decline.is_none_or(|plan| plan.next_topic == 0 && plan.track_changes.is_empty())
+            );
+        }
+        for (topic, eligible) in [
+            (2, trolls == 2 && level < 20),
+            (3, level >= 40),
+            (4, (20..40).contains(&level)),
+        ] {
+            assert_eq!(
+                plan("yes", topic)?.is_some(),
+                eligible,
+                "level {level}, topic {topic}"
+            );
         }
     }
-    assert!(
-        failures.is_empty(),
-        "alternate confirmations failed: {failures:?}"
-    );
     Ok(())
 }
 
@@ -1482,7 +1485,7 @@ fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), Strin
     for (task, alternate, level) in [
         ("trolls", "goblins", 19),
         ("goblins", "trolls", 19),
-        ("rotworms", "cyclops", 30),
+        ("rotworms", "cyclops", 40),
         ("cyclops", "rotworms", 30),
     ] {
         let npc = "oteryn:npc.daniel_steelsoul";
@@ -1501,7 +1504,7 @@ fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), Strin
                 .and_then(|rule| rule.topics.as_ref()?.first().copied())
                 .ok_or(key)
         };
-        let tracks = BTreeMap::from([(phase("trolls"), i64::from(task == "goblins") * 2)]);
+        let tracks = BTreeMap::from([(phase("trolls"), i64::from(level == 19) * 2)]);
         let input = NpcRuleInput {
             npc,
             trigger: NpcRuleTrigger::Say,

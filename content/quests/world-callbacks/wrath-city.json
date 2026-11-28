@@ -288,7 +288,19 @@
         "count": 1,
         "contents": []
       },
-      "requires_world_admission": true
+      "requires_world_admission": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate-collected-at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 1
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
     },
     {
       "key": "oteryn:quest-callback/authored-wrath-city-supply-fish",
@@ -346,7 +358,19 @@
         "count": 2,
         "contents": []
       },
-      "requires_world_admission": true
+      "requires_world_admission": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish-collected-at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 1
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
     }
   ]
 }

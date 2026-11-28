@@ -44,6 +44,28 @@
         "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
       ],
       "writable": true
+    },
+    {
+      "key": "oteryn:quest-progress/wrath-city/completed",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "writable": true
+    },
+    {
+      "key": "oteryn:quest-progress/wrath-city/last-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "writable": true
     }
   ],
   "callbacks": [
@@ -131,6 +153,11 @@
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
           "minimum": 21,
           "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
         }
       ],
       "requires_premium": true
@@ -140,10 +167,9 @@
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zalamon",
       "keywords": [
-        "supplies",
-        "zzuppliezz"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 43,
       "next_topic": 0,
       "storage": [
         {
@@ -151,6 +177,12 @@
           "minimum": 1,
           "maximum": 1,
           "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/completed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "take": [
@@ -163,7 +195,10 @@
           "count": 1
         }
       ],
-      "give": null,
+      "give": {
+        "item": "oteryn:item.tibia.i3039",
+        "count": 1
+      },
       "outfit": null,
       "achievement": null,
       "reply": [
@@ -192,12 +227,52 @@
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
           "minimum": 21,
           "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
         }
       ],
       "requires_premium": true,
       "failure_reply": [
         "Bring the weapons crate and the remaining corned fish after feeding the prisoners."
-      ]
+      ],
+      "weighted_rewards": [
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i3038",
+            "count": 1
+          }
+        },
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i3041",
+            "count": 1
+          }
+        },
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i10384",
+            "count": 1
+          }
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/wrath-city/zlak-handoff",
@@ -247,6 +322,372 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zlak.lua:56-66"
       ],
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/wrath-city/briefing-during-repeat",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "We have sent forged papers to the city. Ask the Gate Guardian for passage, then find Zlak in the imperial office."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:206-217",
+        "https://tibia.fandom.com/?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/completed",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "requires_premium": true,
+      "failure_reply": [
+        "Finish the supplies task before asking about entering the city."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath-city/supplies-repeat",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 44,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/completed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect a weapons crate and two corned fish in Chaochai. Give one fish to the prisoners and bring the crate and the other fish back to me."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
+        }
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath-city/chartan-supplies-accept",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 41,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect a weapons crate and two corned fish in Chaochai. Give one fish to the prisoners and bring the crate and the other fish back to me."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/wrath-city/chartan-supplies-repeat",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 44,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/completed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect a weapons crate and two corned fish in Chaochai. Give one fish to the prisoners and bring the crate and the other fish back to me."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath-city/chartan-supplies-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 43,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/completed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10247",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i10218",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3039",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The weapons and fish will help the resistance. Thank you for feeding the prisoners."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "requires_premium": true,
+      "failure_reply": [
+        "Bring the weapons crate and the remaining corned fish after feeding the prisoners."
+      ],
+      "weighted_rewards": [
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i3038",
+            "count": 1
+          }
+        },
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i3041",
+            "count": 1
+          }
+        },
+        {
+          "chance": 25,
+          "reward": {
+            "item": "oteryn:item.tibia.i10384",
+            "count": 1
+          }
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
     }
   ]
 }

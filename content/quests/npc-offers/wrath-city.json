@@ -22,10 +22,310 @@
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
           "minimum": 21,
           "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
         }
       ],
       "reply": [
         "Can you gather weapons and fish for the resistance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 42,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
+        }
+      ],
+      "reply": [
+        "Already finished? Did you get zze zzuppliezz I requezzted from you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 42,
+      "next_topic": 43,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
+        }
+      ],
+      "reply": [
+        "I zzee, zzere izz fish, weaponzz and... more fish? And zze prizzonerzz have been zzupplied azz well, very good! Will you give zze itemzz to me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 44,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 33
+        }
+      ],
+      "reply": [
+        "Can you gather weapons and fish for the resistance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 41,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "reply": [
+        "Can you gather weapons and fish for the resistance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 42,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "reply": [
+        "Already finished? Did you get zze zzuppliezz I requezzted from you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 42,
+      "next_topic": 43,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "reply": [
+        "I zzee, zzere izz fish, weaponzz and... more fish? And zze prizzonerzz have been zzupplied azz well, very good! Will you give zze itemzz to me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chartan",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 44,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 34,
+          "maximum": 34
+        }
+      ],
+      "reply": [
+        "Can you gather weapons and fish for the resistance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "mission",
+        "imperial hunt"
+      ],
+      "topic": 0,
+      "next_topic": 45,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23
+        }
+      ],
+      "reply": [
+        "The officials are gone. Will you eliminate six imperial nobles?"
       ]
     }
   ]
