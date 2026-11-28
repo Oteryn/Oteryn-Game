@@ -76,20 +76,19 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
                 ));
             })?;
         for event in client.take_events() {
-            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
-                if let Some(updated) = delta
-                    .value
-                    .update
-                    .iter()
-                    .find(|entry| entry.entity == target.entity)
-                {
-                    last_position = updated.position;
-                    if let EntityDetail::Actor { health_percent, .. } = updated.detail {
-                        damaged |= health_percent < 100;
-                        if health_percent < lowest_health {
-                            lowest_health = health_percent;
-                            client_world::hunt_progress("hunt-target-damaged");
-                        }
+            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
+                && let Some(updated) = delta
+                .value
+                .update
+                .iter()
+                .find(|entry| entry.entity == target.entity)
+            {
+                last_position = updated.position;
+                if let EntityDetail::Actor { health_percent, .. } = updated.detail {
+                    damaged |= health_percent < 100;
+                    if health_percent < lowest_health {
+                        lowest_health = health_percent;
+                        client_world::hunt_progress("hunt-target-damaged");
                     }
                 }
             }

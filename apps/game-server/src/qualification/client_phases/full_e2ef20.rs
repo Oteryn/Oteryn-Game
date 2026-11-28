@@ -361,18 +361,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn exact_coin_delta_rejects_value_preserving_wrong_denominations() {
-        assert!(exact_delta([100, 0, 0], [0, 1, 0], [-100, 1, 0]));
-        assert!(!exact_delta([100, 0, 0], [0, 0, 1], [-100, 1, 0]));
-        assert!(exact_delta([0, 1, 0], [100, 0, 0], [100, -1, 0]));
-    }
-}
-
 pub(super) async fn greet_ten(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -531,4 +519,16 @@ async fn greet_ten_journey(
             Ok(())
         });
     result.and(release)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exact_coin_delta_rejects_value_preserving_wrong_denominations() {
+        assert!(exact_delta([100, 0, 0], [0, 1, 0], [-100, 1, 0]));
+        assert!(!exact_delta([100, 0, 0], [0, 0, 1], [-100, 1, 0]));
+        assert!(exact_delta([0, 1, 0], [100, 0, 0], [100, -1, 0]));
+    }
 }
