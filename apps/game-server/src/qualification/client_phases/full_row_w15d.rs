@@ -59,35 +59,59 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-async fn quest_list(
+pub(super) fn pilgrimage_index() -> TestResult<u32> {
+    use oteryn_gameplay_quests::quest::{loader, log, monk_shrines};
+    let lowered = loader::load_embedded_quest_state("s3b-content-1")
+        .map_err(|error| format!("pilgrimage quest catalogue: {error:?}"))?;
+    let journal = log::loader::load_embedded_quest_log(&lowered)?;
+    let index = journal.content.active().quests().iter()
+        .position(|quest| quest.key == monk_shrines::QUEST)
+        .ok_or("pilgrimage absent from the quest catalogue")?;
+    Ok(u32::try_from(index)?)
+}
+
+pub(super) struct JournalCapture {
+    pub(super) base: u64,
+    pub(super) new: u64,
+    pub(super) sequence: u64,
+    pub(super) payload: Vec<u8>,
+    pub(super) line: journal::QuestLine,
+}
+
+pub(super) async fn pilgrimage(
     client: &mut oteryn_dev_client::DevClientSession,
-) -> TestResult<Vec<journal::QuestListEntry>> {
+    index: u32,
+    honoured: bool,
+) -> TestResult<JournalCapture> {
     client.service_liveness(Duration::from_millis(1050)).await?;
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
-        .ok_or("missing quest-log snapshot")?
-        .clone();
-    let state = journal::QuestState::from_snapshot(client.selected_capabilities(), Some(&snapshot))
-        .map_err(|error| format!("quest snapshot: {error:?}"))?;
-    let command = state
-        .command(&journal::QuestLogQuery::List)
-        .map_err(|error| format!("quest list command: {error:?}"))?;
-    let result = journal::send(client.session_mut(), &command).await?;
-    if result.status != CommandStatus::Accepted {
-        return Err(format!("quest list reply status={:?}", result.status).into());
+    let command = journal::encode_quest_log_query(&journal::QuestLogQuery::Quest { quest_index: index })
+        .map_err(|error| format!("pilgrimage query: {error:?}"))?;
+    let reply = journal::send(client.session_mut(), &command).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("pilgrimage query reply={reply:?}").into());
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1)
-        .await?;
-    let log = journal::decode_quest_log(&delta.payload)
-        .map_err(|error| format!("quest list delta: {error:?}"))?;
-    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")?
-    else {
-        return Err("quest list delta is not a list".into());
+    let delta = client.session_mut().read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1).await?;
+    let log = journal::decode_quest_log(&delta.payload).map_err(|error| format!("pilgrimage delta: {error:?}"))?;
+    let Some(journal::QuestLogView::Line(line)) = log.view else {
+        return Err("missing pilgrimage quest line".into());
     };
-    Ok(entries)
+    let count = u8::from(honoured);
+    let expected = format!("Honour the ten mainland shrines in order. Completed shrines: {count}/10. Return to Enpa-Deia Pema after Eternity.");
+    let guidance = line.missions.iter().filter(|mission| mission.name == "Shrine of Guidance")
+        .collect::<Vec<_>>();
+    let guidance_ok = match guidance.as_slice() {
+        [] => !honoured,
+        [mission] => honoured && mission.done,
+        _ => false,
+    };
+    if delta.server_sequence <= reply.server_sequence || line.quest_index != index || line.completed
+        || !guidance_ok
+        || !line.missions.iter().any(|mission| mission.name == "The Three-Fold Path" && mission.text == expected)
+    {
+        return Err(format!("pilgrimage expected_guidance={honoured} observed={line:?}").into());
+    }
+    Ok(JournalCapture { base: delta.base_revision, new: delta.new_revision,
+        sequence: delta.server_sequence, payload: delta.payload, line })
 }
 
 pub(super) fn object_target(
@@ -408,7 +432,7 @@ async fn start_pilgrimage(
                 && !conversation
                     .lines
                     .iter()
-                    .any(|line| line.contains("You may now visit the shrines")))
+                    .any(|line| line == "Your pilgrimage begins. Honour the ten mainland shrines in order, beginning with Guidance in Targuna, and return to me after Eternity."))
         {
             return Err(format!("Pema text={text} observed={conversation:?}").into());
         }
@@ -476,7 +500,28 @@ pub(super) fn assert_guidance_reward(
     Ok(())
 }
 
-pub(super) fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
+pub(super) fn published_shrine_revision(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: &WorldObjectTarget,
+) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let key = u64::from_be_bytes(target.placement.get(32..40).ok_or("missing shrine placement key")?.try_into()?);
+    let (at, ordinal) = crate::map::view::placement_of(key).ok_or("invalid shrine placement key")?;
+    let map = client.session_mut().world_map_snapshot().ok_or("live shrine map view absent")?;
+    if target.placement[..32] != map.header.bundle_digest || at != SHRINE {
+        return Err("live shrine map binding mismatch".into());
+    }
+    let revision = map.tiles.iter()
+        .find(|entry| tile(entry.position).ok() == Some(at))
+        .and_then(|entry| entry.items.iter().find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal { ordinal: observed, object_revision }
+                if observed == ordinal && item.appearance_id == APPEARANCE => Some(object_revision),
+            _ => None,
+        }));
+    shrine_revision(target.expected_revision, revision)
+}
+
+fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
     published.filter(|revision| *revision > base).ok_or_else(|| format!("repeat-use needs a newer published shrine revision, base={base} observed={published:?}").into())
 }
 
@@ -498,7 +543,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.step = "first-use-commit";
     let target = object_target(world, SHRINE, APPEARANCE)?;
-    let before = quest_list(&mut client).await?;
+    let index = pilgrimage_index()?;
+    pilgrimage(&mut client, index, false).await?;
     assert_guidance_reward(&client, 0)?;
     let first = client
         .session_mut()
@@ -511,19 +557,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let after = quest_list(&mut client).await?;
+    let after = pilgrimage(&mut client, index, true).await?.line;
     assert_guidance_reward(&client, 1)?;
-    if after == before {
-        return Err("committed USE produced no quest-log delta".into());
-    }
 
     row.step = "repeat-use-refusal";
-    let observed_revision = client
-        .world_object_overlay()
-        .iter()
-        .find(|entry| entry.placement == target.placement)
-        .map(|entry| entry.revision);
-    let revision = shrine_revision(target.expected_revision, observed_revision)?;
+    let revision = published_shrine_revision(&mut client, &target)?;
     let second = client
         .session_mut()
         .use_object(&target.placement, revision)
@@ -535,7 +573,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if quest_list(&mut client).await? != after {
+    if pilgrimage(&mut client, index, true).await?.line != after {
         return Err("refused repeat USE changed quest-log state".into());
     }
 
@@ -545,7 +583,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout_once(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(&scope, 0xd5, 0).await?;
-    if fresh.join_snapshot().game_session_id == session || quest_list(&mut fresh).await? != after {
+    if fresh.join_snapshot().game_session_id == session || pilgrimage(&mut fresh, index, true).await?.line != after {
         return Err("fresh admission lost committed quest-log state".into());
     }
     assert_guidance_reward(&fresh, 1)?;

@@ -65,6 +65,13 @@ fn number(expected: &str, key: &str) -> Result<u64, BoxError> {
 }
 
 fn visible(state: &QuestState) -> String {
+    if let Some(QuestLogView::Line(line)) = &state.log.view {
+        let done = line
+            .missions
+            .iter()
+            .any(|mission| mission.name == "Shrine of Guidance" && mission.done);
+        return format!("{}:{}", line.quest_index, u8::from(done));
+    }
     state
         .list
         .iter()

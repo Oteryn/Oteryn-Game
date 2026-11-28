@@ -5,9 +5,9 @@
 //! selected run requires a committed first use, a refused repeat, durable
 //! journal state after relog, and replay of the live bytes through that reducer.
 use super::*;
-use full_row_w15d::{APPEARANCE, SHRINE, approach, assert_guidance_reward, logout_once, object_target, prepare, shrine_revision};
+use full_row_w15d::{APPEARANCE, SHRINE, approach, assert_guidance_reward, logout_once, object_target, pilgrimage, pilgrimage_index, prepare, published_shrine_revision, JournalCapture};
 use oteryn_dev_client::client_runtime::quest_log as journal;
-use oteryn_dev_client::{AppliedDelta, DevClientSession};
+use oteryn_dev_client::AppliedDelta;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
@@ -17,62 +17,19 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-struct Listed {
-    base: u64,
-    new: u64,
-    sequence: u64,
-    payload: Vec<u8>,
-    entries: Vec<journal::QuestListEntry>,
+fn line_text(line: &journal::QuestLine) -> String {
+    let done = line.missions.iter().any(|mission| mission.name == "Shrine of Guidance" && mission.done);
+    format!("{}:{}", line.quest_index, u8::from(done))
 }
 
-fn list_text(entries: &[journal::QuestListEntry]) -> String {
-    entries
-        .iter()
-        .map(|entry| format!("{}:{}", entry.quest_index, u8::from(entry.completed)))
-        .collect::<Vec<_>>()
-        .join(";")
-}
-
-async fn list(client: &mut DevClientSession) -> TestResult<Listed> {
-    let deadline = tokio::time::Instant::now() + Duration::from_millis(1050);
-    while tokio::time::Instant::now() < deadline {
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
-    client.take_events();
-    let payload = journal::encode_quest_log_query(&journal::QuestLogQuery::List)
-        .map_err(|error| format!("list encode: {error:?}"))?;
-    let reply = journal::send(client.session_mut(), &payload).await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("quest list reply={reply:?}").into());
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1)
-        .await?;
-    let entries = match journal::decode_quest_log(&delta.payload)
-        .map_err(|error| format!("quest list decode={error:?}"))?
-        .view
-    {
-        Some(journal::QuestLogView::List(entries)) => entries,
-        other => return Err(format!("quest list view={other:?}").into()),
-    };
-    Ok(Listed {
-        base: delta.base_revision,
-        new: delta.new_revision,
-        sequence: delta.server_sequence,
-        payload: delta.payload,
-        entries,
-    })
-}
-
-impl Listed {
+impl JournalCapture {
     fn decoded(&self) -> TestResult<AppliedDelta<journal::QuestLog>> {
         Ok(AppliedDelta {
             server_sequence: self.sequence,
             base_revision: self.base,
             new_revision: self.new,
             value: journal::decode_quest_log(&self.payload)
-                .map_err(|error| format!("replay list decode={error:?}"))?,
+                .map_err(|error| format!("replay journal decode={error:?}"))?,
         })
     }
 }
@@ -89,7 +46,8 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .ok_or("step=snapshot quest log snapshot absent")?
         .clone();
     let target = object_target(world, SHRINE, APPEARANCE)?;
-    let mut before = list(&mut client).await?;
+    let index = pilgrimage_index()?;
+    let mut before = pilgrimage(&mut client, index, false).await?;
     assert_guidance_reward(&client, 0)?;
     let used = client
         .session_mut()
@@ -98,24 +56,16 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
         return Err(format!("step=use observed={used:?}").into());
     }
-    let mut after = list(&mut client).await?;
+    let mut after = pilgrimage(&mut client, index, true).await?;
     assert_guidance_reward(&client, 1)?;
-    if after.entries == before.entries {
-        return Err("step=list committed USE produced no quest-log delta".into());
-    }
-    let observed_revision = client
-        .world_object_overlay()
-        .iter()
-        .find(|entry| entry.placement == target.placement)
-        .map(|entry| entry.revision);
-    let revision = shrine_revision(target.expected_revision, observed_revision)?;
+    let revision = published_shrine_revision(&mut client, &target)?;
     let repeated = client
         .session_mut()
         .use_object(&target.placement, revision)
         .await?;
     if repeated.status != CommandStatus::Rejected
         || repeated.disposition != UseDisposition::Rejected
-        || list(&mut client).await?.entries != after.entries
+        || pilgrimage(&mut client, index, true).await?.line != after.line
     {
         return Err(format!("step=repeat-use observed={repeated:?}").into());
     }
@@ -126,7 +76,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     drop(client);
     let mut fresh = connect_character(&scope, 0x89, 0).await?;
     if fresh.join_snapshot().game_session_id == session
-        || list(&mut fresh).await?.entries != after.entries
+        || pilgrimage(&mut fresh, index, true).await?.line != after.line
     {
         return Err("step=relog missing durable post-USE quest list".into());
     }
@@ -138,11 +88,11 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         "session={session:?}\nsnapshot_revision={}\nuse={outcome}\nlist_before={}\nbefore_base={}\nbefore_new={}\nbefore_sequence={}\n\
          list_after={}\nafter_base={}\nafter_new={}\nafter_sequence={}\n",
         snapshot.revision,
-        list_text(&before.entries),
+        line_text(&before.line),
         before.base,
         before.new,
         before.sequence,
-        list_text(&after.entries),
+        line_text(&after.line),
         after.base,
         after.new,
         after.sequence,
@@ -169,15 +119,15 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     replay
         .apply(&before.decoded()?)
         .map_err(|error| format!("replay before={error:?}"))?;
-    if replay.list != before.entries {
-        return Err("replay before list mismatch".into());
+    if replay.log.view.as_ref() != Some(&journal::QuestLogView::Line(before.line.clone())) {
+        return Err("replay before quest line mismatch".into());
     }
     let after_delta = after.decoded()?;
     replay
         .apply(&after_delta)
         .map_err(|error| format!("replay after={error:?}"))?;
-    if replay.list != after.entries || replay.revision != Some(after.new) {
-        return Err("replay after list or revision mismatch".into());
+    if replay.log.view.as_ref() != Some(&journal::QuestLogView::Line(after.line.clone())) || replay.revision != Some(after.new) {
+        return Err("replay after quest line or revision mismatch".into());
     }
     let kept = replay.clone();
     if replay.apply(&after_delta) != Err(journal::QuestRefusal::RevisionMismatch) || replay != kept
@@ -190,8 +140,8 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture("w15d-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "use={outcome} before={} after={}",
-        list_text(&before.entries),
-        list_text(&after.entries)
+        line_text(&before.line),
+        line_text(&after.line)
     ))
 }
 
