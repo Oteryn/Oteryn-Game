@@ -377,6 +377,7 @@ impl<S: SessionStream> Session<S> {
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
                     let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    self.capture_actor_vitals_frame(&envelope, &frame);
                     self.queue_event(event)?;
                 }
                 actual => {

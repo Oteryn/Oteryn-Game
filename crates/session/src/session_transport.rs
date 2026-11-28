@@ -39,7 +39,33 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let server_sequence = self.next_sequence(&envelope)?;
+        self.capture_actor_vitals_frame(&envelope, &frame);
         Ok((message_type, server_sequence, envelope.payload().to_vec()))
+    }
+
+    /// Arms one capture of an original actor-vitals delta for qualification replay.
+    pub fn arm_actor_vitals_capture(&mut self) -> (u64, u64) {
+        self.actor_vitals_capture = Some(None);
+        (self.connection_generation, self.vitals_revision)
+    }
+
+    /// Takes the captured wire envelope and disarms capture.
+    pub fn take_actor_vitals_capture(&mut self) -> Option<Vec<u8>> {
+        self.actor_vitals_capture.take().flatten()
+    }
+
+    pub(super) fn capture_actor_vitals_frame(
+        &mut self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+        frame: &[u8],
+    ) {
+        if let Some(slot @ None) = &mut self.actor_vitals_capture
+            && envelope.message_type() == MessageType::StateDelta
+            && decode_state_delta(envelope.payload())
+                .is_ok_and(|delta| delta.domain_id == actor_spell::STATE_DOMAIN_ACTOR_VITALS)
+        {
+            *slot = Some(frame.to_vec());
+        }
     }
 
     /// Requires `envelope`'s `server_sequence` to be exactly the last applied one plus one and

@@ -44,8 +44,12 @@ fn e2e_i15_energy_ring_vitals_replay() -> Result<(), BoxError> {
         session.service_liveness(Duration::from_millis(10)).await?;
         let before = *session.actor_vitals().ok_or("I15 before vitals absent")?;
 
-        write_frame(&mut peer, &vitals_frame(1, 42, 3, 4, 5, 1, &after_payload)?).await?;
+        assert_eq!(session.arm_actor_vitals_capture(), (1, 4));
+        let after_frame = vitals_frame(1, 42, 3, 4, 5, 1, &after_payload)?;
+        write_frame(&mut peer, &after_frame).await?;
         session.service_liveness(Duration::from_millis(10)).await?;
+        assert_eq!(session.take_actor_vitals_capture(), Some(after_frame));
+        assert_eq!(session.take_actor_vitals_capture(), None);
         let after = *session.actor_vitals().ok_or("I15 after vitals absent")?;
         assert_eq!(
             (after.health, after.mana),

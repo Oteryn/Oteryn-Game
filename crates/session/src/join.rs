@@ -188,6 +188,7 @@ impl<S: SessionStream> Session<S> {
             spatial_revision,
             overlay_revision,
             vitals_revision,
+            actor_vitals_capture: None,
             combat_revision,
             combat_state,
             actor_vitals,

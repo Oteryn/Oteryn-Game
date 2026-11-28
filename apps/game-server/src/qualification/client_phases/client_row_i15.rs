@@ -3,7 +3,7 @@ use super::*;
 use oteryn_dev_client::{
     DevClientSession, SessionEvent, native_session::item_movement::MoveRequest,
 };
-use oteryn_protocol_oteryn::{item_view as items, logout::LogoutResult};
+use oteryn_protocol_oteryn::{Direction, actor_spell, item_view as items, logout::LogoutResult};
 
 const FIELD: TilePos = TilePos {
     x: 32474,
@@ -19,7 +19,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .await;
     match result {
         Ok(Ok(())) => evidence(
-            "e2e_all scenario=I15.client status=FAIL evidence=original-frame-replay-unavailable",
+            "e2e_all scenario=I15.client status=PASS evidence=durable-shielded-hit-and-original-frame-replay",
         ),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=I15.client status=FAIL evidence={error}"
@@ -167,6 +167,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .checked_sub(RING_COST)
         .ok_or("I15 insufficient pre-hit mana")?;
     let from = tile(client.world_spatial().actor_position)?;
+    let (generation, base_revision) = client.session_mut().arm_actor_vitals_capture();
     let sequence = step(&mut client, world, from, entry).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let after = loop {
@@ -184,7 +185,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             {
                 return Err(format!("I15 field damage={FIELD_DAMAGE} expected health={} mana={expected_mana}, step_sequence={sequence}, got {delta:?}", before.health).into());
             }
-            break delta.value;
+            break delta;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("I15 native Energy Field step emitted no ActorVitals delta".into());
@@ -192,6 +193,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
     };
 
+    let frame = client
+        .session_mut()
+        .take_actor_vitals_capture()
+        .ok_or("I15 original actor-vitals envelope missing")?;
     let hit_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
@@ -203,15 +208,52 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("I15 post-hit relog vitals absent")?;
     if hit_session == client.join_snapshot().game_session_id
         || durable_position != FIELD
-        || (durable_vitals.health, durable_vitals.mana) != (after.health, after.mana)
+        || (durable_vitals.health, durable_vitals.mana) != (after.value.health, after.value.mana)
     {
         return Err(format!(
             "I15 post-hit relog expected position={FIELD:?} health={} mana={}, got position={durable_position:?} vitals={durable_vitals:?}",
-            after.health, after.mana,
+            after.value.health, after.value.mana,
         )
         .into());
     }
     logout(&mut client).await?;
+    let capture_directory = required("E2E_ALL_CAPTURE_DIR")?;
+    let capture_file = Path::new(&capture_directory).join(format!(
+        "i15-{}-{}.bin",
+        uuid_text(hit_session.as_bytes()),
+        after.server_sequence,
+    ));
+    {
+        use std::io::Write;
+        std::fs::File::create_new(&capture_file)?.write_all(&frame)?;
+    }
+    let original = std::fs::read(&capture_file)?;
+    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&original)?;
+    envelope.validate(Direction::ServerToClient, true)?;
+    if envelope.message_type() != MessageType::StateDelta
+        || envelope.connection_generation() != generation
+        || envelope.server_sequence() != after.server_sequence
+        || envelope.server_sequence() <= sequence
+    {
+        return Err("I15 replay envelope does not match the live hit".into());
+    }
+    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+    let replayed = actor_spell::decode_actor_vitals(delta.payload)
+        .map_err(|error| format!("I15 replay vitals: {error:?}"))?;
+    if delta.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS
+        || delta.delta_type != actor_spell::DELTA_TYPE_ACTOR_VITALS_V1
+        || delta.base_revision != base_revision
+        || delta.new_revision != after.new_revision
+        || replayed != after.value
+        || (replayed.health, replayed.mana) != (before.health, expected_mana)
+    {
+        return Err("I15 replay did not reproduce the exact shielded hit".into());
+    }
+    evidence(&format!(
+        "i15_replay session={} sequence={} status=PASS",
+        uuid_text(hit_session.as_bytes()),
+        after.server_sequence
+    ));
     Ok(())
 }
 

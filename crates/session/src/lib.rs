@@ -377,6 +377,7 @@ pub struct Session<S> {
     spatial_revision: u64,
     overlay_revision: u64,
     vitals_revision: u64,
+    actor_vitals_capture: Option<Option<Vec<u8>>>,
     combat_revision: u64,
     /// `Some` exactly when capability 17 is selected and the server sent domain 10.
     combat_state: Option<ActorCombatState>,
