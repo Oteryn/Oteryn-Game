@@ -2631,6 +2631,35 @@ struct Readiness<'a> {
     config: &'a NodeConfig,
 }
 
+struct BootReadiness<'a> {
+    channel: Readiness<'a>,
+    activity: Option<Readiness<'a>>,
+}
+
+impl BootReadiness<'_> {
+    async fn publish(&self) -> Result<AdmissionAuthorityPublicationV1, BootError> {
+        if let Some(activity) = &self.activity {
+            activity.publish(true, None).await?;
+        }
+        self.channel.publish(true, None).await
+    }
+
+    async fn withdraw(
+        &self,
+        budget: tokio::time::Instant,
+    ) -> (
+        Result<AdmissionAuthorityPublicationV1, BootError>,
+        Result<(), BootError>,
+    ) {
+        let channel = self.channel.publish(false, Some(budget)).await;
+        let activity = match &self.activity {
+            Some(activity) => activity.publish(false, Some(budget)).await.map(|_| ()),
+            None => Ok(()),
+        };
+        (channel, activity)
+    }
+}
+
 impl Readiness<'_> {
     /// Replenish or observe the real holder within the boot or shutdown budget;
     /// requesting maintenance and sleeping alone cannot do so.
@@ -2804,10 +2833,12 @@ impl Readiness<'_> {
                         GuardPublicationDisposition::Applied
                         | GuardPublicationDisposition::Existing,
                     ) => {
-                        event(&format!(
-                            "event=readiness ready={ready} ownership_generation={}",
-                            self.generation
-                        ));
+                        if matches!(self.scope, RuntimeScopeRefV1::Channel { .. }) {
+                            event(&format!(
+                                "event=readiness ready={ready} ownership_generation={}",
+                                self.generation
+                            ));
+                        }
                         return Ok(publication);
                     }
                     Ok(
@@ -3963,6 +3994,42 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     }
+    // The operator assigns this single-use scope with the ordinary control
+    // writer. This node can only publish readiness for its own incarnation.
+    let activity_readiness = match std::env::var_os("OTERYN_ACTIVITY_INSTANCE_ID") {
+        None => None,
+        Some(raw) => {
+            let instance = raw
+                .to_str()
+                .and_then(super::uuid_bytes)
+                .and_then(|id| RuntimeScopeRefV1::instance(material.world, id).ok())
+                .ok_or(BootError::Readiness("invalid activity instance id"))?;
+            if soulpit_template.is_none() {
+                return Err(BootError::Readiness("Soulpit template unavailable"));
+            }
+            let Some(allocation) = first(
+                await_assignment(
+                    root,
+                    &proof,
+                    instance,
+                    Duration::from_millis(config.scope.assignment_wait_ms),
+                ),
+                signalled.cancelled(),
+            )
+            .await
+            else {
+                stopped_before_ready();
+                return Ok(());
+            };
+            Some(Readiness {
+                root,
+                proof: &proof,
+                scope: instance,
+                generation: allocation?.ownership_generation,
+                config,
+            })
+        }
+    };
     // D3 step 7: both sockets are bound before readiness.
     let listener = TcpListener::bind(config.listener.address)
         .await
@@ -3982,12 +4049,15 @@ async fn boot_and_serve(
         .local_addr()
         .map_err(|_| BootError::Bind("gameplay listener address"))?;
     event(&format!("event=listener_bound address={bound_address}"));
-    let readiness = Readiness {
-        root,
-        proof: &proof,
-        scope,
-        generation,
-        config,
+    let readiness = BootReadiness {
+        channel: Readiness {
+            root,
+            proof: &proof,
+            scope,
+            generation,
+            config,
+        },
+        activity: activity_readiness,
     };
     // A signal while binding: never publish ready after shutdown was requested.
     if signalled.is_cancelled() {
@@ -3995,16 +4065,17 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     }
-    let committed = match first(readiness.publish(true, None), signalled.cancelled()).await {
+    let committed = match first(readiness.publish(), signalled.cancelled()).await {
         Some(Ok(publication)) => publication,
         failure => {
             // Cancellation or a lost response can follow a committed ready=true.
             // Withdraw even when the publication's outcome is still unknown.
-            let withdrawn = readiness
-                .publish(false, Some(tokio::time::Instant::now() + SHUTDOWN_BUDGET))
+            let (channel, activity) = readiness
+                .withdraw(tokio::time::Instant::now() + SHUTDOWN_BUDGET)
                 .await;
             let _ = std::fs::remove_file(&config.control.socket_path);
-            withdrawn?;
+            channel?;
+            activity?;
             if let Some(Err(error)) = failure {
                 return Err(error);
             }

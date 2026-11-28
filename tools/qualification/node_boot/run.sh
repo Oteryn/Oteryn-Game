@@ -25,6 +25,8 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
+readonly SOULPIT_INSTANCE_ID=01934f10-7c05-7001-805b-3b1122334401
+readonly SOULPIT_REPLACEMENT_INSTANCE_ID=01934f10-7c05-7002-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Returner Reward Player" "House Control Player")
@@ -160,6 +162,11 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
+esac
+case "${NODE_BOOT_SOULPIT:-0}" in
+  0) ;;
+  1) [[ ";$WORLD_REGIONS;" == *";126,121;"* ]] || WORLD_REGIONS+=';126,121' ;;
+  *) blocked invalid_soulpit_mode ;;
 esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
@@ -852,12 +859,23 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
+    local -a activity_env=()
+    if [[ -n "${4:-}" ]]; then
+      activity_env+=("OTERYN_ACTIVITY_INSTANCE_ID=$4")
+    fi
+    exec "${as_service[@]}" env -u OTERYN_ACTIVITY_INSTANCE_ID "${NODE_GAMEPLAY_ENV[@]}" "${activity_env[@]}" "$BASE/bin/oteryn-game-server" \
       serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
-start_node() { launch_node NODE_PID "$BASE/node/node.toml" "$node_log"; }
+soulpit_instance_enabled() {
+  [[ "$NODE_BOOT_WORLD" == 1 && ";$WORLD_REGIONS;" == *";126,121;"* ]]
+}
+start_node() {
+  local instance=
+  if soulpit_instance_enabled; then instance="${1-$SOULPIT_INSTANCE_ID}"; fi
+  launch_node NODE_PID "$BASE/node/node.toml" "$node_log" "$instance"
+}
 await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
   fail "missing node event: $1"
@@ -1360,6 +1378,38 @@ node_assigned_ready() { # §4.2–§4.4
   node_complete_assignment "$boot_started"
 }
 
+assign_soulpit_instance() {
+  local instance=$1 node=$2 revision=$3
+  psql_admin oteryn_node_boot <<SQL
+INSERT INTO game_control_activity_scope_grants VALUES ('nb_control', '$WORLD_ID', '$instance', 1);
+SQL
+  ops assignment assign --request "assign-$instance.json" --world "$WORLD_ID" --instance "$instance" --node-id "$node" --revision "$revision"
+}
+
+assert_soulpit_instance_ready() {
+  local instance=$1 node=$2 revision=$3 count
+  count="$(psql_admin oteryn_node_boot <<SQL
+SELECT count(*)
+FROM game_runtime_scope_assignments a
+JOIN game_durability_admission_runtime_guards g
+  ON g.scope_key = decode('02','hex') || uuid_send(a.world_id) || uuid_send(a.activity_instance_id)
+ AND g.ownership_generation = a.ownership_generation AND g.ready
+WHERE a.world_id = '$WORLD_ID' AND a.activity_instance_id = '$instance'
+  AND a.scope_kind = 3 AND a.state = 1
+  AND a.holder_node_id = '$node' AND a.holder_registration_revision = '$revision'
+  AND NOT EXISTS (
+    SELECT 1 FROM game_activity_handoff_groups h
+    WHERE h.world_id = a.world_id AND h.instance_id = a.activity_instance_id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM game_durability_reconnect_sessions s
+    WHERE s.runtime_scope_world_id = a.world_id AND s.runtime_scope_instance_id = a.activity_instance_id
+  );
+SQL
+)"
+  [[ "$count" == 1 ]] || fail "Soulpit Instance not assigned and ready for this booted node"
+}
+
 # Shared continuation: the lane keeps this node alive during ungranted proofs.
 node_complete_assignment() {
   local boot_started=$1
@@ -1391,9 +1441,11 @@ node_complete_assignment() {
   fi
   local -a report_args=()
   assignment_report_args
+  if soulpit_instance_enabled; then assign_soulpit_instance "$SOULPIT_INSTANCE_ID" "$node" "$revision"; fi
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
+  if soulpit_instance_enabled; then assert_soulpit_instance_ready "$SOULPIT_INSTANCE_ID" "$node" "$revision"; fi
   if [[ -n "$w19a" ]]; then
     await_log 'event=seasonal_calendar .*detail="reset_epoch=1 active=\[\\"christmas\\"\]"$' 60
     remember node_seasonal_fixture christmas_epoch_1
@@ -1608,7 +1660,7 @@ graceful_shutdown() { # ready=false first, socket removed
   grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
+  [[ "$(echo 'SELECT bool_or(ready) FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
   evidence "shutdown ready=false socket=removed"
 }
 
@@ -1632,17 +1684,19 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   ops authorization issue --file launch-c.json --binding node-boot-c --supersedes "$node_a"
   write_node_config launch-c.json
   : > "$node_log"
-  start_node
+  start_node "$SOULPIT_REPLACEMENT_INSTANCE_ID"
   await_log awaiting_assignment 120
   local node revision
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
   remember node_c "$node"
   local -a report_args=()
   assignment_report_args
+  if soulpit_instance_enabled; then assign_soulpit_instance "$SOULPIT_REPLACEMENT_INSTANCE_ID" "$node" "$revision"; fi
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
+  if soulpit_instance_enabled; then assert_soulpit_instance_ready "$SOULPIT_REPLACEMENT_INSTANCE_ID" "$node" "$revision"; fi
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1653,7 +1707,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   ops authorization issue --file launch-e.json --binding node-boot-e --supersedes "$node_c"
   write_node_config launch-e.json
   : > "$node_log"
-  start_node
+  start_node ""
   await_log awaiting_assignment 120
   node_signal -TERM "$NODE_PID"
   local code=0
@@ -1663,7 +1717,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   grep -q 'event=shutdown .*signal before ready' "$node_log" || fail "no pre-ready shutdown event"
   ! grep -q "event=readiness .*ready=true" "$node_log" || fail "ready published after the signal"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
+  [[ "$(echo 'SELECT bool_or(ready) FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 

@@ -7,7 +7,7 @@ pub(super) struct Serving<'a, 'f, 's> {
     pub(super) listener_config: GameplayListenerConfig,
     pub(super) owners: GameplaySeamOwners<'a, 'f, 's>,
     pub(super) material: &'a Material,
-    pub(super) readiness: &'a Readiness<'a>,
+    pub(super) readiness: &'a BootReadiness<'a>,
     pub(super) reporter: Option<super::super::runtime_status::Reporter<SystemClock>>,
     pub(super) shutdown: &'a CancellationToken,
     pub(super) last_position_flush: &'a crate::gameplay_transport::LastPositionFlush,
@@ -307,8 +307,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         })
         .await;
     }
-    let mut withdrawal = pin!(readiness.publish(false, Some(budget)));
-    let withdrawn = poll_fn(|context| {
+    let mut withdrawal = pin!(readiness.withdraw(budget));
+    let (withdrawn, activity_withdrawn) = poll_fn(|context| {
         if let Poll::Ready(result) = withdrawal.as_mut().poll(context) {
             return Poll::Ready(result);
         }
@@ -337,6 +337,11 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     if let Err(error) = withdrawn {
         event(&format!(
             "event=readiness ready=false result=failed reason=\"{error}\""
+        ));
+    }
+    if let Err(error) = activity_withdrawn {
+        event(&format!(
+            "event=readiness ready=false result=failed scope=activity reason=\"{error}\""
         ));
     }
     shutdown.cancel();

@@ -867,6 +867,11 @@ fn scope_of(world: &str, channel: &str) -> Result<RuntimeScopeRefV1, Failure> {
 }
 
 fn assignment_policy(file: &AssignmentRequestFile) -> Result<ChannelPolicy, Failure> {
+    if file.instance_id.is_some() && (file.pvp_type.is_some() || file.player_capacity.is_some()) {
+        return Err(Failure::Usage(
+            "Instance assignments have no Channel policy",
+        ));
+    }
     if file.command == "revoke" && file.player_capacity.is_some() {
         return Err(Failure::Usage("revoke has no player capacity"));
     }
@@ -887,7 +892,11 @@ fn assignment_policy(file: &AssignmentRequestFile) -> Result<ChannelPolicy, Fail
 
 fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure> {
     let invalid = || Failure::Input("assignment request".into());
-    let scope = scope_of(&file.world_id, &file.channel_id)?;
+    let scope = assignment_scope(
+        &file.world_id,
+        file.channel_id.as_deref(),
+        file.instance_id.as_deref(),
+    )?;
     let predecessor = || -> Result<AssignmentPredecessor, Failure> {
         Ok(AssignmentPredecessor {
             ownership_generation: file.predecessor_generation.ok_or_else(invalid)?,
@@ -928,6 +937,25 @@ fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure
         actor: ControlActor::new(&file.actor).map_err(|_| invalid())?,
         command,
     })
+}
+
+fn assignment_scope(
+    world: &str,
+    channel: Option<&str>,
+    instance: Option<&str>,
+) -> Result<RuntimeScopeRefV1, Failure> {
+    match (channel, instance) {
+        (Some(channel), None) => scope_of(world, channel),
+        (None, Some(instance)) => RuntimeScopeRefV1::instance(
+            WorldId::decode(&decode_uuid("world", world)?)
+                .map_err(|_| Failure::Input("world".into()))?,
+            decode_uuid("instance", instance)?,
+        )
+        .map_err(|_| Failure::Input("instance".into())),
+        _ => Err(Failure::Usage(
+            "assignment requires exactly one --channel or --instance",
+        )),
+    }
 }
 
 /// The ownership-authority reporting channel (`--report-config`, runtime-status
@@ -1194,18 +1222,18 @@ async fn report_committed(
     reporter: Option<&Reporter>,
     file: &AssignmentRequestFile,
 ) -> Outcome {
-    match reporter {
-        None => Ok(()),
-        Some(reporter) if file.command == "revoke" => {
-            report(operator, reporter, &file.world_id, &file.channel_id, None).await
-        }
-        Some(reporter) => {
-            if let Some(holder) = target_holder(file)? {
-                promote_identity(operator, &file.operation_key, &holder)?;
-            }
-            report(operator, reporter, &file.world_id, &file.channel_id, None).await
-        }
+    let Some(reporter) = reporter else {
+        return Ok(());
+    };
+    let channel = file.channel_id.as_deref().ok_or(Failure::Usage(
+        "Instance assignments have no Platform report",
+    ))?;
+    if file.command != "revoke"
+        && let Some(holder) = target_holder(file)?
+    {
+        promote_identity(operator, &file.operation_key, &holder)?;
     }
+    report(operator, reporter, &file.world_id, channel, None).await
 }
 
 /// Canonical scope text and the scope itself.
@@ -1385,6 +1413,11 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         arguments.finish()?;
         let file = AssignmentRequestFile::decode(&operator.read_state(&name)?)
             .map_err(|_| Failure::Input("assignment request".into()))?;
+        if file.instance_id.is_some() && reporter.is_some() {
+            return Err(Failure::Usage(
+                "Instance assignments have no Platform report",
+            ));
+        }
         let request = request_of(&file)?;
         return match writer
             .reconcile_with_channel_policy(&request, assignment_policy(&file)?)
@@ -1415,8 +1448,14 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         )));
     }
     let world = arguments.take("world")?;
-    let channel = arguments.take("channel")?;
-    let scope = scope_of(&world, &channel)?;
+    let channel = arguments.take_optional("channel");
+    let instance = arguments.take_optional("instance");
+    let scope = assignment_scope(&world, channel.as_deref(), instance.as_deref())?;
+    if instance.is_some() && reporter.is_some() {
+        return Err(Failure::Usage(
+            "Instance assignments have no Platform report",
+        ));
+    }
     let (target_node_id, target_registration_revision) = match action.as_str() {
         "assign" | "replace" => {
             let node = arguments.take("node-id")?;
@@ -1449,7 +1488,12 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         let identity = node_identity.ok_or(Failure::Usage(
             "--report-config requires --node-identity for assign and replace",
         ))?;
-        let (world_id, channel_id, _) = canonical_scope(&world, &channel)?;
+        let (world_id, channel_id, _) = canonical_scope(
+            &world,
+            channel
+                .as_deref()
+                .ok_or(Failure::Usage("Platform report requires --channel"))?,
+        )?;
         if !reporter.config.allows(&world_id, &channel_id, &identity) {
             return Err(Failure::Rejected(
                 "node identity is not configured for the scope".into(),
@@ -1492,6 +1536,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         command: action,
         world_id: world,
         channel_id: channel,
+        instance_id: instance,
         pvp_type,
         player_capacity,
         predecessor_generation: predecessor.map(|p| p.ownership_generation),

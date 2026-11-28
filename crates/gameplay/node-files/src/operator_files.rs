@@ -96,7 +96,7 @@ pub struct S2AuthorizationFile {
 }
 operator_file!(S2AuthorizationFile);
 
-/// One Channel-assignment command with its operation key (D2).
+/// One assignment command with its operation key (D2).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AssignmentRequestFile {
@@ -107,7 +107,10 @@ pub struct AssignmentRequestFile {
     /// `assign`, `replace` or `revoke`.
     pub command: String,
     pub world_id: String,
-    pub channel_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub channel_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instance_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pvp_type: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
