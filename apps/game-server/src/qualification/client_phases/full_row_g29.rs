@@ -1,14 +1,17 @@
-//! G29: quest tracker and filters, achievements, titles, defence stats, blessings.
-//! Drives the Cyclopedia achievements, defence-stat (protection) and blessings requests through
-//! the shared client panel against the real server and requires each reply to apply. The quest
-//! tracker and titles need a quest the character has started and an earned title, which no
-//! player route reaches at level 1 in this run, so the row ends FAIL `needed:started-quest...`.
+//! G29: live quest tracker and filters, achievements, titles, defence and blessings.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, client_ui::quest_log as journal};
+use oteryn_protocol_oteryn::{
+    character_info::{CAPABILITY_CHARACTER_INFO_V1, COMMAND_TYPE_CHARACTER_INFO, CharacterTitle},
+    cyclopedia_character::CharacterTab,
+    npc_service as npc,
+};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -48,7 +51,7 @@ async fn panel_call(
         )
     })?;
     let reply = raw_feature::send(client.session_mut(), &command).await?;
-    Ok(cyc::apply_result(panel, &reply))
+    Ok(reply.status == CommandStatus::Accepted && cyc::apply_result(panel, &reply))
 }
 
 fn require_cyclopedia(client: &DevClientSession) -> TestResult {
@@ -59,23 +62,102 @@ fn require_cyclopedia(client: &DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let mut entry = connect_world(clients, 0xd9).await?;
+    let entry_session = entry.join_snapshot().game_session_id;
+    let title = CharacterTitle::Cyclopscamper.id();
+    let (before, _) = title_state(&mut entry).await?;
+    if before.contains(&title) {
+        return Err("step=title-precondition observed=already-earned".into());
+    }
+    character_prep::declare_seeded(
+        "G29.full",
+        "sorcerer-level-100",
+        "leveling exceeds the row budget",
+    );
+    request_fixture_control(
+        uuid_text(entry_session.as_bytes()),
+        "--profile",
+        "sorcerer".into(),
+    )
+    .await?;
+    logout(&mut entry).await?;
+    drop(entry);
+
     let mut client = connect_world(clients, 0xd9).await?;
+    if client.join_snapshot().game_session_id == entry_session {
+        return Err("step=seed observed=reused-session".into());
+    }
+    let level = full_e2ef7::player_level(&mut client).await?;
+    if level != 100 {
+        return Err(format!("step=seed observed=level-{level}").into());
+    }
+    let (earned, selected) = title_state(&mut client).await?;
+    if !earned.contains(&title) || selected == title {
+        return Err(format!("step=title-initial observed={earned:?}/{selected}").into());
+    }
+    let reply = title_command(&mut client, &[3, title]).await?;
+    if reply.len() != 9 || reply.first() != Some(&3) || reply[1..] == [0; 8] {
+        return Err("step=title-select observed=wrong-revision-reply".into());
+    }
+    if title_state(&mut client).await? != (earned.clone(), title) {
+        return Err("step=title-select observed=wrong-title-state".into());
+    }
     require_cyclopedia(&client)?;
     let mut panel = cyc::CyclopediaCharacterPanel {
         selected: true,
         ..Default::default()
     };
-    if !panel_call(&mut client, &mut panel, cyc::Intent::Achievements).await? {
+    if !panel_call(&mut client, &mut panel, cyc::Intent::Achievements).await?
+        || !panel
+            .achievement_profile
+            .as_ref()
+            .is_some_and(|(id, name)| *id == clients.characters[1] && !name.is_empty())
+    {
         return Err("step=achievements observed=reply-not-applied".into());
     }
     if !panel_call(&mut client, &mut panel, cyc::Intent::Protection).await? {
         return Err("step=defence-stats observed=reply-not-applied".into());
     }
+    let forecast = panel
+        .protection
+        .forecast
+        .ok_or("step=protection observed=no-forecast")?;
+    let level_number = u64::from(level);
+    let expected_xp =
+        50 * (level_number.pow(3) + 17 * level_number - 6 * level_number.pow(2) - 12) / 3;
+    if forecast.level != level
+        || forecast.experience != expected_xp
+        || forecast.regular_blessings != 0
+        || forecast.twist
+    {
+        return Err(format!("step=protection observed={forecast:?}").into());
+    }
+    if !panel_call(
+        &mut client,
+        &mut panel,
+        cyc::Intent::SelectTab(CharacterTab::Defence),
+    )
+    .await?
+    {
+        return Err("step=defence observed=missing-projection".into());
+    }
     let rows = cyc::combat_rows(&panel).len();
+    if rows
+        != oteryn_protocol_oteryn::cyclopedia_character::combat::CombatStat::for_tab(
+            CharacterTab::Defence,
+        )
+        .len()
+        || rows == 0
+    {
+        return Err(format!("step=defence observed=rows-{rows}").into());
+    }
     let command =
         cyc::request_blessings(&mut panel).ok_or("step=blessings observed=local-refusal")?;
     let reply = raw_feature::send(client.session_mut(), &command).await?;
-    if !cyc::apply_result(&mut panel, &reply) || panel.blessings.snapshot.is_none() {
+    if reply.status != CommandStatus::Accepted
+        || !cyc::apply_result(&mut panel, &reply)
+        || panel.blessings.snapshot.is_none()
+    {
         return Err("step=blessings observed=no-store-summary".into());
     }
     let owned = panel
@@ -83,6 +165,190 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .snapshot
         .as_ref()
         .map_or(0, |store| store.blessings.len());
+    if owned != 0 {
+        return Err(format!("step=blessings expected=unblessed observed={owned}").into());
+    }
+    let before = quest_list(&mut client).await?;
+    start_inquisition(clients, &mut client).await?;
+    let after = quest_list(&mut client).await?;
+    let added: Vec<_> = after
+        .iter()
+        .filter(|entry| {
+            !before
+                .iter()
+                .any(|prior| prior.quest_index == entry.quest_index)
+        })
+        .collect();
+    let [quest] = added.as_slice() else {
+        return Err(format!("step=quest-start observed={added:?}").into());
+    };
+    let quest_index = quest.quest_index;
+    let log = quest_query(
+        &mut client,
+        &journal::QuestLogQuery::Track {
+            quest_indexes: vec![quest_index],
+        },
+    )
+    .await?;
+    let [line] = log.tracked.as_slice() else {
+        return Err("step=quest-track observed=wrong-line-count".into());
+    };
+    if quest.completed
+        || line.quest_index != quest_index
+        || line.completed
+        || !line
+            .missions
+            .iter()
+            .any(|mission| mission.name.contains("Interrogation") && !mission.done)
+    {
+        return Err(format!("step=quest-track observed={line:?}").into());
+    }
+    let line = line.clone();
+    let mut tracker = journal::QuestPanel::default();
+    tracker.state.log = log;
+    for filter in [
+        journal::TrackerFilter::All,
+        journal::TrackerFilter::Active,
+        journal::TrackerFilter::Completed,
+    ] {
+        tracker.tracker.filter = filter;
+        let expected = if filter == journal::TrackerFilter::Completed {
+            &[][..]
+        } else {
+            std::slice::from_ref(&line)
+        };
+        if journal::tracker_lines(&tracker).into_iter().ne(expected) {
+            return Err(format!("step=quest-filter filter={filter:?} observed=wrong-lines").into());
+        }
+    }
+
+    let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    Err(format!("achievements-defence-rows:{rows}-blessings:{owned}-proven;step=quest-tracker observed=no-started-quest-for-the-character;needed:started-quest-and-title-route").into())
+    drop(client);
+    let mut fresh = connect_world(clients, 0xd9).await?;
+    if fresh.join_snapshot().game_session_id == old_session {
+        return Err("step=relog observed=reused-session".into());
+    }
+    if title_state(&mut fresh).await? != (earned, title) {
+        return Err("step=relog observed=title-selection-changed".into());
+    }
+    let persisted = quest_query(&mut fresh, &journal::QuestLogQuery::Quest { quest_index }).await?;
+    if persisted.view != Some(journal::QuestLogView::Line(line)) {
+        return Err("step=relog observed=quest-progress-changed".into());
+    }
+    logout(&mut fresh).await?;
+    Ok(format!(
+        "quest={quest_index};selected-title={title};defence-rows={rows};blessings={owned}"
+    ))
+}
+
+async fn title_command(client: &mut DevClientSession, payload: &[u8]) -> TestResult<Vec<u8>> {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            CAPABILITY_CHARACTER_INFO_V1,
+            COMMAND_TYPE_CHARACTER_INFO,
+            payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=title request={payload:?} observed={reply:?}").into());
+    }
+    Ok(reply.payload)
+}
+
+async fn title_state(client: &mut DevClientSession) -> TestResult<(Vec<u8>, u8)> {
+    let reply = title_command(client, &[0, 0, 0, 1]).await?;
+    if reply.first() != Some(&0) || reply.len() < 71 || reply.len() != 71 + usize::from(reply[69]) {
+        return Err(format!("step=title-query observed=malformed-reply:{reply:?}").into());
+    }
+    Ok((reply[70..reply.len() - 1].to_vec(), reply[reply.len() - 1]))
+}
+
+async fn quest_query(
+    client: &mut DevClientSession,
+    query: &journal::QuestLogQuery,
+) -> TestResult<journal::QuestLog> {
+    let payload = journal::encode_quest_log_query(query)
+        .map_err(|error| format!("step=quest-query encode={error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            journal::CAPABILITY_QUEST_LOG_V1,
+            journal::COMMAND_TYPE_QUEST_LOG_QUERY,
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted || !reply.payload.is_empty() {
+        return Err(format!("step=quest-query query={query:?} observed={reply:?}").into());
+    }
+    let delta = client
+        .session_mut()
+        .read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1)
+        .await?;
+    if delta.server_sequence <= reply.server_sequence {
+        return Err("step=quest-query observed=stale-delta".into());
+    }
+    journal::decode_quest_log(&delta.payload)
+        .map_err(|error| format!("step=quest-query decode={error:?}").into())
+}
+
+async fn quest_list(client: &mut DevClientSession) -> TestResult<Vec<journal::QuestListEntry>> {
+    match quest_query(client, &journal::QuestLogQuery::List)
+        .await?
+        .view
+    {
+        Some(journal::QuestLogView::List(entries)) => Ok(entries),
+        other => Err(format!("step=quest-list observed={other:?}").into()),
+    }
+}
+
+async fn start_inquisition(clients: &SeamClients<'_>, client: &mut DevClientSession) -> TestResult {
+    let world = full_e2ef7::qualification_world(clients)?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let actor =
+        full_row_p20::approach_npc(client, world, &metadata.npcs, "oteryn:npc.henricus").await?;
+    for (text, prefix) in [
+        ("hi", ""),
+        ("mission", "Do you want to join the inquisition?"),
+        ("yes", "So be it. Now you are a member of the inquisition."),
+        ("mission", "Let's see if you are worthy."),
+    ] {
+        let payload = npc::encode_npc_talk_intent(&npc::NpcTalkIntent {
+            npc_actor: actor,
+            text: text.into(),
+        })
+        .map_err(|error| format!("step=inquisition text={text} encode={error:?}"))?;
+        let reply = client
+            .session_mut()
+            .gated_command(
+                npc::CAPABILITY_NPC_SERVICE_V1,
+                npc::COMMAND_TYPE_NPC_TALK_INTENT,
+                &payload,
+            )
+            .await?;
+        if reply.status != CommandStatus::Accepted
+            || npc::decode_npc_intent_result(&reply.payload).ok()
+                != Some(npc::NpcIntentDisposition::Ok)
+        {
+            return Err(format!("step=inquisition text={text} observed={reply:?}").into());
+        }
+        let delta = client
+            .session_mut()
+            .read_gated_delta(npc::STATE_DOMAIN_NPC_CONVERSATION, 1)
+            .await?;
+        let conversation = npc::decode_npc_conversation(&delta.payload)
+            .map_err(|error| format!("step=inquisition text={text} decode={error:?}"))?;
+        if delta.server_sequence <= reply.server_sequence
+            || conversation.open.map(|(open, _)| open) != Some(actor)
+            || !conversation
+                .lines
+                .iter()
+                .any(|line| line.starts_with(prefix))
+        {
+            return Err(format!("step=inquisition text={text} observed={conversation:?}").into());
+        }
+    }
+    Ok(())
 }
