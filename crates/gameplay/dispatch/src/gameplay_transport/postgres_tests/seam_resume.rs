@@ -3,7 +3,7 @@ use super::*;
 use crate::foundation::{AuthenticatedTransportRefV1, FoundationProtocolError};
 use crate::gameplay_transport::connection::{
     ConnectionEnd, ControlLossResult, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
-    UseCommand, serve_admitted,
+    UseCommand, serve_admitted, with_connection_trace,
 };
 use crate::gameplay_transport::tcp_tls::write_frame;
 use crate::gameplay_transport::world_spatial::*;
@@ -14,6 +14,42 @@ use oteryn_protocol_oteryn::{
 };
 use std::sync::Arc;
 use tokio::io::AsyncReadExt;
+
+async fn resume_with_protection_start<F: std::future::Future>(
+    resume: F,
+    trace: [u8; 16],
+) -> F::Output {
+    use std::task::Poll;
+
+    let mut resume = std::pin::pin!(with_connection_trace(trace, resume));
+    let mut starts = Vec::new();
+    let earliest = oteryn_error_codes::unix_ms();
+    let result = std::future::poll_fn(|cx| {
+        let mut outcome = Poll::Pending;
+        let lines = oteryn_error_codes::capture(|| outcome = resume.as_mut().poll(cx));
+        starts.extend(
+            lines
+                .into_iter()
+                .filter(|line| line.contains("event=monster_target_protection_started")),
+        );
+        outcome
+    })
+    .await;
+    let latest = oteryn_error_codes::unix_ms();
+    assert_eq!(
+        starts.len(),
+        1,
+        "reconnect logs exactly one protection start"
+    );
+    let trace = crate::gameplay_transport::format_connection_trace(trace);
+    assert!(starts[0].contains(&format!("trace={trace}")));
+    assert!(starts[0].contains("kind=reentry"));
+    let ts = starts[0]
+        .split_whitespace()
+        .find_map(|field| field.strip_prefix("ts=")?.parse::<u64>().ok());
+    assert!(ts.is_some_and(|ts| (earliest..=latest).contains(&ts)));
+    result
+}
 
 #[test]
 fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -> TestResult {
@@ -106,7 +142,8 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                 );
                 owner.states.command_ingress.admit(admitted.game_session_id);
                 for generation in [2, 3] {
-                    let token = super::house_transfer_fixtures::RecoverySource::token(generation as u8)?;
+                    let token =
+                        super::house_transfer_fixtures::RecoverySource::token(generation as u8)?;
                     let attempt = ResumeAttempt {
                         game_session_id: admitted.game_session_id,
                         recovery_material: token.as_bytes(),
@@ -115,6 +152,8 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                         last_applied_server_sequence: admitted.continuity.server_sequence,
                         supported_capabilities: &[],
                     };
+                    let resume =
+                        resume_with_protection_start(owner.resume(attempt), id(generation as u8));
                     admitted = if delay_loss_publication {
                         let barrier =
                             Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
@@ -141,7 +180,7 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                                     .map_err(debug)?
                                     .contains_key(&admitted.game_session_id)
                             );
-                            let mut resume = std::pin::pin!(owner.resume(attempt));
+                            let mut resume = std::pin::pin!(resume);
                             // Hold the exact publication gap open: admission must remain pending,
                             // rather than permanently reject a durably reconnectable session.
                             assert!(
@@ -164,7 +203,7 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                             owner.lose_control(admitted, Duration::ZERO, None).await,
                             ControlLossResult::Recorded
                         );
-                        owner.resume(attempt).await.map_err(debug)?
+                        resume.await.map_err(debug)?
                     };
                     assert_eq!(admitted.continuity.connection_generation, generation);
                     // Force the original-work lookup to meet an occupied holder. Its first poll
