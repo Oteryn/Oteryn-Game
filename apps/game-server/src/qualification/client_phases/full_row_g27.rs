@@ -100,8 +100,77 @@ async fn panel_call(
             panel.feedback
         )
     })?;
-    let reply = raw_feature::send(client.session_mut(), &command).await?;
+    let reply = client
+        .session_mut()
+        .gated_command(command.capability, command.kind, &command.payload)
+        .await?;
+    if let cyc::Intent::SetBadgeVisibility { badge, public } = intent
+        && !badge_set_acknowledged(&reply, badge, public)
+    {
+        return Err(format!(
+                "step=badge-set-ack observed=status:{:?},sequence:{},payload:{:?};needed=accepted-visibility-{badge}-{public}",
+                reply.status, reply.server_sequence, reply.payload
+            ).into());
+    }
     Ok(cyc::apply_result(panel, &reply))
+}
+
+// Only a fresh, typed acknowledgment with the requested value can prove a setter.
+fn badge_set_acknowledged(
+    reply: &raw_feature::GatedCommandResult,
+    badge: u8,
+    public: bool,
+) -> bool {
+    use oteryn_protocol_oteryn::cyclopedia_character::badge_visibility::Reply;
+    reply.status == CommandStatus::Accepted
+        && Reply::decode(&reply.payload).is_ok_and(|state| {
+            state.earned.iter().any(|earned| earned.id() == badge)
+                && state.hidden.iter().any(|hidden| hidden.id() == badge) != public
+        })
+}
+
+#[cfg(test)]
+mod badge_ack_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::cyclopedia_character::{Badge, badge_visibility::Reply};
+
+    #[test]
+    fn setter_requires_fresh_typed_acknowledgment_of_requested_visibility() -> TestResult {
+        let badge = Badge::FledgelingHero;
+        let mut reply = raw_feature::GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: Reply {
+                earned: vec![badge],
+                hidden: vec![badge],
+            }
+            .encode()
+            .map_err(|_| "badge acknowledgment test encoding failed")?,
+        };
+        assert!(badge_set_acknowledged(&reply, badge.id(), false));
+        assert!(!badge_set_acknowledged(&reply, badge.id(), true));
+        reply.status = CommandStatus::DuplicateReplay;
+        assert!(!badge_set_acknowledged(&reply, badge.id(), false));
+        reply.status = CommandStatus::Accepted;
+        reply.payload = vec![1, badge.id()];
+        assert!(!badge_set_acknowledged(&reply, badge.id(), true));
+        reply.payload = Reply {
+            earned: vec![],
+            hidden: vec![],
+        }
+        .encode()
+        .map_err(|_| "badge acknowledgment test encoding failed")?;
+        assert!(!badge_set_acknowledged(&reply, badge.id(), true));
+        reply.payload = Reply {
+            earned: vec![badge],
+            hidden: vec![],
+        }
+        .encode()
+        .map_err(|_| "badge acknowledgment test encoding failed")?;
+        assert!(badge_set_acknowledged(&reply, badge.id(), true));
+        Ok(())
+    }
 }
 
 async fn expect_friends(
