@@ -87,7 +87,10 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || matches!(profile, "house-g01" | "i07-loot" | "premium");
+        || matches!(
+            profile,
+            "house-g01" | "i07-loot" | "i07-loot-cap" | "i07-loot-full" | "premium"
+        );
     allowed.then_some((session, profile))
 }
 
@@ -812,7 +815,7 @@ async fn prepare_build(
         }
     }
     #[cfg(feature = "qualification-spawn")]
-    if profile == "i07-loot" {
+    if matches!(profile, "i07-loot" | "i07-loot-cap" | "i07-loot-full") {
         let character = crate::domain::CharacterId::from_bytes(
             *current.current_character_lease().character_id().as_bytes(),
         )
@@ -838,7 +841,15 @@ async fn prepare_build(
             .require()
             .map_err(|_| "I07 Platform Premium fixture unavailable at admission")?;
         let spawn = spawn.ok_or("I07 fixture requires a live channel runtime")?;
-        return i07::seed(root, authority, proof, &current, native, &record, spawn).await;
+        let layout = match profile {
+            "i07-loot-cap" => i07::Layout::Cap,
+            "i07-loot-full" => i07::Layout::Full,
+            _ => i07::Layout::Client,
+        };
+        return i07::seed(
+            root, authority, proof, &current, native, &record, spawn, layout,
+        )
+        .await;
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {

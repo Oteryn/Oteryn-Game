@@ -13,6 +13,12 @@ use crate::durability::{
 };
 use crate::foundation::{CommandId, CommandRef};
 
+pub(super) enum Layout {
+    Client,
+    Full,
+    Cap,
+}
+
 pub(super) async fn seed(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -23,6 +29,7 @@ pub(super) async fn seed(
     native: &NativeGameplayState,
     record: &CharacterAuthorityRecord,
     spawn: SpawnOwners<'_>,
+    layout: Layout,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let character = record.character_id;
     let scope = current.current_runtime_scope();
@@ -57,54 +64,59 @@ pub(super) async fn seed(
     };
     let mut transaction_id = *fence.game_session_id.as_bytes();
     transaction_id[15] ^= 0xe1;
-    let mut item_id = *fence.game_session_id.as_bytes();
-    item_id[15] ^= 0xe2;
-    let mut fulfilment_id = *fence.game_session_id.as_bytes();
-    fulfilment_id[15] ^= 0xe3;
-    let fulfilment = uuid_text(&fulfilment_id);
-    let pouch = oteryn_gameplay_items::item_ref_admission::generation_inbox_item_facts(
-        native,
-        &item(23721)?,
-    )
-    .map_err(qualification_build::debug)?;
-    // Store delivery is a fixture input. Its production writer creates Inbox custody and
-    // the matching receipt atomically. The player still assigns and uses the pouch over the wire.
-    let receipt = root
-        .apply_store_delivery(
-            authority,
-            proof,
-            transaction_id,
-            DeliveryPlan {
-                account_id: *record.account_id.as_bytes(),
-                character_id: *character.as_bytes(),
-                world_id: *scope.world_id().as_bytes(),
-                fulfilment_unit_id: fulfilment.clone(),
-                item_instance_id: item_id,
-                purchase_request_id: None,
-                command: CommandRef::new(fence.game_session_id, CommandId::new(u64::MAX - 700)?),
-                mint: RewardClaimInboxMintRequest {
-                    claim: TypedDefinitionRef {
-                        family: "RewardClaim".into(),
-                        production_key: fixture_gear_claim(fence.game_session_id, "i07-pouch"),
-                        revision_ref: "qualification-v1".into(),
-                    },
-                    content_revision: inventory.content_revision.clone(),
-                    ruleset_revision: inventory.ruleset_revision.clone(),
-                    sim_revision: "qualification-v1".into(),
-                    outputs: vec![RewardClaimInboxMintOutput {
-                        source_line: 0,
-                        item: pouch,
-                        quantity: 1,
-                        key_number: None,
-                    }],
-                },
-            },
-            gameplay_fence,
+    if !matches!(layout, Layout::Cap) {
+        let mut item_id = *fence.game_session_id.as_bytes();
+        item_id[15] ^= 0xe2;
+        let mut fulfilment_id = *fence.game_session_id.as_bytes();
+        fulfilment_id[15] ^= 0xe3;
+        let fulfilment = uuid_text(&fulfilment_id);
+        let pouch = oteryn_gameplay_items::item_ref_admission::generation_inbox_item_facts(
+            native,
+            &item(23721)?,
         )
-        .await
         .map_err(qualification_build::debug)?;
-    if receipt.result != "COMMITTED" || receipt.fulfilment_unit_id != fulfilment {
-        return Err("I07 Store fixture did not commit its pouch delivery".into());
+        // Store delivery is a fixture input. Its production writer creates Inbox custody and
+        // the matching receipt atomically. The player still assigns and uses the pouch over the wire.
+        let receipt = root
+            .apply_store_delivery(
+                authority,
+                proof,
+                transaction_id,
+                DeliveryPlan {
+                    account_id: *record.account_id.as_bytes(),
+                    character_id: *character.as_bytes(),
+                    world_id: *scope.world_id().as_bytes(),
+                    fulfilment_unit_id: fulfilment.clone(),
+                    item_instance_id: item_id,
+                    purchase_request_id: None,
+                    command: CommandRef::new(
+                        fence.game_session_id,
+                        CommandId::new(u64::MAX - 700)?,
+                    ),
+                    mint: RewardClaimInboxMintRequest {
+                        claim: TypedDefinitionRef {
+                            family: "RewardClaim".into(),
+                            production_key: fixture_gear_claim(fence.game_session_id, "i07-pouch"),
+                            revision_ref: "qualification-v1".into(),
+                        },
+                        content_revision: inventory.content_revision.clone(),
+                        ruleset_revision: inventory.ruleset_revision.clone(),
+                        sim_revision: "qualification-v1".into(),
+                        outputs: vec![RewardClaimInboxMintOutput {
+                            source_line: 0,
+                            item: pouch,
+                            quantity: 1,
+                            key_number: None,
+                        }],
+                    },
+                },
+                gameplay_fence,
+            )
+            .await
+            .map_err(qualification_build::debug)?;
+        if receipt.result != "COMMITTED" || receipt.fulfilment_unit_id != fulfilment {
+            return Err("I07 Store fixture did not commit its pouch delivery".into());
+        }
     }
 
     let cause = |death_slot, purpose: &str, ordinal| {
@@ -123,15 +135,35 @@ pub(super) async fn seed(
         )
     };
     let permit = SpellLanePermit::of_fresh_scope(scope).await?;
-    for (death_slot, items) in [
-        (
-            u32::MAX - 7,
-            &[(1, 3031, 7), (2, 3357, 1), (3, 3577, 1), (4, 3577, 1)][..],
-        ),
-        (u32::MAX - 8, &[(1, 3578, 1), (2, 3582, 1)][..]),
-        (u32::MAX - 9, &[(1, 3577, 1), (2, 3585, 1)][..]),
-        (u32::MAX - 10, &[(1, 3031, 3)][..]),
-    ] {
+    let coin = &[(1, 3031, 1)][..];
+    let mut corpses: Vec<(u32, i32, i32, &[(u32, u32, u32)])> = Vec::new();
+    if matches!(layout, Layout::Cap) {
+        corpses.extend((0..31).map(|index| (u32::MAX - 100 + index, 1, 0, coin)));
+    } else {
+        corpses.extend([
+            (
+                u32::MAX - 7,
+                0,
+                0,
+                &[(1, 3031, 7), (2, 3357, 1), (3, 3577, 1), (4, 3577, 1)][..],
+            ),
+            (u32::MAX - 8, 1, 0, &[(1, 3578, 1), (2, 3582, 1)][..]),
+            (u32::MAX - 9, 1, 0, &[(1, 3577, 1), (2, 3585, 1)][..]),
+            (u32::MAX - 10, 1, 1, &[(1, 3031, 3)][..]),
+        ]);
+        if matches!(layout, Layout::Full) {
+            corpses.extend([
+                (u32::MAX - 20, -1, -1, coin),
+                (u32::MAX - 21, 0, -1, coin),
+                (u32::MAX - 22, 1, -1, coin),
+                (u32::MAX - 23, -1, 0, coin),
+                (u32::MAX - 24, -1, 1, coin),
+                (u32::MAX - 25, 0, 1, coin),
+                (u32::MAX - 26, 2, 0, coin),
+            ]);
+        }
+    }
+    for (death_slot, east, south, items) in corpses {
         let mut corpse = root
             .freeze_item_mint(
                 authority,
@@ -144,16 +176,8 @@ pub(super) async fn seed(
                         spatial_position:
                             crate::durability::map_item_mint_audit::map_item_spatial_position(
                                 // Item custody uses the runtime floor, which is +7 at the town tile.
-                                if death_slot == u32::MAX - 7 {
-                                    32369
-                                } else {
-                                    32370
-                                },
-                                if death_slot == u32::MAX - 10 {
-                                    32239
-                                } else {
-                                    32238
-                                },
+                                u16::try_from(32369 + east)?,
+                                u16::try_from(32238 + south)?,
                                 7,
                             ),
                         corpse_ref: [transaction_id.as_slice(), &death_slot.to_be_bytes()].concat(),
@@ -215,8 +239,8 @@ pub(super) async fn seed(
             spawn,
             fence.game_session_id,
             corpse.item_instance_id,
-            i32::from(death_slot != u32::MAX - 7),
-            i32::from(death_slot == u32::MAX - 10),
+            east,
+            south,
         )
         .await?;
     }
