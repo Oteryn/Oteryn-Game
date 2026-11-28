@@ -48,10 +48,40 @@ fn quantity(client: &DevClientSession, definition: std::num::NonZeroU32) -> Test
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout refused".into());
+    use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
+
+    let deadline =
+        tokio::time::Instant::now() + Duration::from_millis(u64::from(MAX_LOGOUT_RETRY_AFTER_MS));
+    loop {
+        let combat = client
+            .session_mut()
+            .combat_state()
+            .ok_or("logout requires combat state")?;
+        if let Some(target) = combat.target {
+            return Err(
+                format!("logout requires leaving the combat target first: {target:?}").into(),
+            );
+        }
+        if !combat.in_fight {
+            break;
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("combat lock remained active through its logout bound".into());
+        }
+        verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
+        client
+            .service_liveness(remaining.min(Duration::from_millis(100)))
+            .await?;
+        client.take_events();
+    }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(LogoutResult::Accepted) {
+        return Err(format!(
+            "logout refused status={:?} result={:?} command={} server_sequence={}",
+            reply.status, reply.result, reply.command_id, reply.result_server_sequence
+        )
+        .into());
     }
     Ok(())
 }
@@ -211,7 +241,43 @@ async fn fight_fear_caster(
         let expected = destination(world, before, direction)
             .filter(|at| *at != before)
             .ok_or("combat step lacks a distinct expected landing")?;
-        let step = client.step(direction).await?;
+        let mut step = client.step(direction).await?;
+        if step.disposition == StepDisposition::Blocked
+            && tile(client.world_spatial().actor_position)? == before
+        {
+            let occupant = client.world_entities().into_iter()
+                .flat_map(|view| view.iter())
+                .find(|entry| entry.kind == EntityKind::Creature
+                    && tile(entry.position).is_ok_and(|position| position == expected))
+                .map(|entry| entry.entity)
+                .ok_or_else(|| format!("BLOCKER-SERVER blocked landing without visible creature occupant: {expected:?}; frame={step:?}"))?;
+            evidence(&format!(
+                "I17D_CHECK blocked-landing occupant={occupant:?} tile={expected:?} frame={step:?}"
+            ));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+            let position = loop {
+                let actor = client
+                    .world_entities()
+                    .and_then(|view| view.get(&occupant))
+                    .ok_or("blocking creature left view before its position could be verified")?;
+                let position = tile(actor.position)?;
+                if position != expected {
+                    break position;
+                }
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    return Err(format!("creature {occupant:?} still blocks {expected:?}").into());
+                }
+                client
+                    .service_liveness(remaining.min(Duration::from_millis(50)))
+                    .await?;
+                client.take_events();
+            };
+            evidence(&format!(
+                "I17D_CHECK blocked-landing cleared occupant={occupant:?} position={position:?}"
+            ));
+            step = client.step(direction).await?;
+        }
         let actual = tile(client.world_spatial().actor_position)?;
         if step.disposition != StepDisposition::Moved
             || step.world_spatial_delta.is_none()
@@ -341,7 +407,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .inventory()
         .ok_or("missing cooldown pre-inventory")?
         .clone();
-    let repeated_at = tokio::time::Instant::now();
+    let equip_state_sequence = client.last_server_sequence();
     let refused = hotkey(&mut client, amulet).await?;
     let cooldown_failure = match refused {
         Out::Rejected => {
@@ -358,8 +424,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         Out::Moved => {
             let failure = format!(
-                "step=immediate-repeat observed=Moved;elapsed_ms={};needed=Rejected-and-still-worn",
-                repeated_at.elapsed().as_millis()
+                "step=immediate-repeat observed=Moved;equip_state_sequence={equip_state_sequence};repeat_sequence={};needed=Rejected-and-still-worn",
+                client.last_server_sequence()
             );
             evidence(&format!("I17D_CHECK jewelry-delay FAIL {failure}"));
             Some(failure)
