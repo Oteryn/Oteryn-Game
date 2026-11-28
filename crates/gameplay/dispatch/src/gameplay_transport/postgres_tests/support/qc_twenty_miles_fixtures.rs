@@ -18,6 +18,7 @@ use std::num::NonZeroU64;
 pub(super) const CHAIN: &str = "qc-twenty-miles";
 pub(super) const GUARDIAN: &str = "qc-twenty-miles-wandering-guardian";
 pub(super) const TRADE: &str = "qc-twenty-miles-open-trade";
+pub(super) const LOSS: &str = "qc-twenty-miles-hoard-loss";
 pub(super) const GOLD: &str = "qc-twenty-miles-merged-gold";
 pub(super) const SPLIT_GOLD: &str = "qc-twenty-miles-split-gold";
 pub(super) const EARLIER_SPLIT_GOLD: &str = "qc-twenty-miles-earlier-split-gold";
@@ -69,7 +70,7 @@ const NPCS: [(&str, Position); 5] = [
 ];
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD | BORROWED_REPORT | BORROWED_SONGS)
+    matches!(name, CHAIN | LOSS | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD | BORROWED_REPORT | BORROWED_SONGS)
 }
 
 fn source(callback: &Callback) -> Option<Position> {
@@ -859,6 +860,35 @@ pub(super) async fn exercise(
     use_object(owner, admitted, "hoard-1-reentry", None, Rejected).await?;
     let hoard = source(&callback("hoard-1")?).ok_or("hoard source")?;
     let (origin, _) = stand_near(owner, admitted, hoard).await?;
+    if name == LOSS {
+        let pause = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        *owner.states.quest_callbacks.before_commit.lock().map_err(|_| "commit pause")? = Some(pause.clone());
+        let runtime = owner.runtime.clone();
+        let session = admitted.game_session_id;
+        let actor = admitted.runtime_actor.ok_or("actor")?;
+        let mark = crate::foundation::ControlLossMark { epoch: 1, grace_deadline: i64::MAX };
+        super::quest_world_callbacks_fixtures::use_with_commit_probe(
+            use_object(owner, admitted, "hoard-1", Some(21746), Committed),
+            &pause,
+            || {
+                assert!(runtime.try_lock().is_ok_and(|mut channel| {
+                    channel.record_control_loss(actor, session, mark).is_ok()
+                }), "record control loss while the USE writer has released the Channel");
+            },
+        ).await?;
+        stage(h, 4).await?;
+        {
+            let mut runtime = runtime.lock().await;
+            assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), origin);
+            runtime.restore_control(actor, session, mark.epoch).map_err(debug)?;
+        }
+        use_object(owner, admitted, "hoard-1-reentry", None, Committed).await?;
+        assert_eq!(sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_quest_callback_consumptions
+             WHERE transition_key='oteryn:quest-callback/qc-twenty-miles-hoard-1'",
+        ).fetch_one(&h.pool).await?, 1);
+        return Ok(());
+    }
     owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
     assert!(use_object(owner, admitted, "hoard-1", Some(21746), Committed).await.is_err());
     stage(h, 4).await?;

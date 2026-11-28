@@ -1440,6 +1440,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if matches!(
                 callback.key.as_str(),
                 "oteryn:quest-callback/qc-twenty-miles-pile-1"
+                    | "oteryn:quest-callback/qc-twenty-miles-hoard-1"
                     | oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
             ) && let Some(pause) = self
                 .states
@@ -1518,23 +1519,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || map.facts.object_revision(key) != expected_revision
                     || !matches(map, callback, key)
                 {
-                    match &outcome {
+                    let disposition = match &outcome {
                         Ok(QuestTransitionOutcome::Committed(receipt)
-                            | QuestTransitionOutcome::AlreadyCommitted(receipt)) if current_actor => {
+                            | QuestTransitionOutcome::AlreadyCommitted(receipt)) => {
                             self.apply_committed_quest_copy(
                                 session, matches!(outcome, Ok(QuestTransitionOutcome::Committed(_))), receipt,
                             );
+                            self.states.loop_ground.invalidate();
                             self.schedule_quest_refresh(session);
+                            // Keep the original USE recoverable across disconnect before
+                            // retiring its obsolete Channel projection.
+                            if let QuestCause::Use(command) = cause
+                                && self.states.command_ingress
+                                    .complete_item_use(command, UseDisposition::Committed)
+                                    .is_none()
+                            {
+                                return UseDisposition::Rejected;
+                            }
+                            UseDisposition::Committed
                         }
                         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
                             return UseDisposition::Rejected;
                         }
-                        _ => {}
-                    }
+                        _ => UseDisposition::StaleState,
+                    };
                     if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                         records.remove(&session);
                     }
-                    return UseDisposition::StaleState;
+                    return disposition;
                 }
             }
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY

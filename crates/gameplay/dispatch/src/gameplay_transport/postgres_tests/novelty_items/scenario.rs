@@ -609,6 +609,20 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     .bind(source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(key, expected.outputs[0].0.production_key);
                 assert!(durable.entries.is_empty());
+                let (current, stale): (bool, bool) = sqlx::query_as(
+                    "SELECT game_ghostsilver_equipped_current(r), EXISTS (
+                       SELECT 1 FROM (VALUES
+                         (jsonb_build_object('game_session_id',uuidv7())),
+                         (jsonb_build_object('audit_context',r.audit_context || '{\"connection_generation\":0}'::jsonb)),
+                         (jsonb_build_object('audit_context',r.audit_context || '{\"lease_generation\":0}'::jsonb)),
+                         (jsonb_build_object('audit_context',r.audit_context || '{\"scope_generation\":0}'::jsonb))
+                       ) overrides(patch)
+                       WHERE game_ghostsilver_equipped_current(jsonb_populate_record(r, patch))
+                     ) FROM game_item_consume_transform_records r",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert!(current && !stale, "only the current equipped USE has authority");
             } else if expected.consume_source {
                 assert_eq!(durable.entries.len(), expected.outputs.len());
                 for (entry, (definition, count)) in durable.entries.iter().zip(&expected.outputs) {

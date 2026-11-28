@@ -16,6 +16,11 @@ fn qc_twenty_miles_resumes_the_pre_withdrawal_definition() -> TestResult {
 }
 
 #[test]
+fn qc_twenty_miles_hoard_commit_survives_control_loss() -> TestResult {
+    run(quest::LOSS)
+}
+
+#[test]
 fn qc_twenty_miles_merged_gold_recovery() -> TestResult {
     run(quest::GOLD)
 }
