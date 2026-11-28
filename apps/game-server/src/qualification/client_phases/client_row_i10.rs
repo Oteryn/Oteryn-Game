@@ -110,7 +110,7 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     Ok(client)
 }
 
-async fn walk_to(client: &mut DevClientSession, to: TilePos) -> TestResult {
+async fn walk_segment(client: &mut DevClientSession, to: TilePos) -> TestResult {
     let target = oteryn_protocol_oteryn::world_spatial::ActorPosition {
         x: i32::from(to.x),
         y: i32::from(to.y),
@@ -137,16 +137,37 @@ async fn walk_to(client: &mut DevClientSession, to: TilePos) -> TestResult {
     Ok(())
 }
 
-async fn enter_house(client: &mut DevClientSession) -> TestResult {
+const ENTRANCE: TilePos = TilePos {
+    x: 32348,
+    y: 32252,
+    floor: -7,
+};
+const DOOR: TilePos = TilePos {
+    x: 32348,
+    y: 32253,
+    floor: -7,
+};
+
+async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| at == ENTRANCE)
+        .ok_or("I10 authored route to Upper Swamp Lane 2 is unavailable")?;
+    let mut at = start;
+    // The live target-walk command admits targets within 12 tiles.
+    for segment in path.chunks(8) {
+        for &direction in segment {
+            at = destination(world, at, direction).ok_or("I10 invalid authored route step")?;
+        }
+        walk_segment(client, at).await?;
+    }
+    transfer_house(client, false, DOOR).await
+}
+
+async fn transfer_house(client: &mut DevClientSession, exit: bool, to: TilePos) -> TestResult {
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
-    let entrance = TilePos {
-        x: 32348,
-        y: 32252,
-        floor: -7,
-    };
-    walk_to(client, entrance).await?;
+    let before = tile(client.world_spatial().actor_position)?;
     let request = transfer::encode_house_transfer_intent(&transfer::HouseTransferIntent {
-        exit: false,
+        exit,
         house: HOUSE.into(),
     })
     .map_err(|error| format!("step=house-entry encoding={error:?}"))?;
@@ -164,10 +185,17 @@ async fn enter_house(client: &mut DevClientSession) -> TestResult {
             reply.status
         )
     })?;
-    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != Some(HOUSE) {
+    let expected_house = (!exit).then_some(HOUSE);
+    if reply.status != CommandStatus::Accepted
+        || ack.house.as_deref() != expected_house
+        || before == to
+        || tile(client.world_spatial().actor_position)? != to
+    {
         return Err(format!("step=house-entry status={:?} ack={ack:?}", reply.status).into());
     }
-    evidence("I10_CHECK step=authored-house-entry status=PASS");
+    evidence(&format!(
+        "I10_CHECK step=house-transfer exit={exit} destination={to:?}"
+    ));
     Ok(())
 }
 
@@ -335,6 +363,13 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     use std::io::Write as _;
     let directory = PathBuf::from(required("E2E_ALL_CAPTURE_DIR")?);
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let replay = required("NODE_BOOT_I10_REPLAY_BINARY")?;
     let account = character_prep::dedicated_character(clients, "NODE_BOOT_I10_ACCOUNT").await?;
     let scope = account.clients(clients);
@@ -371,7 +406,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
 
-    enter_house(&mut client).await?;
+    enter_house(&mut client, world).await?;
     let kit = furniture(
         &catalogue(&mut client).await?,
         "red cushioned chair kit",
@@ -398,6 +433,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if catalogue(&mut client).await? != before_refusal {
         return Err("I10 stale refusal changed the furniture catalogue".into());
     }
+    transfer_house(&mut client, true, ENTRANCE).await?;
     let prior_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
@@ -405,7 +441,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == prior_session {
         return Err("I10 durability check reused its original session".into());
     }
-    enter_house(&mut fresh).await?;
+    enter_house(&mut fresh, world).await?;
     let after_relog = catalogue(&mut fresh).await?;
     if after_relog.entries != before_refusal.entries
         || after_relog.acl_revision != before_refusal.acl_revision
