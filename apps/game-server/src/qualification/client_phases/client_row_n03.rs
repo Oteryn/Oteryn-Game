@@ -6,6 +6,20 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemEntry;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
+// Authored depot in region-z07-x126-y125.b3 and the walkable tile directly north.
+const DEPOT_LOCKER: TilePos = TilePos {
+    x: 32354,
+    y: 32231,
+    floor: -7,
+};
+const DEPOT_APPROACH: TilePos = TilePos {
+    x: 32354,
+    y: 32230,
+    floor: -7,
+};
+const DEPOT_TOWN: u16 = 8;
+const DEPOT_BOX: u8 = 1;
+
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
 
@@ -56,6 +70,66 @@ async fn depot_intent(
     }
     depot::decode_depot_reply(&response.payload)
         .map_err(|error| format!("depot decode {error:?}").into())
+}
+
+fn verify_box(
+    reply: &depot::DepotReply,
+    expected: depot::DepotOutcome,
+    definition: Option<u32>,
+) -> TestResult {
+    let expected_entries = match (definition, reply.entries.as_slice()) {
+        (None, []) => reply.total == 0,
+        (Some(definition), [entry]) => {
+            reply.total == 1 && entry.definition == definition && entry.count == 1
+        }
+        _ => false,
+    };
+    if reply.outcome != expected
+        || reply.town != Some(DEPOT_TOWN)
+        || reply.box_number != DEPOT_BOX
+        || reply.page != 0
+        || !expected_entries
+    {
+        return Err(format!("N03 unexpected depot box: {reply:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn n03_box_rejects_wrong_town_and_custody() -> TestResult {
+    let mut reply = depot::DepotReply {
+        outcome: depot::DepotOutcome::Opened,
+        town: Some(DEPOT_TOWN),
+        box_number: DEPOT_BOX,
+        page: 0,
+        entries: Vec::new(),
+        total: 0,
+    };
+    verify_box(&reply, depot::DepotOutcome::Opened, None)?;
+    reply.town = Some(2);
+    assert!(verify_box(&reply, depot::DepotOutcome::Opened, None).is_err());
+    reply.town = Some(DEPOT_TOWN);
+    reply.outcome = depot::DepotOutcome::Moved;
+    assert!(verify_box(&reply, depot::DepotOutcome::Moved, Some(42)).is_err());
+    reply.total = 1;
+    reply.entries.push(depot::DepotEntry {
+        ordinal: 0,
+        definition: 42,
+        count: 1,
+    });
+    verify_box(&reply, depot::DepotOutcome::Moved, Some(42))?;
+    reply.entries[0].definition = 43;
+    assert!(verify_box(&reply, depot::DepotOutcome::Moved, Some(42)).is_err());
+    reply.entries[0].definition = 42;
+    reply.entries[0].count = 2;
+    assert!(verify_box(&reply, depot::DepotOutcome::Moved, Some(42)).is_err());
+    reply.entries[0].count = 1;
+    reply.box_number = 2;
+    assert!(verify_box(&reply, depot::DepotOutcome::Moved, Some(42)).is_err());
+    reply.box_number = DEPOT_BOX;
+    reply.page = 1;
+    assert!(verify_box(&reply, depot::DepotOutcome::Moved, Some(42)).is_err());
+    Ok(())
 }
 
 fn carried_count(client: &DevClientSession, item: ItemEntry) -> TestResult<u64> {
@@ -167,11 +241,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let definitions = provisioning::item_index()?;
     let mut client = connect_character(clients, 0xac, 1).await?;
+    if world.facts().depot_at(DEPOT_LOCKER, 2) != Some(DEPOT_TOWN) {
+        return Err(format!(
+            "N03 authored locker mismatch at {DEPOT_LOCKER:?} expected town={DEPOT_TOWN}"
+        )
+        .into());
+    }
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        near_locker(world, at)
+        at == DEPOT_APPROACH
     })
-    .ok_or("no reachable authored depot locker")?;
+    .ok_or("N03 authored depot approach is unreachable")?;
     walk_to_depot(&mut client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != DEPOT_APPROACH {
+        return Err(format!("N03 did not reach the pinned depot approach {DEPOT_APPROACH:?}").into());
+    }
     let item = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -192,29 +275,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut client,
         depot::DepotIntent {
             town: None,
-            box_number: 1,
+            box_number: DEPOT_BOX,
             page: 0,
             action: depot::DepotAction::Browse,
         },
     )
     .await?;
-    if browse.outcome != depot::DepotOutcome::Opened || browse.town.is_none() {
-        return Err("depot browse did not open".into());
-    }
+    verify_box(&browse, depot::DepotOutcome::Opened, None)?;
     let moved = depot_intent(
         &mut client,
         depot::DepotIntent {
-            town: browse.town,
-            box_number: 1,
+            town: Some(DEPOT_TOWN),
+            box_number: DEPOT_BOX,
             page: 0,
             action: depot::DepotAction::Deposit(item.handle),
         },
     )
     .await?;
-    if moved.outcome != depot::DepotOutcome::Moved {
-        return Err(format!("deposit outcome {:?}", moved.outcome).into());
-    }
+    verify_box(
+        &moved,
+        depot::DepotOutcome::Moved,
+        Some(item.item_definition_ref.get()),
+    )?;
     wait_carried(&mut client, item, 0).await?;
+    evidence(&format!("N03_DEPOT_BOX locker={DEPOT_LOCKER:?} approach={DEPOT_APPROACH:?} town={DEPOT_TOWN} box={DEPOT_BOX} before=0 after=1"));
 
     // Preserve the full client pagination, even when the item appears before the last page.
     let mut pages = Vec::new();
