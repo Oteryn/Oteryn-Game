@@ -10,7 +10,7 @@ use oteryn_protocol_oteryn::actor_spell::{
     ActorVitals, SpellCastDisposition, SpellTarget,
 };
 use oteryn_protocol_oteryn::actor_spell_catalog as catalogue;
-use oteryn_protocol_oteryn::analyser::{AnalyserFact, AttributedFact};
+use oteryn_protocol_oteryn::analyser::AnalyserFact;
 
 struct Replay {
     account: character_prep::DedicatedCharacter,
@@ -25,26 +25,32 @@ async fn next_damage(
     client: &mut DevClientSession,
     above: u32,
     seconds: u64,
-    expected: impl Fn(&AttributedFact) -> bool,
+    spider: oteryn_dev_client::EntityRef,
+    periodic: bool,
 ) -> TestResult<(u64, ActorVitals)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
     let mut observed: Option<(u64, ActorVitals)> = None;
     let mut attributed_damage = 0u32;
+    let mut expected_hit = false;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             match event {
-                SessionEvent::ActorVitals(delta) if delta.value.health < above => {
-                    if observed.is_some_and(|(_, vitals)| vitals.health != delta.value.health) {
-                        return Err(
-                            "multiple health decreases before C08 damage attribution".into()
-                        );
+                SessionEvent::ActorVitals(delta) if observed.is_some() || delta.value.health < above => {
+                    if observed.is_some_and(|(_, vitals)| vitals.health < delta.value.health) {
+                        return Err("C08 health recovered during the damage observation".into());
                     }
                     observed = Some((delta.server_sequence, delta.value));
                 }
                 SessionEvent::AnalyserAttributedFacts(delta) => {
-                    for fact in delta.value.iter().filter(|fact| expected(fact)) {
+                    for fact in &delta.value {
                         if let AnalyserFact::DamageInput { value, .. } = fact.fact {
+                            let direct = fact.attacker == Some(spider);
+                            let tick = poison_tick_fact(fact);
+                            if !(direct || periodic && tick) {
+                                return Err(format!("C08 unexpected damage attribution: {fact:?}").into());
+                            }
+                            expected_hit |= if periodic { tick } else { direct };
                             attributed_damage = attributed_damage
                                 .checked_add(value.get())
                                 .ok_or("C08 damage attribution overflow")?;
@@ -63,7 +69,7 @@ async fn next_damage(
                 )
                 .into());
             }
-            if attributed_damage == health_loss {
+            if expected_hit && attributed_damage == health_loss {
                 return Ok((sequence, vitals));
             }
         }
@@ -89,13 +95,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Replay> {
     let spider = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let before = *client.actor_vitals().ok_or("C08 initial vitals absent")?;
     let before_sequence = client.last_server_sequence();
-    client.session_mut().attack_target(None).await?;
-    client.take_events();
-    let (direct_sequence, direct) = next_damage(&mut client, before.health, 30, |fact| {
-        fact.attacker == Some(spider)
-    })
-    .await?;
-    let (delayed_sequence, delayed) = next_damage(&mut client, direct.health, 15, poison_tick_fact).await?;
+    let (direct_sequence, direct) =
+        next_damage(&mut client, before.health, 30, spider, false).await?;
+    let (delayed_sequence, delayed) =
+        next_damage(&mut client, direct.health, 15, spider, true).await?;
     if !poison_status(&mut client).await? {
         return Err("C08 Poison Spider damage did not leave an active poison condition".into());
     }
