@@ -364,7 +364,9 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .execute(&h.pool)
             .await?;
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
-        for (command_id, text) in [(6, "blessing"), (7, "yes")] {
+        const WISDOM_OFFER: &str =
+            "Do you want to buy The Wisdom of Solitude at the price for your current level?";
+        for (command_id, text) in [(6, "wisdom"), (7, "yes")] {
             let outcome = owner
                 .npc_talk(
                     dependencies.actor,
@@ -379,6 +381,16 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
                     },
                 )
                 .await;
+            if text == "wisdom" {
+                assert_eq!(
+                    outcome
+                        .conversation
+                        .map(|reply| reply.lines)
+                        .unwrap_or_default(),
+                    [WISDOM_OFFER],
+                    "Eremo's offer for {text}"
+                );
+            }
             assert!(!outcome.unknown, "disposition={:?}", outcome.disposition);
             if text == "yes" {
                 assert!(
@@ -400,7 +412,7 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         .await?;
         assert_eq!(bank, 20_000);
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
-        for (command_id, text) in [(8, "blessing"), (9, "yes")] {
+        for (command_id, text) in [(8, "solitude"), (9, "yes")] {
             let outcome = owner
                 .npc_talk(
                     dependencies.actor,
@@ -415,6 +427,16 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
                     },
                 )
                 .await;
+            if text == "solitude" {
+                assert_eq!(
+                    outcome
+                        .conversation
+                        .map(|reply| reply.lines)
+                        .unwrap_or_default(),
+                    [WISDOM_OFFER],
+                    "Eremo's offer for {text}"
+                );
+            }
             assert!(!outcome.inventory_changed);
         }
         let count: i64 =
