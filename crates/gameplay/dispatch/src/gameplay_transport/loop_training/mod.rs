@@ -333,10 +333,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return None;
         };
-        if bundle_digest != at.map.overlay.base().digest() || reset_epoch != self.reset_epoch {
+        let map = super::world_map::MapViewSource {
+            overlay: &at.map.overlay,
+            facts: &at.map.facts,
+            content_generation: at.content_generation,
+            reset_epoch: self.reset_epoch,
+        };
+        let super::world_map::MapHandleTarget::Base { pos, ordinal, .. } =
+            super::world_map::resolve_map_handle(&map, key).ok()?
+        else {
             return None;
-        }
-        let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
+        };
         let player = crate::map::overlay::TilePos {
             x: u16::try_from(at.at.x).ok()?,
             y: u16::try_from(at.at.y).ok()?,

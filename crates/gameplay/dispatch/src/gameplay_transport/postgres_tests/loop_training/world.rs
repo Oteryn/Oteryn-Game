@@ -5,6 +5,8 @@ use crate::map::facts::ItemDefinition;
 use crate::map::overlay::TilePos;
 use oteryn_world_bundle::writer::*;
 
+pub(super) const STATUE_KEY: &str = "oteryn:item.tibia.i16198";
+
 pub(super) fn training_world(
     index: &ItemDefinitionIndex,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
@@ -13,7 +15,7 @@ pub(super) fn training_world(
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let keys = [
         "oteryn:item.tibia.i100",
-        "oteryn:item.tibia.i16198",
+        STATUE_KEY,
         "oteryn:item.tibia.i28558",
     ];
     let manifest = Manifest {

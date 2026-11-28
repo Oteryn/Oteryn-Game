@@ -53,7 +53,7 @@ fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> T
         .stack_size(64 << 20)
         .spawn(|| {
             for (flags, expected) in [([1, 1], 3), ([1, 9], 3), ([9, 1], 4)] {
-                statue_scenario(flags, expected, None).map_err(|error| error.to_string())?;
+                statue_scenario(flags, expected, None, false).map_err(|error| error.to_string())?;
             }
             Ok::<_, String>(())
         })?
@@ -70,13 +70,32 @@ fn offline_training_skill_comparison_and_choice_postgres_real_dispatch() -> Test
     drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| statue_scenario([1, 1], 3, Some(1)).map_err(|error| error.to_string()))?
+        .spawn(|| statue_scenario([1, 1], 3, Some(1), false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "offline training choice PG panic")??;
     Ok(())
 }
 
-fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestResult {
+#[test]
+fn offline_training_postgres_uses_the_published_statue_handle() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(|| statue_scenario([1, 1], 3, None, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "published statue PG panic")??;
+    Ok(())
+}
+
+fn statue_scenario(
+    flags: [u32; 2],
+    expected: u8,
+    choice: Option<u8>,
+    published: bool,
+) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "nologout_statue", true, false).await?;
         eprintln!("POSTGRES_STARTED statue logout {flags:?}");
@@ -245,6 +264,24 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
 
         owner.movement_cells = (&cells).into();
         owner.clock_origin -= Duration::from_secs(1);
+        if published {
+            let statue_ref = index
+                .definition_ref("Item", super::world::STATUE_KEY, "definition-r1")
+                .ok_or("statue reference")?;
+            exercise_published_statue(&owner, admitted, statue_ref).await?;
+            let skill = owner
+                .states
+                .training
+                .config
+                .as_ref()
+                .and_then(|rates| rates.statues.get(super::world::STATUE_KEY))
+                .ok_or("configured statue skill")?;
+            assert_eq!(statue_logout_state(&h, admitted).await?, (3, 1, i16::try_from(*skill)?));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let (kind, bytes) = if let Some(choice) = choice {
             use super::super::cyclopedia_fixtures::support::exchange;
             use oteryn_protocol_oteryn::CommandStatus;
@@ -296,9 +333,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
             result.disposition, expected,
             "player/statue flags {flags:?}"
         );
-        let state: (i16, i64, i16) = sqlx::query_as(
-            "SELECT session_state,(SELECT count(*) FROM game_character_training_markers WHERE cause='logout'),(SELECT offline_skill FROM game_character_build_state) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid"
-        ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        let state = statue_logout_state(&h, admitted).await?;
         if expected == 3 {
             assert_eq!(state, (3, 1, choice.map_or(3, i16::from)));
             assert_eq!(result.pool_seconds, 43200);
@@ -318,6 +353,100 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn statue_logout_state(
+    harness: &Harness,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<(i16, i64, i16)> {
+    Ok(sqlx::query_as(
+        "SELECT session_state,(SELECT count(*) FROM game_character_training_markers WHERE cause='logout'),(SELECT offline_skill FROM game_character_build_state) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid"
+    ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?)
+}
+
+async fn exercise_published_statue(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    statue_ref: std::num::NonZeroU32,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::world_map::{
+        MapDefinition, MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot,
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, CommandStatus, MessageType, decode_command_result,
+        decode_snapshot_chunk, decode_wire_envelope, encode_client_command,
+    };
+    use tokio::io::AsyncWriteExt;
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        Ok::<_, Box<dyn std::error::Error>>(end)
+    };
+    let driving = async move {
+        let mut statue_handle = None;
+        loop {
+            let raw = super::super::item_look_fixtures::read_frame(&mut client).await?;
+            let frame = decode_wire_envelope(&raw)?;
+            if frame.message_type() == MessageType::SnapshotChunk {
+                let (_, domains) = decode_snapshot_chunk(frame.payload())?;
+                for domain in domains.into_iter().filter(|domain| {
+                    domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW
+                }) {
+                    let snapshot = decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                    for item in snapshot.tiles.iter().flat_map(|tile| &tile.items) {
+                        if item.definition == MapDefinition::Item(statue_ref) {
+                            let MapOrigin::Handle(handle) = item.origin else {
+                                return Err("authored statue must have a live map handle".into());
+                            };
+                            statue_handle = Some(handle);
+                        }
+                    }
+                }
+            }
+            if frame.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let handle = statue_handle.ok_or("authored statue missing from map snapshot")?;
+        let mut payload = Vec::new();
+        field(&mut payload, 8, handle.get());
+        let command_id = admitted.continuity.next_command_id;
+        let bytes = encode_client_command(
+            admitted.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_OFFLINE_TRAINING,
+                payload: &payload,
+            },
+        )?;
+        client.write_u32(u32::try_from(bytes.len())?).await?;
+        client.write_all(&bytes).await?;
+        loop {
+            let raw = super::super::item_look_fixtures::read_frame(&mut client).await?;
+            let frame = decode_wire_envelope(&raw)?;
+            if frame.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(frame.payload())?;
+                assert_eq!(result.command_id, command_id);
+                assert_eq!(result.status, CommandStatus::Accepted);
+                assert!(result.payload.starts_with(&[8, 3]), "command 66 must start training");
+                return Ok(());
+            }
+        }
+    };
+    let (end, ()) = tokio::time::timeout(Duration::from_secs(30), async {
+        tokio::select! {
+            result = async { tokio::try_join!(serving, driving) } => result,
+            maintenance = super::super::item_craft_fixtures::maintain_ready(owner) => {
+                maintenance?;
+                Err("database fixture maintenance ended".into())
+            }
+        }
+    }).await??;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)), "{end:?}");
+    Ok(())
 }
 
 fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {

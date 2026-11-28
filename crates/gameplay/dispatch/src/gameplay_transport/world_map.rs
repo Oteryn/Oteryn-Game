@@ -43,9 +43,9 @@ use crate::map::view::{
 use oteryn_gameplay_world::map_view_diff::{Planned, SentView, encode};
 use oteryn_protocol_oteryn::item_view::ItemMoveOutcome;
 use oteryn_protocol_oteryn::world_map::{
-    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapItem, MapOrigin,
-    MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
-    WorldMapWireError,
+    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapDefinition,
+    MapItem, MapOrigin, MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+    STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapWireError,
 };
 #[cfg(test)]
 use oteryn_protocol_oteryn::world_map::{
@@ -115,6 +115,7 @@ impl From<WorldMapWireError> for MapViewError {
 struct PlannedEntry {
     source: EntrySource,
     item: MapItem,
+    handle_bearing: bool,
     /// Within `MAPW-RL-04`; only for handle-bearing entries.
     in_budget: bool,
 }
@@ -184,9 +185,8 @@ impl MapPlan {
                     EntrySource::Base {
                         ordinal,
                         placement_key,
-                        movable: false,
-                        openable_source: false,
-                    } => MapOrigin::BaseOrdinal {
+                        ..
+                    } if !entry.handle_bearing => MapOrigin::BaseOrdinal {
                         ordinal,
                         object_revision: source.facts.object_revision(placement_key),
                     },
@@ -278,7 +278,7 @@ fn plan_with<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
 ) -> Result<MapPlan, MapViewError> {
-    plan_with_house(source, actor, buffers, None)
+    plan_with_house(source, actor, buffers, None, &[])
 }
 
 fn plan_with_house<F: MapFacts>(
@@ -286,6 +286,7 @@ fn plan_with_house<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
     house: Option<&[HouseMapEntry]>,
+    training_statues: &[std::num::NonZeroU32],
 ) -> Result<MapPlan, MapViewError> {
     let mut house_tiles = std::collections::BTreeMap::<TilePos, Vec<&HouseMapEntry>>::new();
     let mut unique = std::collections::BTreeSet::new();
@@ -400,7 +401,13 @@ fn plan_with_house<F: MapFacts>(
         let start = entries.len();
         for stack_index in kept {
             let entry = &stack[stack_index];
-            if entry.source.handle_bearing() {
+            // Command 66 addresses fixed training statues through the map handle table.
+            // Apply the usual handle budget without altering pickup or container policy.
+            let training_statue = matches!(entry.source, EntrySource::Base { .. })
+                && matches!(entry.facts.definition, MapDefinition::Item(reference)
+                    if training_statues.contains(&reference));
+            let handle_bearing = entry.source.handle_bearing() || training_statue;
+            if handle_bearing {
                 ranked.push((view::budget_key(at, pos, stack_index), entries.len()));
             }
             entries.push(PlannedEntry {
@@ -412,6 +419,7 @@ fn plan_with_house<F: MapFacts>(
                     origin: MapOrigin::DisplayOnly,
                     appearance_id: entry.facts.appearance_id,
                 },
+                handle_bearing,
                 in_budget: false,
             });
         }
@@ -464,6 +472,7 @@ pub struct SessionMapView {
     revision: u64,
     sent: Option<SentView>,
     buffers: PlanBuffers,
+    training_statues_enabled: bool,
 }
 
 impl SessionMapView {
@@ -473,7 +482,17 @@ impl SessionMapView {
             revision: last,
             sent: None,
             buffers: PlanBuffers::default(),
+            training_statues_enabled: false,
         }
+    }
+
+    pub(super) fn with_training_statues(mut self, enabled: bool) -> Self {
+        self.training_statues_enabled = enabled;
+        self
+    }
+
+    pub(super) const fn training_statues_enabled(&self) -> bool {
+        self.training_statues_enabled
     }
 
     pub const fn revision(&self) -> u64 {
@@ -503,7 +522,23 @@ impl SessionMapView {
         source: &MapViewSource<'_, F>,
         actor: ActorPosition,
     ) -> Result<Option<MapUpdate>, MapViewError> {
-        let plan = plan_with(source, actor, std::mem::take(&mut self.buffers))?;
+        self.update_with_training_statues(items, source, actor, &[])
+    }
+
+    pub(super) fn update_with_training_statues<F: MapFacts>(
+        &mut self,
+        items: &mut SessionItemView,
+        source: &MapViewSource<'_, F>,
+        actor: ActorPosition,
+        training_statues: &[std::num::NonZeroU32],
+    ) -> Result<Option<MapUpdate>, MapViewError> {
+        let plan = plan_with_house(
+            source,
+            actor,
+            std::mem::take(&mut self.buffers),
+            None,
+            training_statues,
+        )?;
         self.update_plan(items, source, plan)
     }
 
@@ -528,6 +563,7 @@ impl SessionMapView {
             actor,
             std::mem::take(&mut self.buffers),
             Some(house),
+            &[],
         )?;
         self.update_plan(items, &source, plan)
     }
