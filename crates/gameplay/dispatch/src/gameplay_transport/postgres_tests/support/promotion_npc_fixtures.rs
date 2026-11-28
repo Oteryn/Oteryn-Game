@@ -25,6 +25,14 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
 pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResult {
+    run_promotion_scenario(npc_stem, false)
+}
+
+pub(super) fn run_atelier_promotion_scenario() -> TestResult {
+    run_promotion_scenario("eremo", true)
+}
+
+fn run_promotion_scenario(npc_stem: &'static str, check_atelier: bool) -> TestResult {
     run(async |admin| {
         reset();
         // Compile content before opening the admission holder; cold Native setup can exceed
@@ -66,8 +74,23 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
         let (consumer, clock, activation, proof) = purchase_fixture::current(id(40));
-        let coordinator =
-            SpellPremiumCoordinator::new(consumer.clone(), Some(clock), None, Some(h.root.clone()));
+        if check_atelier {
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            super::atelier_fixtures::fixture::eligible(&h.pool).await?;
+        }
+        let coordinator = SpellPremiumCoordinator::new(
+            consumer.clone(),
+            Some(clock),
+            check_atelier.then(|| activation.clone()),
+            Some(h.root.clone()),
+        );
         let mut owner = dependencies.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.premium_coordinator = Some(&coordinator);
@@ -126,8 +149,10 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("UPDATE game_character_progression_state SET level=120,total_experience=$2,simulation_revision=$3,evidence_revision=$4,declaration_revision=$5,policy_revision=$6,reward_revision=$7 WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).bind(initial_experience).bind(&progression.context.simulation).bind(&progression.context.evidence).bind(&progression.context.declaration).bind(&progression.policy_revision).bind(&progression.reward_revision).execute(&mut *tx).await?;
+        if !check_atelier {
+            sqlx::query("UPDATE game_character_progression_state SET level=120,total_experience=$2,simulation_revision=$3,evidence_revision=$4,declaration_revision=$5,policy_revision=$6,reward_revision=$7 WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(initial_experience).bind(&progression.context.simulation).bind(&progression.context.evidence).bind(&progression.context.declaration).bind(&progression.policy_revision).bind(&progression.reward_revision).execute(&mut *tx).await?;
+        }
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "{}{}",
             crate::durability::item_fee_burn::test_support::item(
@@ -156,6 +181,47 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .map_err(|_| "current session fence")?
             .ok_or("active fence")?
             .item_fence();
+        let atelier_session = if check_atelier {
+            let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
+                .map_err(debug)?;
+            owner.wheel_ruleset = Some(Arc::new(
+                crate::durability::character_wheel::WheelRuleset::from_catalogue(
+                    data.revision(),
+                    data.wheel(),
+                )
+                .map_err(debug)?,
+            ));
+            let (current, _) =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(session)
+                    .await?;
+            dependencies
+                .runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    dependencies.actor,
+                    session,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
+            let mut admitted = dependencies.admitted;
+            admitted.item_fence = Some(fence);
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[
+                        oteryn_protocol_oteryn::atelier::CAPABILITY_WHEEL_ALLOCATION_V1,
+                        oteryn_protocol_oteryn::atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+                    ],
+                )
+                .ok_or("Atelier capability selection")?;
+            owner.admit_wheel_session(session).await;
+            assert!(atelier_query(&owner, admitted).await?.refused);
+            Some(admitted)
+        } else {
+            None
+        };
         // Greetings, prompt, and confirmation are all real NPC_TALK dispatches.
         for (command_id, text) in [(1, "hi"), (2, "promotion"), (3, "yes")] {
             let outcome = owner
@@ -188,6 +254,30 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .await
             .map_err(debug)?;
         assert!(promoted);
+        let atelier_reply = if let Some(admitted) = atelier_session {
+            let reply = atelier_query(&owner, admitted).await?;
+            assert!(
+                !reply.refused,
+                "Atelier v2 must open immediately after promotion"
+            );
+            assert!(reply.revision > 0);
+            assert!(!reply.gems.is_empty());
+            assert_eq!(
+                owner
+                    .states
+                    .atelier_sessions
+                    .lock()
+                    .map_err(debug)?
+                    .get(&session)
+                    .and_then(Option::as_ref)
+                    .map(|state| state.revision),
+                Some(reply.revision),
+            );
+
+            Some((admitted, reply))
+        } else {
+            None
+        };
         let replay = owner
             .resume_npc_bank(
                 dependencies.actor,
@@ -204,6 +294,24 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         assert_eq!(counts, (1, 1));
         let coins:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(coins, 3);
+        if let Some((admitted, reply)) = atelier_reply {
+            let mut rebuilt = dependencies.owner(&h, &authority);
+            rebuilt.wheel_ruleset = owner.wheel_ruleset.clone();
+            rebuilt.premium_coordinator = Some(&coordinator);
+            rebuilt.admit_wheel_session(session).await;
+            assert_eq!(atelier_query(&rebuilt, admitted).await?, reply);
+            let initializations: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_atelier_receipts WHERE kind='GEM_INIT'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(initializations, 1);
+            drop(rebuilt);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if npc_stem != "eremo" {
             // New source promotion givers use the same permanent effect, fee and replay path.
             // Eremo's existing blessing, login and death assertions below remain unchanged.
@@ -275,7 +383,8 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         consumer.release(id(40));
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -286,7 +395,8 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -304,7 +414,8 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -564,4 +675,24 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn atelier_query(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<oteryn_protocol_oteryn::atelier::v2::AtelierReply> {
+    use crate::gameplay_transport::atelier::AtelierWireReply;
+    use oteryn_protocol_oteryn::atelier::v2 as wire;
+
+    match owner
+        .atelier_command(
+            admitted,
+            wire::COMMAND_TYPE_ATELIER_V2_QUERY,
+            &wire::encode_query(),
+        )
+        .await
+    {
+        AtelierWireReply::Payload(bytes) => wire::decode_reply(&bytes).map_err(debug),
+        other => Err(format!("Atelier v2 query: {other:?}").into()),
+    }
 }

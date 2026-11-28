@@ -237,7 +237,14 @@ pub(super) async fn apply(
         )
         .await
     {
-        Ok(PurchaseOutcome::Committed(receipt)) => completion(&intent, &receipt),
+        Ok(PurchaseOutcome::Committed(receipt)) => {
+            if matches!(&receipt.service, PurchaseService::Promotion(_)) {
+                admission
+                    .initialize_atelier_after_promotion(&mut slot, actor, fence.item_fence())
+                    .await;
+            }
+            completion(&intent, &receipt)
+        }
         Ok(PurchaseOutcome::Refused(reason)) => NpcConversations::bank_reply(
             &intent,
             match reason {
