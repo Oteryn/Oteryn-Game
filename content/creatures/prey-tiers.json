@@ -6239,7 +6239,7 @@
       "nonexclusive_count": 90,
       "normal_three_slot_capacity": true,
       "runtime_available_count": 38,
-      "runtime_unsettleable_count": 1,
+      "runtime_unsettleable_count": 0,
       "tier": 1
     },
     {
