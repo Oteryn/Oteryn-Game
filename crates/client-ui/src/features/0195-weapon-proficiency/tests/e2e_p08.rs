@@ -44,7 +44,7 @@ fn fixture() -> Result<Captured, Error> {
         offset: 0,
         total: 1,
         rows: vec![ProficiencyRow {
-            definition: NonZeroU32::new(258).ok_or("definition")?,
+            definition: NonZeroU32::new(259).ok_or("definition")?,
             name: "Wand".into(),
             experience: 120,
             level: 1,
@@ -64,7 +64,7 @@ fn fixture() -> Result<Captured, Error> {
         browse: browse.encode().ok_or_else(none)?,
         select: select.encode().ok_or_else(none)?,
         stale: stale.encode(),
-        expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nbrowse_total=1\nbrowse_rows=1\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
+        expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nmutation_definition=259\nbrowse_total=1\nbrowse_rows=1\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
     })
 }
 
@@ -151,11 +151,12 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     let confirmed = p.page.clone();
 
     // SelectPerk sends the exact weapon/level/perk bytes and shows the server's typed reply.
-    p.weapon = definition.parse()?;
+    let mutation_definition: u32 = value(e, "mutation_definition")?.parse()?;
+    p.weapon = mutation_definition;
     p.level = 0;
     p.perk = 0;
     let select = request(&mut p, Intent::SelectPerk).ok_or("select request")?;
-    let mut expected_payload = p.weapon.to_be_bytes().to_vec();
+    let mut expected_payload = mutation_definition.to_be_bytes().to_vec();
     expected_payload.extend([0, 0]);
     assert_eq!((select.kind, select.payload), (378, expected_payload));
     assert!(apply_result(
@@ -176,6 +177,17 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     p.revision = u64::MAX;
     let stale = request(&mut p, Intent::RankUp).ok_or("rank-up request")?;
     assert_eq!(stale.kind, ModificationOperation::RankUp.command_type());
+    let mut expected_payload = mutation_definition.to_be_bytes().to_vec();
+    expected_payload.push(1);
+    expected_payload.extend(u64::MAX.to_be_bytes());
+    assert_eq!(stale.payload, expected_payload);
+    assert_eq!(
+        ModificationReply::decode(&captured.stale),
+        Some(ModificationReply {
+            result: ModificationResult::StaleRevision,
+            slot: None,
+        })
+    );
     assert!(apply_result(
         &mut p,
         &result(CommandStatus::Accepted, &captured.stale)

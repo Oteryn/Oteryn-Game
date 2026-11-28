@@ -83,11 +83,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     let stale = wire::ModificationReply::decode(&stale).ok_or("stale reply")?;
-    if stale.result == wire::ModificationResult::Accepted || stale.slot.is_some() {
-        return Err(format!("stale RankUp was not refused: {stale:?}").into());
+    if stale.result != wire::ModificationResult::StaleRevision || stale.slot.is_some() {
+        return Err(format!("RankUp did not return StaleRevision without a slot: {stale:?}").into());
     }
     let expected = format!(
-        "catalogue_total={}\ncatalogue_first={}|{}|{}\nbrowse_total={}\nbrowse_rows={}\nselect_result={:?}\nselect_levels={:?}\nstale_result={:?}\n",
+        "catalogue_total={}\ncatalogue_first={}|{}|{}\nmutation_definition={definition}\nbrowse_total={}\nbrowse_rows={}\nselect_result={:?}\nselect_levels={:?}\nstale_result={:?}\n",
         catalogue.total,
         entry.definition,
         entry.name,
