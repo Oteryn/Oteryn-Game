@@ -100,7 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             let target = ActorPosition {
                 x: i32::from(placement.x),
                 y: i32::from(placement.y),
-                floor: oteryn_protocol_oteryn::world_spatial::native_floor(i16::from(placement.floor)),
+                floor: -i16::from(placement.floor),
             };
             logout_w16(&mut client).await?;
             drop(client);
@@ -195,9 +195,9 @@ pub(super) async fn approach(
     npc: ActorPosition,
 ) -> TestResult<DevClientSession> {
     let ((x, y), direction) = match (key, npc.x, npc.y, npc.floor) {
-        ("oteryn:npc.mayor_pocaro", 34073, 32504, -6) => ((34075, 32502), StepDirection::West),
-        ("oteryn:npc.wayland_smythers", 32961, 32076, -6) => ((32959, 32076), StepDirection::East),
-        ("oteryn:npc.wayland_smythers", 33955, 32642, -6) => ((33955, 32644), StepDirection::North),
+        ("oteryn:npc.mayor_pocaro", 34073, 32504, 6) => ((34075, 32502), StepDirection::West),
+        ("oteryn:npc.wayland_smythers", 32961, 32076, 6) => ((32959, 32076), StepDirection::East),
+        ("oteryn:npc.wayland_smythers", 33955, 32642, 6) => ((33955, 32644), StepDirection::North),
         _ => return Err(format!("W16 unexpected authored placement {key} at {npc:?}").into()),
     };
     let start = ActorPosition { x, y, floor: npc.floor };
