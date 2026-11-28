@@ -221,12 +221,55 @@ fn coin_worth(index: &[(u32, u32)], item: u32) -> Option<u64> {
         .map(|(_, worth)| u64::from(*worth))
 }
 
-fn names_present(members: &[hunt::Member], names: &[&str]) -> bool {
-    names.iter().all(|name| {
-        members
+fn idle_accounting(members: &[hunt::Member], names: &[&str; 2]) -> bool {
+    let [first, second] = members else {
+        return false;
+    };
+    first.handle != second.handle
+        && names
             .iter()
-            .any(|member| member.name.eq_ignore_ascii_case(name))
-    })
+            .all(|name| members.iter().any(|member| member.name == *name))
+        && members.iter().all(|member| {
+            member.available
+                && !member.incomplete
+                && member.needed_prices.is_empty()
+                && [
+                    member.kills,
+                    member.xp,
+                    member.raw_xp,
+                    member.loot_items,
+                    member.loot_value,
+                    member.supplies,
+                    member.supply_cost,
+                    member.unpriced_loot,
+                    member.unpriced_supplies,
+                    member.damage,
+                    member.healing,
+                ] == [0; 11]
+        })
+}
+
+fn invitation_handle(
+    reply: PartyDisposition,
+    view: &oteryn_protocol_oteryn::party::PartyResult,
+    inviter: &str,
+    now: u64,
+    expires: u64,
+) -> Option<u64> {
+    let [invite] = view.invitations.as_slice() else {
+        return None;
+    };
+    (reply == PartyDisposition::Ok
+        && view.disposition == PartyDisposition::Ok
+        && view.members.is_empty()
+        && invite.name == inviter
+        && invite.expires_at > now
+        && invite.expires_at == expires)
+        .then_some(invite.handle)
+}
+
+fn catalogue_matches(rows: &[items::ItemInfo], expected: &[items::ItemInfo]) -> bool {
+    rows.len() == expected.len() && expected.iter().all(|item| rows.contains(item))
 }
 
 async fn members(
@@ -259,14 +302,32 @@ async fn body(
     if reply != PartyDisposition::Ok {
         return Err(format!("step=invite observed={reply:?}").into());
     }
-    let (_, invitation) = party(b, None).await?;
-    let [invite] = invitation.invitations.as_slice() else {
-        return Err("step=invite observed=unexpected-invitation-count".into());
-    };
-    if invite.name != a_name || invite.expires_at == 0 || !invitation.members.is_empty() {
-        return Err(format!("step=invite observed={invitation:?}").into());
-    }
-    let (reply, _) = party(b, Some(PartyIntent::Accept(invite.handle))).await?;
+    let (reply, invitation) = party(b, None).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let (now, expires): (i64, i64) = sqlx::query_as(
+        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint,
+                ceil(extract(epoch FROM i.expires_at))::bigint
+         FROM game_party_invitations i JOIN game_parties p USING (party_id)
+         WHERE p.leader_character_id = encode($1,'hex')::uuid
+           AND i.invitee = encode($2,'hex')::uuid
+           AND i.expires_at > clock_timestamp()",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.characters[1].as_slice())
+    .fetch_one(&mut db)
+    .await?;
+    drop(db);
+    let handle = invitation_handle(
+        reply,
+        &invitation,
+        &a_name,
+        now.try_into()?,
+        expires.try_into()?,
+    )
+    .ok_or_else(|| {
+        format!("step=invite observed={reply:?}/{invitation:?} now={now} expected-expiry={expires}")
+    })?;
+    let (reply, _) = party(b, Some(PartyIntent::Accept(handle))).await?;
     if reply != PartyDisposition::Ok {
         return Err(format!("step=accept observed={reply:?}").into());
     }
@@ -296,21 +357,55 @@ async fn body(
         worth.push((reference, u32::try_from(value)?));
         ids.push(reference);
     }
-    let carried: Vec<u32> = a
+    let inventory = a
         .inventory()
-        .map(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .map(|e| e.item_definition_ref.get())
-                .collect()
-        })
-        .unwrap_or_default();
-    for reference in carried {
-        if ids.len() < 8 && !ids.contains(&reference) {
-            ids.push(reference);
-        }
+        .ok_or("step=items observed=no-inventory-view")?;
+    let carried: std::collections::BTreeSet<u32> = inventory
+        .entries
+        .iter()
+        .map(|entry| entry.item_definition_ref.get())
+        .filter(|reference| !ids.contains(reference))
+        .collect();
+    if carried.is_empty() {
+        return Err("step=items observed=no-carried-non-currency-items".into());
     }
+    ids.extend(carried);
+    use crate::content::ReferenceItemField::Known;
+    use crate::content::native_gameplay::ItemProfilesDocument;
+    let profiles: ItemProfilesDocument = serde_json::from_slice(
+        &native_input()?
+            .item_profiles
+            .as_ref()
+            .ok_or("missing pinned item profiles")?
+            .bytes,
+    )?;
+    let expected = ids
+        .iter()
+        .map(|id| -> TestResult<items::ItemInfo> {
+            let (key, revision) = index
+                .definition_at(std::num::NonZeroU32::try_from(*id)?)
+                .ok_or("missing expected item identity")?;
+            let profile = profiles
+                .records
+                .iter()
+                .find(|profile| {
+                    let definition = &profile.production_definition;
+                    definition.production_key == key && definition.revision_ref == revision
+                })
+                .ok_or_else(|| format!("missing pinned profile {key}/{revision}"))?;
+            let Known(presentation) = &profile.semantics.presentation else {
+                return Err(format!("missing pinned presentation {key}").into());
+            };
+            let Known(name) = &presentation.name else {
+                return Err(format!("missing pinned name {key}").into());
+            };
+            Ok(items::ItemInfo {
+                item_type: *id,
+                name: name.clone(),
+                coin_worth: coin_worth(&worth, *id).unwrap_or(0),
+            })
+        })
+        .collect::<TestResult<Vec<_>>>()?;
     let payload = items::encode_request(&ids)?;
     let reply = accepted(
         a,
@@ -320,27 +415,8 @@ async fn body(
     )
     .await?;
     let rows = items::decode_reply(&reply)?;
-    if rows.len() != ids.len()
-        || !ids
-            .iter()
-            .all(|id| rows.iter().any(|row| row.item_type == *id))
-    {
-        return Err(format!(
-            "step=items observed=rows:{}-requested:{}",
-            rows.len(),
-            ids.len()
-        )
-        .into());
-    }
-    for row in &rows {
-        let expected = coin_worth(&worth, row.item_type).unwrap_or(0);
-        if row.name.is_empty() || row.coin_worth != expected {
-            return Err(format!(
-                "step=items observed=item:{}-name:{}-worth:{}-expected:{expected}",
-                row.item_type, row.name, row.coin_worth
-            )
-            .into());
-        }
+    if !catalogue_matches(&rows, &expected) {
+        return Err(format!("step=items observed={rows:?} expected={expected:?}").into());
     }
 
     let prices: Vec<hunt::Price> = ids
@@ -353,10 +429,10 @@ async fn body(
         .collect();
     for (who, client) in [("leader", &mut *a), ("member", &mut *b)] {
         let rows = members(client, &prices).await?;
-        if !names_present(&rows, &[a_name.as_str(), b_name.as_str()]) {
+        if !idle_accounting(&rows, &[a_name.as_str(), b_name.as_str()]) {
             return Err(format!(
                 "step=party-analyser observed={who}-names:{:?} needed={a_name}+{b_name}",
-                rows.iter().map(|m| m.name.as_str()).collect::<Vec<_>>()
+                rows
             )
             .into());
         }
@@ -398,23 +474,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         TestResult::Ok(after)
     })
     .await;
+    let member_position = b.world_spatial().actor_position;
     let closed_b = verdict::observe(finish(&mut b)).await;
     let closed_a = verdict::observe(finish(&mut a)).await;
     let expected = outcome?;
     closed_b?;
     closed_a?;
-    let mut relogged = connect_character(clients, 0x7a, 0).await?;
-    let restored = verdict::observe(async {
-        let actual = relogged.world_spatial().actor_position;
-        if actual != expected {
-            return Err(format!("step=relog position={actual:?} expected={expected:?}").into());
-        }
-        assert_solo(&mut relogged).await
-    })
-    .await;
-    let closed = verdict::observe(finish(&mut relogged)).await;
-    restored?;
-    closed
+    for (index, tag, position) in [(0, 0x7a, expected), (1, 0x7b, member_position)] {
+        let mut relogged = connect_character(clients, tag, index).await?;
+        let restored = verdict::observe(async {
+            let actual = relogged.world_spatial().actor_position;
+            if actual != position {
+                return Err(format!(
+                    "step=relog player={index} position={actual:?} expected={position:?}"
+                )
+                .into());
+            }
+            assert_solo(&mut relogged).await?;
+            let rows = members(&mut relogged, &[]).await?;
+            if !rows.is_empty() {
+                return Err(format!("step=relog player={index} stale-accounting={rows:?}").into());
+            }
+            TestResult::Ok(())
+        })
+        .await;
+        let closed = verdict::observe(finish(&mut relogged)).await;
+        restored?;
+        closed?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -432,9 +520,9 @@ mod tests {
     }
 
     #[test]
-    fn names_are_matched_case_insensitively() {
+    fn idle_accounting_rejects_false_positives() {
         let member = |name: &str| hunt::Member {
-            handle: 1,
+            handle: if name == "Alpha" { 1 } else { 2 },
             name: name.to_owned(),
             available: true,
             incomplete: false,
@@ -453,8 +541,78 @@ mod tests {
             needed_prices: Vec::new(),
         };
         let rows = [member("Alpha"), member("beta")];
-        assert!(names_present(&rows, &["alpha", "Beta"]));
-        assert!(!names_present(&rows, &["gamma"]));
+        let names = ["Alpha", "beta"];
+        assert!(idle_accounting(&rows, &names));
+        assert!(!idle_accounting(
+            &[rows[0].clone(), rows[0].clone()],
+            &names
+        ));
+        assert!(!idle_accounting(
+            &[rows[0].clone(), rows[1].clone(), member("extra")],
+            &names
+        ));
+        for corrupt in [
+            |m: &mut hunt::Member| m.available = false,
+            |m: &mut hunt::Member| m.incomplete = true,
+            |m: &mut hunt::Member| m.loot_value = 1,
+            |m: &mut hunt::Member| m.supply_cost = 1,
+        ] {
+            let mut bad = rows.clone();
+            corrupt(&mut bad[0]);
+            assert!(!idle_accounting(&bad, &names));
+        }
+    }
+
+    #[test]
+    fn catalogue_rejects_wrong_names_and_missing_carried_items() {
+        let expected = [
+            items::ItemInfo {
+                item_type: 1,
+                name: "gold coin".into(),
+                coin_worth: 1,
+            },
+            items::ItemInfo {
+                item_type: 2,
+                name: "rope".into(),
+                coin_worth: 0,
+            },
+        ];
+        assert!(catalogue_matches(&expected, &expected));
+        assert!(!catalogue_matches(&expected[..1], &expected));
+        let mut bad = expected.clone();
+        bad[1].name = "shovel".into();
+        assert!(!catalogue_matches(&bad, &expected));
+    }
+
+    #[test]
+    fn invitation_rejects_refused_queries_and_bogus_expiry() {
+        use oteryn_protocol_oteryn::party::{PartyEntry, PartyResult};
+        let mut view = PartyResult::refused(PartyDisposition::Ok);
+        view.invitations.push(PartyEntry {
+            list: vec![],
+            handle: 1,
+            name: "Leader".into(),
+            leader: false,
+            expires_at: 400,
+            party_spell_remaining_ms: None,
+            channel: None,
+        });
+        assert_eq!(
+            invitation_handle(PartyDisposition::Ok, &view, "Leader", 100, 400),
+            Some(1)
+        );
+        assert_eq!(
+            invitation_handle(PartyDisposition::Rejected, &view, "Leader", 100, 400),
+            None
+        );
+        assert_eq!(
+            invitation_handle(PartyDisposition::Ok, &view, "Leader", 400, 400),
+            None
+        );
+        assert_eq!(
+            invitation_handle(PartyDisposition::Ok, &view, "Leader", 100, 401),
+            None
+        );
     }
 
     #[test]
