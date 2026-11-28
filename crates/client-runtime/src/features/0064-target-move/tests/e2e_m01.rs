@@ -31,14 +31,12 @@ fn rejects_missing_stale_or_wrong_batch_m01_capture() -> ReplayResult<()> {
     let incomplete = m01_replay::replay(&root, "run-a", "128:1", "session-a");
     std::fs::remove_dir_all(&root)?;
     assert!(missing.is_err());
-    assert_eq!(
-        stale.unwrap_err().to_string(),
-        "M01 capture run, batch, or session mismatch"
-    );
-    assert_eq!(
-        wrong_batch.unwrap_err().to_string(),
-        "M01 capture run, batch, or session mismatch"
-    );
+    for result in [stale, wrong_batch] {
+        assert_eq!(
+            result.err().map(|error| error.to_string()).as_deref(),
+            Some("M01 capture run, batch, or session mismatch")
+        );
+    }
     assert!(incomplete.is_err());
     Ok(())
 }
