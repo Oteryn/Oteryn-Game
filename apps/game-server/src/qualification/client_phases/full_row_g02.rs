@@ -215,7 +215,7 @@ async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         })
         .map(|actor| actor.entity)
         .ok_or("step=promotion observed=no-king-at-authored-placement")?;
-    if promotion_line(client, npc, "hi").await?.is_empty()
+    if promotion_line(client, npc, "hail king").await?.is_empty()
         || promotion_line(client, npc, "promotion").await?
             != ["Do you want to be promoted for 20000 gold coins?"]
         || promotion_line(client, npc, "yes").await? != ["You are now promoted."]
@@ -359,8 +359,10 @@ async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> Test
         .confirmed_wheel
         .clone()
         .ok_or("step=reset observed=no-wheel")?;
-    if cleared.refused || cleared.points != [0; 36]
-        || Some(cleared.revision) != durable.revision.checked_add(1) {
+    if cleared.refused
+        || cleared.points != [0; 36]
+        || Some(cleared.revision) != durable.revision.checked_add(1)
+    {
         return Err(format!("step=reset observed={cleared:?};needed=zero-allocation").into());
     }
     logout(&mut fresh).await?;
@@ -368,9 +370,21 @@ async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> Test
     let mut reset_read = connect_character(clients, 0xe3, 0).await?;
     premium_input(&reset_read).await?;
     let mut reset_panel = admitted_panel(&reset_read);
-    press(&mut reset_read, &mut reset_panel, Intent::Refresh, 5, "reset-relog").await?;
-    let persisted = reset_panel.confirmed_wheel.ok_or("step=reset-relog observed=no-wheel")?;
-    if persisted.refused || persisted.points != cleared.points || persisted.revision != cleared.revision {
+    press(
+        &mut reset_read,
+        &mut reset_panel,
+        Intent::Refresh,
+        5,
+        "reset-relog",
+    )
+    .await?;
+    let persisted = reset_panel
+        .confirmed_wheel
+        .ok_or("step=reset-relog observed=no-wheel")?;
+    if persisted.refused
+        || persisted.points != cleared.points
+        || persisted.revision != cleared.revision
+    {
         return Err(format!("step=reset-relog observed={persisted:?};needed={cleared:?}").into());
     }
     logout(&mut reset_read).await
