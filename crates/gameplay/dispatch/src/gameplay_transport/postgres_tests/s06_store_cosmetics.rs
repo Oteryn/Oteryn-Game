@@ -148,13 +148,7 @@ async fn scenario(admin: String, mounts: bool) -> TestResult {
             .ok_or_else(|| format!("missing Store quote for {offer}"))?;
         assert_eq!(quoted.price, price);
         assert_eq!(quoted.currency, "TIBIA_COIN");
-        assert!(
-            before
-                .catalogue
-                .mounts
-                .iter()
-                .all(|option| option.key != key)
-        );
+        assert!(!before.catalogue.mounts.contains(&key));
         assert!(
             before
                 .catalogue
@@ -176,13 +170,7 @@ async fn scenario(admin: String, mounts: bool) -> TestResult {
 
         let after = super::item_cosmetics_fixtures::positive::appearance(&owner, &admitted).await?;
         let outfit = if mounts {
-            assert!(
-                after
-                    .catalogue
-                    .mounts
-                    .iter()
-                    .any(|option| option.key == key)
-            );
+            assert!(after.catalogue.mounts.contains(&key));
             after.catalogue.outfits.first().ok_or("starter outfit")?
         } else {
             let outfit = after

@@ -98,7 +98,7 @@ acquisition owner.
 ### Quest outfit and addon sources
 
 Warmaster and Wayfarer have active wardrobe rewards in
-`shared-outfit-callbacks.json`; their outfit pages identify quest acquisition
+`shared-outfit-callbacks.json`. Their outfit pages identify quest acquisition
 for Premium players. Citizen and Warrior addon hand-ins have active NPC
 bindings and existing tests that traverse the story. These sources retain
 their quest or NPC grant keys. [Warmaster](https://tibia.fandom.com/wiki/Warmaster_Outfits) ·
