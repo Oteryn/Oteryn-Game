@@ -144,6 +144,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             },
             catalogue.clone(),
             QuestRewardAdmission {
+                selected_fish: None,
                 native,
                 weights: &weights,
                 fee_payment: None,

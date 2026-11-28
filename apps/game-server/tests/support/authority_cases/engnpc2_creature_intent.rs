@@ -262,6 +262,7 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
         intent: encode_item_use_intent(&changed).map_err(f::debug)?,
     };
     let admission = |carried| QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,
@@ -362,6 +363,7 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
                 },
                 catalogue.clone(),
                 QuestRewardAdmission {
+                    selected_fish: None,
                     native,
                     weights: &weights,
                     fee_payment: None,
@@ -436,6 +438,7 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
         .is_none()
     );
     let replay_admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

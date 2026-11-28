@@ -230,6 +230,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 context.clone(),
                 Some(native),
                 Some(QuestRewardAdmission {
+                    selected_fish: None,
                     native,
                     weights: &premium,
                     fee_payment: None,

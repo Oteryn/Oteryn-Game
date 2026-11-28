@@ -287,6 +287,7 @@ pub(super) async fn exercise(
             },
             owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: None,
                 actor_conditions: None,
                 carried_use: None,
                 creature_use: None,

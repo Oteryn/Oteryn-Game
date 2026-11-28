@@ -130,6 +130,7 @@ async fn pilgrimage(h: &f::Harness) -> f::TestResult {
     let sequencer = durability::character_revision_sequencer::CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(f::fence(1)?.character_id).await;
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,
@@ -330,6 +331,7 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
     let sequencer = durability::character_revision_sequencer::CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(f::fence(1)?.character_id).await;
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

@@ -78,6 +78,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .ok_or("native content")?;
     let weights = super::engitem_reward_text::Weights(native);
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

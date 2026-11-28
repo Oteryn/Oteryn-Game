@@ -66,6 +66,7 @@ pub(super) async fn capture(
             },
             catalogue.clone(),
             QuestRewardAdmission {
+                selected_fish: None,
                 native,
                 weights: &weights,
                 fee_payment: None,
@@ -157,6 +158,7 @@ pub(super) async fn capture(
                     },
                     catalogue,
                     QuestRewardAdmission {
+                        selected_fish: None,
                         native,
                         weights: &weights,
                         fee_payment: None,

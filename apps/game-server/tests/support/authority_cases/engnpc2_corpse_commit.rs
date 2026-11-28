@@ -235,6 +235,7 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
         intent: encode_item_use_intent(&changed).map_err(f::debug)?,
     };
     let admission = |carried| QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,
@@ -310,6 +311,7 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
     drop(proof);
     drop(runtime);
     let replay_admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

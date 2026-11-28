@@ -64,6 +64,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .ok_or("native generation")?;
     let weights = NoItemWeights(native.source_digest());
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,
