@@ -138,9 +138,42 @@ pub(super) async fn connect_c08(
     let mut initial = connect_character(&clients, tag, 0).await?;
     let session = initial.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(session.as_bytes()), "--profile", PROFILE.into()).await?;
-    let reply = initial.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C08 seeded character logout refused: {reply:?}").into());
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let position = initial.world_spatial().actor_position;
+    let vitals = initial
+        .actor_vitals()
+        .copied()
+        .ok_or("C08 preparation vitals absent")?;
+    let mut attempt = 1;
+    loop {
+        let reply = initial.session_mut().logout().await?;
+        if reply.result == Some(LogoutResult::Accepted) {
+            break;
+        }
+        if reply.status != CommandStatus::Rejected
+            || reply.result != Some(LogoutResult::Busy)
+            || initial.join_snapshot().game_session_id != session
+            || initial.world_spatial().actor_position != position
+            || initial.actor_vitals() != Some(&vitals)
+        {
+            return Err(
+                format!("C08 seeded character logout refused or changed state: {reply:?}").into(),
+            );
+        }
+        evidence(&format!(
+            "C08_PREP_LOGOUT_BUSY attempt={attempt} server_sequence={} reply={reply:?}",
+            reply.result_server_sequence
+        ));
+        if attempt >= 3 {
+            return Err("C08 seeded character remained Busy after three logout attempts".into());
+        }
+        attempt += 1;
+        initial.service_liveness(Duration::from_millis(250)).await?;
+        if initial.world_spatial().actor_position != position
+            || initial.actor_vitals() != Some(&vitals)
+        {
+            return Err("C08 seeded character changed state while waiting after Busy".into());
+        }
     }
     drop(initial);
 
