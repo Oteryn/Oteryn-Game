@@ -59,6 +59,15 @@ fn load_offer() -> TestResult<Offer> {
     let reply = callback["reply"][0]
         .as_str()
         .ok_or("callback has no reply")?;
+    // Global Citizen Outfits Quest transcript: Hanna names all three materials after "yes".
+    if !["a legion helmet", "100 chicken feathers", "50 honeycombs"]
+        .iter()
+        .all(|material| reply.contains(material))
+    {
+        return Err(
+            "Hanna confirmation must name all three hat materials and their quantities".into(),
+        );
+    }
     let tracks = callback["storage"]
         .as_array()
         .ok_or("callback has no storage")?

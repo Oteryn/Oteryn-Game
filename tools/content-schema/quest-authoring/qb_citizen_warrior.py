@@ -124,6 +124,12 @@ def append(add, storage, offers, callbacks, prefix):
         "one if you like. What do you say?",
     )
     callback("citizen-hat-start", "hanna", ["yes"], states, topic=1, requires_premium=False)
+    callbacks[-1]["reply"] = [
+        "Bring me a legion helmet, 100 chicken feathers, and 50 honeycombs so I can make your hat."
+    ]
+    callbacks[-1]["sources"].append(
+        "https://tibia.fandom.com/wiki/Citizen_Outfits_Quest/Spoiler#Feather_Hat"
+    )
     states = [storage(hat, 1, 2), storage(hat_mission, 0, 0, 2)]
     offer(
         "hanna",

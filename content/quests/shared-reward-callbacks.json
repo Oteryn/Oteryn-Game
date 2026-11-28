@@ -9478,10 +9478,11 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Bring me a legion helmet, 100 chicken feathers, and 50 honeycombs so I can make your hat."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "https://tibia.fandom.com/wiki/Citizen_Outfits_Quest/Spoiler#Feather_Hat"
       ]
     },
     {
