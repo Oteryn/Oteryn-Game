@@ -200,11 +200,14 @@ impl ChannelAttackStates {
         if !take_periodic_check(&mut entry.last_transcendence_check, now) {
             return;
         }
-        let recent_spell = state.last_offensive_spell_at().is_some_and(|at| {
-            now.elapsed_since(at)
-                .is_ok_and(|age| age < TIER_CHECK_MICROS)
-        });
-        if !recent_spell && !entry.state.swung_within_interval(now, TIER_CHECK_MICROS) {
+        let has_recent_action = [state.last_offensive_spell_at(), entry.last_weapon_action_at]
+            .into_iter()
+            .flatten()
+            .any(|at| {
+                now.elapsed_since(at)
+                    .is_ok_and(|age| age < TIER_CHECK_MICROS)
+            });
+        if !has_recent_action {
             return;
         }
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
@@ -227,6 +230,7 @@ impl ChannelAttackStates {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::combat_attack::SwingPoll;
     use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
     use crate::spell::CooldownGroup;
     use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
@@ -351,6 +355,126 @@ mod tests {
                 .and_then(|entry| entry.last_momentum_check),
             Some(now)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn global_transcendence_requires_admitted_weapon_use() -> Result<(), String> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(refused_weapon_scenario)
+            .map_err(|error| error.to_string())?
+            .join()
+            .map_err(|_| "Transcendence weapon scenario panicked".to_string())?
+    }
+
+    fn refused_weapon_scenario() -> Result<(), String> {
+        let (mut runtime, actor, session) = runtime_with_player(0x83);
+        let target = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            })
+            .map_err(|error| format!("{error:?}"))?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                runtime.binding().world_id(),
+                None,
+            );
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native gameplay")?;
+        let appearances = native.spell_appearances().ok_or("Avatar appearances")?;
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let wins = |window| {
+            tier_proc(
+                &TRANSCENDENCE,
+                10,
+                0,
+                &root,
+                periodic_occurrence(actor, session, window),
+                "tier_transcendence",
+            )
+        };
+        let window = (1..40_000)
+            .find(|window| wins(*window) && wins(*window + 1))
+            .ok_or("consecutive successful rolls")?;
+        let now = SemanticTimeMicros::from_micros(window * TIER_CHECK_MICROS);
+        let swing_at = SemanticTimeMicros::from_micros(now.get() - 1);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), swing_at)
+            .ok_or("initialize player")?;
+        states
+            .get_mut(&runtime, actor, session)
+            .ok_or("current player")?
+            .install_equipped_offence(EquippedOffence {
+                legs_tier: 10,
+                ..EquippedOffence::default()
+            });
+        let mut attack = ChannelAttackStates::default();
+        let entry = attack
+            .entry(&runtime, actor, session)
+            .ok_or("attack owner entry")?;
+        let lineage = CommandRef::new(
+            session,
+            CommandId::new(1).map_err(|error| format!("{error:?}"))?,
+        );
+        let facts = TargetFacts {
+            present_and_visible: true,
+            attackable_kind: true,
+            alive: true,
+            same_floor: true,
+            distance: 1,
+            attacker_in_protection_zone: false,
+            target_in_protection_zone: false,
+            attacker_reentry_protected: false,
+            target_reentry_protected: false,
+        };
+        entry
+            .state
+            .set_target(target, lineage, &facts)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(
+            entry.state.poll_swing(swing_at, TIER_CHECK_MICROS, &facts),
+            SwingPoll::Swing(_)
+        ));
+        // Refusal by the later attack owner clears the target. The polled
+        // swing timestamp remains, but the weapon action was never admitted.
+        entry.clear_target();
+        attack.tick_transcendence(
+            &runtime,
+            &mut states,
+            (actor, session),
+            now,
+            native.spell_book(),
+            appearances,
+        );
+        let outcome = |states: &ChannelSpellStates, at: SemanticTimeMicros| {
+            states
+                .get(&runtime, actor, session)
+                .ok_or("current player")
+                .map(|state| state.owned_conditions().outfit_at(at.get()))
+        };
+        assert_eq!(outcome(&states, now)?, None);
+        let next = now
+            .checked_add(TIER_CHECK_MICROS)
+            .map_err(|error| format!("{error:?}"))?;
+        attack
+            .entry(&runtime, actor, session)
+            .ok_or("attack owner entry")?
+            .last_weapon_action_at = Some(SemanticTimeMicros::from_micros(next.get() - 1));
+        attack.tick_transcendence(
+            &runtime,
+            &mut states,
+            (actor, session),
+            next,
+            native.spell_book(),
+            appearances,
+        );
+        assert!(outcome(&states, next)?.is_some());
         Ok(())
     }
 }

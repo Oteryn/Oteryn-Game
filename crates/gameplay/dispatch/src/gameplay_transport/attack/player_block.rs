@@ -476,11 +476,38 @@ mod tests {
         CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection, commit_ai_bite,
     };
     use crate::content::charm_source::CanonicalCharmCatalogue;
+    use crate::durability::character_equipment::{EquipmentSnapshot, EquippedItem};
+    use crate::durability::item_mint::TypedDefinitionRef;
     use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
-    use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+    use crate::gameplay_transport::equipment_move::equipment_effects_owner::equipped_offence;
 
     #[test]
     fn global_ruse_amplification_negates_a_bite_before_damage() -> Result<(), String> {
+        // Draw 1600 is 3.7867%, between tier 6's base and amplified chances.
+        bite_cases(&[(6, 3, 1600, 0), (6, 0, 1600, 10), (0, 3, 1600, 10)])
+    }
+
+    #[test]
+    fn global_ruse_tier_one_and_two_dodge_at_the_documented_thresholds() -> Result<(), String> {
+        // Fixed draws just below and above 0.50% and 1.03%, respectively.
+        bite_cases(&[
+            (1, 0, 80069, 0),
+            (1, 0, 3085, 10),
+            (2, 0, 48291, 0),
+            (2, 0, 7253, 10),
+        ])
+    }
+
+    fn bite_cases(cases: &'static [(u8, u8, u128, u32)]) -> Result<(), String> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || bite_scenario(cases))
+            .map_err(|error| error.to_string())?
+            .join()
+            .map_err(|_| "Ruse scenario thread panicked".to_string())?
+    }
+
+    fn bite_scenario(cases: &[(u8, u8, u128, u32)]) -> Result<(), String> {
         let (mut runtime, target, session) = runtime_with_player(179);
         let position = |x| MovementLocalPosition { x, y: 10, floor: 7 };
         runtime
@@ -491,9 +518,16 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = CanonicalCharmCatalogue::embedded().map_err(|error| error.to_string())?;
 
-        for (index, (armor_tier, boots_tier, expected)) in
-            [(6, 3, 0), (6, 0, 10), (0, 3, 10)].into_iter().enumerate()
-        {
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                runtime.binding().world_id(),
+                None,
+            );
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native gameplay")?;
+        for (index, &(armor_tier, boots_tier, occurrence, expected)) in cases.iter().enumerate() {
             let now = SemanticTimeMicros::from_micros(index as u64 * 2_000_000);
             let mut states = ChannelSpellStates::default();
             states
@@ -502,11 +536,35 @@ mod tests {
             states
                 .get_mut(&runtime, target, session)
                 .ok_or("current player")?
-                .install_equipped_offence(EquippedOffence {
-                    armor_tier,
-                    boots_tier,
-                    ..EquippedOffence::default()
-                });
+                .install_equipped_offence(
+                    equipped_offence(
+                        &EquipmentSnapshot {
+                            character: *session.as_bytes(),
+                            content_digest: native.source_digest(),
+                            character_revision: 1,
+                            revision: 1,
+                            combat_mode: None,
+                            items: [(2, "i3394", armor_tier), (4, "i3246", boots_tier)]
+                                .into_iter()
+                                .filter(|(_, _, tier)| *tier > 0)
+                                .map(|(slot, key, tier)| EquippedItem {
+                                    slot,
+                                    tier,
+                                    item_instance_id: [slot; 16],
+                                    quantity: 1,
+                                    state_revision: 1,
+                                    definition: TypedDefinitionRef {
+                                        family: "Item".into(),
+                                        production_key: format!("oteryn:item.tibia.{key}"),
+                                        revision_ref: "definition-r1".into(),
+                                    },
+                                })
+                                .collect(),
+                        },
+                        native,
+                    )
+                    .ok_or("qualified worn gear")?,
+                );
             let hit = commit_ai_bite(
                 &mut CreatureBiteLedger::default(),
                 &mut runtime,
@@ -516,8 +574,7 @@ mod tests {
                         source: creature,
                         catalogue: &catalogue,
                         root: GameplayDecisionRoot::from_bytes([0; 32]),
-                        // Draws 3.7867%, between the unamplified and amplified tier 6 chances.
-                        occurrence: DecisionOccurrenceId::from_bytes(1600_u128.to_be_bytes()),
+                        occurrence: DecisionOccurrenceId::from_bytes(occurrence.to_be_bytes()),
                         sequence: index as u64 + 1,
                         race: "rat",
                         base_damage: 0,
@@ -544,7 +601,10 @@ mod tests {
                 OwnerTime::from_micros(now.get()),
             )
             .map_err(|error| format!("{error:?}"))?;
-            assert_eq!(hit.damage.applied, expected);
+            assert_eq!(
+                hit.damage.applied, expected,
+                "armor tier {armor_tier}, boots tier {boots_tier}"
+            );
         }
         Ok(())
     }

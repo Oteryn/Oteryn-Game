@@ -384,9 +384,6 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         let Ok(creature) = runtime.companion_snapshot(source) else {
             return false;
         };
-        if creature.state.master.is_some() || creature.state.policy.is_familiar {
-            return false;
-        }
         let digest = Sha256::new()
             .chain_update(b"oteryn.charm.source.v1")
             .chain_update(occurrence.as_bytes())
@@ -394,14 +391,20 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         let mut identity = [0; 16];
         identity.copy_from_slice(&digest[..16]);
         let occurrence = DecisionOccurrenceId::from_bytes(identity);
-        super::super::tier_effects::ruse(
+        if super::super::tier_effects::ruse(
             self.states,
             runtime,
             target,
             session,
             &self.root,
             occurrence,
-        ) || evaluate(
+        ) {
+            return true;
+        }
+        if creature.state.master.is_some() || creature.state.policy.is_familiar {
+            return false;
+        }
+        evaluate(
             self.states,
             runtime,
             self.catalogue,

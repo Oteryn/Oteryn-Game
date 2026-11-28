@@ -528,6 +528,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 ranged::ShotImpact::Ordinary
             };
+            // The swing clock was polled before the PvP legality and ammunition owners.
+            // Only an admitted use can supply the offensive action for Transcendence.
+            if !matches!(impact, ranged::ShotImpact::Refused) {
+                entry.last_weapon_action_at = Some(selected.swing.at);
+            }
             if selected.weapon.ranged.is_some()
                 && content.training_formula().is_some_and(|formula| {
                     states

@@ -235,6 +235,7 @@ struct ActorAttack {
     defence_blocks: Option<BlockBudget>,
     last_momentum_check: Option<SemanticTimeMicros>,
     last_transcendence_check: Option<SemanticTimeMicros>,
+    last_weapon_action_at: Option<SemanticTimeMicros>,
 }
 
 impl ActorAttack {
@@ -623,6 +624,7 @@ impl ChannelAttackStates {
                     defence_blocks: None,
                     last_momentum_check: None,
                     last_transcendence_check: None,
+                    last_weapon_action_at: None,
                 });
                 self.entries.len() - 1
             }
