@@ -20,6 +20,10 @@ fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
         "knight-underlevel" => Some(("knight", 66, false)),
         "levitate" => Some(("sorcerer", 12, true)),
         "magic-rope" => Some(("sorcerer", 9, true)),
+        #[cfg(feature = "qualification-spawn")]
+        "monk-120" => Some(("monk", 120, true)),
+        #[cfg(feature = "qualification-spawn")]
+        "sorcerer-120" => Some(("sorcerer", 120, true)),
         vocation if qualification_build::PLAYABLE_VOCATIONS.contains(&vocation) => {
             Some((vocation, 100, false))
         }
@@ -1708,6 +1712,22 @@ mod tests {
             "qualify 01890f4c-3b2a-4c01-8d11-9a321b7c0004 knight".into(),
         ] {
             assert!(request(text.as_bytes()).is_none());
+        }
+    }
+
+    #[test]
+    fn crosshair_build_profiles_require_qualification_spawn() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        for (profile, vocation) in [("monk-120", "monk"), ("sorcerer-120", "sorcerer")] {
+            let enabled = cfg!(feature = "qualification-spawn");
+            assert_eq!(
+                spell_build(profile),
+                enabled.then_some((vocation, 120, true))
+            );
+            assert_eq!(
+                request(format!("qualify {id} {profile}\n").as_bytes()).is_some(),
+                enabled
+            );
         }
     }
 }
