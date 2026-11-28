@@ -1,9 +1,6 @@
-//! C20b client replay capture.
+//! C20b client inventory capture for the separate session replay.
 //!
-//! The real C20b journey runs immediately before this packet and buys/equips/consumes an Amulet
-//! of Loss before losing the replacement backpack without it. A fresh admission after those
-//! server-observed
-//! actions supplies the exact inventory snapshot bytes consumed by
+//! A fresh admission supplies the exact inventory snapshot bytes consumed by
 //! `crates/session/src/snapshot_state.rs::SnapshotState::install_domains`; subsequent inventory
 //! deltas are consumed by `crates/session/src/domain_dispatch.rs::Session::apply_state_delta`,
 //! and `crates/session/src/session_access.rs::Session::inventory` exposes the resulting state.
@@ -26,18 +23,16 @@ mod journey {
         if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
             return Err("C20b final server-observed inventory retained backpack custody".into());
         }
-        capture(snapshot.revision, &snapshot.payload, inventory);
-        Ok(())
+        capture(snapshot.revision, &snapshot.payload, inventory)
     }
 
     fn capture(
         revision: u64,
         payload: &[u8],
         inventory: &oteryn_dev_client::CharacterInventory,
-    ) {
-        let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-            return;
-        };
+    ) -> TestResult {
+        let directory =
+            std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C20b capture directory disappeared")?;
         let directory = std::path::Path::new(&directory);
         let expected = format!(
             "revision={revision}\nbackpack={}\nentries={}\nequipment={}\n",
@@ -49,12 +44,14 @@ mod journey {
             ("c20b-inventory.bin", payload),
             ("c20b-expected.txt", expected.as_bytes()),
         ] {
-            if let Err(error) = std::fs::write(directory.join(name), bytes) {
-                evidence(&format!(
-                    "SEAM_EVIDENCE e2e_all scenario=C20b.client status=CAPTURE-WRITE-ERROR evidence=file={name};error={error}"
-                ));
-            }
+            let path = directory.join(name);
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)?;
+            std::io::Write::write_all(&mut file, bytes)?;
         }
+        Ok(())
     }
 }
 
@@ -66,16 +63,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         return;
     }
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(480),
-        journey::run_and_capture(clients),
-    )
-    .await
-    .map_err(|_| "C20b client capture timed out".into())
-    .and_then(|result| result);
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(480), journey::run_and_capture(clients))
+            .await
+            .map_err(|_| "C20b client capture timed out".into())
+            .and_then(|result| result);
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=real-C20b-actions-and-fresh-inventory-snapshot",
-        if result.is_ok() { "PASS" } else { "FAIL" },
+        "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=fresh-inventory-snapshot",
+        if result.is_ok() { "CAPTURED" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
     if let Err(error) = result {
