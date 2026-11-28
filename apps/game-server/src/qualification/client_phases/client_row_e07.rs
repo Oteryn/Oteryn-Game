@@ -11,7 +11,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "E07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -49,6 +51,41 @@ fn total(panel: &ui::StashPanel) -> u64 {
     panel.rows.iter().map(|row| u64::from(row.quantity)).sum()
 }
 
+fn carried_quantity(
+    client: &DevClientSession,
+    definition: std::num::NonZeroU32,
+) -> TestResult<u64> {
+    let inventory = client.inventory().ok_or("E07 inventory snapshot absent")?;
+    Ok(inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == definition)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum())
+}
+
+async fn await_carried_quantity(
+    client: &mut DevClientSession,
+    definition: std::num::NonZeroU32,
+    expected: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        let observed = carried_quantity(client, definition)?;
+        if observed == expected {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "E07 carried Health Potions expected={expected} observed={observed}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -74,21 +111,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stash open {:?}", opened.outcome).into());
     }
     let before = total(&panel);
+    // Global Supply Stash explicitly supports Health Potions. Inventory order is
+    // unrelated to eligibility and can also put the starter gold stack first.
+    let potion = provisioning::item_reference(&definitions, 266)?;
     let item = client
         .inventory()
         .and_then(|inventory| {
             inventory
                 .entries
                 .iter()
-                .find(|entry| entry.count.get() >= 2)
-                .or(inventory.entries.first())
+                .find(|entry| entry.item_definition_ref == potion && entry.count.get() == 2)
         })
         .copied()
-        .ok_or("no carried stack to stow")?;
+        .ok_or("E07 requires the starter stack of two Health Potions")?;
     let (key, revision) = definitions
         .definition_at(item.item_definition_ref)
         .map(|(key, revision)| (key.to_owned(), revision.to_owned()))
         .ok_or("carried definition unknown")?;
+    if panel
+        .rows
+        .iter()
+        .any(|row| row.definition_key == key && row.definition_revision == revision)
+    {
+        return Err("Health Potion balance already exists before stow".into());
+    }
+    if carried_quantity(&client, potion)? != 2 {
+        return Err("E07 requires exactly two carried Health Potions".into());
+    }
     panel.carried = vec![item];
     let (stowed, stow_bytes) = send(&mut client, &mut panel, ui::Intent::Stow(item.handle)).await?;
     if stowed.outcome != stash::StashOutcome::Committed
@@ -96,15 +145,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("stow reply {stowed:?}").into());
     }
+    await_carried_quantity(&mut client, potion, 0).await?;
     let (browsed, browse_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_stow = total(&panel);
     if after_stow != before + u64::from(item.count.get()) {
         return Err("stash total differs from stowed quantity".into());
     }
+    if browsed.outcome != stash::StashOutcome::Opened {
+        return Err(format!("stash browse after stow {:?}", browsed.outcome).into());
+    }
     let row = browsed
         .rows
         .iter()
-        .position(|r| r.definition_key == key && r.definition_revision == revision)
+        .position(|r| {
+            r.definition_key == key && r.definition_revision == revision && r.quantity == 2
+        })
         .ok_or("stowed definition absent from stash page")?;
     let (withdrawn, withdraw_bytes) = send(
         &mut client,
@@ -115,10 +170,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if withdrawn.outcome != stash::StashOutcome::Committed {
         return Err(format!("withdraw outcome {:?}", withdrawn.outcome).into());
     }
-    let (_, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    await_carried_quantity(&mut client, potion, 1).await?;
+    let (after, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_withdraw = total(&panel);
-    if after_withdraw != after_stow - 1 {
+    if after.outcome != stash::StashOutcome::Opened
+        || after_withdraw != after_stow - 1
+        || !after.rows.iter().any(|r| {
+            r.definition_key == key && r.definition_revision == revision && r.quantity == 1
+        })
+    {
         return Err("one-unit withdrawal changed the wrong quantity".into());
+    }
+    let previous_session = client.join_snapshot().game_session_id;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("E07 logout refused".into());
+    }
+    let mut fresh = connect_character(clients, 0x3a, 1).await?;
+    if fresh.join_snapshot().game_session_id == previous_session {
+        return Err("E07 relog reused the old session".into());
+    }
+    let (persisted, _) = send(&mut fresh, &mut panel, ui::Intent::Refresh).await?;
+    if carried_quantity(&fresh, potion)? != 1
+        || persisted.outcome != stash::StashOutcome::Opened
+        || total(&panel) != after_withdraw
+        || !persisted.rows.iter().any(|r| {
+            r.definition_key == key && r.definition_revision == revision && r.quantity == 1
+        })
+    {
+        return Err("E07 relog did not preserve exactly one stashed Health Potion".into());
     }
     let expected = format!(
         "key={key}\nrevision={revision}\nstowed={}\nopen_total={before}\nafter_stow={after_stow}\nafter_withdraw={after_withdraw}\n",
@@ -130,7 +211,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e07-withdraw.bin", &withdraw_bytes);
     capture("e07-after.bin", &after_bytes);
     capture("e07-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
     Ok(format!(
         "key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
         item.count.get()
@@ -138,7 +218,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E07.client status=CAPTURED evidence={observed}"
         )),
