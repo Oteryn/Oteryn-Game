@@ -276,8 +276,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "w10-primal".into(),
     )
     .await?;
-    if logout_retrying_busy(&mut client).await?.0 != Some(LogoutResult::Accepted) {
-        return Err("W10 fixture logout refused".into());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("W10 fixture logout refused: {logout:?}").into());
     }
     drop(client);
     let mut client = connect_world(clients, 0x06).await?;
@@ -330,9 +331,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let path = route(world, from, |at| is_logout_rest_tile(world, at))
         .ok_or("no reachable logout rest tile after the Primal Menace fight")?;
     walk(&mut client, world, &path).await?;
-    let (result, observed, _, _) = logout_retrying_busy(&mut client).await?;
-    if result != Some(LogoutResult::Accepted) {
-        return Err(format!("Hazard logout refused: {observed}").into());
+    wait_for_combat_unlock(&mut client).await?;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("Hazard logout refused: {logout:?}").into());
     }
     drop(client);
     let mut client = connect_world(clients, 0x06).await?;
@@ -348,6 +350,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         std::fs::write(root.join("w10-expected.txt"), &expected)?;
     }
     Ok(expected.replace('\n', ";"))
+}
+
+async fn wait_for_combat_unlock(client: &mut DevClientSession) -> TestResult {
+    use oteryn_gameplay_combat_rules::attack::AttackConstants;
+
+    let constants = AttackConstants::parse(include_str!(
+        "../../../../../content/combat/attack_constants_v1.json"
+    ))
+    .ok_or("W10 combat lock constants unavailable")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(constants.in_fight_ms);
+    verdict::Harness::global().bounded_wait(deadline, "W10-combat-unlock");
+    loop {
+        if let Some(state) = client.session_mut().combat_state()
+            && !state.in_fight
+            && state.target.is_none()
+        {
+            evidence("W10_COMBAT logout_ready=true target=none in_fight=false");
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W10 combat lock did not clear before logout".into());
+        }
+        // The server's combat tick publishes the change when the lock expires.
+        client
+            .service_liveness(
+                deadline
+                    .saturating_duration_since(tokio::time::Instant::now())
+                    .min(Duration::from_millis(250)),
+            )
+            .await?;
+        client.take_events();
+    }
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
