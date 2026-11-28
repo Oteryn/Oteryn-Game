@@ -234,7 +234,9 @@ pub(super) fn encode(
             if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
                 || command.command_type
                     == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
-                || routing::store::is_committed_claim(command.command_type, *status, payload) =>
+                || routing::store::is_committed_claim(command.command_type, *status, payload)
+                || (*status == CommandStatus::Accepted
+                    && routing::arena_match::is_committed_entry(command, payload)) =>
         {
             (*status, payload.clone())
         }
