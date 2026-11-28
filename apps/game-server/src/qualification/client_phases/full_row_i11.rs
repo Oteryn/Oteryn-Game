@@ -191,9 +191,13 @@ async fn mill_wheat(
         .world_context_use(&payload)
         .await
         .map_err(|error| verdict::context(format!("step=millstone phase=USE-result observed={error}"), error))?;
-    log_use_result("millstone", reply.command_id, reply.server_sequence);
-    let disposition = decode_use_result(&reply.payload)
-        .map_err(|error| format!("step=millstone decode={error:?}"))?;
+    let disposition = decode_use_reply(
+        "millstone",
+        reply.command_id,
+        reply.server_sequence,
+        reply.status,
+        &reply.payload,
+    )?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step=millstone status={:?} disposition={disposition:?}",
@@ -321,10 +325,26 @@ pub(super) fn log_use_start(client: &mut oteryn_dev_client::DevClientSession, st
     ));
 }
 
-pub(super) fn log_use_result(step: &str, command: u64, server_sequence: u64) {
+pub(super) fn decode_use_reply(
+    step: &str,
+    command: u64,
+    server_sequence: u64,
+    status: CommandStatus,
+    wire: &[u8],
+) -> TestResult<UseDisposition> {
+    use oteryn_protocol_oteryn::refusal_detail::split_refusal_detail;
+
     evidence(&format!(
-        "I11_USE step={step} phase=result command={command} server_sequence={server_sequence}"
+        "I11_USE step={step} phase=result command={command} server_sequence={server_sequence} status={status:?} payload={wire:02x?}"
     ));
+    let (payload, detail) = split_refusal_detail(wire)
+        .map_err(|error| format!("step={step} refusal-detail-decode={error:?}"))?;
+    let disposition = decode_use_result(payload)
+        .map_err(|error| format!("step={step} use-decode={error:?}"))?;
+    evidence(&format!(
+        "I11_USE step={step} phase=decoded command={command} server_sequence={server_sequence} disposition={disposition:?} refusal_detail={detail:?}"
+    ));
+    Ok(disposition)
 }
 
 async fn use_for_mixing(
@@ -342,8 +362,13 @@ async fn use_for_mixing(
     log_use_start(client, step);
     let reply = client.session_mut().world_context_use(&payload).await
         .map_err(|error| verdict::context(format!("step={step} phase=USE-result observed={error}"), error))?;
-    log_use_result(step, reply.command_id, reply.server_sequence);
-    let disposition = decode_use_result(&reply.payload).map_err(|error| format!("step={step} decode={error:?}"))?;
+    let disposition = decode_use_reply(
+        step,
+        reply.command_id,
+        reply.server_sequence,
+        reply.status,
+        &reply.payload,
+    )?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("step={step} status={:?} disposition={disposition:?}", reply.status).into());
     }
@@ -409,9 +434,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     log_use_start(&mut client, "bake");
     let reply = client.session_mut().world_context_use(&payload).await
         .map_err(|error| verdict::context(format!("step=bake phase=USE-result observed={error}"), error))?;
-    log_use_result("bake", reply.command_id, reply.server_sequence);
-    let disposition = decode_use_result(&reply.payload)
-        .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
+    let disposition = decode_use_reply(
+        "bake",
+        reply.command_id,
+        reply.server_sequence,
+        reply.status,
+        &reply.payload,
+    )?;
 
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
@@ -461,9 +490,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .world_context_use(&refusal_payload)
         .await
         .map_err(|error| verdict::context(format!("step=oven-refusal phase=USE-result observed={error}"), error))?;
-    log_use_result("oven-refusal", refusal.command_id, refusal.server_sequence);
-    let refusal_disposition = decode_use_result(&refusal.payload)
-        .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;
+    let refusal_disposition = decode_use_reply(
+        "oven-refusal",
+        refusal.command_id,
+        refusal.server_sequence,
+        refusal.status,
+        &refusal.payload,
+    )?;
     if refusal.status != CommandStatus::Accepted
         || refusal_disposition != UseDisposition::NothingToUse
     {
@@ -605,6 +638,32 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn use_reply_retains_the_disposition_with_negotiated_refusal_detail() -> TestResult {
+        use oteryn_protocol_oteryn::refusal_detail::{
+            CAPABILITY_REFUSAL_DETAIL_V1, RefusalDetail, append_refusal_detail,
+        };
+        use oteryn_protocol_oteryn::world_object::encode_use_result;
+
+        let mut refusal = encode_use_result(UseDisposition::Rejected)?;
+        append_refusal_detail(
+            &mut refusal,
+            &[CAPABILITY_REFUSAL_DETAIL_V1],
+            Some(RefusalDetail::NotPossible),
+        );
+        assert_eq!(
+            decode_use_reply("bake", 54, 169, CommandStatus::Rejected, &refusal)?,
+            UseDisposition::Rejected,
+        );
+        let committed = encode_use_result(UseDisposition::Committed)?;
+        assert_eq!(
+            decode_use_reply("bake", 54, 170, CommandStatus::Accepted, &committed)?,
+            UseDisposition::Committed,
+        );
+        assert!(decode_use_reply("bake", 54, 169, CommandStatus::Rejected, &[]).is_err());
+        Ok(())
+    }
+
     #[test]
     fn review_repair_existing_dough_cannot_prove_mixing() {
         assert!(!dough_created(3, 3));

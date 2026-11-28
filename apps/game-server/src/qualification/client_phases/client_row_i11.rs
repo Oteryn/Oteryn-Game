@@ -4,10 +4,10 @@
 //! 3. Send native USE-with using an unsupported carried item -> the same oven; expect a rejected
 //!    NothingToUse reply and no inventory delta (the refusal path).
 //! 4. Logout, freshly admit the same character, and re-check the durable dough/bread quantities.
-use super::full_row_i11::{log_use_result, log_use_start};
+use super::full_row_i11::{decode_use_reply, log_use_start};
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
     encode_item_use_intent,
 };
 use std::io::Write;
@@ -105,9 +105,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 error,
             )
         })?;
-    log_use_result("bake", reply.command_id, reply.server_sequence);
-    let disposition = decode_use_result(&reply.payload)
-        .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
+    let disposition = decode_use_reply(
+        "bake",
+        reply.command_id,
+        reply.server_sequence,
+        reply.status,
+        &reply.payload,
+    )?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step-2_observed=status-{:?}-disposition-{disposition:?}",
@@ -170,9 +174,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .world_context_use(&refusal_payload)
         .await
         .map_err(|error| verdict::context(format!("step=oven-refusal phase=USE-result observed={error}"), error))?;
-    log_use_result("oven-refusal", refusal.command_id, refusal.server_sequence);
-    let refusal_disposition = decode_use_result(&refusal.payload)
-        .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;
+    let refusal_disposition = decode_use_reply(
+        "oven-refusal",
+        refusal.command_id,
+        refusal.server_sequence,
+        refusal.status,
+        &refusal.payload,
+    )?;
     if refusal.status != CommandStatus::Accepted
         || refusal_disposition != UseDisposition::NothingToUse
     {
