@@ -288,29 +288,37 @@ async fn fight_fear_caster(
     if tile(client.world_spatial().actor_position)? != COMBAT_APPROACH {
         return Err("combat route missed its fixed approach".into());
     }
-    let target = client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.iter())
-        .filter(|entity| {
-            entity.kind == EntityKind::Creature
-                && entity
-                    .display_name
-                    .is_some_and(|name| name.as_str() == Ok("Shrieking Cry-Stal"))
-                && tile(entity.position).is_ok_and(|at| at.floor == COMBAT_APPROACH.floor)
-        })
-        .min_by_key(|entity| {
-            entity
-                .position
-                .x
-                .abs_diff(i32::from(COMBAT_APPROACH.x))
-                .max(entity.position.y.abs_diff(i32::from(COMBAT_APPROACH.y)))
-        })
-        .map(|entity| entity.entity)
-        .ok_or("no live Shrieking Cry-Stal at authored approach")?;
     if feared(client).await? {
-        return Err("Feared was already active before attack selection".into());
+        return Err("Feared was already active before caster placement".into());
     }
+    // The Soul War Quest guide documents Megalomania's Fear spell.
+    let caster_name = "Goshnar's Megalomania";
+    let caster_key = "oteryn:creature.goshnar_s_megalomania_green";
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, caster_key.to_owned()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    let visible_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(entity) = client.world_entities().and_then(|view| view.get(&target)) {
+            if entity.kind != EntityKind::Creature
+                || !entity
+                    .display_name
+                    .is_some_and(|name| name.as_str() == Ok(caster_name))
+                || tile(entity.position)?.floor != COMBAT_APPROACH.floor
+            {
+                return Err(format!("spawned caster identity mismatch: {entity:?}").into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= visible_deadline {
+            return Err(format!("fixture caster {target:?} never appeared on the wire").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    evidence(&format!(
+        "I17D_CHECK fear-caster placed key={caster_key} entity={target:?}"
+    ));
     if client
         .session_mut()
         .combat_state()
@@ -323,7 +331,7 @@ async fn fight_fear_caster(
     let attack = client.session_mut().attack_target(Some(&target)).await?;
     if attack.status != CommandStatus::Accepted || attack.disposition != AttackIntentDisposition::Ok
     {
-        return Err(format!("Shrieking Cry-Stal attack refused: {attack:?}").into());
+        return Err(format!("{caster_name} attack refused: {attack:?}").into());
     }
     let target_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     'observe_target: loop {
@@ -350,7 +358,7 @@ async fn fight_fear_caster(
     verdict::Harness::global().bounded_wait(deadline, "authored-fear-cast");
     while !feared(client).await? {
         if tokio::time::Instant::now() >= deadline {
-            return Err("Shrieking Cry-Stal combat did not produce wire Feared icon 12".into());
+            return Err(format!("{caster_name} combat did not produce wire Feared icon 12").into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
     }
@@ -372,7 +380,9 @@ async fn fight_fear_caster(
                 .into(),
         );
     }
-    evidence("I17D_CHECK feared-equip PASS caster=Shrieking-Cry-Stal icon=12 outcome=Rejected");
+    evidence(&format!(
+        "I17D_CHECK feared-equip PASS caster={caster_key} entity={target:?} icon=12 outcome=Rejected"
+    ));
     Ok(())
 }
 
