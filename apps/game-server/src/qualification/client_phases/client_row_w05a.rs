@@ -95,14 +95,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             delta.base_revision, delta.new_revision, delta.value.ending_epoch, delta.value.minutes_remaining
         ));
     } else {
-        expected.push_str("countdown=absent\n");
+        return Err("step=countdown observed=no-live-domain-40-delta".into());
     }
     capture("w05a-expected.txt", expected.as_bytes());
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W05a.client status=CAPTURED evidence={observed}"
         )),

@@ -21,14 +21,16 @@
 use super::*;
 use oteryn_dev_client::{AppliedDelta, DevClientError, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::server_save_countdown::{
-    CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_MAX_MINUTES, SERVER_SAVE_COUNTDOWN_SNAPSHOT,
-    STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, ServerSaveCountdown,
+    CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_MAX_MINUTES,
+    SERVER_SAVE_COUNTDOWN_SNAPSHOT, STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, ServerSaveCountdown,
 };
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+            .await;
     let status = match result {
         Ok(Ok(Outcome::ResetObserved)) => "PASS",
         Ok(Ok(Outcome::ResetNotScheduled)) => "FAIL",
@@ -68,8 +70,8 @@ fn proves_reset(initial_epoch: u64, ending_epoch: u64, admitted_epoch: u64) -> b
 fn follows(previous: Option<ServerSaveCountdown>, notice: ServerSaveCountdown) -> bool {
     (1..=SERVER_SAVE_COUNTDOWN_MAX_MINUTES).contains(&notice.minutes_remaining)
         && previous.is_none_or(|before| {
-                notice.ending_epoch == before.ending_epoch
-                    && before.minutes_remaining.checked_sub(1) == Some(notice.minutes_remaining)
+            notice.ending_epoch == before.ending_epoch
+                && before.minutes_remaining.checked_sub(1) == Some(notice.minutes_remaining)
         })
 }
 
@@ -100,14 +102,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         return Err(format!("step=admission observed=countdown-snapshot-{snapshot:?}").into());
     }
 
-    let before = client.world_spatial().actor_position;
-    let (direction, moved) = move_once(&mut client).await?;
-    let saved = client.world_spatial().actor_position;
-    if saved == before || moved.world_spatial_delta.is_none() {
-        return Err(format!("step=walk observed={moved:?}").into());
+    let before = ActorPosition {
+        x: 32369,
+        y: 32238,
+        floor: 7,
+    };
+    let saved = ActorPosition { y: 32237, ..before };
+    if client.world_spatial().actor_position != before {
+        return Err(format!(
+            "step=walk-start expected={before:?} observed={:?}",
+            client.world_spatial().actor_position
+        )
+        .into());
+    }
+    let moved = client.step(StepDirection::North).await?;
+    if moved.status != CommandStatus::Accepted
+        || moved.disposition != StepDisposition::Moved
+        || moved
+            .world_spatial_delta
+            .as_ref()
+            .map(|delta| delta.value.actor_position)
+            != Some(saved)
+        || client.world_spatial().actor_position != saved
+    {
+        return Err(format!("step=walk expected={saved:?} observed={moved:?}").into());
     }
     evidence(&format!(
-        "W05a_CHECK step=walk direction={direction:?} reply={moved:?}"
+        "W05a_CHECK step=walk direction=North reply={moved:?}"
     ));
 
     // Capability 75 is snapshot-only. Pairing it with core STEP (type 1)
@@ -148,11 +169,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         if let Some(delta) = notices.next() {
             break Some(delta);
         }
-        let remaining = first_notice_deadline.saturating_duration_since(tokio::time::Instant::now());
+        let remaining =
+            first_notice_deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
             break None;
         }
-        client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+        client
+            .service_liveness(remaining.min(Duration::from_millis(250)))
+            .await?;
         notices = countdowns(client.take_events());
     };
     if let Some(delta) = first_notice {
@@ -162,12 +186,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         {
             return Err(format!("step=countdown observed=invalid-delta-{delta:?}").into());
         }
-        let initial_epoch = super::full_row_w13::query(&mut client, 4).await?.reset_epoch;
+        let initial_epoch = super::full_row_w13::query(&mut client, 4)
+            .await?
+            .reset_epoch;
         if initial_epoch != delta.value.ending_epoch {
             return Err(format!(
                 "step=countdown-epoch observed={} need=admitted-epoch-{initial_epoch}",
                 delta.value.ending_epoch
-            ).into());
+            )
+            .into());
         }
         evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
         // The notice says the reset lands within its minute: `minutes_remaining` minutes at most
@@ -188,7 +215,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
                     || revision.checked_add(1) != Some(delta.new_revision)
                     || !follows(Some(prior), delta.value)
                 {
-                    return Err(format!("step=countdown observed=invalid-next-delta-{delta:?} previous={prior:?}").into());
+                    return Err(format!(
+                        "step=countdown observed=invalid-next-delta-{delta:?} previous={prior:?}"
+                    )
+                    .into());
                 }
                 revision = delta.new_revision;
                 prior = delta.value;
@@ -207,7 +237,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
                     latest.as_secs()
                 ).into());
             }
-            outcome = client.service_liveness(remaining.min(Duration::from_secs(1))).await;
+            outcome = client
+                .service_liveness(remaining.min(Duration::from_secs(1)))
+                .await;
         };
         let elapsed = noticed.elapsed();
         if elapsed < earliest {
@@ -223,11 +255,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         {
             return Err(format!("step=post-reset-admission observed=session-{:?}-position-{:?} expected-new-session-position-{saved:?}", client.join_snapshot().game_session_id, client.world_spatial().actor_position).into());
         }
-        let admitted_epoch = super::full_row_w13::query(&mut client, 6).await?.reset_epoch;
+        let admitted_epoch = super::full_row_w13::query(&mut client, 6)
+            .await?
+            .reset_epoch;
         if !proves_reset(initial_epoch, prior.ending_epoch, admitted_epoch) {
-            return Err(format!("step=post-reset-epoch observed={admitted_epoch} need=epoch-after-{}", prior.ending_epoch).into());
+            return Err(format!(
+                "step=post-reset-epoch observed={admitted_epoch} need=epoch-after-{}",
+                prior.ending_epoch
+            )
+            .into());
         }
-        evidence(&format!("W05a_CHECK step=post-reset-epoch observed={admitted_epoch}"));
+        evidence(&format!(
+            "W05a_CHECK step=post-reset-epoch observed={admitted_epoch}"
+        ));
         evidence("W05a_CHECK step=post-reset-admission durable-position=retained");
         let cleanup = client.session_mut().logout().await?;
         if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -238,27 +278,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     }
 
     relog_and_check(&mut client, clients, saved).await?;
-    evidence("W05a_GAP step=countdown observed=no-domain-40-delta-within-70s need=admission-near-planned-reset-window source=crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90");
+    evidence(
+        "W05a_GAP step=countdown observed=no-domain-40-delta-within-70s need=admission-near-planned-reset-window source=crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90",
+    );
     Ok(Outcome::ResetNotScheduled)
-}
-
-async fn move_once(
-    client: &mut DevClientSession,
-) -> TestResult<(StepDirection, oteryn_dev_client::StepOutcome)> {
-    for direction in [
-        StepDirection::North,
-        StepDirection::East,
-        StepDirection::South,
-        StepDirection::West,
-    ] {
-        let outcome = client.step_retrying(direction).await?;
-        if outcome.status == CommandStatus::Accepted
-            && outcome.disposition == StepDisposition::Moved
-        {
-            return Ok((direction, outcome));
-        }
-    }
-    Err("step=walk observed=all-four-player-step-commands-blocked".into())
 }
 
 async fn relog_and_check(
@@ -290,7 +313,6 @@ async fn relog_and_check(
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,15 +327,26 @@ mod tests {
 
     #[test]
     fn initial_read_retains_each_countdown_in_sequence() {
-        let frame = |base_revision, minutes_remaining| SessionEvent::ServerSaveCountdown(AppliedDelta {
-            server_sequence: base_revision + 10,
-            base_revision,
-            new_revision: base_revision + 1,
-            value: ServerSaveCountdown { ending_epoch: 7, minutes_remaining },
-        });
+        let frame = |base_revision, minutes_remaining| {
+            SessionEvent::ServerSaveCountdown(AppliedDelta {
+                server_sequence: base_revision + 10,
+                base_revision,
+                new_revision: base_revision + 1,
+                value: ServerSaveCountdown {
+                    ending_epoch: 7,
+                    minutes_remaining,
+                },
+            })
+        };
         let mut buffered = countdowns(vec![frame(0, 5), frame(1, 4)]);
-        assert_eq!(buffered.next().map(|frame| frame.value.minutes_remaining), Some(5));
-        assert_eq!(buffered.next().map(|frame| frame.value.minutes_remaining), Some(4));
+        assert_eq!(
+            buffered.next().map(|frame| frame.value.minutes_remaining),
+            Some(5)
+        );
+        assert_eq!(
+            buffered.next().map(|frame| frame.value.minutes_remaining),
+            Some(4)
+        );
         assert_eq!(buffered.next(), None);
     }
 
