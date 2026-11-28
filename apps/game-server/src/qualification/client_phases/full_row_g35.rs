@@ -2,8 +2,7 @@
 //! The entry owner is `endgame_boss_entry` (`crates/gameplay/dispatch/src/gameplay_transport/
 //! endgame_entry.rs`): BOSS_LEVER (capability 117, command 178) checks quest access, boss chain
 //! and level from durable character state.
-//! 1. Admit the node-boot character, send BOSS_LEVER for a Soul War boss and a Rotten Blood
-//!    boss, and judge the real server reply for each.
+//! 1. Admit the node-boot character, send BOSS_LEVER for a Soul War boss and the Primal Menace, and judge the real server reply for each.
 //! 2. Private boss loot and the Svargrond arena need an accepted entry, a boss kill and the
 //!    arena run; none is reachable from a fresh character, so the row ends FAIL naming the
 //!    precondition (a correct refusal is not MISSING-SERVER).
@@ -19,7 +18,8 @@ const BOSSES: [&str; 2] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let detail = match result {
         Ok(Ok(observed)) => format!(
             "needed:quest-access-boss-chain-and-lever-position-then-boss-kill-private-loot-and-svargrond-arena;observed={observed}"
@@ -43,7 +43,7 @@ fn classify(status: CommandStatus, reply: Option<&wire::BossActivityReply>) -> S
         (CommandStatus::Accepted, Some(wire::BossActivityReply::Accepted { .. })) => {
             "entered".to_owned()
         }
-        (CommandStatus::Accepted, Some(wire::BossActivityReply::Refused(reason))) => {
+        (CommandStatus::Rejected, Some(wire::BossActivityReply::Refused(reason))) => {
             format!("refused-{reason:?}")
         }
         (status, _) => format!("status-{status:?}"),
@@ -60,8 +60,16 @@ async fn lever(client: &mut DevClientSession, key: &str) -> TestResult<String> {
             &payload,
         )
         .await?;
-    let reply = wire::decode_boss_activity_reply(&response.payload).ok();
-    Ok(classify(response.status, reply.as_ref()))
+    let reply = wire::decode_boss_activity_reply(&response.payload);
+    let outcome = classify(response.status, reply.as_ref().ok());
+    evidence(&format!(
+        "G35_LEVER boss={key} session={} command_id={} server_sequence={} status={:?} reply={reply:?}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        response.command_id,
+        response.server_sequence,
+        response.status,
+    ));
+    Ok(outcome)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -90,7 +98,7 @@ mod tests {
     fn classify_names_each_reply_shape() {
         let refused = wire::BossActivityReply::Refused(wire::BossActivityRefusal::Level);
         assert_eq!(
-            classify(CommandStatus::Accepted, Some(&refused)),
+            classify(CommandStatus::Rejected, Some(&refused)),
             "refused-Level"
         );
         assert_eq!(classify(CommandStatus::Rejected, None), "status-Rejected");
