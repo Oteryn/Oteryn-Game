@@ -729,6 +729,7 @@ def check_inventory(*, workflow_checks=False):
             "test_authored_npc_item_profiles",
             "test_quest_corpse_profiles",
             "test_boss_reward_yield_profiles",
+            "test_ordinary_loot_weights",
             "test_equipment_source_overlaps",
             "test_equipment_known_speed_pin",
             "test_refresh_equipment_profile_pin",
