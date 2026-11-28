@@ -229,21 +229,15 @@ async fn prepare_pvp_player(
 async fn equip_pvp_axe(client: &mut DevClientSession, item: std::num::NonZeroU32) -> TestResult {
     use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
     let inventory = client.inventory().ok_or("missing attacker inventory")?;
-    let source = inventory
+    if !inventory
         .entries
         .iter()
-        .find(|entry| entry.item_definition_ref == item)
-        .ok_or("fixture axe missing from attacker backpack")?
-        .handle;
-    let reply = client
-        .move_item(&oteryn_dev_client::ItemMoveIntent {
-            source,
-            destination: oteryn_dev_client::ItemMoveDestination::Equipment(
-                EquipmentSlot::RightHand,
-            ),
-        })
-        .await?;
-    if reply.outcome != ItemMoveOutcome::Moved {
+        .any(|entry| entry.item_definition_ref == item)
+    {
+        return Err("fixture axe missing from attacker backpack".into());
+    }
+    let reply = client.session_mut().equip_item_definition(item).await?;
+    if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
         return Err(format!("PvP axe equip refused: {reply:?}").into());
     }
     full_row_p05::wait_for_inventory(client, "p12c-equip-axe", |client| {
