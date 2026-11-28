@@ -185,6 +185,11 @@ fn delta(expected: &str, stage: &str, payload: &[u8]) -> Result<AppliedDelta<Que
 fn e2e_w15a_quest_journal_payloads_replay_into_the_quest_reducer() -> Result<(), BoxError> {
     let capture = capture()?;
     let expected = capture.expected.as_str();
+    if let Ok(session) = std::env::var("W15A_REPLAY_SESSION") {
+        assert_eq!(value(expected, "session")?, session);
+        assert!(number(expected, "list_sequence")? < number(expected, "line_sequence")?);
+        assert!(number(expected, "line_sequence")? < number(expected, "track_sequence")?);
+    }
     let snapshot = GatedSnapshot {
         domain_id: STATE_DOMAIN_QUEST_LOG,
         snapshot_type: SNAPSHOT_TYPE_QUEST_LOG_V1,

@@ -393,6 +393,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         tracked.new_revision,
         tracked.server_sequence
     );
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    expected.push_str(&format!("session={session}\n"));
     for entry in list {
         expected.push_str(&format!(
             "list={}\t{}\n",
@@ -414,7 +416,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     logout(&mut client).await?;
     wait_character_released(&clients, 0).await?;
     Ok(format!(
-        "quests={} line={index} missions={}",
+        "session={session} quests={} line={index} missions={}",
         list.len(),
         line.missions.len()
     ))
@@ -425,7 +427,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W15a.client status=PASS evidence={observed}"
+            "e2e_all scenario=W15a.client status=CAPTURED evidence={observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W15a.client status=FAIL evidence={}",

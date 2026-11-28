@@ -117,11 +117,31 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
+  capture_env=()
+  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 211:1 && "${NODE_BOOT_WORLD:-1}" == 1 && "${NODE_BOOT_SPELLS:-0}" == 0 ]]; then
+    captures=$(mktemp -d "$work_dir/w15a.XXXXXX") || blocked capture_dir_unavailable
+    capture_env+=("E2E_ALL_CAPTURE_DIR=$captures")
+  fi
   NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
+    env "${capture_env[@]}" bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if (( ${#capture_env[@]} )); then
+    if ! grep -q '^SEAM_EVIDENCE e2e_all scenario=W15a.client status=FAIL ' "$log"; then
+      mapfile -t sessions < <(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=W15a\.client status=CAPTURED evidence=session=([0-9a-f-]{36}) .*/\1/p' "$log")
+      if [[ "$status" == 0 && ${#sessions[@]} == 1 ]] &&
+        env "${capture_env[@]}" W15A_REPLAY_SESSION="${sessions[0]}" cargo test --locked -p oteryn-client-runtime --lib e2e_w15a_quest_journal_payloads_replay_into_the_quest_reducer > "$work_dir/$index-replay.log" 2>&1 &&
+        grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$work_dir/$index-replay.log"; then
+        printf 'SEAM_EVIDENCE e2e_all scenario=W15a.client status=PASS seconds=%s evidence=verified_capture session=%s\n' "$((SECONDS - started))" "${sessions[0]}" >> "$log"
+      else
+        printf 'SEAM_EVIDENCE e2e_all scenario=W15a.client status=FAIL seconds=0 evidence=capture_or_replay_failed\n' >> "$log"
+        status=1
+      fi
+    fi
+    grep '^SEAM_EVIDENCE e2e_all scenario=W15a.client status=' "$log"
+    if grep -q '^SEAM_EVIDENCE e2e_all scenario=W15a.client status=FAIL ' "$log"; then status=1; fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
