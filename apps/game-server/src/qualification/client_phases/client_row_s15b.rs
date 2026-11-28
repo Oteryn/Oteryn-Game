@@ -57,6 +57,13 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     })
     .ok_or("step=setup need=walkable-unprotected-tile")?;
     walk_s15b(&mut client, world, &path).await?;
+    if !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| !state.in_fight)
+    {
+        return Err("step=setup expected no combat lock before Rat placement".into());
+    }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let spawn = request_spawn(session, "oteryn:creature.rat".into())
         .await
@@ -79,6 +86,10 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     };
+    evidence(&format!(
+        "mechanic=S15b.client fixture=FIXTURE_PLACEMENT creature=oteryn:creature.rat entity={rat_ref:?} position={:?}",
+        target.position
+    ));
     let here = client.world_spatial().actor_position;
     let rat = tile(target.position)?;
     let approach = route_avoiding(
@@ -116,6 +127,13 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         "S15B_CLIENT_TARGET actor={here:?} rat={:?}",
         current.position
     ));
+    if !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.target.is_none())
+    {
+        return Err("step=attack expected no selected target".into());
+    }
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -140,13 +158,25 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
             .await?;
     }
     let refusal_position = client.world_spatial().actor_position;
+    let refusal_tile = tile(refusal_position)?;
+    if !world
+        .base()
+        .tile(refusal_tile.x, refusal_tile.y, refusal_tile.floor)
+        .is_some_and(|tile| !tile.protection_zone() && !tile.no_logout())
+    {
+        return Err("step=logout-refusal expected a logout-enabled tile outside protection".into());
+    }
     let refusal_combat = client.session_mut().combat_state().copied();
     let (refused, refusal_frame) = client.session_mut().logout_with_frame().await?;
     let Some(LogoutResult::InFight { retry_after_ms }) = refused.result else {
         return Err(format!("step=logout-refusal observed {refused:?}, expected InFight").into());
     };
-    if retry_after_ms == 0 {
-        return Err("step=logout-refusal InFight carried no retry wait".into());
+    // The refusal immediately follows the first served combat lock. Allow up to five
+    // seconds for command and state delivery within Global's 60-second PvE lock.
+    if !(55_000..=60_000).contains(&retry_after_ms) {
+        return Err(format!(
+            "step=logout-refusal expected 55000..=60000ms remaining on a fresh PvE lock; observed={retry_after_ms}"
+        ).into());
     }
     if client.world_spatial().actor_position != refusal_position
         || client.join_snapshot().game_session_id != session_id
@@ -154,6 +184,10 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     {
         return Err("step=logout-refusal changed position, session, or combat state".into());
     }
+    evidence(&format!(
+        "S15B_CLIENT_CHECK outside-refusal=InFight retry_after_ms={retry_after_ms} state=unchanged command_id={} server_sequence={}",
+        refused.command_id, refused.result_server_sequence
+    ));
     let cleared = client.session_mut().attack_target(None).await?;
     if cleared.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step=logout-cleanup could not clear Rat target: {cleared:?}").into());
@@ -166,28 +200,39 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     })
     .ok_or("step=logout-cleanup no walkable protection tile outside Rat aggro")?;
     walk_s15b(&mut client, world, &shelter).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    while !client
-        .session_mut()
-        .combat_state()
-        .is_some_and(|state| !state.in_fight && state.target.is_none())
-    {
-        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-        if remaining.is_zero() {
-            return Err("step=logout-cleanup combat lock did not clear within its duration".into());
-        }
-        client
-            .service_liveness(remaining.min(Duration::from_millis(100)))
-            .await?;
-    }
     let saved_position = client.world_spatial().actor_position;
     if saved_position == initial_position {
         return Err("step=logout-cleanup saved position equals the admission position".into());
+    }
+    let mut durability = tokio::time::timeout(
+        Duration::from_secs(3),
+        sqlx::PgConnection::connect(clients.url),
+    )
+    .await??;
+    if observe_logout_session(&mut durability, session_id.as_bytes()).await? != (1, true, false) {
+        return Err("step=logout-in-protection-zone expected an active session with no control loss".into());
+    }
+    if !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.in_fight && state.target.is_none())
+    {
+        return Err("step=logout-in-protection-zone expected active combat with target cleared".into());
     }
     let (accepted, acceptance_frame) = client.session_mut().logout_with_frame().await?;
     if accepted.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout-in-protection-zone observed {accepted:?}").into());
     }
+    let released = observe_logout_session(&mut durability, session_id.as_bytes()).await?;
+    if released != (3, false, false) {
+        return Err(format!(
+            "step=logout-release expected terminal session without control loss before client drop; observed={released:?}"
+        ).into());
+    }
+    evidence(&format!(
+        "S15B_CLIENT_CHECK protection-zone=accepted-in-fight release=terminal-without-control-loss command_id={} server_sequence={}",
+        accepted.command_id, accepted.result_server_sequence
+    ));
     drop(client);
     let mut fresh = connect_character(clients, 0x65, 1).await?;
     if fresh.join_snapshot().game_session_id == session_id
@@ -195,6 +240,9 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     {
         return Err("step=relog expected a new session at the exact saved position".into());
     }
+    evidence(&format!(
+        "S15B_CLIENT_CHECK relog=new-session exact-saved-position={saved_position:?}"
+    ));
     let cleanup = fresh.session_mut().logout().await?;
     if cleanup.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=relog-cleanup observed {cleanup:?}").into());
@@ -221,6 +269,24 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
             .write_all(bytes)?;
     }
     Ok(manifest.split_whitespace().collect::<Vec<_>>().join(","))
+}
+
+// Observe the same admission before and after LOGOUT. A grace release requires a
+// control-loss epoch, which terminal release retains in the original session row.
+async fn observe_logout_session(
+    connection: &mut sqlx::PgConnection,
+    session: &[u8],
+) -> TestResult<(i16, bool, bool)> {
+    Ok(tokio::time::timeout(
+        Duration::from_secs(3),
+        sqlx::query_as(
+            "SELECT session_state, current_transport_ref IS NOT NULL, control_loss_epoch IS NOT NULL \
+             FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid",
+        )
+        .bind(session)
+        .fetch_one(connection),
+    )
+    .await??)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
