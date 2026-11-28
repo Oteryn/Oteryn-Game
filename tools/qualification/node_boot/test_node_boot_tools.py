@@ -328,6 +328,30 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+    def test_n03_fixture_seeds_named_account_with_readonly_id(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section('readonly PVP_WORLD_ID=', 'readonly PVP_DATABASE=')
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            (root / 'portal/secrets').mkdir(parents=True)
+            calls = root / 'seed-calls.jsonl'
+            (root / 'portal/secrets/env.json').write_text(json.dumps({'RECORD': str(calls)}))
+            portal = root / 'portal-fixture'
+            portal.write_text('#!/bin/sh\nprintf "%s\\n" "$3" >> "$RECORD"\n')
+            portal.chmod(0o755)
+            (root / 'identity.json').write_text(json.dumps({'portal_binary': str(portal)}))
+            result = bash('set -Eeuo pipefail\n' + fixtures + function('seed_mp_accounts')
+                          + '\nseed_mp_accounts\n', {'WORK': work})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            accounts = [json.loads(line) for line in calls.read_text().splitlines()[1:]]
+            self.assertEqual(len(accounts), len({account['accountId'] for account in accounts}))
+            self.assertEqual(
+                [account['email'] for account in accounts
+                 if account['accountId'] == "01934f10-7c00-7000-8000-000000000020"],
+                ["q_n03@example.invalid"],
+            )
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 
