@@ -16,6 +16,7 @@ const HEAL_RUNE_ID: u32 = 3152;
 const BLANK_RUNE_ID: u32 = 3147;
 const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
+const CONJURE_MANA_COST: u32 = 120;
 const XODET: &str = "oteryn:npc.xodet";
 const XODET_WANDER_RADIUS: u32 = 2;
 
@@ -90,6 +91,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .actor_vitals()
         .ok_or("step=2 observed=no-vitals")?
         .mana;
+    let expected_mana = mana
+        .checked_sub(CONJURE_MANA_COST)
+        .ok_or("step=2 insufficient pre-cast mana")?;
     client.take_events();
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
     if cast.status != CommandStatus::Accepted
@@ -97,16 +101,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || cast
             .actor_vitals_delta
             .as_ref()
-            .is_none_or(|delta| delta.value.mana >= mana)
+            .is_none_or(|delta| delta.value.mana != expected_mana)
     {
-        return Err(format!("step=2 observed={cast:?} need=Cast-mana-delta").into());
+        return Err(format!("step=2 observed={cast:?} need=Cast-with-mana-{expected_mana}").into());
     }
     let damage_before = damage_on_entry + CONJURED_CHARGES;
     let blank_after = blank_before.checked_sub(1).ok_or("blank rune absent")?;
-    let paid_mana = client
+    if client
         .actor_vitals()
-        .ok_or("step=2 observed=no-post-cast-vitals")?
-        .mana;
+        .is_none_or(|vitals| vitals.mana != expected_mana)
+    {
+        return Err(format!("step=2 post-cast vitals did not apply mana {expected_mana}").into());
+    }
     let refused = client.cast_spell(spell, SpellTarget::None, false).await?;
     inventory_wait(
         &mut client,
@@ -115,7 +121,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     drain_after(&mut client, refused.result_server_sequence).await?;
     if refused.disposition != SpellCastDisposition::CoolingDown
-        || client.actor_vitals().is_none_or(|v| v.mana != paid_mana)
+        || client
+            .actor_vitals()
+            .is_none_or(|v| v.mana != expected_mana)
         || quantity(&client, damage)? != damage_before
         || quantity(&client, blank)? != blank_before - 1
     {
