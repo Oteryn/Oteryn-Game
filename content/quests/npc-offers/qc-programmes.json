@@ -246,7 +246,50 @@
         }
       ],
       "reply": [
-        "Kisavuta! <giggles>"
+        "<wrinkles her nose, tries what you brought to her and spits it out> Yuk pa chuqua?? Tiyopa taluka chuqua!"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3578",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        },
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "Juk?? Jinuma ji quata chuqua! <seems to be confused>"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3578",
+          "minimum": 0,
+          "maximum": 0
+        }
       ]
     },
     {

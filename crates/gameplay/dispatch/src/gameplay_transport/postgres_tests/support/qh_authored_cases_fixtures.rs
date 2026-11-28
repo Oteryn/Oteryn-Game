@@ -739,7 +739,7 @@ async fn top_of_the_city(
         owner,
         admitted,
         iriana,
-        "hi",
+        "Hi, Iriana!",
         NpcIntentDisposition::Ok,
         Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
     )
@@ -871,7 +871,7 @@ async fn jimmy_ambush(
         owner,
         admitted,
         jimmy,
-        "hi",
+        "Hi, Jimmy!",
         NpcIntentDisposition::Ok,
         Some("Get him!!"),
     )

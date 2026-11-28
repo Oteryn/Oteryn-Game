@@ -1046,10 +1046,12 @@ pub(super) async fn npc_bank_talk(
     if context
         .as_ref()
         .is_some_and(|context| context.2 == "oteryn:npc.jimmy")
-        && matches!(
-            intent.text.trim().to_ascii_lowercase().as_str(),
-            "hi" | "hello"
-        )
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get("oteryn:npc.jimmy"))
+            .is_some_and(|entry| entry.matches_greeting(&intent.text))
         && let Some(outcome) = jimmy::greet(admission, &mut runtime, session, &intent)
     {
         return outcome;

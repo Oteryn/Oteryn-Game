@@ -37,7 +37,8 @@ const WRONG: &str = "oteryn:item.tibia.i3578";
 const HAND_IN: &str =
     "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>";
 const REWARD: &str = "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>";
-const GIGGLE: &str = "Kisavuta! <giggles>";
+const DISGUST: &str = "<wrinkles her nose, tries what you brought to her and spits it out> Yuk pa chuqua?? Tiyopa taluka chuqua!";
+const CONFUSED: &str = "Juk?? Jinuma ji quata chuqua! <seems to be confused>";
 const TRACKS: [(&str, i64); 2] = [
     (
         "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
@@ -224,8 +225,10 @@ fn scenario(name: &str, case: Case) -> TestResult {
         let fish = if resume { PERCH } else { TROUT };
 
         if !resume {
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[CONFUSED])).await?;
+            assert_eq!(quest_state(&h).await?, (None, false, 0));
             add_item(&h, 201, WRONG, 100, 1).await?;
-            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[GIGGLE])).await?;
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[DISGUST])).await?;
             assert_eq!(carried(&h, WRONG).await?, 100, "wrong item is kept");
             assert_inventory(&h, [0, 0, 0]).await?;
             assert_eq!(quest_state(&h).await?, (None, false, 0));

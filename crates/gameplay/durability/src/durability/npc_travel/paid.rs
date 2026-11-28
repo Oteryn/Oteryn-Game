@@ -154,7 +154,7 @@ async fn quote(
     if let Some(requirement) = &route.ticket
         && !ticket::permitted(tx, fence.character_id, requirement).await?
     {
-        if route.route.key != "travora"
+        if (route.route.key != "travora" && route.return_origin.is_none())
             || base_fare != 0
             || requirement.track != "oteryn:quest-progress/travora/ticket_purchased"
             || requirement.valid_for_seconds != 86_400

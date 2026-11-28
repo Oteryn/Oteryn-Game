@@ -814,6 +814,16 @@ fn callback_keyword(
         }
         return String::new();
     }
+    if npc == "oteryn:npc.iriana"
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get(npc))
+            .is_some_and(|entry| entry.matches_greeting(text))
+    {
+        return "hi".into();
+    }
     if npc == classic_talk::ROTTIN {
         return classic_talk::rottin_keyword(text)
             .unwrap_or_default()

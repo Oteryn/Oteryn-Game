@@ -649,7 +649,7 @@ mod tests {
             assert!(inbound.native_addition && !inbound.held && !inbound.premium);
             assert_eq!(
                 (inbound.price, inbound.x, inbound.y, inbound.floor),
-                (0, 32_057, 32_368, 6)
+                (0, 32_055, 32_368, 6)
             );
             assert_eq!(inbound.ticket.as_ref(), Some(&ticket));
             assert!(inbound.return_origin.is_none());
@@ -664,7 +664,7 @@ mod tests {
                 (outbound.price, outbound.x, outbound.y, outbound.floor),
                 (0, *x, *y, *floor)
             );
-            assert!(outbound.ticket.is_none());
+            assert_eq!(outbound.ticket.as_ref(), Some(&ticket));
             assert_eq!(
                 outbound.return_origin.as_ref(),
                 Some(&super::TravelReturnRequirement {

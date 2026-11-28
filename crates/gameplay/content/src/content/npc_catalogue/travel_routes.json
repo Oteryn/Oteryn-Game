@@ -205,7 +205,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -272,7 +272,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -493,7 +493,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -572,7 +572,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -829,7 +829,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -906,7 +906,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1070,7 +1070,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1153,7 +1153,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1220,6 +1220,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_seagull/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1251,6 +1255,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_sinbeard/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1282,6 +1290,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_greyhound/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1313,6 +1325,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.petros/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1344,6 +1360,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_seahorse/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1375,6 +1395,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_pelagia/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1406,6 +1430,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.jack_fate/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1437,6 +1465,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_waverider/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1468,6 +1500,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.charles/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1499,6 +1535,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_breezelda/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1530,6 +1570,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_bluebear/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1561,6 +1605,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_fearless/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1592,6 +1640,10 @@
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.karith/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1613,7 +1665,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1769,7 +1821,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -2322,7 +2374,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -2613,7 +2665,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -3071,7 +3123,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,

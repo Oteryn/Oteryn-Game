@@ -91,7 +91,6 @@
     {"npc": "captain_marie_denise_banner", "cell": [33837, 32137, 4], "xml_line": 238},
     {"npc": "captain_max_calassa", "cell": [31915, 32710, 6], "xml_line": 992},
     {"npc": "captain_pelagia", "cell": [33491, 31710, 6], "xml_line": 595},
-    {"npc": "captain_tiberius", "cell": [32056, 32368, 6], "xml_line": 935},
     {"npc": "caramellia", "cell": [32586, 31786, 1], "xml_line": 31},
     {"npc": "carlson", "cell": [32022, 31692, 7], "xml_line": 1505},
     {"npc": "ceiron", "cell": [32665, 31717, 7], "xml_line": 1520},
