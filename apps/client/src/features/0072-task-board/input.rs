@@ -149,6 +149,7 @@ impl PlayLink {
                     | FullIntent::Unwanted(..)
                     | FullIntent::UnlockList
                     | FullIntent::BuyShop(_)
+                    | FullIntent::ClaimDailyBountyToken
             )
         {
             return false;

@@ -1,5 +1,25 @@
 use super::TaskBoardPanel;
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+impl TaskBoardPanel {
+    /// Use the projected deadline for presentation. The server still owns reset eligibility.
+    #[must_use]
+    pub fn daily_bounty_claim_available(&self) -> bool {
+        self.selected
+            && self.daily_bounty_selected
+            && self.weekly.as_ref().is_some_and(|reply| {
+                let bounty = &reply.bounty;
+                bounty.rerolls < super::REROLL_TOKEN_CAP
+                    && bounty.daily_reroll_at > 0
+                    && SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .is_ok_and(|now| now.as_secs() >= bounty.daily_reroll_at)
+            })
+    }
+}
 
 /// Use server-provided race identities behind native creature choices.
 #[must_use]

@@ -201,3 +201,34 @@ fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
     assert_eq!(panel.weekly, kept);
     Ok(())
 }
+
+#[test]
+fn task_board_daily_bounty_gap_0578_refusal_refreshes_cap() -> Result<(), Error> {
+    let mut board = reply(0, 0, TalismanPath::default());
+    board.bounty.rerolls = REROLL_TOKEN_CAP - 1;
+    board.bounty.daily_reroll_at = 1;
+    let mut panel = TaskBoardPanel {
+        selected: true,
+        open: true,
+        daily_bounty_selected: true,
+        weekly: Some(board.clone()),
+        ..Default::default()
+    };
+    full_request(&mut panel, FullIntent::ClaimDailyBountyToken).ok_or("daily claim")?;
+    assert!(full_request(&mut panel, FullIntent::ClaimDailyBountyToken).is_none());
+    assert_eq!(panel.weekly.as_ref(), Some(&board));
+
+    // The balance may reach the cap in the world before the claim arrives.
+    board.refusal = 6;
+    board.bounty.rerolls = REROLL_TOKEN_CAP;
+    let payload = encode_reply(&board).map_err(|e| format!("{e:?}"))?;
+    apply_full_result(&mut panel, &result(CommandStatus::Accepted, &payload));
+    assert_eq!(panel.weekly.as_ref(), Some(&board));
+    assert_eq!(
+        panel.feedback,
+        Some("The server refused: progression or claim limit reached")
+    );
+    assert!(!panel.pending);
+    assert!(full_request(&mut panel, FullIntent::ClaimDailyBountyToken).is_none());
+    Ok(())
+}

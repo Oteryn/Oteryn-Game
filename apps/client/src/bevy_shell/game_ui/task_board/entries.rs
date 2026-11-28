@@ -13,11 +13,19 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 format!("Reroll Tokens: {} / {}", b.rerolls, model::REROLL_TOKEN_CAP),
                 None,
             );
-            entry(
-                &mut rows,
-                "Daily tokens: claim at the Daily Reward Wall",
-                None,
-            );
+            if panel.daily_bounty_selected {
+                if panel.daily_bounty_claim_available() {
+                    entry(
+                        &mut rows,
+                        "Claim daily reroll token",
+                        Some(Kind::ClaimDailyBountyToken),
+                    );
+                } else if b.rerolls < model::REROLL_TOKEN_CAP && b.daily_reroll_at > 0 {
+                    entry(&mut rows, "Daily reroll token available after World reset", None);
+                }
+            } else {
+                entry(&mut rows, "Daily tokens: claim at the Daily Reward Wall", None);
+            }
             if unopened(b) {
                 entry(&mut rows, "Open bounty", Some(Kind::OpenBounty));
             }

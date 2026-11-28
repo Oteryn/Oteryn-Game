@@ -30,6 +30,7 @@ enum Kind {
     OpenBounty,
     Select(u8),
     Claim,
+    ClaimDailyBountyToken,
     Difficulty(u8),
     Reroll,
     ConfirmReroll,
@@ -157,6 +158,7 @@ struct State {
     shop_selection: Option<u16>,
     extra: Option<extras::Action>,
     seen: Option<TaskBoardPanel>,
+    daily_bounty_ready: bool,
     generation: u64,
     revision: u64,
     dirty: bool,
@@ -178,7 +180,15 @@ fn project(
         .as_ref()
         .map(|p| p.link.task_board_panel())
         .filter(|p| p.open);
-    if state.seen == panel && state.generation == owner.generation() && !state.dirty {
+    let daily_bounty_ready = state.tab == Tab::Bounty
+        && panel
+            .as_ref()
+            .is_some_and(TaskBoardPanel::daily_bounty_claim_available);
+    if state.seen == panel
+        && state.generation == owner.generation()
+        && state.daily_bounty_ready == daily_bounty_ready
+        && !state.dirty
+    {
         return;
     }
     let draft = edits
@@ -215,6 +225,7 @@ fn project(
     state.revision = state.revision.wrapping_add(1);
     state.dirty = false;
     state.seen = panel;
+    state.daily_bounty_ready = daily_bounty_ready;
     let Some(panel) = &state.seen else {
         return;
     };
@@ -496,6 +507,10 @@ fn activate(
                 state.shop_selection = Some(index);
             }
             state.dirty = true;
+        }
+        Kind::ClaimDailyBountyToken if state.tab == Tab::Bounty => {
+            play.link
+                .task_board_action_bound(&panel, FullIntent::ClaimDailyBountyToken);
         }
         Kind::ConfirmShop(index) => {
             if state.shop_selection.take() == Some(index)

@@ -147,7 +147,7 @@ pub(super) fn refusal_message(code: u8) -> Option<&'static str> {
         2 => "The server refused: task or bounty is not in the required state",
         3 => "The server refused: level too low for this difficulty",
         4 => "The server refused: insufficient points, tokens, or rule resources",
-        5 => "The server refused: free-reroll cooldown has not elapsed",
+        5 => "The daily reroll token is unavailable until the World resets",
         6 => "The server refused: progression or claim limit reached",
         7 => "The server refused: this permanent reward is already owned",
         8 => "The server refused: the base outfit is required for this addon",

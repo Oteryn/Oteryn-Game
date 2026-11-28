@@ -11,6 +11,7 @@ pub enum FullIntent {
     OpenBounty,
     SelectBounty(u8),
     ClaimBounty,
+    ClaimDailyBountyToken,
     BountyDifficulty(u8),
     Reroll,
     Preferred(u8, String),
@@ -24,7 +25,10 @@ pub enum FullIntent {
 
 pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<FeatureCommand> {
     let elite = matches!(intent, FullIntent::Elite(_));
-    if elite && !panel.weekly_results_selected {
+    let daily = matches!(intent, FullIntent::ClaimDailyBountyToken);
+    if (elite && !panel.weekly_results_selected)
+        || (daily && (!panel.open || !panel.daily_bounty_claim_available()))
+    {
         return None;
     }
     let (action, selection, race) = match intent {
@@ -35,6 +39,11 @@ pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<Fe
         FullIntent::OpenBounty => (7, 0, String::new()),
         FullIntent::SelectBounty(v) => (8, u16::from(v), String::new()),
         FullIntent::ClaimBounty => (9, 0, String::new()),
+        FullIntent::ClaimDailyBountyToken => (
+            task_board::full::ACTION_CLAIM_DAILY_BOUNTY_TOKEN,
+            0,
+            String::new(),
+        ),
         FullIntent::BountyDifficulty(v) => (10, u16::from(v), String::new()),
         FullIntent::Reroll => (11, 0, String::new()),
         FullIntent::Preferred(v, race) => (13, u16::from(v), race),
@@ -55,6 +64,9 @@ pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<Fe
     if elite {
         result.capability = task_board::full::CAPABILITY_WEEKLY_RESULTS_V1;
         result.kind = task_board::full::COMMAND_ELITE_BOUNTY;
+    } else if daily {
+        result.capability = task_board::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1;
+        result.kind = task_board::full::COMMAND_CLAIM_DAILY_BOUNTY_TOKEN;
     }
     Some(result)
 }

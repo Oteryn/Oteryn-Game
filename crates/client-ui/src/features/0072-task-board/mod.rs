@@ -39,6 +39,7 @@ pub struct TaskBoardPanel {
     pub open: bool,
     pub open_weekly: bool,
     pub soulseals_open: bool,
+    pub daily_bounty_selected: bool,
     pub weekly_results_selected: bool,
     pub weekly_checked: bool,
     pub weekly_results_open: bool,

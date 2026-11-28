@@ -290,6 +290,10 @@ fn extra_fixture(mut value: TaskBoardPanel) -> Result<ExtraFixture, Box<dyn std:
     let (link, commands, outbox) = crate::play::play_channel();
     link.use_shared_frontend();
     outbox.bevy_task_board_fixture(value);
+    Ok((task_board_app(link)?, commands, outbox))
+}
+
+fn task_board_app(link: crate::play::PlayLink) -> Result<App, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     owner.play = Some(crate::bevy_shell::owner::ActivePlay {
         link,
@@ -305,7 +309,7 @@ fn extra_fixture(mut value: TaskBoardPanel) -> Result<ExtraFixture, Box<dyn std:
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
-    Ok((app, commands, outbox))
+    Ok(app)
 }
 fn extra_click(
     app: &mut App,
@@ -766,3 +770,5 @@ fn soulseal_search_follows_the_server_cursor_past_nonmatching_entries()
     );
     Ok(())
 }
+
+mod daily_bounty;

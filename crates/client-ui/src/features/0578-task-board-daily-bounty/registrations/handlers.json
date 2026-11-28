@@ -2,17 +2,19 @@
   "mechanic": "0578-task-board-daily-bounty",
   "kind": "handlers",
   "id": "0578-task-board-daily-bounty-claim",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6319
   ],
   "direction": "client_to_server",
-  "reason": "This branch adds the server protocol. The native panel does not offer the new daily-claim action.",
   "not_applicable": {
-    "state": "The Task Board owner records the reset day and token balance.",
-    "protocol": "Capability 578 negotiates the token deadline and canonical delivery references.",
-    "view": "The native panel uses the existing Task Board reply shape.",
-    "input": "The native panel has no daily bounty token claim control.",
+    "state": "The 0072 Task Board panel holds the negotiated deadline and token balance.",
+    "protocol": "The registered Session transport uses the existing Task Board full request and reply codec.",
+    "view": "The existing native Task Board Bounty Tasks tab shows the claim.",
+    "input": "The existing native Task Board binds the claim to the displayed panel.",
     "settings": "The claim follows the World reset calendar."
-  }
+  },
+  "capability": 578,
+  "entry": "gated_command.rs::gated_command",
+  "entry_owner": "session"
 }

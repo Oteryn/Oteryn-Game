@@ -4,6 +4,10 @@ impl Outbox {
         lock(&self.0).task_board.weekly_results_selected = selected;
     }
 
+    pub(in crate::play) fn task_board_daily_bounty_initialize(&self, selected: bool) {
+        lock(&self.0).task_board.daily_bounty_selected = selected;
+    }
+
     pub(in crate::play) fn task_board_initialize(&self, selected: bool) {
         let mut m = lock(&self.0);
         m.task_board.selected = selected;

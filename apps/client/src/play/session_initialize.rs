@@ -88,6 +88,11 @@ pub(super) fn initialize<T: Stepper>(
     outbox.server_info_initialize(session.feature_selected(500));
     outbox.task_board_initialize(session.task_board_selected());
     outbox.task_board_weekly_results_initialize(session.feature_selected(474));
+    outbox.task_board_daily_bounty_initialize(
+        session.feature_selected(
+            oteryn_session::task_board::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1,
+        ),
+    );
     outbox.stash_initialize(session.stash_selected());
     outbox.dialogue_initialize(session);
     outbox.npc_shop_initialize(session);
