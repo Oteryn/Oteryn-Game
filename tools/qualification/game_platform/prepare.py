@@ -98,8 +98,14 @@ def main():
     (work / "oauth.json").write_text(json.dumps({"enabled": True, "clients": [{"client_id": client, "redirect_uris": [callback]}]}))
     custody = work / "portal" / "secrets" / "admission-custody"
     custody_args = shlex.quote(json.dumps({"directory": str(custody), "purpose": "fresh_admission"}))
+    build_revision = os.environ.get("PLATFORM_BUILD_REVISION")
+    revision_export = (
+        f"export PLATFORM_BUILD_REVISION={shlex.quote(build_revision)}\n"
+        if build_revision is not None else ""
+    )
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
+                        f"{revision_export}"
                         "export OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
                         "export OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true\n"
                         "export OTERYN_NATIVE_DEVICE_PROJECTION_AUTHORITY=oteryn-game-e2e\n"

@@ -625,6 +625,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
+if [[ "${OTERYN_E2E_ROW_BATCH:-}" == 96:1 && -n "${C11_CAPTURE_RUN:-}" ]]; then
+  export PLATFORM_BUILD_REVISION="$NODE_BOOT_PLATFORM_PIN"
+fi
 game_platform_start
 if [[ "${OTERYN_E2E_ROW_BATCH:-}" == 96:1 && -n "${C11_CAPTURE_RUN:-}" ]]; then
   c11_platform_db="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
