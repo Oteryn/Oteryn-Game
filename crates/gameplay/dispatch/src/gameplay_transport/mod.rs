@@ -1223,7 +1223,7 @@ impl FenceHolders {
 /// One attempt of a terminal release.
 enum ReleaseAttempt {
     /// A step before the durable transaction had no outcome; nothing was sent.
-    Retry,
+    Retry(&'static str),
     /// The transaction's outcome, or its settle, is unknown: the fence and the kill mark stay.
     Unknown,
     /// The release settled.
