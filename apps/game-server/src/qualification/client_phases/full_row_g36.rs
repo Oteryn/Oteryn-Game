@@ -1,6 +1,7 @@
 //! G36 drives the authored Soulpit obelisk and checks the durable Soul Core debit.
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::refusal_detail::{RefusalDetail, split_refusal_detail};
 use oteryn_protocol_oteryn::world_object::{
     self, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -127,15 +128,21 @@ async fn obelisk_use(
             }),
         )?;
     }
-    let disposition = world_object::decode_use_result(&response.payload).map_err(|error| {
+    let (body, detail) = split_refusal_detail(&response.payload)
+        .map_err(|error| format!("step=use;observed=refusal-detail:{error:?}"))?;
+    let disposition = world_object::decode_use_result(body).map_err(|error| {
         format!(
             "step=use;observed=decode:{error:?};status={:?}",
             response.status
         )
     })?;
-    if response.status != CommandStatus::Accepted || disposition != expected {
+    let expected_detail = (expected == UseDisposition::TooFar).then_some(RefusalDetail::TooFarAway);
+    if response.status != CommandStatus::Accepted
+        || disposition != expected
+        || detail != expected_detail
+    {
         return Err(format!(
-            "step=use;observed=status:{:?},disposition:{disposition:?};expected={expected:?}",
+            "step=use;observed=status:{:?},disposition:{disposition:?},detail:{detail:?};expected={expected:?},detail:{expected_detail:?}",
             response.status
         )
         .into());
