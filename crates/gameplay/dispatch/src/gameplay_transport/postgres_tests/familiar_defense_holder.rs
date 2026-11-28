@@ -62,7 +62,7 @@ fn familiar_defense_advances_with_the_postgres_holder_checked_out() -> TestResul
                     .prepare_companion_spawn(
                         deps.actor,
                         session,
-                        "Knight Familiar",
+                        "canary:creature/knight_familiar",
                         MovementLocalPosition {
                             x: position.x + 1,
                             ..position
