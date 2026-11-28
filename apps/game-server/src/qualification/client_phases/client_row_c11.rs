@@ -91,6 +91,7 @@ async fn relog(
     evidence(&format!(
         "C11_FIXTURE placement={label} from={from:?} to={target:?}"
     ));
+    let previous_premium = premium_evidence(clients).await?;
     *client = connect_character(clients, 0xcd, 1).await?;
     let observed = tile(client.world_spatial().actor_position)?;
     if observed != target {
@@ -102,7 +103,45 @@ async fn relog(
     if client.join_snapshot().game_session_id == old {
         return Err("C11 Knight relog reused the old session".into());
     }
+    // Premium refresh runs asynchronously on admission. Wait for this session's
+    // authority evidence before issuing the single purchase or checking Wheel.
+    tokio::time::timeout(Duration::from_secs(8), async {
+        loop {
+            let observed = premium_evidence(clients).await?;
+            if let Some((revision, 1, 1)) = observed
+                && previous_premium.is_none_or(|previous| revision > previous.0)
+            {
+                evidence(&format!(
+                    "C11_PREMIUM session={label} authority_revision={revision} lifecycle_revision=1"
+                ));
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await
+    .map_err(|_| {
+        format!(
+            "C11 Platform Premium evidence did not advance for {label} from {previous_premium:?}"
+        )
+    })??;
     Ok(())
+}
+
+async fn premium_evidence(clients: &SeamClients<'_>) -> TestResult<Option<(i64, i16, i64)>> {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let observed = sqlx::query_as(
+        "SELECT e.authority_revision::bigint, e.entitlement_state, e.lifecycle_revision::bigint
+         FROM game_premium_account_fence f
+         JOIN game_premium_evidence e USING (account_id, authority_revision)
+         WHERE f.account_id=$1::text::uuid AND f.conflict_authority_revision IS NULL",
+    )
+    .bind(clients.accounts[1].as_str())
+    .fetch_optional(&mut db)
+    .await?;
+    db.close().await?;
+    Ok(observed)
 }
 
 // Operates only on the isolated node-boot database after terminal release. Keep all
