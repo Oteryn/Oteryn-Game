@@ -1,8 +1,8 @@
 -- An ordinary PvP swing can spend several worn Item charges in its own transaction.
-ALTER TABLE game_character_pvp_harm ADD COLUMN created_xact_id XID8;
+ALTER TABLE game_character_pvp_harm ADD COLUMN IF NOT EXISTS created_xact_id XID8;
 ALTER TABLE game_character_pvp_harm ALTER COLUMN created_xact_id SET DEFAULT pg_current_xact_id();
 
-CREATE TABLE game_pvp_swing_charge_writes (
+CREATE TABLE IF NOT EXISTS game_pvp_swing_charge_writes (
  game_session_id UUID NOT NULL,
  command_id NUMERIC(20,0) NOT NULL,
  ordinal INTEGER NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE game_pvp_swing_charge_writes (
  FOREIGN KEY(item_instance_id,expected_revision) REFERENCES game_item_timed_state_writes(item_instance_id,expected_revision) DEFERRABLE INITIALLY DEFERRED
 );
 
-CREATE FUNCTION game_pvp_swing_charge_proven() RETURNS trigger
+CREATE OR REPLACE FUNCTION game_pvp_swing_charge_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN
  IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS (
@@ -38,10 +38,13 @@ BEGIN
  RETURN NULL;
 END;
 $$;
+DROP TRIGGER IF EXISTS game_pvp_swing_charge_proven ON game_pvp_swing_charge_writes;
 CREATE CONSTRAINT TRIGGER game_pvp_swing_charge_proven AFTER INSERT ON game_pvp_swing_charge_writes
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_pvp_swing_charge_proven();
+DROP TRIGGER IF EXISTS game_pvp_swing_charge_writes_immutable ON game_pvp_swing_charge_writes;
 CREATE TRIGGER game_pvp_swing_charge_writes_immutable BEFORE UPDATE OR DELETE ON game_pvp_swing_charge_writes
  FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+DROP TRIGGER IF EXISTS game_pvp_swing_charge_writes_no_truncate ON game_pvp_swing_charge_writes;
 CREATE TRIGGER game_pvp_swing_charge_writes_no_truncate BEFORE TRUNCATE ON game_pvp_swing_charge_writes
  FOR EACH STATEMENT EXECUTE FUNCTION game_item_immutable();
 
@@ -54,17 +57,19 @@ DO $$
 DECLARE body TEXT; needle TEXT;
 BEGIN
  SELECT pg_get_functiondef('game_item_timed_state_write_consistency_guard()'::regprocedure) INTO body;
- needle:=E'AND (o.item_instance_id, o.expected_revision)\n                  <> (NEW.item_instance_id, NEW.expected_revision)';
- IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing timed single-write proof'; END IF;
- body:=replace(body,needle,needle||$arm$
- AND NOT EXISTS (
-  SELECT 1 FROM game_pvp_swing_charge_writes a
-  JOIN game_pvp_swing_charge_writes b USING(game_session_id,command_id,ordinal,victim,victim_session)
-  WHERE (a.item_instance_id,a.expected_revision)=(NEW.item_instance_id,NEW.expected_revision)
-    AND (b.item_instance_id,b.expected_revision)=(o.item_instance_id,o.expected_revision)
-    AND a.created_xact_id=pg_current_xact_id() AND b.created_xact_id=pg_current_xact_id())
+ IF position('FROM game_pvp_swing_charge_writes a' IN body)=0 THEN
+  needle:=E'AND (o.item_instance_id, o.expected_revision)\n                  <> (NEW.item_instance_id, NEW.expected_revision)';
+  IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing timed single-write proof'; END IF;
+  body:=replace(body,needle,needle||$arm$
+  AND NOT EXISTS (
+   SELECT 1 FROM game_pvp_swing_charge_writes a
+   JOIN game_pvp_swing_charge_writes b USING(game_session_id,command_id,ordinal,victim,victim_session)
+   WHERE (a.item_instance_id,a.expected_revision)=(NEW.item_instance_id,NEW.expected_revision)
+     AND (b.item_instance_id,b.expected_revision)=(o.item_instance_id,o.expected_revision)
+     AND a.created_xact_id=pg_current_xact_id() AND b.created_xact_id=pg_current_xact_id())
  $arm$);
- EXECUTE body;
+  EXECUTE body;
+ END IF;
  EXECUTE format('ALTER FUNCTION game_pvp_swing_charge_proven() SET search_path=%I,pg_temp',current_schema());
 END;
 $$;

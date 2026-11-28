@@ -193,6 +193,7 @@ async fn paid_splash(
     (victim, _victim_session): (crate::foundation::ExactActorRef, GameSessionId),
     (second_shooter, second_session): (crate::foundation::ExactActorRef, GameSessionId),
     content: &crate::content::native_gameplay::NativeGameplayState,
+    retry_charged_impact: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
 
@@ -245,6 +246,22 @@ async fn paid_splash(
     assert_eq!((count(71).await?, count(73).await?), (9, 9), "both shots committed");
     assert_eq!(health(owner, victim).await?, before, "the later payment fenced the pending splash");
     assert!(owner.spell_lane.acquire().await.is_err(), "later shot is parked");
+    if retry_charged_impact {
+        use crate::gameplay_transport::pvp_live::faults::{Point, arm};
+        for point in [Point::ImpactHolderBusy, Point::SwingHolderBusy, Point::BeforeCommit] {
+            let mut consumed = arm(point);
+            owner.drain_auto_attacks_at(now).await;
+            assert_eq!(consumed.try_recv(), Ok(()), "the same paid impact reaches {point:?}");
+            assert_eq!(protective_charges(h).await?, vec![(1, 2, true); 2]);
+            assert_eq!(count(71).await?, 9);
+        }
+        owner.drain_auto_attacks_at(now).await;
+        assert_eq!(protective_charges(h).await?, vec![(1, 1, true); 2]);
+        owner.drain_auto_attacks_at(now).await;
+        assert_eq!(protective_charges(h).await?, vec![(1, 1, true); 2]);
+        assert_eq!((count(71).await?, count(73).await?), (9, 9));
+        return Ok(());
+    }
     owner.drain_auto_attacks_at(now).await;
     let after = health(owner, victim).await?;
     assert!(after < before, "the earlier paid splash reached its player target");
@@ -252,6 +269,61 @@ async fn paid_splash(
     assert_eq!(health(owner, victim).await?, after, "the splash was installed exactly once");
     assert_eq!((count(71).await?, count(73).await?), (9, 9));
     Ok(())
+}
+
+
+async fn late_commit_keeps_target(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    (actor, session): (crate::foundation::ExactActorRef, GameSessionId),
+    target: crate::foundation::ExactActorRef,
+    entity: EntityRef,
+) -> TestResult {
+    use crate::gameplay_transport::pvp_live::faults::{Point, arm};
+    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+    assert_eq!(owner.expert_fight_modes(actor, session, 1, ExpertFightModes {
+        modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT },
+        expert: ExpertMode::RedFist,
+    }).await.map_err(debug)?, attack::AttackIntentDisposition::Ok);
+    assert_eq!(owner.select_attack_target(actor, session, 2, Some(entity)).await,
+        attack::AttackIntentDisposition::Ok);
+    owner.refresh_attack_weapon(actor, session).await;
+
+    let before = health(owner, target).await?;
+    let mut fault = arm(Point::AfterCommit);
+    let mut at = owner.owner_now();
+    let mut retained = false;
+    for _ in 0..8 {
+        owner.drain_auto_attacks_at(at).await;
+        if fault.try_recv() == Ok(()) {
+            retained = true;
+            break;
+        }
+        at = at.checked_add(2_000_000).map_err(debug)?;
+    }
+    assert!(retained, "a production swing reached the post-COMMIT fault");
+    assert_eq!(health(owner, target).await?, before);
+    assert_eq!(owner.states.attack.lock().await.combat_state(actor, session, at).target,
+        Some(entity), "a pending commit must preserve the held target");
+
+    owner.drain_auto_attacks_at(at).await;
+    let after = health(owner, target).await?;
+    assert!(after < before, "reconciliation installs the original hit");
+    {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        assert!(states.get(&runtime, actor, session).ok_or("attacker")?.has_training_to_flush(),
+            "reconciliation runs the original swing's training");
+    }
+    owner.drain_auto_attacks_at(at).await;
+    assert_eq!(health(owner, target).await?, after, "the original hit installs once");
+    for _ in 0..8 {
+        at = at.checked_add(2_000_000).map_err(debug)?;
+        owner.drain_auto_attacks_at(at).await;
+        if health(owner, target).await? < after {
+            return Ok(());
+        }
+    }
+    Err("the held target did not receive a subsequent swing".into())
 }
 
 async fn melee_fault(
@@ -351,7 +423,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
-        if mode == 16 {
+        if matches!(mode, 16 | 18) {
             admit_splash_shooter(&h).await?;
         }
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -407,7 +479,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             room.map_revision_digest(),
             (2, if mode == 4 { 0 } else { 11 }, floor),
         );
-        let mut deps = if mode == 16 {
+        let mut deps = if matches!(mode, 16 | 18) {
             // Two shooters, an unarmoured victim, a rat and spawn admission headroom.
             Dependencies::with_content_and_capacity(
                 cp.clone(),
@@ -594,14 +666,17 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 generation: p.generation,
             }
         };
-        if matches!(mode, 15 | 16) {
+        if matches!(mode, 15 | 16 | 18 | 19) {
             wait_for_login_protection_to_expire(&h.pool, session).await?;
         }
-        if mode == 16 {
+        if matches!(mode, 16 | 18) {
             let second_shooter =
                 observer::initialize_peer(&deps, &owner, SPLASH_SECOND_SHOOTER, SPLASH_SECOND_SESSION)
                     .await?;
             let second_session = GameSessionId::decode(&id(SPLASH_SECOND_SESSION)).map_err(debug)?;
+            if mode == 18 {
+                seed_protective_charges(&h, native).await?;
+            }
             paid_splash(
                 &h,
                 &owner,
@@ -609,8 +684,17 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 (target, target_session),
                 (second_shooter, second_session),
                 native,
+                mode == 18,
             )
             .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return Ok(());
+        }
+        if mode == 19 {
+            late_commit_keeps_target(&owner, (actor, session), target, entity).await?;
             drop(owner);
             drop(authority);
             drop(seal);

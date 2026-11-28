@@ -57,6 +57,7 @@ pub(super) async fn legal_player(
         PvpDamage::Spell,
     )
     .await
+    .map_err(|_| SpellCastDisposition::TargetIllegal)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -115,6 +116,7 @@ pub(super) async fn legal_player_field(
         PvpDamage::Field(destination),
     )
     .await
+    .map_err(|_| SpellCastDisposition::TargetIllegal)
 }
 
 #[derive(Clone, Copy)]
@@ -122,6 +124,39 @@ enum PvpDamage {
     Spell,
     Swing,
     Field(crate::foundation::MovementLocalPosition),
+}
+
+#[derive(Debug)]
+enum PvpRefusal {
+    Illegal,
+    Unavailable(DurabilityError),
+}
+
+impl From<item_tx::SpellItemError> for PvpRefusal {
+    fn from(error: item_tx::SpellItemError) -> Self {
+        match error {
+            item_tx::SpellItemError::Durability(error) => Self::Unavailable(error),
+            item_tx::SpellItemError::Database(error) => Self::Unavailable(error.into()),
+            _ => Self::Illegal,
+        }
+    }
+}
+
+impl From<character_equipment::EquipmentError> for PvpRefusal {
+    fn from(error: character_equipment::EquipmentError) -> Self {
+        match error {
+            character_equipment::EquipmentError::Durability(error) => Self::Unavailable(error),
+            character_equipment::EquipmentError::Database(error) => Self::Unavailable(error.into()),
+            character_equipment::EquipmentError::Rejected(_) => Self::Illegal,
+        }
+    }
+}
+
+fn pvp_tile_refusal(error: crate::spell::world_execution::WorldRelocationError) -> PvpRefusal {
+    match error {
+        crate::spell::world_execution::WorldRelocationError::Items(error) => error.into(),
+        _ => PvpRefusal::Illegal,
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -137,12 +172,12 @@ async fn legal_player_at(
     target: ExactActorRef,
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     damage: PvpDamage,
-) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
+) -> Result<storage::LivePvpFacts, PvpRefusal> {
     let field_destination = match damage {
         PvpDamage::Field(position) => Some(position),
         _ => None,
     };
-    let reject = || SpellCastDisposition::TargetIllegal;
+    let reject = || PvpRefusal::Illegal;
     if runtime.actor_staff_visibility(actor).is_ok_and(|f| f.0)
         || runtime.actor_staff_visibility(target).is_ok_and(|f| f.0)
     {
@@ -183,17 +218,16 @@ async fn legal_player_at(
         tx, authority, room, runtime, objects, from,
     )
     .await
-    .map_err(|_| reject())?;
+    .map_err(pvp_tile_refusal)?;
     let target_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
         tx, authority, room, runtime, objects, to,
     )
     .await
-    .map_err(|_| reject())?;
+    .map_err(pvp_tile_refusal)?;
     let facts = storage::read_live_pvp_in_transaction(
         tx, root, authority, runtime, actor, target, *session,
     )
-    .await
-    .map_err(|_| reject())?;
+    .await?;
     let a = PvpActor {
         level: source.character_facts().level,
         in_protection_zone: source_tile.protection_zone(),
@@ -218,9 +252,7 @@ async fn legal_player_at(
     };
     check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
     if matches!(damage, PvpDamage::Spell)
-        && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
-            .await
-            .map_err(|_| reject())?
+        && !storage::unarmoured_pvp_target_in_transaction(tx, &facts).await?
     {
         return Err(reject());
     }
@@ -319,72 +351,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        #[cfg(test)]
+        if faults::take(faults::Point::ImpactHolderBusy) {
+            return Err(DurabilityError::RootUnavailable);
+        }
         let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, runtime, states, objects);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
                 let (owner, runtime, states, objects) = ctx;
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
-                let authority = item_tx::assert_spell_item_authority_in_transaction(
-                    &mut tx,
-                    permit,
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    &fence.item_fence(),
-                    command,
-                    runtime.content_pin().server_artifact_digest(),
-                )
-                .await
-                .map_err(|_| DurabilityError::Unavailable)?;
-                let facts = legal_player_at(
-                    &mut tx,
-                    owner.root,
-                    &authority,
-                    runtime,
-                    states,
-                    room,
-                    objects,
-                    actor,
-                    target,
-                    modes,
-                    PvpDamage::Swing,
-                )
+                let result = async {
+                    let authority = item_tx::assert_spell_item_authority_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        &fence.item_fence(),
+                        command,
+                        runtime.content_pin().server_artifact_digest(),
+                    )
+                    .await?;
+                    let facts = legal_player_at(
+                        &mut tx,
+                        owner.root,
+                        &authority,
+                        runtime,
+                        states,
+                        room,
+                        objects,
+                        actor,
+                        target,
+                        modes,
+                        PvpDamage::Swing,
+                    )
+                    .await?;
+                    let equipment =
+                        if storage::unarmoured_pvp_target_in_transaction(&mut tx, &facts).await? {
+                            None
+                        } else {
+                            let session = states
+                                .actors
+                                .iter()
+                                .find(|(actor, _, _)| *actor == target)
+                                .ok_or(PvpRefusal::Illegal)?
+                                .1;
+                            let (_, equipment, _) = owner
+                                .read_charge_protection(
+                                    &mut tx,
+                                    session,
+                                    runtime.content_pin().server_artifact_digest(),
+                                )
+                                .await?;
+                            Some(Arc::new(equipment))
+                        };
+                    Ok(PvpSwingTarget {
+                        black: facts.target_black,
+                        equipment,
+                    })
+                }
                 .await;
-                let result = if let Ok(facts) = facts {
-                    if storage::unarmoured_pvp_target_in_transaction(&mut tx, &facts)
-                        .await
-                        .map_err(|_| DurabilityError::Unavailable)?
-                    {
-                        Some(PvpSwingTarget {
-                            black: facts.target_black,
-                            equipment: None,
-                        })
-                    } else {
-                        let session = states
-                            .actors
-                            .iter()
-                            .find(|(actor, _, _)| *actor == target)
-                            .ok_or(DurabilityError::Unavailable)?
-                            .1;
-                        owner
-                            .read_charge_protection(
-                                &mut tx,
-                                session,
-                                runtime.content_pin().server_artifact_digest(),
-                            )
-                            .await
-                            .ok()
-                            .map(|(_, equipment, _)| PvpSwingTarget {
-                                black: facts.target_black,
-                                equipment: Some(Arc::new(equipment)),
-                            })
-                    }
-                } else {
-                    None
-                };
                 tx.rollback().await?;
-                Ok(result)
+                match result {
+                    Ok(target) => Ok(Some(target)),
+                    Err(PvpRefusal::Illegal) => Ok(None),
+                    Err(PvpRefusal::Unavailable(error)) => Err(error),
+                }
             })
         })
         .await
@@ -395,13 +428,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         tx: &mut Transaction<'_, Postgres>,
         session: GameSessionId,
         digest: [u8; 32],
-    ) -> Result<(EquipmentAuthority, EquipmentSnapshot, CombatCharges), DurabilityError> {
+    ) -> Result<(EquipmentAuthority, EquipmentSnapshot, CombatCharges), PvpRefusal> {
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_in_transaction(tx, session)
                 .await
-                .map_err(|_| DurabilityError::Unavailable)?;
-        let fence = super::item_fence_of(current).ok_or(DurabilityError::Unavailable)?;
+                .map_err(PvpRefusal::Unavailable)?;
+        let fence = super::item_fence_of(current).ok_or(PvpRefusal::Illegal)?;
         let (authority, equipment) = character_equipment::read_combat_equipment_in_transaction(
             tx,
             self.root,
@@ -410,14 +443,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &fence,
             digest,
         )
-        .await
-        .map_err(|_| DurabilityError::Unavailable)?;
+        .await?;
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .ok_or(DurabilityError::Unavailable)?;
-        let charges =
-            CombatCharges::qualify(&equipment, native).ok_or(DurabilityError::Unavailable)?;
+            .ok_or(PvpRefusal::Illegal)?;
+        let charges = CombatCharges::qualify(&equipment, native).ok_or(PvpRefusal::Illegal)?;
         Ok((authority, equipment, charges))
     }
 
@@ -509,8 +540,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding,
         };
         let mut window = permit.open_commit_window(hit, park);
-        // Even cancellation before COMMIT retains enough state to prove rollback and release.
-        window.mark_already_committed();
+        // Dropping the window on cancellation retains the exact physical reservation.
         let mut context = (self, &mut *runtime, &mut *states, objects, &mut window);
         let result = pass
             .run_with_context(&mut context, move |holder, deadline, ctx| {
@@ -518,7 +548,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let (owner, runtime, states, objects, window) = ctx;
                     let mut tx = item_tx::begin_field_owner_transaction(holder, deadline).await?;
                     let hit = window.attempt();
-                    let authority = item_tx::assert_spell_item_authority_in_transaction(
+                    let authority = match item_tx::assert_spell_item_authority_in_transaction(
                         &mut tx,
                         window.permit(),
                         owner.root,
@@ -529,8 +559,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         runtime.content_pin().server_artifact_digest(),
                     )
                     .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                    let facts = legal_player_at(
+                    .map_err(PvpRefusal::from)
+                    {
+                        Ok(authority) => authority,
+                        Err(PvpRefusal::Illegal) => return Ok(false),
+                        Err(PvpRefusal::Unavailable(error)) => return Err(error),
+                    };
+                    let facts = match legal_player_at(
                         &mut tx,
                         owner.root,
                         &authority,
@@ -544,7 +579,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         PvpDamage::Swing,
                     )
                     .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
+                    {
+                        Ok(facts) => facts,
+                        Err(PvpRefusal::Illegal) => return Ok(false),
+                        Err(PvpRefusal::Unavailable(error)) => return Err(error),
+                    };
                     if facts.target_black != protection.target.black {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -558,9 +597,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .1;
                     if let Some(expected) = &protection.target.equipment {
                         let digest = runtime.content_pin().server_artifact_digest();
-                        let (equipment_authority, current, charges) = owner
+                        let (equipment_authority, current, charges) = match owner
                             .read_charge_protection(&mut tx, target_session, digest)
-                            .await?;
+                            .await
+                        {
+                            Ok(equipment) => equipment,
+                            Err(PvpRefusal::Illegal) => return Ok(false),
+                            Err(PvpRefusal::Unavailable(error)) => return Err(error),
+                        };
                         if &current != expected.as_ref() {
                             return Err(DurabilityError::Unavailable);
                         }
@@ -615,16 +659,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return Err(DurabilityError::Unavailable);
                     }
                     storage::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
-                    Ok(())
+                    Ok(true)
                 })
             })
             .await;
-        if result.is_err() {
-            return Ok(false);
+        if !matches!(result, Ok(true)) {
+            if (!window.commit_called()
+                || matches!(
+                    result,
+                    Err(DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout)
+                ))
+                && runtime
+                    .release_definitely_uncommitted_spell_batch(&window.attempt().physical)
+                    .is_ok()
+            {
+                window.release();
+                return result;
+            }
+            return Err(DurabilityError::CommitOutcomeUnknown);
         }
         #[cfg(test)]
         if faults::take(faults::Point::AfterCommit) {
-            return Ok(false);
+            return Err(DurabilityError::CommitOutcomeUnknown);
         }
         let Ok(checked) = check_owner_batch(
             runtime,
@@ -632,7 +688,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &window.attempt().physical,
             Some(&window.attempt().player),
         ) else {
-            return Ok(false);
+            return Err(DurabilityError::CommitOutcomeUnknown);
         };
         let hit = window.install();
         Ok(self.install_pvp_hit(runtime, states, hit, checked))
@@ -683,25 +739,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
+        let mut attack = self.states.attack.lock().await;
+        let hit = window.attempt();
+        let Some(effect) = hit.batch.effects.first() else {
+            return;
+        };
+        let crate::spell::combat_batch::OwnerCombatChange::Damage { magnitude, .. } =
+            &effect.change
+        else {
+            return;
+        };
+        let (target, ordinal, magnitude) = (effect.target, hit.ordinal, *magnitude);
         match result {
             Ok(true) => {
-                let Ok(checked) = check_owner_batch(
-                    &runtime,
-                    &states,
-                    &window.attempt().physical,
-                    Some(&window.attempt().player),
-                ) else {
+                let Ok(checked) =
+                    check_owner_batch(&runtime, &states, &hit.physical, Some(&hit.player))
+                else {
                     return;
                 };
                 let hit = window.install();
-                self.install_pvp_hit(&mut runtime, &mut states, hit, checked);
+                if self.install_pvp_hit(&mut runtime, &mut states, hit, checked) {
+                    attack.reconcile_pvp_impact(command, ordinal, target, Some(magnitude));
+                    states.owner_wake.notify_one();
+                }
             }
             Ok(false) => {
                 if runtime
-                    .release_definitely_uncommitted_spell_batch(&window.attempt().physical)
+                    .release_definitely_uncommitted_spell_batch(&hit.physical)
                     .is_ok()
                 {
                     window.release();
+                    attack.reconcile_pvp_impact(command, ordinal, target, None);
                 }
             }
             Err(_) => {}
@@ -839,6 +907,7 @@ pub(super) mod faults {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub(in crate::gameplay_transport) enum Point {
+        ImpactHolderBusy,
         SwingHolderBusy,
         BeforeCommit,
         AfterCommit,

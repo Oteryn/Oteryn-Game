@@ -46,7 +46,7 @@ pub(super) struct SelectedSwing {
 
 /// A PvP swing the attacker's pass drew for a player target; its defence is met after
 /// the pass (PVP-DEFENCE-1).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
     pub(super) session: GameSessionId,
@@ -56,9 +56,9 @@ pub(super) struct PvpSwing {
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
     pub(super) ordinal: u16,
-    // PvP halving and outgoing conditions have already shaped both components.
     pub(super) components: (i64, i64, crate::content::ProjectV2RangedElement),
-    pub(super) target_protection: super::super::pvp_live::PvpSwingTarget,
+    pub(super) outgoing_percent: i32,
+    pub(super) committed_magnitude: Option<i64>,
     pub(super) revision: &'static str,
     pub(super) weapon: WeaponFacts,
     pub(super) attacker: CharacterId,
@@ -471,7 +471,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 selected.skills.shielding =
                     selected.skills.shielding.saturating_add(bonuses.shielding);
             }
-            let pvp_target = if !runtime.contains_live_creature(selected.target) {
+            if !runtime.contains_live_creature(selected.target) {
                 let legality = self
                     .pvp_target_legal(
                         &pvp_permit,
@@ -488,21 +488,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await;
-                match legality {
-                    Ok(Some(target)) => Some(target),
-                    Err(DurabilityError::RootUnavailable) => {
-                        entry.state = state_before;
-                        entry.next_ordinal = ordinal_before;
-                        continue;
-                    }
-                    _ => {
-                        entry.clear_target();
-                        continue;
-                    }
+                if legality.is_err() {
+                    entry.state = state_before;
+                    entry.next_ordinal = ordinal_before;
+                    continue;
                 }
-            } else {
-                None
-            };
+                if matches!(legality, Ok(None)) {
+                    entry.clear_target();
+                    continue;
+                }
+            }
             let impact = if selected.weapon.ranged.is_some() {
                 let Some(impact) = self
                     .pay_ranged_shot(
@@ -837,40 +832,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 if !runtime.contains_live_creature(target) {
-                    let target_protection = if extension {
-                        self.pvp_target_legal(
-                            &pvp_permit,
-                            &runtime,
-                            &states,
-                            room,
-                            &objects,
-                            entry.actor,
-                            target,
-                            swing.lineage,
-                            oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
-                                modes: entry.modes,
-                                expert: entry.expert_mode,
-                            },
-                        )
-                        .await
-                        .ok()
-                        .flatten()
-                    } else {
-                        pvp_target.clone()
-                    };
-                    let Some(target_protection) = target_protection else {
-                        continue;
-                    };
-                    let Some(components) = pvp_swing_components(
-                        (raw[0], raw[1], element),
-                        target_protection.black,
-                        retained,
-                    ) else {
-                        continue;
-                    };
-                    // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
-                    // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
-                    // budget is reachable.
+                    // An area target can require a DB read after ammunition has changed.
+                    // Queue the rolled impact first, then qualify it at the landing boundary.
                     pending_pvp.push_back(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
@@ -883,8 +846,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         target,
                         lineage: swing.lineage,
                         ordinal,
-                        components,
-                        target_protection,
+                        components: (raw[0], raw[1], element),
+                        outgoing_percent: retained,
+                        committed_magnitude: None,
                         revision,
                         weapon: selected.weapon.clone(),
                         attacker: lease.character_id(),
@@ -1788,6 +1752,28 @@ fn battle_instinct_for_actor(
     oteryn_gameplay_progression::wheel_effects::battle_instinct_bonuses(data.wheel(), adjacent)
 }
 
+impl ChannelAttackStates {
+    pub(in crate::gameplay_transport) fn reconcile_pvp_impact(
+        &mut self,
+        command: CommandRef,
+        ordinal: u16,
+        target: ExactActorRef,
+        committed_magnitude: Option<i64>,
+    ) {
+        let Some(hit) = self.pending_pvp.front_mut() else {
+            return;
+        };
+        if (hit.lineage, hit.ordinal, hit.target) != (command, ordinal, target) {
+            return;
+        }
+        if committed_magnitude.is_some() {
+            hit.committed_magnitude = committed_magnitude;
+        } else if hit.weapon.ranged.is_none() {
+            self.pending_pvp.pop_front();
+        }
+    }
+}
+
 /// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -1809,15 +1795,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         trained: &mut TrainingDue,
     ) {
         while !permit.has_unresolved() {
-            let Some(hit) = attack.pending_pvp.pop_front() else {
+            let Some(hit) = attack.pending_pvp.front().cloned() else {
                 break;
             };
-            self.land_pvp_swing(
-                permit, runtime, states, attack, room, objects, content, facts, hit, trained,
-            )
-            .await;
+            // The pending impact stays in the queue across awaits and cancellation.
+            // At most one failed checkout is attempted per cadence turn.
+            if !self
+                .land_pvp_swing(
+                    permit, runtime, states, attack, room, objects, content, facts, &hit, trained,
+                )
+                .await
+            {
+                break;
+            }
+            attack.pending_pvp.pop_front();
         }
-        if !attack.pending_pvp.is_empty() {
+        if permit.has_unresolved() {
             states.owner_wake.notify_one();
         }
     }
@@ -1842,11 +1835,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &AttackConstants,
             SemanticTimeMicros,
         ),
-        hit: PvpSwing,
+        hit: &PvpSwing,
         trained: &mut TrainingDue,
-    ) {
+    ) -> bool {
+        if let Some(magnitude) = hit.committed_magnitude {
+            finish_pvp_swing(states, runtime, content, hit, magnitude, now, trained);
+            return true;
+        }
         if hit.weapon.content_digest != *digest {
-            return;
+            return true;
         }
         let Some(target_session) = states
             .actors
@@ -1854,52 +1851,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|(actor, _, _)| *actor == hit.target)
             .map(|(_, session, _)| *session)
         else {
-            if !hit.extension {
-                attack.clear_target_of(hit.actor, hit.session);
-            }
-            return;
+            clear_refused_pvp_target(attack, hit);
+            return true;
         };
-        // An earlier queued impact can spend the victim's last charge before this swing lands.
-        let target_protection = if hit.target_protection.equipment.is_some() {
-            let Ok(Some(current)) = self
-                .pvp_target_legal(
-                    permit,
-                    runtime,
-                    states,
-                    room,
-                    objects,
-                    hit.actor,
-                    hit.target,
-                    hit.lineage,
-                    hit.modes,
-                )
-                .await
-            else {
-                return;
-            };
-            if current.black != hit.target_protection.black {
-                return;
-            }
-            current
-        } else {
-            hit.target_protection.clone()
-        };
-        let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
-            self.ranged_player_damage(
+        let target_protection = match self
+            .pvp_target_legal(
                 permit,
                 runtime,
-                content,
-                target_session,
+                states,
+                room,
+                objects,
+                hit.actor,
+                hit.target,
+                hit.lineage,
+                hit.modes,
+            )
+            .await
+        {
+            Ok(Some(current)) => current,
+            Ok(None) => {
+                clear_refused_pvp_target(attack, hit);
+                return true;
+            }
+            Err(_) => return false,
+        };
+        let Some(components) = pvp_swing_components(
+            hit.components,
+            target_protection.black,
+            hit.outgoing_percent,
+        ) else {
+            return true;
+        };
+        let ranged_damage = hit.weapon.ranged.as_ref().and_then(|ranged| {
+            ranged_player_damage(
                 ranged,
-                &hit,
+                hit,
+                components,
                 constants,
                 root,
                 states.target_armor(runtime, hit.target, target_session),
             )
-            .await
-        } else {
-            None
-        };
+        });
         let mut vitals = PlayerBiteVitals {
             quest_sessions: Some(&self.states.quest_sessions),
             charm: None,
@@ -1909,7 +1901,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             formula: content.training_formula(),
             trained: &mut *trained,
         };
-        let (physical_raw, secondary_raw, converted_element) = hit.components;
+        let (physical_raw, secondary_raw, converted_element) = components;
         // The physical primary spends an available block even on a pure elemental swing.
         let defence = if hit.weapon.ranged.is_some() {
             None
@@ -1926,12 +1918,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
                 .as_ref()
-                .and_then(|read| {
-                    read.components
-                        .primary
-                        .0
-                        .checked_add(read.components.secondary.0)
-                })
+                .and_then(|read| read.primary.0.checked_add(read.secondary.0))
                 .map(i64::from)
         } else {
             let reduce = |damage, defence, armor| {
@@ -1955,7 +1942,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
         }) else {
-            return;
+            return true;
         };
         let perfect_damage = if !hit.extension
             && hit
@@ -1971,7 +1958,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()
                 .zip(runtime.read_actor_position(hit.target).ok())
             else {
-                return;
+                return true;
             };
             let (from, to) = (from.position(), to.position());
             offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
@@ -1980,12 +1967,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let parts = if hit.weapon.ranged.is_some() {
             let Some(read) = &ranged_damage else {
-                return;
+                return true;
             };
-            read.components
+            *read
         } else {
             let Ok(primary) = u32::try_from(mitigated) else {
-                return;
+                return true;
             };
             crate::spell::cast::WheelAttackComponents {
                 primary: (primary, crate::player_lethal::PlayerHitKind::Physical),
@@ -2015,16 +2002,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let Some(attacker) = states.get(runtime, hit.actor, hit.session) else {
-            return;
+            return true;
         };
         let Some(target) = states.get(runtime, hit.target, target_session) else {
-            return;
+            return true;
         };
         let mut spends = std::collections::BTreeSet::new();
         let charges = if let Some(equipment) = &target_protection.equipment {
             let Some(charges) = super::super::equipment_move::equipment_effects_owner::combat_charges::CombatCharges::qualify(
                 equipment, content,
-            ) else { return; };
+            ) else { return true; };
             Some(charges)
         } else {
             None
@@ -2047,16 +2034,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 PlayerHitKind::Holy => Kind::Holy,
                 _ => return None,
             };
-            let sum = ranged_damage
-                .as_ref()
-                .and_then(|read| read.protections.get(&kind).copied())
-                .or_else(|| {
-                    if hit.weapon.ranged.is_none() && kind != Kind::Physical {
-                        target.equipped_element_protection(kind)
-                    } else {
-                        None
-                    }
-                });
+            // PvP qualification admits empty equipment or charge-only protection.
+            let sum = if hit.weapon.ranged.is_none() && kind != Kind::Physical {
+                target.equipped_element_protection(kind)
+            } else {
+                None
+            };
             let magnitude = match sum {
                 Some(sum) => apply_protection(i64::from(magnitude), sum)?,
                 None => i64::from(magnitude),
@@ -2090,21 +2073,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now.get(),
             &mut after_equipment,
         ) else {
-            return;
+            return true;
         };
         let magnitude = i64::from(damage.magnitude());
         if magnitude == 0 && spends.is_empty() {
-            if !hit.extension {
-                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
-            }
-            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
-            return;
+            finish_pvp_swing(states, runtime, content, hit, magnitude, now, trained);
+            return true;
         }
         let atom = actor_atom(hit.target);
         let Some(occurrence) =
             swing_ability_occurrence(hit.actor, hit.lineage, hit.ordinal, digest, hit.revision)
         else {
-            return;
+            return true;
         };
         let poison = hit
             .weapon
@@ -2160,18 +2140,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(true) => {
-                if !hit.extension {
-                    publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
-                }
-                train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
+                finish_pvp_swing(states, runtime, content, hit, magnitude, now, trained);
+                true
             }
-            Err(DurabilityError::RootUnavailable) => {}
-            _ if !hit.extension => {
-                attack.clear_target_of(hit.actor, hit.session);
+            Ok(false) => {
+                clear_refused_pvp_target(attack, hit);
+                true
             }
-            _ => {}
+            Err(_) => !permit.has_unresolved() && hit.weapon.ranged.is_none(),
         }
     }
+}
+
+fn clear_refused_pvp_target(attack: &mut ChannelAttackStates, hit: &PvpSwing) {
+    if !hit.extension
+        && attack
+            .party_attack_state(hit.actor, hit.session)
+            .and_then(|state| state.held_target_lineage())
+            == Some((hit.target, hit.lineage))
+    {
+        attack.clear_target_of(hit.actor, hit.session);
+    }
+}
+
+fn finish_pvp_swing(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    hit: &PvpSwing,
+    magnitude: i64,
+    now: SemanticTimeMicros,
+    trained: &mut TrainingDue,
+) {
+    if !hit.extension {
+        publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+    }
+    train_pvp_swing(states, runtime, content, hit, magnitude, now, trained);
 }
 
 /// The attacker of `hit` trains its weapon skill by what the target's defence and armor left.
@@ -2639,92 +2643,54 @@ fn pvp_swing_components(
     Some((scale(physical)?, scale(secondary)?, element))
 }
 
-struct RangedPlayerDamage {
-    components: crate::spell::cast::WheelAttackComponents,
-    protections: std::collections::BTreeMap<
-        crate::content::ReferenceResistanceKind,
-        crate::content::ReferenceRationalPercent,
-    >,
-}
-
-impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(clippy::too_many_arguments)]
-    async fn ranged_player_damage(
-        &self,
-        permit: &SpellLanePermit,
-        runtime: &ChannelRuntimeV1,
-        content: &NativeGameplayState,
-        session: GameSessionId,
-        ranged: &ranged::RangedLoadout,
-        hit: &PvpSwing,
-        constants: &AttackConstants,
-        root: &GameplayDecisionRoot,
-        armor: u32,
-    ) -> Option<RangedPlayerDamage> {
-        use crate::content::ProjectV2RangedElement as Element;
-        use crate::durability::character_equipment as equipment;
-        let current =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(session)
-                .await
-                .ok()?
-                .0;
-        let fence = crate::gameplay_transport::item_fence_of(current)?;
-        let pass = self.root.try_issue_semantic_pass().ok()?;
-        let mut context = (self, permit, content);
-        let command = CommandRef::new(session, hit.lineage.command_id());
-        let effects = pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
-            let (owner, _permit, content) = context;
-            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
-            let authority = equipment::assert_equipment_authority_in_transaction(&mut tx, owner.root, owner.character, owner.holder, &fence, command, content.source_digest()).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
-        })).await.ok()?;
-        let (physical, elemental, element) = hit.components;
-        let physical = if physical > 0 {
-            oteryn_gameplay_combat_rules::resolution::swing_mitigated(
-                root,
-                constants,
-                hit.actor.placement_identity(),
-                (
-                    *hit.lineage.game_session_id().as_bytes(),
-                    hit.lineage.command_id().get(),
-                ),
-                hit.ordinal,
-                physical,
-                None,
-                armor,
-            )?
-        } else {
-            0
-        };
-        runtime.player_control_facts(hit.target, session).ok()?;
-        let element = match element {
-            Element::Physical => crate::player_lethal::PlayerHitKind::Physical,
-            Element::Death => crate::player_lethal::PlayerHitKind::Death,
-            Element::Earth => crate::player_lethal::PlayerHitKind::Earth,
-            Element::Energy => crate::player_lethal::PlayerHitKind::Energy,
-            Element::Fire => crate::player_lethal::PlayerHitKind::Fire,
-            Element::Ice => crate::player_lethal::PlayerHitKind::Ice,
-        };
-        let physical = u32::try_from(physical).ok()?;
-        let elemental = u32::try_from(elemental).ok()?;
-        let components = if matches!(ranged.damage, ranged::RangedDamage::Magic { .. }) {
-            crate::spell::cast::WheelAttackComponents {
-                primary: (elemental, element),
-                secondary: (0, element),
-            }
-        } else {
-            crate::spell::cast::WheelAttackComponents {
-                primary: (physical, crate::player_lethal::PlayerHitKind::Physical),
-                secondary: (elemental, element),
-            }
-        };
-        Some(RangedPlayerDamage {
-            components,
-            protections: effects.protections,
-        })
-    }
+fn ranged_player_damage(
+    ranged: &ranged::RangedLoadout,
+    hit: &PvpSwing,
+    (physical, elemental, element): (i64, i64, crate::content::ProjectV2RangedElement),
+    constants: &AttackConstants,
+    root: &GameplayDecisionRoot,
+    armor: u32,
+) -> Option<crate::spell::cast::WheelAttackComponents> {
+    use crate::content::ProjectV2RangedElement as Element;
+    let physical = if physical > 0 {
+        oteryn_gameplay_combat_rules::resolution::swing_mitigated(
+            root,
+            constants,
+            hit.actor.placement_identity(),
+            (
+                *hit.lineage.game_session_id().as_bytes(),
+                hit.lineage.command_id().get(),
+            ),
+            hit.ordinal,
+            physical,
+            None,
+            armor,
+        )?
+    } else {
+        0
+    };
+    let element = match element {
+        Element::Physical => crate::player_lethal::PlayerHitKind::Physical,
+        Element::Death => crate::player_lethal::PlayerHitKind::Death,
+        Element::Earth => crate::player_lethal::PlayerHitKind::Earth,
+        Element::Energy => crate::player_lethal::PlayerHitKind::Energy,
+        Element::Fire => crate::player_lethal::PlayerHitKind::Fire,
+        Element::Ice => crate::player_lethal::PlayerHitKind::Ice,
+    };
+    let physical = u32::try_from(physical).ok()?;
+    let elemental = u32::try_from(elemental).ok()?;
+    let components = if matches!(ranged.damage, ranged::RangedDamage::Magic { .. }) {
+        crate::spell::cast::WheelAttackComponents {
+            primary: (elemental, element),
+            secondary: (0, element),
+        }
+    } else {
+        crate::spell::cast::WheelAttackComponents {
+            primary: (physical, crate::player_lethal::PlayerHitKind::Physical),
+            secondary: (elemental, element),
+        }
+    };
+    Some(components)
 }
 
 /// Canary weapons.cpp:23-33, player.cpp:11959-12053 (99902524): weapon
