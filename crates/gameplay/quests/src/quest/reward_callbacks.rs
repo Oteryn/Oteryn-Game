@@ -3535,6 +3535,10 @@ mod tests {
         let loaded = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let callbacks = super::offered_for(loaded.catalogue())?;
+        let callbacks: Vec<_> = callbacks
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki")
+            .collect();
         for trout in 0..=99 {
             let mut held = BTreeMap::from([
                 ("oteryn:item.tibia.i7158".to_owned(), trout),
@@ -3546,8 +3550,12 @@ mod tests {
                 let rows: Vec<_> = callbacks
                     .iter()
                     .filter(|row| {
-                        row.npc == "oteryn:npc.sinatuki"
-                            && (row.storage[0].minimum..=row.storage[0].maximum).contains(&stage)
+                        row.storage.iter().all(|gate| {
+                            let value = progress.get(&gate.track).copied().or_else(|| {
+                                loaded.catalogue().track(&gate.track).map(|track| track.initial)
+                            });
+                            value.is_some_and(|v| (gate.minimum..=gate.maximum).contains(&v))
+                        })
                             && row.inventory.iter().all(|rule| rule.holds(&held))
                             && row
                                 .state_ops
@@ -3563,6 +3571,7 @@ mod tests {
                 };
                 assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
                 let cost = &first.take[0];
+                assert_eq!(cost.count, 1, "each nupi feeds one fish");
                 *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
                 let changes = loaded
                     .catalogue()
