@@ -3,7 +3,7 @@ use super::fixture::Harness;
 use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -77,6 +77,7 @@ pub(super) async fn exercise(
         .to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     assert_eq!(progress(owner, admitted, authority, SKELETON).await?, 0);
+    let mut session = *admitted;
     for (command_id, expected) in [
         (1, UseDisposition::Committed),
         (2, UseDisposition::Rejected),
@@ -89,22 +90,10 @@ pub(super) async fn exercise(
                 .facts
                 .object_revision(key),
         };
-        let reply = owner
-            .use_object(
-                admitted.runtime_actor.ok_or("explorer actor")?,
-                UseCommand {
-                    command_id,
-                    game_session_id: admitted.game_session_id,
-                    item_fence: admitted.item_fence,
-                },
-                target,
-            )
-            .await;
-        assert_eq!(reply.disposition, expected, "explorer USE {command_id}");
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
+        let reply = super::questpc8_authored_programmes_fixtures::use_target(
+            owner, &mut session, command_id, &target,
+        ).await?;
+        assert_eq!(reply, expected);
     }
     assert_eq!(progress(owner, admitted, authority, SKELETON).await?, 1);
     assert_eq!(progress(owner, admitted, authority, GUILD).await?, 1);
@@ -126,7 +115,6 @@ pub(super) async fn exercise(
     let target = super::questpc8_authored_programmes_fixtures::object_target(owner, hoard, 1)?;
     let kills = "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/dragon_counter";
     let claims = "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement";
-    let mut session = *admitted;
     for (count, completed, command, expected) in [
         (49, 9, 3, UseDisposition::Rejected),
         (50, 9, 4, UseDisposition::Committed),
