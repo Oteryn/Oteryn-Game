@@ -80,6 +80,28 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 fn e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal() -> Result<(), Error> {
     let captured = captured()?;
     let expected = captured.expected.as_str();
+    let live = std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some();
+    let mut open_frame = result(CommandStatus::Accepted, &captured.chest);
+    if live {
+        assert_eq!(
+            std::env::var("W03_CAPTURE_BINDING")?,
+            expected.replace('\n', ";")
+        );
+        let session = value(expected, "session")?;
+        assert!(session.len() == 32 && session.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        let coordinates = |key| -> Result<(u64, u64), Error> {
+            let (id, sequence) = value(expected, key)?
+                .split_once('|')
+                .ok_or("missing frame coordinates")?;
+            Ok((id.parse()?, sequence.parse()?))
+        };
+        let open = coordinates("open")?;
+        let browse = coordinates("browse")?;
+        let collect = coordinates("collect")?;
+        assert!(open.0 > 0 && open.0 < browse.0 && browse.0 < collect.0);
+        assert!(open.1 > 0 && open.1 < browse.1 && browse.1 < collect.1);
+        (open_frame.command_id, open_frame.server_sequence) = open;
+    }
     let mut panel = BossEncounterPanel {
         selected: true,
         ..BossEncounterPanel::default()
@@ -87,10 +109,7 @@ fn e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal() -> Result<(
     let open = request(&mut panel, Intent::Rewards).ok_or("reward open request")?;
     assert_eq!((open.capability, open.kind), (117, 340));
     assert!(open.payload.is_empty());
-    assert!(apply_result(
-        &mut panel,
-        &result(CommandStatus::Accepted, &captured.chest)
-    ));
+    assert!(apply_result(&mut panel, &open_frame));
     let groups: usize = value(expected, "groups")?.parse()?;
     let mut text = format!(
         "Reward groups: {groups} | Server time: {}\r\n",
@@ -115,14 +134,16 @@ fn e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal() -> Result<(
     );
 
     // A rejected OPEN keeps the chest and summary the server last confirmed.
-    let (summary, chest) = (panel.summary.clone(), panel.rewards.clone());
-    request(&mut panel, Intent::Rewards).ok_or("second open")?;
-    assert!(!apply_result(
-        &mut panel,
-        &result(CommandStatus::Rejected, &[])
-    ));
-    assert_eq!(panel.summary, summary);
-    assert_eq!(panel.rewards, chest);
+    if !live {
+        let (summary, chest) = (panel.summary.clone(), panel.rewards.clone());
+        request(&mut panel, Intent::Rewards).ok_or("second open")?;
+        assert!(!apply_result(
+            &mut panel,
+            &result(CommandStatus::Rejected, &[])
+        ));
+        assert_eq!(panel.summary, summary);
+        assert_eq!(panel.rewards, chest);
+    }
 
     // BROWSE of an unknown death is refused by the server's status, not applied as items.
     let mut rewards = BossRewardsPanel {
@@ -144,7 +165,15 @@ fn e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal() -> Result<(
             reply: Some(BossRewardsReply::Browse(browse)),
         }
     ));
-    assert!(rewards.feedback.is_some());
+    if live {
+        assert_eq!(value(expected, "browse_status")?, "OutOfReach");
+        assert_eq!(
+            rewards.feedback,
+            Some("Move next to a qualified reward chest")
+        );
+    } else {
+        assert!(rewards.feedback.is_some());
+    }
     assert!(rewards.browse.as_ref().is_some_and(|b| b.rows.is_empty()));
 
     // COLLECT_ALL away from a chest moves nothing and names the refusal.
@@ -167,6 +196,11 @@ fn e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal() -> Result<(
             reply: Some(BossRewardsReply::Collect(collect)),
         }
     ));
+    if live {
+        assert_eq!(value(expected, "collect_status")?, "OutOfReach");
+        assert_eq!(value(expected, "collect_moved")?, "0");
+        assert_eq!(value(expected, "collect_remaining")?, "0");
+    }
     let feedback = match value(expected, "collect_status")? {
         "OutOfReach" => "Move next to a qualified reward chest",
         "Empty" => "No live rewards remain",
