@@ -2049,24 +2049,66 @@ const CLIENT_CAST_TILE: TilePos = TilePos {
     floor: -8,
 };
 
+fn authored_tarantula_respawn(spawns: &oteryn_world_bundle::spawn::Table) -> TestResult<Duration> {
+    let mut matches = spawns
+        .sources
+        .iter()
+        .filter(|source| source.floor == CLIENT_TARGET_SPAWN.floor)
+        .flat_map(|source| &source.points)
+        .filter(|point| {
+            point.x == CLIENT_TARGET_SPAWN.x
+                && point.y == CLIENT_TARGET_SPAWN.y
+                && spawns
+                    .creatures
+                    .get(point.creature as usize)
+                    .is_some_and(|creature| creature.key == CLIENT_TARGET_KEY)
+        });
+    let spawn = matches
+        .next()
+        .ok_or("C12 authored Tarantula spawn absent")?;
+    if spawn.respawn_ms == 0 || matches.next().is_some() {
+        return Err("C12 authored Tarantula respawn is zero or ambiguous".into());
+    }
+    Ok(Duration::from_millis(u64::from(spawn.respawn_ms)))
+}
+
+#[test]
+fn c12_respawn_budget_requires_the_exact_authored_point() -> TestResult {
+    use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+    let mut table = Table {
+        creatures: vec![Creature {
+            key: CLIENT_TARGET_KEY.into(),
+            period: Period::All,
+        }],
+        sources: vec![Source {
+            key: "test".into(),
+            floor: CLIENT_TARGET_SPAWN.floor,
+            x: CLIENT_TARGET_SPAWN.x,
+            y: CLIENT_TARGET_SPAWN.y,
+            points: vec![Point {
+                creature: 0,
+                x: CLIENT_TARGET_SPAWN.x,
+                y: CLIENT_TARGET_SPAWN.y,
+                direction: Direction::North,
+                respawn_ms: 90_000,
+                boss_policy: None,
+            }],
+        }],
+    };
+    assert_eq!(authored_tarantula_respawn(&table)?, Duration::from_secs(90));
+    let mut point = table.sources[0].points[0];
+    point.x += 1;
+    table.sources[0].points[0] = point;
+    assert!(authored_tarantula_respawn(&table).is_err());
+    Ok(())
+}
+
 fn authored_client_cast_route(
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     from: TilePos,
 ) -> TestResult<Vec<(StepDirection, TilePos)>> {
-    let authored = spawns.sources.iter().any(|source| {
-        source.floor == CLIENT_TARGET_SPAWN.floor
-            && source.points.iter().any(|point| {
-                point.x == CLIENT_TARGET_SPAWN.x
-                    && point.y == CLIENT_TARGET_SPAWN.y
-                    && spawns
-                        .creatures
-                        .get(point.creature as usize)
-                        .is_some_and(|creature| creature.key == CLIENT_TARGET_KEY)
-            })
-    });
-    if !authored || from == CLIENT_CAST_TILE {
-        return Err("C12.client authored hunt spawn or starting position differs".into());
+    if from == CLIENT_CAST_TILE {
+        return Err("C12.client authored hunt starting position differs".into());
     }
     let profiles = creature_profiles()?;
     if profiles
@@ -2326,7 +2368,13 @@ async fn prove_authored_hunt(
     allow_return_detour: bool,
 ) -> TestResult {
     let home = tile(client.world_spatial().actor_position)?;
-    let authored = authored_client_cast_route(world, spawns, home)?;
+    let respawn = authored_tarantula_respawn(spawns)?;
+    let spawn_wait = if allow_return_detour {
+        respawn + COMMAND_BUDGET
+    } else {
+        COMMAND_BUDGET
+    };
+    let authored = authored_client_cast_route(world, home)?;
     let path = authored
         .iter()
         .map(|(direction, _)| *direction)
@@ -2335,7 +2383,8 @@ async fn prove_authored_hunt(
     if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
         return Err("C12 did not reach the authored cast tile".into());
     }
-    super::client_row_c12::cast_at_authored_spawn(client.session_mut(), augment_bps).await?;
+    super::client_row_c12::cast_at_authored_spawn(client.session_mut(), augment_bps, spawn_wait)
+        .await?;
     let cleared = client.session_mut().attack_target(None).await?;
     require_mechanic_acceptance(cleared.status, "C12 authored target clear")?;
     if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {

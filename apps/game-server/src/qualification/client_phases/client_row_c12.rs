@@ -714,6 +714,7 @@ async fn build_harmony<S: SessionStream>(
 pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     session: &mut Session<S>,
     bps: u64,
+    spawn_wait: Duration,
 ) -> TestResult {
     // The authored route just descended a floor. STEP pacing does not cover stairhop exhaust.
     let floor_exhaust = Duration::from_micros(oteryn_gameplay_spell_rules::cast::STAIRHOP_MICROS);
@@ -724,7 +725,11 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     session
         .service_liveness_discarding_events(floor_exhaust)
         .await?;
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    let deadline = tokio::time::Instant::now() + spawn_wait;
+    evidence(&format!(
+        "C12_AUTHORED_SPAWN_WAIT tile=32294,32333,8 budget_ms={}",
+        spawn_wait.as_millis()
+    ));
     let target = loop {
         let visible = session
             .world_entities()
@@ -747,11 +752,16 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
         }
         drop(matching);
         if tokio::time::Instant::now() >= deadline {
-            return Err("C12 Tarantula absent at the original authored spawn".into());
+            return Err(format!(
+                "C12 Tarantula absent at the original authored spawn after {}ms",
+                spawn_wait.as_millis()
+            )
+            .into());
         }
         session
             .service_liveness_discarding_events(Duration::from_millis(50))
             .await?;
+        verdict::Harness::global().progress("authored-spawn-observation");
     };
     let own = session
         .world_entities()
