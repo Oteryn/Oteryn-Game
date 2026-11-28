@@ -1879,6 +1879,37 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   exit "$?"
 fi
 
+s04a_client_replay() {
+  local expected capture_count replay_log="$WORK/s04a-replay.log"
+  expected=$(tr '\n' ';' < "$E2E_ALL_CAPTURE_DIR/s04a-expected.txt") || {
+    echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=FAIL evidence=missing-live-capture"
+    return 1
+  }
+  capture_count=$(grep -Fxc -- \
+    "SEAM_EVIDENCE e2e_capture scenario=S04a.client status=CAPTURED evidence=$expected" \
+    "$WORK/stage-seam_stages.log" || true)
+  if [[ "$capture_count" != 1 ]]; then
+    echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=FAIL evidence=capture-manifest-mismatch"
+    return 1
+  fi
+  if ! OTERYN_S04A_CAPTURE_REQUIRED=1 \
+    cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
+    vip::e2e_s04a::vip_replay_add_edit_query_and_duplicate_refusal -- --exact --nocapture > "$replay_log" 2>&1 ||
+    [[ $(grep -Ec '^test .*::vip_replay_add_edit_query_and_duplicate_refusal \.\.\. ok$' "$replay_log") != 1 ]]; then
+    cat "$replay_log"
+    echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=FAIL evidence=live-replay-failed"
+    return 1
+  fi
+  cat "$replay_log"
+  echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=PASS evidence=fresh-session-sequence-bound-replay"
+}
+
+if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows &&
+      "${OTERYN_E2E_ROW_BATCH:-}" == 182:1 ]]; then
+  export E2E_ALL_CAPTURE_DIR="$WORK/s04a-captures"
+  mkdir -m 0700 -- "$E2E_ALL_CAPTURE_DIR"
+fi
+
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
@@ -1908,6 +1939,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "${E2E_ALL_CAPTURE_DIR:-}" == "$WORK/s04a-captures" ]]; then
+  stage s04a_client_replay "$seam_stage_name" -- s04a_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

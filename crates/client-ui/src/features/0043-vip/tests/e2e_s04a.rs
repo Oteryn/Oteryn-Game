@@ -29,14 +29,17 @@ fn load() -> Result<Replay, Error> {
             expected: std::fs::read_to_string(root.join("s04a-expected.txt"))?,
         });
     }
-    let view = "{\"entries\":[{\"number\":4,\"name\":\"Berenike\",\"description\":\"node-boot friend\",\"icon\":7,\"notify\":true,\"groups\":[2]}],\"groups\":[{\"number\":2,\"name\":\"Raid Team\"}]}";
+    if std::env::var_os("OTERYN_S04A_CAPTURE_REQUIRED").is_some() {
+        return Err("missing live S04a capture directory".into());
+    }
+    let view = "{\"entries\":[{\"entry\":4,\"name\":\"Berenike\",\"description\":\"node-boot friend\",\"icon\":7,\"notify\":true,\"groups\":[2]}],\"groups\":[{\"group\":2,\"name\":\"Raid Team\"}]}";
     let encode = |code, revision, number, view: &str| {
         vip::encode_result(code, revision, number, 0, view).map_err(|e| format!("{e:?}"))
     };
     Ok(Replay {
         added: encode(1, 5, 4, "")?,
         listed: encode(1, 8, 0, view)?,
-        duplicate: encode(3, 8, 0, "")?,
+        duplicate: encode(3, 9, 0, "")?,
         expected:
             "name=Berenike\nentry=4\ngroup=2\nrevision=8\nadded_revision=5\nduplicate_code=3\n"
                 .into(),
@@ -88,22 +91,22 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     let view: serde_json::Value =
         serde_json::from_str(panel.view.as_deref().ok_or("view absent")?)?;
     let item = &view["entries"][0];
-    assert_eq!(item["number"].as_u64(), Some(entry));
+    assert_eq!(item["entry"].as_u64(), Some(entry));
     assert_eq!(item["name"].as_str(), Some(name));
     assert_eq!(item["description"].as_str(), Some("node-boot friend"));
     assert_eq!(item["icon"].as_u64(), Some(7));
     assert_eq!(item["notify"].as_bool(), Some(true));
     assert_eq!(item["groups"][0].as_u64(), Some(group));
-    assert_eq!(view["groups"][0]["number"].as_u64(), Some(group));
+    assert_eq!(view["groups"][0]["group"].as_u64(), Some(group));
     assert_eq!(view["groups"][0]["name"].as_str(), Some("Raid Team"));
     assert_eq!(Some(panel_text(&panel)), panel.view.clone());
     let listed_view = panel.view.clone();
 
-    // The duplicate Add is refused: the revision stays and the list view is not replaced.
+    // The duplicate Add advances the receipt revision and preserves the displayed list.
     assert!(request(&mut panel, Intent::Add(name.into())).is_some());
     apply_result(&mut panel, &response(&replay.duplicate)?);
     assert_eq!(value(&replay.expected, "duplicate_code")?, "3");
-    assert_eq!(panel.revision, revision);
+    assert_eq!(Some(panel.revision), revision.checked_add(1));
     assert_eq!(
         panel.feedback.as_deref(),
         Some("Character is already listed")
