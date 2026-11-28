@@ -128,7 +128,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         drop(permit);
-        if let (FencedWheelChange::Done { .. }, Some(actor)) = (&outcome, admitted.runtime_actor) {
+        if let (FencedWheelChange::Done { refused: false }, Some(actor)) =
+            (&outcome, admitted.runtime_actor)
+        {
             self.refresh_wheel_vitals(actor, admitted.game_session_id)
                 .await;
         }
