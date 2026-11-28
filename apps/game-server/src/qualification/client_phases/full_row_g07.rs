@@ -15,6 +15,12 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::house_rotation as wire;
 use sqlx::Connection;
 
+const LANDING: [i32; 3] = [32360, 32253, 7];
+const CHAIR_TILE: [i32; 3] = [32359, 32253, 7];
+// Global Wooden Chair documents four facings; Crystal 201189f8 provides the item ID cycle.
+const CHAIR_BEFORE: &str = "oteryn:item.tibia.i2358";
+const CHAIR_AFTER: &str = "oteryn:item.tibia.i2359";
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result =
@@ -67,22 +73,69 @@ fn identity(target: &wire::Target) -> (Vec<u8>, u64) {
     }
 }
 
-async fn first_entry(client: &mut DevClientSession) -> TestResult<Option<wire::Entry>> {
-    match exchange(client, &wire::Request::Query(0)).await? {
-        wire::Reply::Catalogue(catalogue) => Ok(catalogue.entries.into_iter().next()),
-        wire::Reply::Applied(disposition) => Err(format!(
-            "step=query observed=applied:{disposition:?};needed=owned-house;settlement-only:crates/gameplay/durability/src/durability/house_ownership/settlement.rs"
-        )
-        .into()),
-    }
-}
-
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, _, _) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=logout observed={detail}").into());
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={outcome:?}").into());
     }
     Ok(())
+}
+
+async fn prepare_chair(clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+    let position: Vec<_> = CHAIR_TILE.into_iter().flat_map(i32::to_be_bytes).collect();
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let key: Vec<u8> = sqlx::query_scalar(
+        "WITH item AS (
+            INSERT INTO game_item_instances
+                (item_instance_id,world_id,definition_family,definition_production_key,
+                 definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+            VALUES (game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,
+                    'definition-r1',1,1,game_character_uuid_v7())
+            RETURNING item_instance_id,world_id
+        ), placed AS (
+            INSERT INTO game_item_house_interior_locations
+                (item_instance_id,world_id,house_key,spatial_position,stack_ordinal,placed_transaction_id)
+            SELECT item_instance_id,world_id,$3,$4,1,game_character_uuid_v7() FROM item
+            RETURNING item_instance_id,world_id,house_key,placed_transaction_id
+        )
+        INSERT INTO game_item_house_reclaim_provenance
+            (item_instance_id,world_id,house_key,reclaim_subject_character_id,
+             placement_transaction_id,provenance_revision)
+        SELECT item_instance_id,world_id,house_key,encode($5,'hex')::uuid,placed_transaction_id,1
+        FROM placed RETURNING uuid_send(item_instance_id)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(CHAIR_BEFORE)
+    .bind(full_row_g01::HOUSE)
+    .bind(position)
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    evidence("G07_CHECK step=fixture-input item=2358 tile=32359,32253,7");
+    Ok(key.as_slice().try_into()?)
+}
+
+async fn chair_definition(clients: &SeamClients<'_>, key: &[u8; 16]) -> TestResult<String> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    Ok(sqlx::query_scalar(
+        "SELECT i.definition_production_key
+         FROM game_item_instances i JOIN game_item_house_interior_locations h
+             USING (item_instance_id,world_id)
+         WHERE i.item_instance_id=encode($1,'hex')::uuid
+           AND i.world_id=encode($2,'hex')::uuid AND h.house_key=$3 AND h.spatial_position=$4
+           AND i.quantity=1 AND i.lifecycle=1",
+    )
+    .bind(key.as_slice())
+    .bind(clients.world.as_slice())
+    .bind(full_row_g01::HOUSE)
+    .bind(
+        CHAIR_TILE
+            .into_iter()
+            .flat_map(i32::to_be_bytes)
+            .collect::<Vec<_>>(),
+    )
+    .fetch_one(&mut database)
+    .await?)
 }
 
 async fn assign_fixture_scope(clients: &SeamClients<'_>) -> TestResult {
@@ -141,7 +194,17 @@ async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     use full_row_g01::HOUSE;
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
     let world = full_e2ef7::qualification_world(clients)?;
-    let house = serde_json::from_str::<serde_json::Value>(include_str!("../../../../../content/houses/houses-00500-00994.json"))?["houses"].as_array().and_then(|houses| houses.iter().find(|house| house["identity"]["key"] == HOUSE)).cloned().ok_or("G07 authored house missing")?;
+    let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../content/houses/houses-00500-00994.json"
+    ))?;
+    let house = catalogue["houses"]
+        .as_array()
+        .and_then(|houses| {
+            houses
+                .iter()
+                .find(|house| house["identity"]["key"] == HOUSE)
+        })
+        .ok_or("G07 authored house missing")?;
     let coordinate = |name| {
         house["entrance"][name]
             .as_u64()
@@ -176,7 +239,10 @@ async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -
             reply.status
         )
     })?;
-    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != Some(HOUSE) {
+    if reply.status != CommandStatus::Accepted
+        || ack.house.as_deref() != Some(HOUSE)
+        || ack.position != LANDING
+    {
         return Err("step=house-entry observed=missing-authorized-house-scope".into());
     }
     evidence("G07_CHECK step=house-transfer status=PASS");
@@ -184,10 +250,16 @@ async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G01_ACCOUNT").await?;
+    character_prep::declare_seeded(
+        "G07",
+        "level 20 and ended authored auction",
+        "house ownership prerequisite",
+    );
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G07_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
     let mut client = full_row_g01::prepare_owned_house(clients, 0xc9).await?;
     assign_fixture_scope(clients).await?;
+    let key = prepare_chair(clients).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1)
@@ -200,46 +272,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     enter_house(&mut client, clients).await?;
-    let query = first_entry(&mut client).await;
-    let entry = match query {
-        Ok(Some(entry)) => entry,
-        other => {
-            let observed = match other {
-                Ok(_) => "empty-catalogue;needed=owned-house-with-rotatable-furniture".to_owned(),
-                Err(error) => error.to_string(),
-            };
-            logout(&mut client).await?;
-            return Err(format!("step=query observed={observed}").into());
-        }
+    let before = first_entry_with(&mut client, &key).await?;
+    if chair_definition(clients, &key).await? != CHAIR_BEFORE {
+        return Err("step=before-rotate observed=wrong-chair-orientation".into());
+    }
+    let target = wire::Target::Item {
+        item: key,
+        expected_revision: before,
     };
-    let (key, before) = identity(&entry.target);
-    let applied = exchange(&mut client, &wire::Request::Rotate(entry.target.clone())).await?;
+    let applied = exchange(&mut client, &wire::Request::Rotate(target)).await?;
     if applied != wire::Reply::Applied(wire::UseDisposition::Committed) {
         return Err(format!("step=rotate observed={applied:?};needed=committed").into());
     }
     let after = first_entry_with(&mut client, &key).await?;
-    if after <= before {
-        return Err(
-            format!("step=rotate observed=revision:{before}->{after};needed=advance").into(),
-        );
+    if before.checked_add(1) != Some(after) || chair_definition(clients, &key).await? != CHAIR_AFTER
+    {
+        return Err(format!(
+            "step=rotate observed=revision:{before}->{after};needed=one-revision-and-chair-2359"
+        )
+        .into());
     }
+    let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xca, 0).await?;
-    // Fresh admission may restore the saved House scope. Enter from the
-    // authored door only when the join snapshot is in the Channel.
-    if fresh
-        .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::house_transfer::STATE_DOMAIN_HOUSE_SCOPE)
-        .is_none()
-    {
-        enter_house(&mut fresh, clients).await?;
+    if fresh.join_snapshot().game_session_id == session {
+        return Err("step=fresh observed=reused-session".into());
     }
-    let durable = first_entry_with(&mut fresh, &key).await;
+    let durable = first_entry_with(&mut fresh, &key).await?;
+    if durable != after || chair_definition(clients, &key).await? != CHAIR_AFTER {
+        return Err("step=fresh observed=chair-or-revision-not-durable".into());
+    }
     logout(&mut fresh).await?;
-    if durable? != after {
-        return Err("step=fresh observed=revision-not-durable".into());
-    }
+    evidence("G07_CHECK step=rotation before=2358 after=2359 relog=2359 status=PASS");
     Ok(())
 }
 
