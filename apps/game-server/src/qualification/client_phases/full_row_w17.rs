@@ -183,12 +183,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
     let drome_before = drome(&mut client, DromeAction::Status).await?;
     let drome_enter = drome(&mut client, DromeAction::Enter).await?;
-    if drome_enter.disposition == 1 {
-        let left = drome(&mut client, DromeAction::Leave).await?;
-        if left.disposition != 1 {
-            return Err(format!("step-7 Tibiadrome Leave observed={left:?}").into());
-        }
-    } else if drome_enter.disposition != 3 || drome_enter != drome_before {
+    if drome_enter != (DromeResult { disposition: 3, ..drome_before }) {
         return Err(format!(
             "step-7 Tibiadrome eligibility refusal mutated state before={drome_before:?} observed={drome_enter:?}"
         )
@@ -206,7 +201,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     let drome_after = drome(&mut client, DromeAction::Status).await?;
-    if drome_enter.disposition != 1 && drome_after != drome_before {
+    if drome_after != drome_before {
         return Err(format!(
             "step-8 fresh-admission Tibiadrome state mismatch before={drome_before:?} observed={drome_after:?}"
         )

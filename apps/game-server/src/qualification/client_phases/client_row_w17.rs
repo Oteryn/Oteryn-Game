@@ -9,13 +9,10 @@ use oteryn_protocol_oteryn::arena::{
     self as wire, ArenaAction, ArenaDisposition, DromeAction, DromeResult,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    let root = required("E2E_ALL_CAPTURE_DIR")?;
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+    Ok(())
 }
 
 async fn request(
@@ -96,15 +93,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let before = DromeResult::decode(&drome_status).map_err(|error| format!("step=drome-status decode: {error:?}"))?;
     let drome_enter = action(&mut client, ArenaAction::Drome(DromeAction::Enter), "drome-enter").await?;
     let entered = DromeResult::decode(&drome_enter).map_err(|error| format!("step=drome-enter decode: {error:?}"))?;
-    if entered.disposition == 1 {
-        // Leave again so later rows find the Tibiadrome idle.
-        let left = action(&mut client, ArenaAction::Drome(DromeAction::Leave), "drome-leave").await?;
-        let left = DromeResult::decode(&left).map_err(|error| format!("step=drome-leave decode: {error:?}"))?;
-        if left.disposition != 1 {
-            return Err(format!("step=drome-leave observed={left:?}").into());
-        }
-    } else if entered.disposition != 3 || entered != before {
+    if entered != (DromeResult { disposition: 3, ..before }) {
         return Err(format!("step=drome-enter before={before:?} observed={entered:?}").into());
+    }
+    let drome_after = action(&mut client, ArenaAction::Drome(DromeAction::Status), "drome-after-refusal").await?;
+    let after = DromeResult::decode(&drome_after)
+        .map_err(|error| format!("step=drome-after-refusal decode: {error:?}"))?;
+    if after != before {
+        return Err(format!("step=drome-after-refusal before={before:?} observed={after:?}").into());
     }
     let mut expected = String::new();
     for challenge in &challenges {
@@ -120,13 +116,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         drome_text(&before),
         drome_text(&entered)
     ));
-    capture("w17-catalogue.bin", &catalogue);
-    capture("w17-status.bin", &status);
-    capture("w17-advance.bin", &advance);
-    capture("w17-drome-status.bin", &drome_status);
-    capture("w17-drome-enter.bin", &drome_enter);
-    capture("w17-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={logout:?}").into());
+    }
+    capture("w17-catalogue.bin", &catalogue)?;
+    capture("w17-status.bin", &status)?;
+    capture("w17-advance.bin", &advance)?;
+    capture("w17-drome-status.bin", &drome_status)?;
+    capture("w17-drome-enter.bin", &drome_enter)?;
+    capture("w17-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "advance={:?} drome_enter={}",
         refused.disposition, entered.disposition
