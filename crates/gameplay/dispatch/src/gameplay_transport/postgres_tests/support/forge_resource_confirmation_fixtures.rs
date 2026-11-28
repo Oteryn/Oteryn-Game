@@ -50,7 +50,7 @@ pub(super) async fn read_quotes(
             return Err("resource terms".into());
         };
         assert_eq!(q.operation, operation);
-        assert_eq!((q.before.dust, q.before.dust_limit), (1000, 1000));
+        assert_eq!((q.before.dust, q.before.dust_limit), (300, 300));
         if q.full_resources {
             assert_eq!((q.before.slivers, q.before.cores), (17, 2));
         } else {
@@ -59,12 +59,12 @@ pub(super) async fn read_quotes(
         if operation == Operation::DustToSlivers {
             assert_eq!(
                 (q.after_dust, q.after_limit, q.after_slivers, q.after_cores),
-                (940, 1000, 20, 2)
+                (240, 300, 20, 2)
             );
         } else {
             assert_eq!(
                 (q.after_dust, q.after_limit, q.after_slivers, q.after_cores),
-                (930, 1020, 0, 0)
+                (75, 301, 0, 0)
             );
         }
     }
@@ -95,6 +95,6 @@ pub(super) async fn read_without_handles(
     };
     assert!(matches!(wire::Reply::decode(&bytes), Some(wire::Reply {
         nonce: 14, payload: wire::Payload::Resource(q),
-    }) if !q.full_resources && q.after_limit == 1020));
+    }) if !q.full_resources && q.after_limit == 301));
     Ok(())
 }
