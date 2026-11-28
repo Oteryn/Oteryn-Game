@@ -1547,13 +1547,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import quest_corpse_profiles
 
-    quest_corpse_profiles.admit(
+    quest_corpse_qualification = quest_corpse_profiles.admit(
         root,
         generated,
         spell_import.PROVIDER_DESTINATIONS["item_profiles"],
         NATIVE_MANIFEST,
         provider_order,
         spell_import.canonical_bytes,
+        shared_keys=quest_corpse_profiles.shared_ordinary_stages(root),
     )
     import authored_npc_item_profiles
 
@@ -1979,15 +1980,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     } - pre_equipment_keys
     # Loot admissions complete shared rows after the exact equipment sources.
     import loot_slice_one
-
     generated[item_path] = spell_import.canonical_bytes(items)
     loot_admissions = loot_slice_one.admit_native(
-        root,
-        generated,
-        item_path,
-        starting_loadout_profiles.FRAGMENT,
-        provider_order,
-        spell_import.canonical_bytes,
+        root, generated, item_path, starting_loadout_profiles.FRAGMENT,
+        provider_order, spell_import.canonical_bytes,
     )
     items = json.loads(generated[item_path])
     import cloot2_item_admissions
@@ -2109,6 +2105,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         NATIVE_MANIFEST,
         spell_import.canonical_bytes,
     )
+
+    shared_corpse_keys = quest_corpse_profiles.shared_ordinary_stages(root)
+    if shared_corpse_keys:
+        quest_corpse_profiles.validate_shared_stages(
+            json.loads(generated[item_path])["records"], quest_corpse_qualification, shared_corpse_keys
+        )
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

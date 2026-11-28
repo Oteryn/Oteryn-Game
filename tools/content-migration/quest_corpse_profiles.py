@@ -31,8 +31,12 @@ CORPSE_CAPACITY_MAX = 48
 BUTTERFLY_CORPSES = {4991, 4992, 4993}
 BUTTERFLY_REMAINS = 4378
 GROUPS = ("physical", "stack", "container", "temporal", "classification")
-# The Dwarf Letter and classic quest sources qualify 81 corpse roots and 282 decay stages.
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 81, 8, 282
+# The admitted Dwarf Letter bodies share one additional source root, Item 6007.
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 73, 8, 256
+
+
+# Classic quests qualify eight additional roots and 26 additional stages.
+CLASSIC_ROOTS, CLASSIC_STAGES = 8, 26
 
 
 def item_id(reference):
@@ -133,7 +137,7 @@ def required_with_loot_scope(root, creatures):
     loot_creatures = ordinary.get("loot_creatures", {})
     if (
         not isinstance(loot_creatures, dict)
-        or len(loot_creatures) > MAX_ROOTS
+        or len(loot_creatures) > MAX_ROOTS + CLASSIC_ROOTS
         or (loot_creatures and not ordinary["sources"])
     ):
         raise ValueError("QUEST_CORPSE_LOOT_REQUIREMENTS")
@@ -170,7 +174,7 @@ def required_with_loot_scope(root, creatures):
             raise ValueError("QUEST_CORPSE_RABBIT_SOURCE")
         roots.add(6017)
     required_roots = roots | loot_roots
-    if len(required_roots) > MAX_ROOTS:
+    if len(required_roots) > MAX_ROOTS + CLASSIC_ROOTS:
         raise ValueError("QUEST_CORPSE_ROOT_BOUNDS")
     return required_roots, loot_roots - roots
 
@@ -217,7 +221,9 @@ def decay_closure(roots, xml):
             if not 0 <= current <= 65535:
                 raise ValueError("QUEST_CORPSE_SOURCE_DECAY_TARGET")
         selected.update(chain)
-    if len(selected) > MAX_ITEMS:
+    # The Koshei quest provider adds a disjoint five-stage chain.
+    koshei_stages = 5 if 7535 in roots else 0
+    if len(selected) > MAX_ITEMS + CLASSIC_STAGES + koshei_stages:
         raise ValueError("QUEST_CORPSE_CLOSURE_BOUNDS")
     return selected
 
@@ -461,7 +467,53 @@ def qualifications(root=ROOT, creatures=None):
     return Qualification(roots, records, source_capacities, ordinary_loot_only)
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+# Ordinary Crystal corpse providers own these eight quest decay chains when
+# installed. The quest still qualifies every stage for its loot and objectives.
+SHARED_ORDINARY_STAGES = frozenset(
+    f"oteryn:item.tibia.i{number}"
+    for number in (
+        6018, 4176, 4177, 4178,
+        16197, 16196, 16195, 16194,
+        17425, 17430, 17431, 17432,
+        18114, 18115, 18116, 18117,
+        21987, 21989, 21990, 21991,
+        31419, 31418, 31417, 31416,
+        31646, 31645, 31644, 31643,
+        36982, 36983, 36984, 36985,
+    )
+)
+
+
+def shared_ordinary_stages(root):
+    if (root / "imports/crystalserver/ordinary-corpses/item-ids.json").is_file():
+        return SHARED_ORDINARY_STAGES
+    return frozenset()
+
+
+def validate_shared_stages(records, qualified, shared_keys):
+    remaining = set(shared_keys)
+    for record in records:
+        key = record["production_definition"]["production_key"]
+        if key not in shared_keys:
+            continue
+        expected = qualified.records[key]
+        if key not in remaining or any(
+            record[field] != expected[field]
+            for field in ("production_definition", "production_binding", "admission")
+        ) or record["semantics"]["container"] != expected["semantics"]["container"]:
+            raise ValueError(f"Conflicting shared quest corpse custody: {key}")
+        # Timed quest transitions must still reach the same next stage. The
+        # ordinary corpse owner also supports untimed terminal remains.
+        temporal = expected["semantics"].get("temporal", {})
+        if temporal.get("value", {}).get("decay_target", {}).get("state") == "KNOWN":
+            if record["semantics"].get("temporal") != temporal:
+                raise ValueError(f"Conflicting shared quest corpse decay: {key}")
+        remaining.remove(key)
+    if remaining:
+        raise ValueError(f"Missing shared quest corpse profiles: {sorted(remaining)}")
+
+
+def admit(root, generated, profile_path, manifest_path, order, canonical, *, shared_keys=frozenset()):
     creatures = json.loads(
         generated[CREATURES] if CREATURES in generated else (root / CREATURES).read_bytes()
     )
@@ -471,6 +523,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if len(existing) != len(document["records"]):
         raise ValueError("QUEST_CORPSE_DUPLICATE_NATIVE_PROFILE")
     for key, record in qualified.records.items():
+        if key in shared_keys:
+            continue
         if key in existing:
             prior = existing[key]
             if (
@@ -501,6 +555,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[profile_path]).hexdigest()
     generated[manifest_path] = canonical(manifest)
+    return qualified
 
 
 def apply_loot_facts(facts, root=ROOT, creatures=None):

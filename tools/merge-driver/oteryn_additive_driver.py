@@ -7,7 +7,8 @@ Two mechanics in flight usually both append at the same place: a `mod` line, a s
 changed, only added. This driver keeps every hunk `git merge-file` merges cleanly, and resolves a
 conflicted hunk only when its base is empty, i.e. both sides inserted lines and neither edited or
 deleted one: it keeps the incoming (`origin/main`) lines first, then ours, and one copy when both
-inserted the same lines. Lines are never deduplicated one by one: when git slides both insertions
+inserted the same lines. A complete shard registration or quest definition pin that also starts
+the longer insertion is kept once. Other lines are never deduplicated one by one: when git slides both insertions
 across a shared `}` line, each side's block is only valid whole. The same slide makes two entries
 appended to one JSON array an insert-only hunk; a `.json` result must still parse, or the file keeps
 its markers. Every other conflict keeps its markers and the merge stops for a person, as without the
@@ -19,8 +20,24 @@ GitHub's server-side merge ignores custom drivers; this is a local-merge aid onl
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
+
+
+def registration_prefix(shorter: list[str], longer: list[str]) -> bool:
+    """Only coalesce a whole registration that both sides inserted verbatim."""
+    if not shorter or longer[:len(shorter)] != shorter:
+        return False
+    if all(re.fullmatch(r'\s*include_str!\("[^"]+\.json"\),\s*', line) for line in shorter):
+        return True
+    # Rust DefinitionPin literal (quest key, 32-byte hash, track defaults).
+    return re.fullmatch(
+        r'\s*\(\s*"oteryn:quest\.[a-z0-9_]+",\s*'
+        r'\[\s*(?:0x[0-9a-f]{2},\s*){32}\],\s*'
+        r'&\[\s*(?:\(\s*"oteryn:quest-progress/[a-z0-9_/-]+",\s*-?\d+,?\s*\),\s*)*\],\s*\),\s*',
+        "".join(shorter),
+    ) is not None
 
 
 def combine(merged: str, marker_size: int) -> tuple[str, int, int]:
@@ -57,9 +74,14 @@ def combine(merged: str, marker_size: int) -> tuple[str, int, int]:
             out.extend(lines[start : j + 1])
             remaining += 1
         else:
-            out.extend(sections["theirs"])
-            if sections["ours"] != sections["theirs"]:
-                out.extend(sections["ours"])
+            ours, theirs = sections["ours"], sections["theirs"]
+            if ours == theirs or registration_prefix(ours, theirs):
+                out.extend(theirs)
+            elif registration_prefix(theirs, ours):
+                out.extend(ours)
+            else:
+                out.extend(theirs)
+                out.extend(ours)
             combined += 1
         i = j + 1
     return "".join(out), combined, remaining

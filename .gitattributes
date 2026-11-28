@@ -18,6 +18,7 @@ content/dialogues/definitions/index.json merge=oteryn-regen
 content/documents/index.json merge=oteryn-regen
 content/encounters/definitions/index.json merge=oteryn-regen
 content/interactions/reward_claims/index.json merge=oteryn-regen
+content/items/definitions/spell-native-profiles.json merge=oteryn-regen
 content/items/index.json merge=oteryn-regen
 content/loot/index.json merge=oteryn-regen
 content/manifest.json merge=oteryn-regen
