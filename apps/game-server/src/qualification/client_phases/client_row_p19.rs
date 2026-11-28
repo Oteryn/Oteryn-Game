@@ -110,9 +110,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 && (u64::from(at.x), u64::from(at.y)) != (x, y)
         }).ok_or_else(|| format!("P19 selected {creature_key} {exact:?} is unreachable from {origin:?} at {position}"))?;
         evidence(&format!("P19 approach entity={exact:?} origin={origin:?} target={position} steps={}", path.len()));
-        let needs_entry_evidence = creature_key == "oteryn:creature.rat"
-            && !encounters.iter().any(|(kind, _, _, _)| *kind == classification);
-        move_first_attempt(&mut client, world, path, needs_entry_evidence).await?;
+        let needs_entry_evidence = !encounters.iter().any(|(kind, _, _, _, _)| *kind == classification);
+        let mut travel_events = move_first_attempt(&mut client, world, path, needs_entry_evidence.then_some(exact)).await?;
         if !needs_entry_evidence {
             tokio::time::timeout(Duration::from_secs(15), async {
                 loop {
@@ -132,7 +131,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let first: u64 = tokio::time::timeout(Duration::from_secs(15), async {
             let mut first_binding = None;
             loop {
-                for event in client.wait_for_events(Duration::from_secs(15)).await? {
+                for event in if travel_events.is_empty() { client.wait_for_events(Duration::from_secs(15)).await? } else { std::mem::take(&mut travel_events) } {
                     match event {
                         SessionEvent::Appearance(delta) => {
                             if let AppearanceUpdate::Mappings(mappings) = delta.value {
@@ -183,22 +182,21 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let entry = candidates.iter().find(|entry| entry.entity.entity == exact)
             .ok_or("P19 selected actor is missing from the live client")?;
         if entry.forge_stacks != Some(stacks)
-            || entry.entity.display_name.as_ref().and_then(|name| name.as_str().ok()) != Some("Rat")
         {
             return Err(format!("P19 wrong live creature or Forge marker for {exact:?}").into());
         }
         let selected = exact;
-        encounters.push((classification, stacks, selected, tile(client.world_spatial().actor_position)?));
+        encounters.push((classification, stacks, selected, creature_key, tile(client.world_spatial().actor_position)?));
     }
     for classification in ["influenced", "fiendish"] {
-        if !encounters.iter().any(|(kind, _, _, _)| *kind == classification) {
-            return Err(format!("P19 production draw selected no {classification} Rat for the combat proof").into());
+        if !encounters.iter().any(|(kind, _, _, _, _)| *kind == classification) {
+            return Err(format!("P19 production draw selected no {classification} creature for the combat proof").into());
         }
     }
         let combat_tile = tile(client.world_spatial().actor_position)?;
         let retreat = route(world, combat_tile, |at| is_logout_rest_tile(world, at))
             .ok_or("P19 FIXTURE_PLACEMENT no rest tile for live-marker relog")?;
-        move_first_attempt(&mut client, world, retreat, false).await?;
+        move_first_attempt(&mut client, world, retreat, None).await?;
         let rest_position = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
         require_logout(&mut client, clients).await?;
@@ -210,7 +208,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err("P19 live-marker relog did not restore the saved position in a new session".into());
         }
         let appearances = client.session_mut().visible_appearances();
-        for &(_, stacks, exact, _) in &encounters {
+        for &(_, stacks, exact, _, _) in &encounters {
         if !appearances.iter().any(|entry| {
             entry.entity.entity == exact && entry.forge_stacks == Some(stacks)
         }) {
@@ -220,10 +218,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         }
         let mut before = before;
     let mut dead = Vec::new();
-    for (classification, stacks, exact, combat_tile) in encounters {
+    for (classification, stacks, exact, creature_key, combat_tile) in encounters {
         let approach = forge_route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
-        move_first_attempt(&mut client, world, approach, false).await?;
+        move_first_attempt(&mut client, world, approach, None).await?;
         let pre_attack = rewards(&mut client, Path::new(&capture)).await?;
         if pre_attack != before {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
@@ -251,7 +249,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let mut destination = backpack_quantities(&client)?;
         add_quantities(&mut destination, &source);
         let durable_corpse = full_e2ef3::e2ei_c::native_corpse_id(clients, &corpse_entity).await?;
-        let occurrence = rat_kill_occurrence(clients, durable_corpse).await?;
+        let occurrence = forge_kill_occurrence(clients, durable_corpse, creature_key).await?;
         let stacks_u64 = u64::from(stacks);
         let expected_dust = stacks_u64 + u64::from(occurrence[15]) % (2 * stacks_u64 + 1);
         let expected_slivers = slivers_for_kill(stacks, occurrence[14]);
@@ -286,7 +284,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             is_logout_rest_tile(world, at)
         })
         .ok_or("P19 FIXTURE_PLACEMENT no route to protection zone for fresh admission")?;
-        move_first_attempt(&mut client, world, retreat, false).await?;
+        move_first_attempt(&mut client, world, retreat, None).await?;
         let at = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
         require_logout(&mut client, clients).await?;
@@ -405,12 +403,28 @@ fn p19_route_allows_three_floor_descent_within_horizontal_bound() {
     assert!(!forge_route_cell(temple, TilePos { x: temple.x + 161, ..shaman }));
 }
 
+fn collect_travel_events(
+    client: &mut DevClientSession,
+    target: Option<EntityRef>,
+    events: &mut Vec<SessionEvent>,
+) {
+    events.extend(client.take_events().into_iter().filter(|event| {
+        let Some(target) = target else { return false };
+        match event {
+            SessionEvent::Appearance(delta) => matches!(&delta.value, AppearanceUpdate::Mappings(mappings)
+                if mappings.forgets.contains(&target) || mappings.upserts.iter().any(|entry| entry.entity == target)),
+            SessionEvent::WorldSpatialEntities(delta) => delta.value.enter.iter().any(|entry| entry.entity == target),
+            _ => false,
+        }
+    }));
+}
+
 async fn move_first_attempt(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: Vec<StepDirection>,
-    keep_entry_events: bool,
-) -> TestResult {
+    entry_target: Option<EntityRef>,
+) -> TestResult<Vec<SessionEvent>> {
     let start = tile(client.world_spatial().actor_position)?;
     let goal = path.iter().try_fold(start, |at, direction| {
         destination(world, at, *direction).ok_or("P19 route has no planned landing")
@@ -418,16 +432,14 @@ async fn move_first_attempt(
     let mut remaining = std::collections::VecDeque::from(path);
     let mut blocked = Vec::new();
     let mut completed = 0;
+    let mut entry_events = Vec::new();
     while let Some(direction) = remaining.pop_front() {
-        if !keep_entry_events {
-            client.take_events();
-        }
+        collect_travel_events(client, entry_target, &mut entry_events);
         let origin = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
         let movement = client.step(direction).await?;
         let actual = tile(client.world_spatial().actor_position)?;
-        if !keep_entry_events
-            && movement.disposition == StepDisposition::Blocked
+        if movement.disposition == StepDisposition::Blocked
             && actual == origin
             && blocked.len() < 4
         {
@@ -465,7 +477,8 @@ async fn move_first_attempt(
             }
         }
     }
-    Ok(())
+    collect_travel_events(client, entry_target, &mut entry_events);
+    Ok(entry_events)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -537,7 +550,7 @@ fn forge_corpse_sliver_oracle_rejects_wrong_counts_and_non_fiendish_drops() {
     }
 }
 
-async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> TestResult<[u8; 16]> {
+async fn forge_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16], creature_key: &str) -> TestResult<[u8; 16]> {
     tokio::time::timeout(Duration::from_secs(5), async {
         let mut db = sqlx::PgConnection::connect(clients.url).await?;
         let (actor, generation, receipts): (i64, String, Vec<Vec<u8>>) = sqlx::query_as(
@@ -545,8 +558,7 @@ async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> Tes
                     ARRAY(SELECT uuid_send(b.bestiary_occurrence_id)
                           FROM game_character_bestiary_kill_receipts b
                           WHERE b.character_id=m.corpse_top_damage_character_id
-                            AND b.race_key IN ('rat', 'oteryn:creature.rat')
-                          LIMIT 3)
+                            AND b.race_key IN ($3, split_part($3, 'oteryn:creature.', 2)))
              FROM game_item_mint_receipts m
              WHERE m.item_instance_id=encode($1,'hex')::uuid
                AND m.corpse_top_damage_character_id=encode($2,'hex')::uuid
@@ -554,6 +566,7 @@ async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> Tes
         )
         .bind(corpse.as_slice())
         .bind(clients.characters[1].as_slice())
+        .bind(creature_key)
         .fetch_one(&mut db)
         .await?;
         let actor = u32::try_from(actor)?;
@@ -566,7 +579,7 @@ async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> Tes
             ))
             .collect();
         let [receipt] = matches.as_slice() else {
-            return Err(format!("P19 exact Rat corpse {corpse:?} has {} matching Bestiary receipts", matches.len()).into());
+            return Err(format!("P19 exact Forge corpse {corpse:?} has {} matching Bestiary receipts", matches.len()).into());
         };
         Ok(*receipt)
     }).await?
