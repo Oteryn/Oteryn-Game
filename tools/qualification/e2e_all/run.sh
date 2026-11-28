@@ -18,6 +18,9 @@ client_status=0
 NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
     bash tools/qualification/node_boot/run.sh 2>&1 | tee "$RUN/node.log" || node_status=$?
 
+# Bind the P17 replay to the completed live row's capture marker.
+E2E_P17_BINDING=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P17\.client status=CAPTURED evidence=([0-9a-f-]{36}(:[0-9]+){4})$/\1/p' "$RUN/node.log")
+export E2E_P17_BINDING
 # Missing captures are an error. A failed boot cannot silently use unit fixtures.
 "$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain -p oteryn-client-ui \
     -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet 2>&1 | tee "$RUN/client.log" || client_status=$?

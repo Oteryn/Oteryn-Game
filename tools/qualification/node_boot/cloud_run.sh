@@ -144,7 +144,9 @@ uid=$(id -u 2>/dev/null) && [[ "$uid" =~ ^[0-9]+$ ]] || blocked uid_unavailable
 
 export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 # shellcheck source=/dev/null
+requested_cargo_jobs=${CARGO_BUILD_JOBS:-}
 source /workspace/oteryn-env/env.sh >/dev/null 2>&1 || blocked cloud_env_unavailable
+[[ -z "$requested_cargo_jobs" ]] || export CARGO_BUILD_JOBS="$requested_cargo_jobs"
 export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 RUNNER_TEMP="$(select_work_parent /tmp /var/tmp /dev/shm "${RUNNER_TEMP:-}" /workspace)" \
   || blocked work_dir_unavailable
