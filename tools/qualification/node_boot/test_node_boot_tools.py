@@ -52,6 +52,14 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class C20cReplayTests(unittest.TestCase):
+    def test_c20c_operation_is_disjoint_from_other_bootstrap_intents(self):
+        own = re.search(r"^readonly C20C_PVP_OPERATION=(\S+)$", RUN_TEXT, re.M)
+        self.assertIsNotNone(own)
+        for name in ("INTENT_OPERATIONS", "PVP_INTENT_OPERATIONS"):
+            shared = re.search(rf"^readonly {name}=\(([^)]*)\)$", RUN_TEXT, re.M)
+            self.assertIsNotNone(shared)
+            self.assertNotIn(own[1], shared[1].split())
+
     def test_c20c_replay_requires_the_selected_packet_and_one_native_test(self):
         with tempfile.TemporaryDirectory() as temp:
             capture = Path(temp, "capture")
