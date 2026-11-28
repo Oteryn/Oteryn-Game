@@ -295,7 +295,9 @@ pub(super) fn encode(
             crate::gameplay_transport::character_info::CharacterInfoReply::Payload(payload),
         ) => (CommandStatus::Accepted, std::mem::take(payload)),
         Dispatch::Timed(payload, _) => (
-            if crate::gameplay_transport::timed_item_wire::accepted(payload) {
+            if crate::gameplay_transport::timed_item_wire::accepted(payload)
+                || stale_timed_inspection(command.payload, payload)
+            {
                 CommandStatus::Accepted
             } else {
                 CommandStatus::Rejected
@@ -365,4 +367,15 @@ pub(super) fn encode(
         return Err(ServeEnd::Disconnected);
     };
     Ok(result)
+}
+
+// A decoded read of a missing handle is a typed observation. It has no
+// inventory effects, so keep it distinct from the Timed OK check.
+fn stale_timed_inspection(intent: &[u8], result: &[u8]) -> bool {
+    use oteryn_protocol_oteryn::timed_item::{
+        TimedAction, TimedDisposition, decode_timed_item_intent, decode_timed_item_result,
+    };
+    decode_timed_item_intent(intent).is_ok_and(|intent| intent.action == TimedAction::Inspect)
+        && decode_timed_item_result(result)
+            .is_ok_and(|result| result.disposition == TimedDisposition::Stale)
 }

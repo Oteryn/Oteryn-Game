@@ -699,6 +699,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
     }
 
+    fn item_deadline_epoch(&self) -> u64 {
+        self.states
+            .item_deadline_epoch
+            .load(std::sync::atomic::Ordering::Acquire)
+    }
+
     fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
         self.states
             .tutorial_sessions
