@@ -1,12 +1,7 @@
 //! G11 imbuement details query (capability 447, command 731).
-//! 1. Admit the node-boot character; require capability 447 in the negotiated session.
-//! 2. Query every carried item handle through the same payload the imbuement panel sends; a
-//!    refusal for an item without an imbuement allowance is the correct answer and is skipped.
-//! 3. For the first item with quotes, validate the echoed handle, the (family, tier) ordering and
-//!    the bounded success chance, which only the server's imbuement catalogue can produce.
-//! 4. Log out, freshly admit and re-query the same item definition: the quotes must be equal.
-//!
-//! The row never grants items; with no imbuable item carried it fails naming that precondition.
+//! Provision one imbuable weapon on the dedicated character, then query its
+//! eligibility with the panel's wire command. Verify the echoed handle and
+//! ordered, bounded quotes on both admissions and compare the quote lists.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -16,7 +11,8 @@ use oteryn_protocol_oteryn::imbuement_details as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "imbuement-quotes-validated-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -79,99 +75,163 @@ fn quotes_ok(quotes: &[wire::Quote]) -> bool {
         })
 }
 
-fn carried(client: &DevClientSession) -> Vec<(ItemHandle, u32)> {
+const WEAPON: u32 = 3349;
+
+fn carried(client: &DevClientSession, definition: u32) -> Vec<(ItemHandle, u32)> {
     client
         .inventory()
         .map(|inventory| {
             inventory
                 .entries
                 .iter()
-                .map(|entry| (entry.handle, entry.item_definition_ref.get()))
+                .filter(|entry| entry.item_definition_ref.get() == definition)
+                .map(|entry| (entry.handle, entry.count.get()))
                 .collect()
         })
         .unwrap_or_default()
 }
 
-/// Returns the first carried item (optionally one definition only) that has imbuement quotes,
-/// together with a summary of what every probed item answered.
+fn expected_quotes() -> Vec<wire::Quote> {
+    // Item 3349 admits Strike, leech, distance and the five elemental families.
+    [1, 11, 12, 16, 21, 22, 23, 24, 25]
+        .into_iter()
+        .flat_map(|family| {
+            [(1, 7_500, false), (2, 60_000, true), (3, 250_000, true)]
+                .into_iter()
+                .map(move |(tier, gold, requires_premium)| {
+                    let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(family, tier);
+                    wire::Quote {
+                        family,
+                        tier,
+                        gold,
+                        requires_premium,
+                        recipe_available: recipe.is_some(),
+                        success_percent: 100,
+                        materials: recipe.map_or_else(Vec::new, |recipe| {
+                            recipe
+                                .materials
+                                .iter()
+                                .map(|&(key, quantity)| wire::Material {
+                                    definition_key: key.into(),
+                                    quantity,
+                                })
+                                .collect()
+                        }),
+                    }
+                })
+        })
+        .collect()
+}
+
+async fn verify_unissued_handle(client: &mut DevClientSession) -> TestResult {
+    let handle = ItemHandle::new(u64::MAX).ok_or("invalid control handle")?;
+    let before = client
+        .inventory()
+        .ok_or("missing control inventory")?
+        .clone();
+    let (status, payload) = send(
+        client,
+        CAPABILITY,
+        wire::COMMAND_TYPE_IMBUEMENT_DETAILS,
+        &wire::encode_query(handle),
+    )
+    .await?;
+    if status != CommandStatus::Rejected || !payload.is_empty() {
+        return Err(format!(
+            "step=unissued-handle observed={status:?}/{payload:?} needed=empty-Rejected"
+        )
+        .into());
+    }
+    if client.inventory() != Some(&before) {
+        return Err("step=unissued-handle observed=inventory-changed".into());
+    }
+    Ok(())
+}
+
 async fn quotes_for(
     client: &mut DevClientSession,
-    only: Option<u32>,
-) -> TestResult<(Option<(u32, String)>, String)> {
-    let mut observed = Vec::new();
-    for (handle, definition) in carried(client).into_iter().take(32) {
-        if only.is_some_and(|wanted| wanted != definition) {
-            continue;
-        }
-        let (status, payload) = send(
-            client,
-            CAPABILITY,
-            wire::COMMAND_TYPE_IMBUEMENT_DETAILS,
-            &wire::encode_query(handle),
-        )
-        .await?;
-        if status != CommandStatus::Accepted {
-            observed.push(format!("{definition}:{status:?}"));
-            continue;
-        }
-        let reply = wire::decode_reply(&payload)
-            .map_err(|error| format!("step=decode observed={error:?}"))?;
-        if format!("{:?}", reply.item) != format!("{handle:?}") {
-            return Err("step=query observed=reply-for-another-item".into());
-        }
-        if reply.quotes.is_empty() {
-            observed.push(format!("{definition}:no-quotes"));
-            continue;
-        }
-        if !quotes_ok(&reply.quotes) {
-            return Err(format!("step=quotes observed=invalid:{:?}", reply.quotes).into());
-        }
-        return Ok((
-            Some((definition, format!("{:?}", reply.quotes))),
-            observed.join(","),
-        ));
+    definition: u32,
+) -> TestResult<Vec<wire::Quote>> {
+    let inventory_before = client.inventory().ok_or("missing query inventory")?.clone();
+    let handles = carried(client, definition);
+    let [(handle, 1)] = handles.as_slice() else {
+        return Err("step=query needed=exactly-one-fixture-weapon".into());
+    };
+    let (status, payload) = send(
+        client,
+        CAPABILITY,
+        wire::COMMAND_TYPE_IMBUEMENT_DETAILS,
+        &wire::encode_query(*handle),
+    )
+    .await?;
+    if status != CommandStatus::Accepted {
+        return Err(format!("step=query observed={status:?} needed=Accepted").into());
     }
-    Ok((None, observed.join(",")))
-}
-
-async fn body(
-    client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
-) -> TestResult<(u32, String)> {
-    match quotes_for(client, None).await? {
-        (Some(found), _) => Ok(found),
-        (None, observed) => Err(format!(
-            "step=query observed={observed} needed=carried-item-with-imbuement-allowance"
-        )
-        .into()),
+    let reply =
+        wire::decode_reply(&payload).map_err(|error| format!("step=decode observed={error:?}"))?;
+    if reply.item != *handle {
+        return Err("step=query observed=reply-for-another-item".into());
     }
-}
-
-async fn verify(
-    client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
-    data: &(u32, String),
-) -> TestResult {
-    match quotes_for(client, Some(data.0)).await? {
-        (Some((_, quotes)), _) if quotes == data.1 => Ok(()),
-        (found, observed) => Err(format!(
-            "step=relog observed={found:?}/{observed} needed=quotes-unchanged-after-fresh-admission"
-        )
-        .into()),
+    if !quotes_ok(&reply.quotes) {
+        return Err(format!("step=quotes observed=invalid:{:?}", reply.quotes).into());
     }
+    if reply.quotes != expected_quotes() {
+        return Err(format!(
+            "step=quotes observed={:?} needed=exact-fixture-offers",
+            reply.quotes
+        )
+        .into());
+    }
+    if client.inventory() != Some(&inventory_before) {
+        return Err("step=query observed=inventory-changed".into());
+    }
+    Ok(reply.quotes)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x70).await?;
-    let outcome = verdict::observe(body(&mut client, clients)).await;
+    character_prep::declare_seeded(
+        "G11",
+        "one imbuable weapon 3349",
+        "imbuement eligibility query",
+    );
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G11_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let definition = provisioning::item_reference(&provisioning::item_index()?, WEAPON)?.get();
+    let mut client = connect_character(clients, 0x6f, 0).await?;
+    if !carried(&client, definition).is_empty() {
+        return Err("step=fixture observed=weapon-already-present".into());
+    }
+    verify_unissued_handle(&mut client).await?;
+    evidence(
+        "G11_CHECK step=prestate fixture_weapon_count=0 unissued_handle=Rejected inventory=unchanged",
+    );
+    character_prep::grant_item(&client, WEAPON, 1).await?;
+    finish(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0x70, 0).await?;
+    let outcome = verdict::observe(quotes_for(&mut client, definition)).await;
     let closed = verdict::observe(finish(&mut client)).await;
-    let data = outcome?;
+    let quotes = outcome?;
     closed?;
-    let mut fresh = connect_world(clients, 0x71).await?;
-    let checked = verdict::observe(verify(&mut fresh, clients, &data)).await;
+    evidence(&format!(
+        "G11_CHECK step=initial fixture_weapon_count=1 quotes={}",
+        quotes.len()
+    ));
+    drop(client);
+
+    let mut fresh = connect_character(clients, 0x71, 0).await?;
+    let checked = verdict::observe(quotes_for(&mut fresh, definition)).await;
     let closed = verdict::observe(finish(&mut fresh)).await;
-    checked?;
-    closed
+    if checked? != quotes {
+        return Err("step=relog needed=quotes-unchanged-after-fresh-admission".into());
+    }
+    closed?;
+    evidence(&format!(
+        "G11_CHECK step=relog fixture_weapon_count=1 quotes={}",
+        quotes.len()
+    ));
+    Ok(())
 }
 
 #[cfg(test)]
