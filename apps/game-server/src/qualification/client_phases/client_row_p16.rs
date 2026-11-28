@@ -343,8 +343,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ];
     let initial = gold(&client, &coins)?;
     character_prep::grant_item(&client, 3035, 2).await?;
-    character_prep::grant_premium(&client).await?;
-    evidence("P16_FIXTURE prereqs=premium,200-gold ferry-access-only");
     let preparation_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -357,6 +355,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P16 ferry funding missing after fresh admission".into());
     }
+    // The preparation logout releases the account’s in-memory Premium view.
+    character_prep::grant_premium(&client).await?;
+    evidence("P16_FIXTURE prereqs=premium,200-gold ferry-access-only");
     board_thais_ship(&mut client, world).await?;
     for (key, keyword, arrival, fare) in FERRIES {
         let npc = approach(&mut client, world, &metadata.npcs, key).await?;
