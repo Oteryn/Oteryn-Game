@@ -229,6 +229,11 @@ pub struct CheckedBundle {
 }
 
 impl CheckedBundle {
+    /// Digest of the exact base admitted by the node's configured bundle pins.
+    pub fn digest(&self) -> [u8; 32] {
+        self.pins.digest
+    }
+
     /// Regional/fixture bundles omit changes outside their admitted geography.
     #[cfg(test)]
     fn compose_admitted_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {
@@ -1416,7 +1421,7 @@ pub mod tests {
     }
 
     /// [`bundle_with_item_ids`] with the house marker `door_house` on the tile at x 6.
-    fn bundle_with_house(
+    pub fn bundle_with_house(
         boxed: &str,
         boxed_id: u32,
         coin: &str,

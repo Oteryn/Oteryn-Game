@@ -108,3 +108,7 @@ pub(super) async fn loss_binding_current(
 #[cfg(any(test, feature = "test-support"))]
 #[path = "world_reset/retiring_fixture.rs"]
 pub mod test_support;
+
+fn hex_digest(digest: [u8; 32]) -> String {
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}

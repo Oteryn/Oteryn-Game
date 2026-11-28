@@ -708,7 +708,7 @@
               "text": "Beware, beware the halloween hare."
             }
           ],
-          "key": "raid-anchor:32624_32018_7-32624_32018_7",
+          "key": "raid-anchor:32623_32017_7-32625_32019_7",
           "unresolved": [],
           "waves": [
             {
@@ -724,8 +724,8 @@
                     "coordinate_frame": "global-target-2026-09-27",
                     "from": {
                       "floor": 7,
-                      "x": 32624,
-                      "y": 32018
+                      "x": 32623,
+                      "y": 32017
                     },
                     "regions": [
                       {
@@ -735,12 +735,12 @@
                     ],
                     "to": {
                       "floor": 7,
-                      "x": 32624,
-                      "y": 32018
+                      "x": 32625,
+                      "y": 32019
                     },
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
-                  "area_anchor": "raid-anchor:32624_32018_7-32624_32018_7",
+                  "area_anchor": "raid-anchor:32623_32017_7-32625_32019_7",
                   "boss": false,
                   "creature": "oteryn:creature.the_halloween_hare",
                   "source": {
@@ -749,7 +749,7 @@
                     "source": "wiki:20165:1135570"
                   },
                   "source_name": "The Halloween Hare",
-                  "spawn_mode": "single"
+                  "spawn_mode": "zone"
                 }
               ]
             }

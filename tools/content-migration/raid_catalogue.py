@@ -616,8 +616,14 @@ def halloween_variant(record: dict, facts: dict) -> None:
         "selector": "Mapper Coords",
     }
     for x, y, floor in cells:
-        cell = {"x": x, "y": y, "floor": floor}
-        area = {"from": dict(cell), "to": dict(cell)}
+        # The Hare's archived mapper coordinate is approximate. Search the
+        # adjacent tiles as an Oteryn placement rule, using the live map to
+        # reject blocked, occupied or House tiles.
+        radius = 1 if post_save else 0
+        area = {
+            "from": {"x": x - radius, "y": y - radius, "floor": floor},
+            "to": {"x": x + radius, "y": y + radius, "floor": floor},
+        }
         record["variants"].append(
             {
                 "key": area_anchor(area),
@@ -641,7 +647,7 @@ def halloween_variant(record: dict, facts: dict) -> None:
                                 "area_anchor": area_anchor(area),
                                 "area": area,
                                 "boss": name in record["boss_names"],
-                                "spawn_mode": "single",
+                                "spawn_mode": "zone" if post_save else "single",
                                 "source": location_source,
                             }
                         ],

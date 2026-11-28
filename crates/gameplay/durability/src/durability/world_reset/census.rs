@@ -30,9 +30,8 @@ pub(in crate::durability) async fn drained_channels(
     // Admission relations -> reset record -> assignments/guards is also the
     // retirement/activation order. No caller supplies the Channel cohort.
     let current: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_world_reset_jobs j JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE world_id=encode($1,'hex')::uuid \
-         AND reset_epoch=$2::text::numeric AND target_digest=$3 AND retirement_binding=$4 \
-         AND phase='RETIRING' FOR UPDATE OF j)",
+        "SELECT coalesce(game_world_reset_job_phase_locked(encode($1,'hex')::uuid,$2::text::numeric,$4,$3)='RETIRING',false)
+         AND EXISTS(SELECT 1 FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric)",
     )
     .bind(reset.world.as_bytes().as_slice())
     .bind(reset.epoch.to_string())

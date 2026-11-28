@@ -1,5 +1,6 @@
 //! Real durable raid claim -> current Bundle/Item read -> live native actors.
-//! The terrain fixture is explicitly open; catalogue coordinates, counts,
+//! Most scenarios use an open terrain fixture; the Hare uses pinned Kazordoon tiles.
+//! Catalogue coordinates, counts,
 //! delays, creatures and end policy are the unmodified source selection.
 #[path = "raid_live/cake.rs"]
 mod cake;
@@ -19,7 +20,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 const HALLOWEEN_HARE: &str = "oteryn:raid.kazordoon_raids.the_halloween_hare";
 
 #[test]
-fn w05d_hare_dispatch_announces_and_places_one_kazordoon_actor_on_replay() -> TestResult {
+fn w05d_hare_spawns_once_when_the_kazordoon_landmark_is_occupied() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -221,11 +222,23 @@ async fn scenario(
     } else if !hare {
         assert!(selected.definition.announcements.is_empty());
     }
-    let margin = i32::from(token_raid || hare);
+    let margin = i32::from(token_raid);
     let from = (u16::try_from(area.from.x - margin)?, u16::try_from(area.from.y - margin)?);
     let to = (u16::try_from(area.to.x + margin)?, u16::try_from(area.to.y + margin)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
-    let world = crate::map::spell_tiles::tests::movement_arena::rectangle(from, to, native_floor);
+    // The archived Kazordoon mapper coordinate is the centre of the authored
+    // area and the exact tile the player occupies in this regression.
+    let hare_landmark = (32624, 32018);
+    let (world, entry) = if hare {
+        let at = oteryn_gameplay_quests::quest::world_callbacks::Position {
+            x: hare_landmark.0,
+            y: hare_landmark.1,
+            floor: native_floor,
+        };
+        (super::qc_pinned_world::crop(native, at, &[at])?, hare_landmark)
+    } else {
+        (crate::map::spell_tiles::tests::movement_arena::rectangle(from, to, native_floor), from)
+    };
     deps.room = activated.qualified_room().clone();
     let cells = world
         .movement_cells(deps.room.movement_cells())
@@ -252,8 +265,8 @@ async fn scenario(
             world.frame_binding_digest(deps.admitted.world_id),
             world.map_revision_digest(),
             crate::content::NativeEntryStart {
-                x: i32::from(from.0),
-                y: i32::from(from.1),
+                x: i32::from(entry.0),
+                y: i32::from(entry.1),
                 floor: area.from.floor,
             },
         )
@@ -265,7 +278,7 @@ async fn scenario(
         active.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (i32::from(from.0), i32::from(from.1), area.from.floor),
+        (i32::from(entry.0), i32::from(entry.1), area.from.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         deps.admitted.world_id,
@@ -300,6 +313,16 @@ async fn scenario(
     owner.reset_epoch = 1;
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     if hare {
+        let occupied = crate::foundation::MovementLocalPosition {
+            x: i32::from(hare_landmark.0),
+            y: i32::from(hare_landmark.1),
+            floor: area.from.floor,
+        };
+        {
+            let runtime = deps.runtime.lock().await;
+            assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), occupied);
+            assert!(!runtime.native_summon_cell_free(occupied));
+        }
         let session = deps.admitted.game_session_id;
         let messages = &owner.states.server_messages;
         assert!(messages.join(session, 1));
@@ -330,10 +353,8 @@ async fn scenario(
         };
         assert!(status.alive);
         let at = runtime.read_actor_position(actor).map_err(debug)?.position();
-        assert_eq!(
-            RaidPosition { x: at.x, y: at.y, floor: at.floor },
-            first_area.from,
-        );
+        assert_ne!(at, occupied);
+        assert!(first_area.contains(RaidPosition { x: at.x, y: at.y, floor: at.floor }));
         assert_eq!(
             runtime.companion_snapshot(actor).map_err(debug)?.state.policy.definition_key,
             selected.definition.waves[0].entries[0].creature.as_str(),

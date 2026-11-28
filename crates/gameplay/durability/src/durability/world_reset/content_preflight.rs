@@ -59,3 +59,32 @@ pub(super) async fn check(
         commit_semantic_read(tx, deadline).await
     })).await
 }
+
+pub(super) async fn check_same_bundle(
+    root: &DurabilityRoot,
+    reset: RetiringWorldReset,
+    room: &QualifiedNativeEntryRoom,
+    map: &str,
+) -> Result<()> {
+    let server = room.compiled().server_digest();
+    if room.movement_cells().scope().world_id != reset.world || reset.target != server {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let client = room.compiled().client_digest();
+    let frame = room.frame_binding().digest();
+    let map = map.to_owned();
+    root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+        let valid: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_world_reset_jobs j JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
+             WHERE j.world_id=encode($1,'hex')::uuid AND j.reset_epoch=$2::text::numeric
+             AND j.target_digest=$3 AND j.retirement_binding=$4 AND j.target_house_tiles='[]'::jsonb
+             AND (e.map_revision,e.target_digest,e.server_digest,e.client_digest,e.frame_digest)=($5,$3,$3,$6,$7)
+             AND (j.target_map_revision,j.target_server_digest,j.target_client_digest,j.target_frame_digest)=($5,$3,$6,$7))")
+            .bind(reset.world.as_bytes().as_slice()).bind(reset.epoch.to_string())
+            .bind(server.as_slice()).bind(reset.binding.as_slice()).bind(map)
+            .bind(client.as_slice()).bind(frame.as_slice()).fetch_one(&mut *tx).await?;
+        if !valid { return Err(DurabilityError::InvalidStoredState); }
+        commit_semantic_read(tx, deadline).await
+    })).await
+}

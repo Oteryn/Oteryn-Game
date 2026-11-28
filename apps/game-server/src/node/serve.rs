@@ -20,6 +20,7 @@ mod readiness_postgres_tests;
 mod supervision;
 mod t94;
 mod world_reset;
+pub use world_reset::finish_bundle_reset;
 
 use super::cancellation::first;
 use super::config::NodeConfig;
@@ -3959,7 +3960,7 @@ async fn boot_and_serve(
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
     let Some(reset_recovery) = first(
-        world_reset::recover_retiring(root, material, &authority, &proof),
+        world_reset::recover_retiring(root, material, &authority, &proof, bundle.as_ref()),
         signalled.cancelled(),
     )
     .await

@@ -110,18 +110,22 @@ impl DurabilityRoot {
             let reset_current: bool = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)")
                 .bind(request.world.as_bytes().as_slice()).bind(request.reset_epoch.to_string())
                 .fetch_one(&mut *tx).await?;
-            let active = sqlx::query("SELECT a.reset_epoch::text,e.target_digest FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
+            let active = sqlx::query("SELECT a.reset_epoch::text,e.target_digest,game_world_reset_raid_bundle_digest(e.map_revision,e.target_digest) AS bundle_digest FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
                 .bind(request.world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let active_matches = active.as_ref().is_some_and(|row| {
+            let active = active.filter(|row| {
                 row.try_get::<String, _>("reset_epoch").ok().as_deref() == Some(&request.reset_epoch.to_string())
-                    && row.try_get::<Vec<u8>, _>("target_digest").ok().as_deref() == Some(request.bundle_digest.as_slice())
             });
+            let matches_digest = |column| active.as_ref().is_some_and(|row| {
+                row.try_get::<Vec<u8>, _>(column).ok().as_deref() == Some(request.bundle_digest.as_slice())
+            });
+            let legacy_pin_matches = matches_digest("target_digest");
+            let bundle_pin_matches = matches_digest("bundle_digest");
             let fact = node.fact();
             let generation: Option<String> = sqlx::query_scalar("SELECT a.ownership_generation::text FROM game_runtime_scope_assignments a JOIN game_durability_admission_runtime_guards g USING(scope_key) WHERE a.world_id=encode($1,'hex')::uuid AND a.channel_id=encode($2,'hex')::uuid AND a.scope_kind=1 AND a.state=1 AND a.holder_node_id=encode($3,'hex')::uuid AND a.holder_registration_revision=$4::text::numeric AND g.ready AND g.ownership_generation=a.ownership_generation FOR SHARE OF a,g")
                 .bind(request.world.as_bytes().as_slice()).bind(request.channel.as_bytes().as_slice())
                 .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
                 .fetch_optional(&mut *tx).await?;
-            if !reset_current || !active_matches || generation.as_deref() != Some(&request.generation.get().to_string()) {
+            if !reset_current || !(legacy_pin_matches || bundle_pin_matches) || generation.as_deref() != Some(&request.generation.get().to_string()) {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidSchedulerOutcome::default());
             }
@@ -148,6 +152,13 @@ impl DurabilityRoot {
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
+                // Only the Hare uses the same-bundle save path in this slice.
+                let pin_matches = if candidate.key.as_str() == super::HALLOWEEN_HARE_KEY {
+                    bundle_pin_matches
+                } else {
+                    legacy_pin_matches
+                };
+                if !pin_matches { continue; }
                 if let Some(required) = requirements.get(candidate.key.as_str())
                     && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
                     continue;

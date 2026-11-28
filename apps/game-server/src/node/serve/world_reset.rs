@@ -75,6 +75,7 @@ pub(super) async fn recover_retiring(
     material: &Material,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
+    bundle: Option<&crate::map::boot::CheckedBundle>,
 ) -> Result<u64, BootError> {
     let retiring = with_retries(
         root,
@@ -87,11 +88,6 @@ pub(super) async fn recover_retiring(
     .await
     .map_err(|_| BootError::Readiness("World reset record"))?;
     if let Some(reset) = retiring {
-        // A full bundle still has Unknown House metadata (D1246). Never use
-        // the entry-room proof to authorize retirement of a bundle World.
-        if material.config.world_bundle.is_some() {
-            return Err(BootError::Readiness("World reset House qualification"));
-        }
         let source_manifest = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST");
         let target_manifest = std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST")
             .or_else(|| source_manifest.clone());
@@ -101,10 +97,13 @@ pub(super) async fn recover_retiring(
         let wait_until = tokio::time::Instant::now()
             + Duration::from_millis(material.config.scope.assignment_wait_ms);
         loop {
-            match root
-                .finish_world_reset(authority, node, &reset, &source, &target)
-                .await
-            {
+            let result = if let Some(bundle) = bundle {
+                finish_bundle_reset(root, authority, node, &reset, &target, bundle).await
+            } else {
+                root.finish_world_reset(authority, node, &reset, &source, &target)
+                    .await
+            };
+            match result {
                 Ok(Some(epoch)) => {
                     let elapsed_ms = started.elapsed().as_millis();
                     eprintln!(
@@ -132,6 +131,19 @@ pub(super) async fn recover_retiring(
         .await
         .map_err(|_| BootError::Readiness("World reset active epoch"))?
         .unwrap_or(0))
+}
+
+/// Finish the published reset with the checked bundle used by channel boot.
+pub async fn finish_bundle_reset(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    reset: &crate::durability::world_reset::RetiringWorldReset,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    bundle: &crate::map::boot::CheckedBundle,
+) -> Result<Option<u64>, crate::durability::item_decay_retire::DecayRetireError> {
+    root.finish_same_bundle_world_reset(authority, node, reset, room, bundle.digest())
+        .await
 }
 
 fn qualify_room(

@@ -39,8 +39,8 @@ pub(super) async fn world_current(
     crate::durability::db::lock_admission_relations(tx).await?;
     // The reset owner locks its active epoch and rejects RETIRING. The immutable
     // firing supplies the expected epoch/pin, not the independently read truth.
-    let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
-        .bind(firing.as_slice()).fetch_optional(&mut **tx).await?;
+    let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND (CASE WHEN f.raid_key=$2 THEN game_world_reset_raid_bundle_digest(e.map_revision,e.target_digest) ELSE e.target_digest END)=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
+        .bind(firing.as_slice()).bind(crate::durability::raid_schedule::HALLOWEEN_HARE_KEY).fetch_optional(&mut **tx).await?;
     Ok(current.unwrap_or(false))
 }
 

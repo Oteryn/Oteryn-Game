@@ -11,6 +11,7 @@ mod storage;
 
 // Grimvale owns an independent encounter lifetime, despite retaining XML waves.
 pub(super) const FEROXA_KEY: &str = "raid:edron.feroxa";
+pub(super) const HALLOWEEN_HARE_KEY: &str = "oteryn:raid.kazordoon_raids.the_halloween_hare";
 
 pub use activity::{MAX_RAID_ACTIVITY_PLAYERS, RaidActivityPlayer, RaidActivitySnapshot};
 pub use calendar::{CalendarRaidScheduleCandidate, CalendarRaidTiming};

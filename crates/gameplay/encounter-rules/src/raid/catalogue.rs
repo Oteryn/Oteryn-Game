@@ -674,10 +674,26 @@ mod tests {
                 assert!(raid.inactive_reasons.is_empty());
             }
             assert_eq!(raid.variants.len(), cells.len());
+            let radius = i32::from(anchor.is_some());
             for (variant, &(x, y)) in raid.variants.iter().zip(cells) {
-                let area = &variant.waves[0].entries[0].area;
-                assert_eq!((area.from.x, area.from.y, area.from.floor), (x, y, 7));
-                assert_eq!((area.to.x, area.to.y, area.to.floor), (x, y, 7));
+                let entry = &variant.waves[0].entries[0];
+                let area = &entry.area;
+                assert_eq!(
+                    (area.from.x, area.from.y, area.from.floor),
+                    (x - radius, y - radius, 7)
+                );
+                assert_eq!(
+                    (area.to.x, area.to.y, area.to.floor),
+                    (x + radius, y + radius, 7)
+                );
+                assert_eq!(
+                    entry.spawn_mode,
+                    if anchor.is_some() {
+                        CatalogueSpawnMode::Zone
+                    } else {
+                        CatalogueSpawnMode::Single
+                    }
+                );
             }
             assert_eq!(raid.select([1; 32], [2; 16]).is_ok(), anchor.is_some());
             for variant in &raid.variants {
