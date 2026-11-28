@@ -7,18 +7,37 @@ use oteryn_protocol_oteryn::quick_loot::{
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(30),
-        verdict::observe(capture_journey(clients)),
-    )
-    .await;
-    let result = result.unwrap_or_else(|_| Err("I07 client capture timed out".into()));
+    let result = verdict::observe(capture_journey(clients)).await;
     evidence(&format!(
         "e2e_all scenario=I07.client status={}",
         if result.is_ok() { "PASS" } else { "FAIL" }
     ));
     if let Err(error) = result {
         evidence(&format!("I07_CLIENT_GAP {error}"));
+    }
+}
+
+// The cap must be staged after the Nearby proof: both use the same east tile.
+// Charge both gameplay phases against one budget and bound each fixture phase separately.
+struct GameplayBudget {
+    remaining: Duration,
+    entered: Option<tokio::time::Instant>,
+    deadline: tokio::sync::watch::Sender<tokio::time::Instant>,
+}
+
+impl GameplayBudget {
+    fn begin_gameplay(&mut self) {
+        let now = tokio::time::Instant::now();
+        self.entered = Some(now);
+        self.deadline.send_replace(now + self.remaining);
+    }
+
+    fn begin_fixture(&mut self) {
+        let now = tokio::time::Instant::now();
+        if let Some(started) = self.entered.take() {
+            self.remaining = self.remaining.saturating_sub(now - started);
+        }
+        self.deadline.send_replace(now + Duration::from_secs(20));
     }
 }
 
@@ -434,7 +453,8 @@ impl Capture<'_> {
             {
                 break observed;
             }
-            client.service_liveness(Duration::from_millis(50)).await?;
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            client.session_mut().wait_for_events(remaining).await?;
         };
         let clicked: Vec<_> = nearby
             .iter()
@@ -714,6 +734,36 @@ pub(super) async fn journey(
     capture_dir: &Path,
     full: bool,
 ) -> TestResult {
+    let (deadline, mut updates) =
+        tokio::sync::watch::channel(tokio::time::Instant::now() + Duration::from_secs(60));
+    let mut budget = GameplayBudget {
+        remaining: Duration::from_secs(if full { 45 } else { 30 }),
+        entered: None,
+        deadline,
+    };
+    let journey = run_journey(clients, capture_dir, full, &mut budget);
+    tokio::pin!(journey);
+    loop {
+        let remaining = updates
+            .borrow_and_update()
+            .saturating_duration_since(tokio::time::Instant::now());
+        tokio::select! {
+            biased;
+            changed = updates.changed() => changed?,
+            expired = verdict::indexed_timeout(remaining, std::future::pending::<TestResult>()) => {
+                return Err(expired.expect_err("the pending journey timer cannot complete").into());
+            }
+            result = &mut journey => return result,
+        }
+    }
+}
+
+async fn run_journey(
+    clients: &SeamClients<'_>,
+    capture_dir: &Path,
+    full: bool,
+    budget: &mut GameplayBudget,
+) -> TestResult {
     use sqlx::Connection as _;
     const FILTERS: [(bool, &str); 2] = [
         (false, "oteryn:item.tibia.i3577"),
@@ -789,6 +839,7 @@ pub(super) async fn journey(
     if !provisioning_log.is_empty() {
         evidence(&provisioning_log);
     }
+    budget.begin_gameplay();
     timing.enter("fixture_readback");
     evidence("FIXTURE I07 premium=granted purpose=category_prerequisite");
     let character = &clients.characters[1];
@@ -1746,8 +1797,11 @@ pub(super) async fn journey(
     evidence("I07_FOREIGN_CLICK refusal=stale live_item=foreign_corpse custody=unchanged");
     let mut cap_items = Vec::new();
     if full {
+        budget.begin_fixture();
         timing.enter("cap_provisioning");
         provision_while_serving(&mut fresh, "i07-loot-cap".into()).await?;
+        budget.begin_gameplay();
+        timing.enter("cap_verification");
         let mut context = *fresh.join_snapshot().game_session_id.as_bytes();
         context[15] ^= 0xe1;
         let ids: Vec<Vec<u8>> = sqlx::query_scalar(

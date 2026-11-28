@@ -3,12 +3,7 @@ use super::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(45),
-        verdict::observe(capture_journey(clients)),
-    )
-    .await
-    .unwrap_or_else(|_| Err("I07 full verification timed out".into()));
+    let result = verdict::observe(capture_journey(clients)).await;
     evidence(&format!(
         "e2e_all scenario=I07.full status={} seconds={:.3}",
         if result.is_ok() { "PASS" } else { "FAIL" },
