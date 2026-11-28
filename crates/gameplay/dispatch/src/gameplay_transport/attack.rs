@@ -910,7 +910,7 @@ impl ChannelAttackStates {
             return;
         };
         if let Some(entry) = self.entry(runtime, actor, session) {
-            entry.record_fight_deadline(runtime, now, &constants, cause);
+            entry.record_fight_deadline(runtime, now, constants, cause);
         }
     }
 }
