@@ -16,15 +16,26 @@ pub(super) async fn provision_at_level(
     expected_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
-    provision_profile(client, clients, index, expected_level, &profile).await
+    provision_profile(client, clients, index, expected_level, &profile, false).await
 }
 
-pub(in crate::qualification) async fn provision_profile(
+pub(in crate::qualification) async fn provision_once(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    provision_profile(client, clients, index, expected_level, &profile, true).await
+}
+
+async fn provision_profile(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
     profile: &str,
+    require_first_logout: bool,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let vocation = if profile == "explorer" {
@@ -60,13 +71,23 @@ pub(in crate::qualification) async fn provision_profile(
     if !status.success() {
         return Err("node-boot fenced build provisioning failed".into());
     }
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    let original_session = client.join_snapshot().game_session_id;
+    if require_first_logout {
+        let reply = client.session_mut().logout().await?;
+        evidence(&format!("P02_SETUP_LOGOUT attempt=1 reply={reply:?}"));
+        require_setup_logout(reply.result)?;
+    } else {
+        let (result, logout, attempts, busy_timed_out) =
+            client_world::logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     let mut client = connect_character(clients, 0x70, index).await?;
+    if require_first_logout && client.join_snapshot().game_session_id == original_session {
+        return Err("P02 setup did not obtain a fresh session".into());
+    }
     let vitals = client.actor_vitals().ok_or("provisioned vitals missing")?;
     if vitals.max_health != max_health || vitals.max_mana != max_mana || vitals.mana == 0 {
         return Err("fresh admission did not load the provisioned build and mana".into());
@@ -143,4 +164,22 @@ pub(super) fn item_reference(
     index
         .definition_ref("Item", &key, revision)
         .ok_or_else(|| "qualification Item ref missing".into())
+}
+
+fn require_setup_logout(
+    result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("P02 first setup logout refused: {result:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p02_setup_requires_first_reply_to_be_accepted() {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    assert!(require_setup_logout(Some(LogoutResult::Busy)).is_err());
+    assert!(require_setup_logout(None).is_err());
+    assert!(require_setup_logout(Some(LogoutResult::Accepted)).is_ok());
 }

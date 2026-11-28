@@ -8,11 +8,13 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter;
-use oteryn_protocol_oteryn::attack::{ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+use oteryn_protocol_oteryn::attack::{
+    ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
+};
 use oteryn_protocol_oteryn::bosstiary_slots::{
     BossSlotReply, BossSlotRequest, COMMAND_TYPE_BOSSTIARY_SLOTS,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 const REQUIRED: &[&str] = &[
     "initial-query",
     "boss-kill-progress",
@@ -107,9 +109,6 @@ async fn slot(c: &mut DevClientSession, q: BossSlotRequest) -> TestResult<BossSl
     }
     BossSlotReply::decode(&r.payload)
         .ok_or_else(|| format!("step boss-slot: malformed payload={:?}", r.payload).into())
-}
-fn counts(s: &boss_encounter::Snapshot) -> BTreeMap<String, u64> {
-    s.progress.iter().cloned().collect()
 }
 fn bosses() -> TestResult<Vec<crate::domain::bosstiary::BosstiaryBoss>> {
     let l = crate::content::ProjectEvidenceLimits {
@@ -232,19 +231,28 @@ async fn observe_combat(
     loop {
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::ActorCombatState(delta) = event
-                && delta.server_sequence > after_sequence && matches(&delta.value)
+                && delta.server_sequence > after_sequence
+                && matches(&delta.value)
             {
                 return Ok(());
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("P02 missing combat state delta after sequence {after_sequence}: {:?}", client.session_mut().combat_state()).into());
+            return Err(format!(
+                "P02 missing combat state delta after sequence {after_sequence}: {:?}",
+                client.session_mut().combat_state()
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
 
 pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
+    fight(c, key).await.map(|_| ())
+}
+
+async fn fight(c: &mut DevClientSession, key: &str) -> TestResult<oteryn_dev_client::EntityRef> {
     let session = uuid_text(c.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned())
         .await
@@ -276,7 +284,10 @@ pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
-    observe_combat(c, r.result_server_sequence, |state| state.target == Some(target)).await?;
+    observe_combat(c, r.result_server_sequence, |state| {
+        state.target == Some(target)
+    })
+    .await?;
     verdict::Harness::global().bounded_wait(until, "bounded-observation");
     let mut last_seen = None;
     loop {
@@ -291,16 +302,27 @@ pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
                     "P02_COMBAT key={key} target={target:?} visible=false last_seen={last_seen:?} player_vitals={vitals:?}"
                 ));
                 if vitals.is_none_or(|vitals| vitals.health == 0) {
-                    return Err(format!("step boss-kill {key}: player not alive when boss left visibility").into());
+                    return Err(format!(
+                        "step boss-kill {key}: player not alive when boss left visibility"
+                    )
+                    .into());
                 }
-                if c.session_mut().combat_state().is_some_and(|state| state.target.is_some()) {
+                if c.session_mut()
+                    .combat_state()
+                    .is_some_and(|state| state.target.is_some())
+                {
                     let clear = c.session_mut().attack_target(None).await?;
                     if clear.disposition != AttackIntentDisposition::Ok {
-                        return Err(format!("step boss-kill {key}: target clear reply={clear:?}").into());
+                        return Err(
+                            format!("step boss-kill {key}: target clear reply={clear:?}").into(),
+                        );
                     }
-                    observe_combat(c, clear.result_server_sequence, |state| state.target.is_none()).await?;
+                    observe_combat(c, clear.result_server_sequence, |state| {
+                        state.target.is_none()
+                    })
+                    .await?;
                 }
-                return Ok(());
+                return Ok(target);
             }
         }
         if tokio::time::Instant::now() >= until {
@@ -310,26 +332,115 @@ pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
         }
     }
 }
-fn boosted_exclusion_slot(
-    reply: &BossSlotReply,
-    boss: &str,
-    kills: u64,
-    threshold: u64,
-) -> Option<u8> {
-    let details = reply.details.as_ref()?;
-    if reply.status != 0
-        || details.boosted != boss
-        || kills < threshold
-        || details.now < reply.ready_at_ms
-        || reply.bosses.iter().any(|assigned| assigned == boss)
-    {
-        return None;
+const BOOSTED_BOSS: &str = "oteryn:creature.ekatrix";
+const ARCHFOE_PROWESS: u64 = 5;
+
+async fn credited_death(
+    c: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    key: &str,
+    credit: i32,
+) -> TestResult {
+    let target = fight(c, key).await?;
+    let principal = clients.characters[1];
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    let death = committed_hunt_death(c, clients, Some(principal), key, target, deadline).await?;
+    let occurrence = death
+        .reward_occurrence
+        .ok_or("P02 death missing principal reward occurrence")?;
+    let receipt = tokio::time::timeout_at(deadline, async {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        loop {
+            let receipt: Option<i32> = sqlx::query_scalar(
+                "SELECT kill_credit::integer FROM game_character_bosstiary_kill_receipts
+                 WHERE character_id=encode($1,'hex')::uuid
+                   AND occurrence_id=encode($2,'hex')::uuid AND boss_key=$3",
+            )
+            .bind(principal.as_slice())
+            .bind(occurrence.as_slice())
+            .bind(key)
+            .fetch_optional(&mut database)
+            .await?;
+            if receipt.is_some() {
+                return TestResult::Ok(receipt);
+            }
+            c.service_liveness(Duration::from_millis(100)).await?;
+            c.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "P02 missing Bosstiary receipt for exact death occurrence")??;
+    if receipt != Some(credit) {
+        return Err(format!(
+            "P02 exact death {target:?} expected credit {credit}, got {receipt:?}"
+        )
+        .into());
     }
-    (0_u8..2)
-        .find(|index| {
-            reply.unlocked & (1 << index) != 0 && reply.bosses[usize::from(*index)].is_empty()
+    evidence(&format!(
+        "P02_DEATH entity={target:?} occurrence={} boss={key} credit={credit}",
+        uuid_text(&occurrence)
+    ));
+    Ok(())
+}
+
+fn exact_progress(
+    observed: &boss_encounter::Snapshot,
+    entries: &[(&str, u64)],
+    points: u64,
+) -> TestResult {
+    if observed.points != points
+        || observed.progress_next.is_some()
+        || observed.progress.len() != entries.len()
+        || entries.iter().any(|(key, kills)| {
+            !observed
+                .progress
+                .iter()
+                .any(|(actual_key, actual_kills)| actual_key == key && actual_kills == kills)
         })
-        .map(|index| index + 1)
+    {
+        return Err(format!(
+            "P02 progress expected {entries:?} points={points}, observed {observed:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn exact_slots(
+    reply: &BossSlotReply,
+    status: u8,
+    unlocked: u8,
+    bonus: u16,
+    points: u32,
+    bosses: [&str; 2],
+) -> TestResult {
+    if reply.status != status
+        || reply.unlocked != unlocked
+        || reply.bonus != bonus
+        || reply.points != points
+        || reply.bosses != bosses
+        || reply.remove_fee != 0
+    {
+        return Err(format!("P02 slots expected status={status} unlocked={unlocked} bonus={bonus} points={points} bosses={bosses:?}, observed {reply:?}").into());
+    }
+    Ok(())
+}
+
+fn boosted_exclusion_slot(reply: &BossSlotReply, kills: u64) -> TestResult<u8> {
+    exact_slots(reply, 0, 1, 27, 20, ["", ""])?;
+    let details = reply
+        .details
+        .as_ref()
+        .ok_or("P02 missing detailed slot state")?;
+    if kills < ARCHFOE_PROWESS
+        || details.boosted != BOOSTED_BOSS
+        || details.base_bonus != 27
+        || details.bonuses != [0, 0]
+        || details.now < reply.ready_at_ms
+    {
+        return Err(format!("step=boosted-eligibility kills={kills} observed={reply:?}").into());
+    }
+    Ok(1)
 }
 
 pub(super) const ORDINARY_BOSS: &str = "oteryn:creature.rotworm_queen";
@@ -347,22 +458,32 @@ async fn equip_boss_axe(
         format!("item-{DEEPLING_AXE}-1"),
     )
     .await?;
-    evidence(&format!("P02 FIXTURE input=weapon item={DEEPLING_AXE} quantity=1 result=accepted"));
+    evidence(&format!(
+        "P02 FIXTURE input=weapon item={DEEPLING_AXE} quantity=1 result=accepted"
+    ));
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0x71).await?;
     let inventory = client.inventory().ok_or("P02 weapon inventory missing")?;
     let equipped = |inventory: &oteryn_dev_client::CharacterInventory| {
-        inventory.equipment.iter().any(|slot| {
-            slot.item.item_definition_ref == reference && slot.item.count.get() == 1
-        })
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == reference && slot.item.count.get() == 1)
     };
-    if client.join_snapshot().game_session_id == session || equipped(inventory)
-        || !inventory.entries.iter().any(|item| item.item_definition_ref == reference && item.count.get() == 1)
+    if client.join_snapshot().game_session_id == session
+        || equipped(inventory)
+        || !inventory
+            .entries
+            .iter()
+            .any(|item| item.item_definition_ref == reference && item.count.get() == 1)
     {
         return Err("P02 Deepling Axe must start unequipped in the fresh admission".into());
     }
-    let reply = client.session_mut().equip_item_definition(reference).await?;
+    let reply = client
+        .session_mut()
+        .equip_item_definition(reference)
+        .await?;
     if reply.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
         return Err(format!("P02 Deepling Axe equip refused: {reply:?}").into());
     }
@@ -375,11 +496,17 @@ async fn equip_boss_axe(
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
-    evidence(&format!("P02_COMBAT item={DEEPLING_AXE} equipped=confirmed"));
+    evidence(&format!(
+        "P02_COMBAT item={DEEPLING_AXE} equipped=confirmed"
+    ));
     Ok(client)
 }
 
-pub(super) async fn prepare_combat(clients: &SeamClients<'_>, row: &str, tag: u8) -> TestResult<DevClientSession> {
+pub(super) async fn prepare_combat(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -400,121 +527,105 @@ pub(super) async fn prepare_combat(clients: &SeamClients<'_>, row: &str, tag: u8
         "combat inputs are prepared; credit and slots must come from live gameplay",
     );
     let client = connect_world(clients, tag).await?;
-    let c = provisioning::provision_fixture(client, clients, 1, 100).await?;
-    let mut c = if boosted_combat { equip_boss_axe(c, clients).await? } else { c };
+    let c = if boosted_combat {
+        provisioning::provision_once(client, clients, 1, 100).await?
+    } else {
+        provisioning::provision_fixture(client, clients, 1, 100).await?
+    };
+    let mut c = if boosted_combat {
+        equip_boss_axe(c, clients).await?
+    } else {
+        c
+    };
     prepare_boss_ground(&mut c, world).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,
         ..FightModes::DEFAULT
     };
-    if c.session_mut().combat_state().is_none_or(|state| state.modes == modes) {
+    if c.session_mut()
+        .combat_state()
+        .is_none_or(|state| state.modes == modes)
+    {
         return Err("P02 needs a different combat mode before enabling offensive chase".into());
     }
     let reply = c.session_mut().set_fight_modes(&modes).await?;
     if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("P02 offensive chase refused: {reply:?}").into());
     }
-    observe_combat(&mut c, reply.result_server_sequence, |state| state.modes == modes).await?;
+    observe_combat(&mut c, reply.result_server_sequence, |state| {
+        state.modes == modes
+    })
+    .await?;
     evidence("P02_COMBAT modes=offensive,chase change=confirmed");
     Ok(c)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut c = prepare_combat(clients, "P02.full", 0xb2).await?;
-    let mut before = snapshot(&mut c).await?;
+    let before = snapshot(&mut c).await?;
+    exact_progress(&before, &[], 0)?;
     let initial_slot = slot(
         &mut c,
         BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
     )
     .await?;
-    let daily_boss = initial_slot
+    exact_slots(&initial_slot, 0, 0, 25, 0, ["", ""])?;
+    let details = initial_slot
         .details
         .as_ref()
-        .ok_or("initial boss slot details missing")?
-        .boosted
-        .clone();
-    if initial_slot.status != 0
-        || !before.progress.is_empty()
-        || before.points != 0
-        || initial_slot.points != 0
-        || initial_slot.bosses.iter().any(|boss| !boss.is_empty())
-        || daily_boss != "oteryn:creature.ekatrix"
+        .ok_or("initial boss slot details missing")?;
+    if details.boosted != BOOSTED_BOSS
+        || details.base_bonus != 25
+        || details.bonuses != [0, 0]
+        || initial_slot.ready_at_ms != 0
     {
-        return Err(format!("initial boss slot query: {initial_slot:?}").into());
+        return Err(format!("initial boss slot query requires {BOOSTED_BOSS} and pristine slot details: {initial_slot:?}").into());
     }
     row.pass(
         "initial-query",
         (&before.progress, before.points, &initial_slot),
     );
     let catalog = bosses()?;
-    if !catalog
-        .iter()
-        .any(|boss| boss.key == daily_boss && boss.category.eq_ignore_ascii_case("archfoe"))
-    {
-        return Err(format!("daily boosted boss is not an Archfoe: {daily_boss}").into());
-    }
-    // Global Bosstiary lists Rotworm Queen as a Nemesis (one kill, ten points).
-    let boss = ORDINARY_BOSS.to_owned();
-    catalog
-        .iter()
-        .find(|entry| entry.key == boss && entry.category.eq_ignore_ascii_case("nemesis"))
-        .ok_or("P02 Global ordinary boss absent from Nemesis catalogue")?;
-    let previous = counts(&before).get(&boss).copied().unwrap_or(0);
-    kill(&mut c, &boss).await?;
-    let credited = snapshot(&mut c).await?;
-    let current = counts(&credited).get(&boss).copied().unwrap_or(0);
-    if previous.checked_add(1) != Some(current) || credited.points != 10 {
-        return Err(format!("step boss-kill {boss}: expected +1 and Prowess points, observed kills={previous}->{current} points={} -> {}", before.points, credited.points).into());
-    }
-    before = credited.clone();
-    row.pass(
-        "boss-kill-progress",
-        (&boss, &credited.progress, credited.points),
-    );
-    let boosted_key = daily_boss;
-    let previous = counts(&before).get(&boosted_key).copied().unwrap_or(0);
-    kill(&mut c, &boosted_key).await?;
-    let boosted_state = snapshot(&mut c).await?;
-    let current = counts(&boosted_state)
-        .get(&boosted_key)
-        .copied()
-        .unwrap_or(0);
-    if previous.checked_add(3) != Some(current) {
-        return Err(format!(
-            "step boosted-kill {boosted_key}: expected +3, observed={previous}->{current}"
-        )
-        .into());
-    }
-    before = boosted_state.clone();
-    let boosted_category = catalog
-        .iter()
-        .find(|entry| entry.key == boosted_key)
-        .ok_or("step=boosted-exclusion boosted boss catalogue entry missing")?;
-    let threshold = crate::domain::bosstiary::kill_thresholds(&boosted_category.category)
-        .ok_or("step=boosted-exclusion boosted boss prowess threshold missing")?[0];
-    let mut boosted_kills = counts(&before).get(&boosted_key).copied().unwrap_or(0);
-    while boosted_kills < threshold {
-        kill(&mut c, &boosted_key).await?;
-        before = snapshot(&mut c).await?;
-        let next = counts(&before).get(&boosted_key).copied().unwrap_or(0);
-        if boosted_kills.checked_add(3) != Some(next) {
-            return Err(format!("step=boosted-eligibility boss={boosted_key} unexpected credit={boosted_kills}->{next} need={threshold}").into());
+    for (key, category) in [(ORDINARY_BOSS, "nemesis"), (BOOSTED_BOSS, "archfoe")] {
+        if !catalog
+            .iter()
+            .any(|boss| boss.key == key && boss.category.eq_ignore_ascii_case(category))
+        {
+            return Err(format!("P02 Global boss {key} absent from {category} catalogue").into());
         }
-        boosted_kills = next;
+    }
+
+    credited_death(&mut c, clients, ORDINARY_BOSS, 1).await?;
+    let credited = snapshot(&mut c).await?;
+    exact_progress(&credited, &[(ORDINARY_BOSS, 1)], 10)?;
+    row.pass("boss-kill-progress", (&credited.progress, credited.points));
+
+    let final_progress = [(ORDINARY_BOSS, 1), (BOOSTED_BOSS, 6)];
+    for (kills, points) in [(3, 10), (6, 20)] {
+        credited_death(&mut c, clients, BOOSTED_BOSS, 3).await?;
+        let progress = snapshot(&mut c).await?;
+        exact_progress(
+            &progress,
+            &[(ORDINARY_BOSS, 1), (BOOSTED_BOSS, kills)],
+            points,
+        )?;
+        evidence(&format!(
+            "P02_PROGRESS boosted_credits={kills} points={points} progress={:?}",
+            progress.progress
+        ));
     }
     let ready = slot(
         &mut c,
         BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
     )
     .await?;
-    let exclusion_slot = boosted_exclusion_slot(&ready, &boosted_key, boosted_kills, threshold)
-        .ok_or_else(|| format!("step=boosted-exclusion boss={boosted_key} kills={boosted_kills}/{threshold} need=boosted-boss-prowess-and-ready-empty-unlocked-slot observed={ready:?}"))?;
+    let exclusion_slot = boosted_exclusion_slot(&ready, final_progress[1].1)?;
     let br = slot(
         &mut c,
         BossSlotRequest::Equip {
             slot: exclusion_slot,
-            boss: boosted_key.clone(),
+            boss: BOOSTED_BOSS.into(),
         },
     )
     .await?;
@@ -537,28 +648,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
     )
     .await?;
-    if after_exclusion
-        .details
-        .as_ref()
-        .is_none_or(|details| details.boosted != boosted_key)
-        || (BossSlotReply {
-            details: None,
-            ..after_exclusion.clone()
-        }) != plain_ready
+    if after_exclusion.details.as_ref().is_none_or(|details| {
+        details.boosted != BOOSTED_BOSS || details.base_bonus != 27 || details.bonuses != [0, 0]
+    }) || (BossSlotReply {
+        details: None,
+        ..after_exclusion.clone()
+    }) != plain_ready
     {
         return Err(format!(
             "step=boosted-exclusion daily boss or slot custody changed reply={after_exclusion:?}"
         )
         .into());
     }
-    row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
-    if !plain_ready.bosses[0].is_empty() || plain_ready.bosses.iter().any(|key| key == &boss) {
-        return Err(format!(
-            "step slot-equip: expected empty slot 1 and unassigned boss: {plain_ready:?}"
-        )
-        .into());
-    }
-    let expected_bosses = [boss.clone(), plain_ready.bosses[1].clone()];
+    row.pass("boosted-kill", (&final_progress, &br));
+    let boss = ORDINARY_BOSS.to_owned();
     let equipped = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -567,10 +670,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .await?;
-    if equipped.status != 0 || equipped.unlocked & 1 == 0 || equipped.bosses != expected_bosses {
-        return Err(format!("step slot-equip: reply={equipped:?}").into());
-    }
-    row.pass("slot-equip", &equipped);
+    exact_slots(&equipped, 0, 1, 27, 20, [ORDINARY_BOSS, ""])?;
+    let equipped_details = detailed_equipment(&mut c, &equipped).await?;
+    row.pass("slot-equip", (&equipped, &equipped_details));
     let refused = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -593,18 +695,45 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut c = connect_world(clients, 0xb3).await?;
     let durable = snapshot(&mut c).await?;
     let ds = slot(&mut c, BossSlotRequest::Query).await?;
-    if c.join_snapshot().game_session_id == session
-        || durable.progress != before.progress
-        || durable.points != before.points
-        || ds != equipped
-    {
+    exact_progress(&durable, &final_progress, 20)?;
+    exact_slots(&ds, 0, 1, 27, 20, [ORDINARY_BOSS, ""])?;
+    if c.join_snapshot().game_session_id == session || ds != equipped {
         return Err(format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into());
     }
-    row.pass("fresh-admission", (&durable.progress, durable.points, &ds));
+    let durable_details = detailed_equipment(&mut c, &ds).await?;
+    row.pass(
+        "fresh-admission",
+        (&durable.progress, durable.points, &ds, &durable_details),
+    );
     Ok(())
 }
 
-pub(super) async fn logout(c: &mut DevClientSession) -> TestResult<crate::foundation::GameSessionId> {
+async fn detailed_equipment(
+    c: &mut DevClientSession,
+    plain: &BossSlotReply,
+) -> TestResult<oteryn_protocol_oteryn::bosstiary_slots::SlotDetails> {
+    let mut reply = slot(
+        c,
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+    )
+    .await?;
+    let details = reply
+        .details
+        .take()
+        .ok_or("P02 missing equipped slot details")?;
+    if &reply != plain
+        || details.base_bonus != 27
+        || details.bonuses != [27, 0]
+        || details.boosted != BOOSTED_BOSS
+    {
+        return Err(format!("P02 equipped slot detail mismatch: {reply:?} {details:?}").into());
+    }
+    Ok(details)
+}
+
+pub(super) async fn logout(
+    c: &mut DevClientSession,
+) -> TestResult<crate::foundation::GameSessionId> {
     let deadline = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(
             oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
@@ -643,28 +772,51 @@ pub(super) async fn logout(c: &mut DevClientSession) -> TestResult<crate::founda
 mod tests {
     use super::*;
     #[test]
-    fn exclusion_requires_prowess_and_an_empty_ready_unlocked_slot() {
+    fn exclusion_requires_prowess_and_exact_slots() {
         let mut reply = BossSlotReply {
             details: Some(oteryn_protocol_oteryn::bosstiary_slots::SlotDetails {
-                base_bonus: 0,
+                base_bonus: 27,
                 bonuses: [0; 2],
-                boosted: "boss".into(),
+                boosted: BOOSTED_BOSS.into(),
                 now: 10,
             }),
             status: 0,
             unlocked: 1,
-            bonus: 0,
-            points: 0,
+            bonus: 27,
+            points: 20,
             remove_fee: 0,
             ready_at_ms: 10,
-            bosses: ["ordinary".into(), String::new()],
+            bosses: [String::new(), String::new()],
         };
-        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), None);
-        reply.bosses[0].clear();
-        assert_eq!(boosted_exclusion_slot(&reply, "boss", 4, 5), None);
-        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), Some(1));
-        reply.ready_at_ms = 11;
-        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), None);
+        assert!(boosted_exclusion_slot(&reply, 4).is_err());
+        assert_eq!(boosted_exclusion_slot(&reply, 6).ok(), Some(1));
+        for (unlocked, bonus) in [(3, 27), (2, 27), (1, 26)] {
+            reply.unlocked = unlocked;
+            reply.bonus = bonus;
+            assert!(boosted_exclusion_slot(&reply, 6).is_err());
+        }
+    }
+
+    #[test]
+    fn exact_progress_rejects_unrelated_entries_lost_ordinary_credit_and_wrong_points() {
+        let expected = [(ORDINARY_BOSS, 1), (BOOSTED_BOSS, 6)];
+        let state = boss_encounter::Snapshot {
+            progress: expected
+                .map(|(key, kills)| (key.to_owned(), kills))
+                .to_vec(),
+            points: 20,
+            ..Default::default()
+        };
+        assert!(exact_progress(&state, &expected, 20).is_ok());
+        let mut wrong = state.clone();
+        wrong.progress.push(("unrelated".into(), 1));
+        assert!(exact_progress(&wrong, &expected, 20).is_err());
+        wrong = state.clone();
+        wrong.progress[0].1 = 2;
+        assert!(exact_progress(&wrong, &expected, 20).is_err());
+        wrong = state;
+        wrong.points = 19;
+        assert!(exact_progress(&wrong, &expected, 20).is_err());
     }
 
     #[test]
