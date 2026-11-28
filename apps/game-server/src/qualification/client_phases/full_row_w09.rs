@@ -4,10 +4,11 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_items::concoctions::Concoction;
 use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-use oteryn_protocol_oteryn::presentation::{self, ActorCooldown, ActorCooldownKind};
+use oteryn_protocol_oteryn::presentation::{ActorCooldown, ActorCooldownKind};
 use oteryn_protocol_oteryn::{tutorial_notices::TutorialNotice, world_object as wire};
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
+use std::time::Instant;
 
 const RESET_NOTICE: &str = "Your spells are no longer on cooldown.";
 const GIFT_INPUT_MICROS: i64 = 3_600_000_000;
@@ -305,20 +306,69 @@ async fn cast_paid(client: &mut DevClientSession, spell: NonZeroU32, mana_cost: 
     Ok(())
 }
 
+#[derive(Clone, Copy, Debug)]
+struct CastCooldown {
+    kind: ActorCooldownKind,
+    id: u32,
+    earliest: Instant,
+    latest: Instant,
+}
+
+fn assert_snapshot_cooldowns(
+    snapshot: &oteryn_dev_client::native_session::ActorCooldownUpdate,
+    requested_at: Instant,
+    expected: &[CastCooldown],
+) -> TestResult {
+    // The server clock in a complete snapshot is absolute. Compare its remaining
+    // times to the local expiry windows observed when the spells were cast.
+    let rounding = Duration::from_millis(2);
+    let received_at = snapshot.received_at;
+    for entry in &snapshot.entries {
+        let expected = expected
+            .iter()
+            .find(|expected| (expected.kind, expected.id) == (entry.kind, entry.id))
+            .ok_or_else(|| format!("W09 snapshot added an unexpected cooldown {entry:?}"))?;
+        let remaining = entry.expires_at_ms
+            .checked_sub(snapshot.server_now_ms)
+            .filter(|&ms| ms > 0)
+            .map(Duration::from_millis)
+            .ok_or_else(|| format!("W09 snapshot included an expired cooldown {entry:?}"))?;
+        if requested_at + remaining > expected.latest + rounding
+            || received_at + remaining + rounding < expected.earliest
+        {
+            return Err(format!("W09 snapshot changed the deadline for {entry:?}").into());
+        }
+    }
+    if !snapshot.snapshot
+        || !snapshot.entries.iter().any(|entry| entry.kind == ActorCooldownKind::Spell)
+        || expected.iter().any(|expected| {
+            expected.earliest > received_at + rounding
+                && !snapshot.entries.iter().any(|entry| {
+                    (entry.kind, entry.id) == (expected.kind, expected.id)
+                })
+        })
+    {
+        return Err(format!(
+            "W09 expected active cooldowns {expected:?}, observed {:?}",
+            snapshot.value
+        ).into());
+    }
+    Ok(())
+}
+
 async fn assert_cast_cooldowns(
     client: &mut DevClientSession,
     spell: NonZeroU32,
-    cast_started: tokio::time::Instant,
+    cast_started: Instant,
     spell_ms: u64,
     stance: bool,
-) -> TestResult<[ActorCooldown; 2]> {
+) -> TestResult<[CastCooldown; 2]> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         for event in client.take_events() {
             if let SessionEvent::ActorCooldowns(frame) = event {
-                let now = frame.value.server_now_ms;
-                // Global: https://www.tibiawiki.com.br/wiki/Conjure_Wand_of_Darkness
-                // The frame samples server time after commit. Both cooldowns share the cast time.
+                // Both cooldowns start at the cast. A sparse delta carries remaining
+                // durations directly; a complete update carries absolute deadlines.
                 let entries = frame.value.entries.as_slice();
                 let [spell_entry, group_entry, additional @ ..] = entries else {
                     return Err(format!(
@@ -329,7 +379,10 @@ async fn assert_cast_cooldowns(
                 };
                 let elapsed_ms =
                     u64::try_from(cast_started.elapsed().as_millis())?.saturating_add(1);
-                let group_remaining = group_entry.expires_at_ms.checked_sub(now);
+                let remaining = |entry: &ActorCooldown| {
+                    entry.expires_at_ms.checked_sub(frame.value.server_now_ms)
+                };
+                let group_remaining = remaining(group_entry);
                 let expected_stance = ActorCooldown {
                     kind: ActorCooldownKind::Group,
                     id: 9,
@@ -360,7 +413,16 @@ async fn assert_cast_cooldowns(
                     "W09_CHECK cooldown-update sequence={} spell_ms={spell_ms} support_ms=2000",
                     frame.server_sequence
                 ));
-                return Ok([*spell_entry, *group_entry]);
+                return Ok([
+                    (spell_entry, spell_ms),
+                    (group_entry, 2_000),
+                ].map(|(entry, duration_ms)| CastCooldown {
+                    kind: entry.kind,
+                    id: entry.id,
+                    earliest: cast_started + Duration::from_millis(duration_ms),
+                    latest: frame.value.received_at
+                        + Duration::from_millis(remaining(entry).unwrap_or_default()),
+                }));
             }
         }
         if tokio::time::Instant::now() >= deadline {
@@ -377,7 +439,7 @@ async fn assert_cast_cooldowns(
 async fn reconnect_cooldowns(
     client: DevClientSession,
     scope: &SeamClients<'_>,
-    expected: [ActorCooldown; 2],
+    expected: [CastCooldown; 2],
 ) -> TestResult<DevClientSession> {
     let session = client.join_snapshot().game_session_id;
     let sequence = client.last_server_sequence();
@@ -405,6 +467,7 @@ async fn reconnect_cooldowns(
         now_seconds()?,
         nonce,
     );
+    let requested_at = Instant::now();
     let mut resumed = oteryn_dev_client::resume_session(
         oteryn_dev_client::RecoveryTransport {
             address: scope.address,
@@ -430,29 +493,16 @@ async fn reconnect_cooldowns(
     );
     let cooldowns = resumed
         .session_mut()
-        .gated_snapshot(presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
-        .ok_or("W09 reconnect omitted ACTOR_COOLDOWNS")
-        .and_then(|snapshot| {
-            presentation::decode_actor_cooldowns(&snapshot.payload)
-                .map_err(|_| "W09 reconnect sent malformed ACTOR_COOLDOWNS")
-        })
+        .actor_cooldown_snapshot()
+        .ok_or_else(|| format!("W09 reconnect omitted ACTOR_COOLDOWNS {continuity}"))?;
+    assert_snapshot_cooldowns(cooldowns, requested_at, &expected)
         .map_err(|error| format!("{error} {continuity}"))?;
-    let active: Vec<_> = expected
-        .into_iter()
-        .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
-        .collect();
     // FND-04B allows a resume snapshot at the retained sequence when no new frame was sent.
     if resumed_session != session
         || resumed_sequence < sequence
         || resumed_next_command != next_command
-        || !active
-            .iter()
-            .any(|entry| entry.kind == ActorCooldownKind::Spell)
-        || cooldowns.entries != active
     {
-        return Err(format!(
-            "W09 reconnect cooldown replay diverged {continuity} frame={cooldowns:?} expected={active:?}"
-        ).into());
+        return Err(format!("W09 reconnect continuity changed {continuity}").into());
     }
     evidence(&format!(
         "W09_CHECK cooldown-reconnect {continuity} spell-deadline=preserved"
@@ -665,7 +715,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("W09 requires a main backpack with no Wand of Darkness".into());
     }
     client.take_events();
-    let first_cast = tokio::time::Instant::now();
+    let first_cast = Instant::now();
     cast_paid(&mut client, spell, 250).await?;
     *expected.entry(wand).or_default() += 1;
     let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000, false).await?;
@@ -689,66 +739,65 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // Its 30-second stance group survives the live command latency.
     let stance = crate::qualification::client_spell_journey::spell_index(book, "uteta vis")?;
     client.take_events();
-    let stance_cast = tokio::time::Instant::now();
+    let stance_cast = Instant::now();
     cast_paid(&mut client, stance, 400).await?;
     let [stance_spell, support] =
         assert_cast_cooldowns(&mut client, stance, stance_cast, 30_000, true).await?;
-    let stance_group = ActorCooldown {
+    let stance_group = CastCooldown {
         kind: ActorCooldownKind::Group,
         id: 9,
-        expires_at_ms: stance_spell.expires_at_ms,
+        ..stance_spell
     };
-    let mut reset_prestate = [cooldowns[0], stance_spell, support, stance_group];
-    reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
+    let mut expected_clear = [cooldowns[0], stance_spell, support, stance_group].map(|entry| {
+        ActorCooldown {
+            kind: entry.kind,
+            id: entry.id,
+            expires_at_ms: 0,
+        }
+    });
+    expected_clear.sort_by_key(|entry| (entry.kind, entry.id));
     client.take_events();
     let (reset, capture) = oteryn_dev_client::capture_qualification_exchange(async {
-    let used_at = tokio::time::Instant::now();
-    let aid_sequence = use_item(&mut client, aid, committed).await?;
-    let committed_at = tokio::time::Instant::now();
-    let reset_until = tokio::time::Instant::now() + Duration::from_secs(5);
-    let mut saw_reset = false;
-    let mut saw_clear = false;
-    while !saw_reset || !saw_clear {
-        for event in client.take_events() {
-            match event {
-                SessionEvent::ActorCooldowns(frame) if frame.server_sequence > aid_sequence => {
-                    let expected_clear = reset_prestate
-                        .iter()
-                        .map(|entry| ActorCooldown {
-                            expires_at_ms: 0,
-                            ..*entry
-                        })
-                        .collect::<Vec<_>>();
-                    if reset_prestate
-                        .iter()
-                        .any(|entry| entry.expires_at_ms <= frame.value.server_now_ms)
-                        || frame.value.entries != expected_clear
-                    {
-                        return Err(format!("W09 Aid clearance mismatch sequence={} expected={expected_clear:?} frame={:?}", frame.server_sequence, frame.value).into());
-                    }
-                    saw_clear = true;
-                }
-                SessionEvent::TutorialNotice(delta)
-                    if delta.server_sequence > aid_sequence && matches!(&delta.value,
-                    TutorialNotice::StatusText(text) if text == RESET_NOTICE) =>
-                {
-                    saw_reset = true
-                }
-                _ => {}
+        let used_at = tokio::time::Instant::now();
+        let before = client.last_server_sequence();
+        let aid_sequence = use_item(&mut client, aid, committed).await?;
+        let committed_at = tokio::time::Instant::now();
+        let reset_until = committed_at + Duration::from_secs(5);
+        let mut events = client.take_events();
+        let mut updates = events.iter().filter_map(|event| match event {
+            SessionEvent::ActorCooldowns(frame)
+                if before < frame.server_sequence && frame.server_sequence < aid_sequence =>
+            {
+                Some(frame)
             }
-        }
-        if saw_reset && saw_clear {
-            break;
-        }
-        if tokio::time::Instant::now() >= reset_until {
+            _ => None,
+        });
+        let clearance = updates
+            .next()
+            .ok_or("W09 Aid result arrived without a cooldown clearance")?;
+        if clearance.value.snapshot
+            || clearance.value.server_now_ms != 0
+            || clearance.value.entries != expected_clear
+            || updates.next().is_some()
+        {
             return Err(format!(
-                "W09 missing Aid clearance or notice after sequence={}",
-                client.last_server_sequence()
-            )
-            .into());
+                "W09 Aid clearance mismatch sequence={} expected={expected_clear:?} frame={:?}",
+                clearance.server_sequence, clearance.value
+            ).into());
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
+        loop {
+            if events.iter().any(|event| matches!(
+                event, SessionEvent::TutorialNotice(delta) if delta.server_sequence > aid_sequence
+                    && matches!(&delta.value, TutorialNotice::StatusText(text) if text == RESET_NOTICE)
+            )) {
+                break;
+            }
+            if tokio::time::Instant::now() >= reset_until {
+                return Err(format!("W09 missing Aid notice after sequence={aid_sequence}").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            events = client.take_events();
+        }
         Ok::<_, Box<dyn std::error::Error>>((used_at, committed_at))
     }).await;
     let (used_at, committed_at) = reset?;
@@ -768,7 +817,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "W09_CHECK aid-debit=one gift-before-ms={gift_before} gift-after-ms={gift_after}"
     ));
 
-    let stance_recast = tokio::time::Instant::now();
+    let stance_recast = Instant::now();
     cast_paid(&mut client, stance, 400).await?;
     let [new_stance, _] =
         assert_cast_cooldowns(&mut client, stance, stance_recast, 30_000, true).await?;
@@ -779,20 +828,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     while tokio::time::Instant::now() < support_end {
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    let second_cast = tokio::time::Instant::now();
+    let second_cast = Instant::now();
     cast_paid(&mut client, spell, 250).await?;
     let [new_conjure, new_support] =
         assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000, false).await?;
-    let mut durable_cooldowns = [
+    let durable_cooldowns = [
         new_conjure,
         new_stance,
         new_support,
-        ActorCooldown {
-            expires_at_ms: new_stance.expires_at_ms,
-            ..stance_group
+        CastCooldown {
+            kind: stance_group.kind,
+            id: stance_group.id,
+            ..new_stance
         },
     ];
-    durable_cooldowns.sort_by_key(|entry| (entry.kind, entry.id));
     if first_cast.elapsed() >= natural_cooldown {
         return Err(
             "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
@@ -898,6 +947,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("W09 Premium entitlement changed before the final relog".into());
     }
     logout(&mut fresh).await?;
+    let requested_at = Instant::now();
     let mut verified = connect_character(&scope, 0xd2, 0).await?;
     if verified.join_snapshot().game_session_id == refused_session
         || quantities(&verified)? != settled
@@ -907,25 +957,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let sequence = verified.last_server_sequence();
     let cooldowns = verified
         .session_mut()
-        .gated_snapshot(presentation::STATE_DOMAIN_ACTOR_COOLDOWNS)
-        .ok_or("W09 full relog omitted ACTOR_COOLDOWNS")
-        .and_then(|snapshot| {
-            presentation::decode_actor_cooldowns(&snapshot.payload)
-                .map_err(|_| "W09 full relog sent malformed ACTOR_COOLDOWNS")
-        })?;
-    let active: Vec<_> = durable_cooldowns
-        .into_iter()
-        .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
-        .collect();
-    if !active
-        .iter()
-        .any(|entry| entry.kind == ActorCooldownKind::Spell)
-        || cooldowns.entries != active
-    {
-        return Err(format!(
-            "W09 full relog changed the active deadlines sequence={sequence} expected={active:?} frame={cooldowns:?}"
-        ).into());
-    }
+        .actor_cooldown_snapshot()
+        .ok_or("W09 full relog omitted ACTOR_COOLDOWNS")?;
+    assert_snapshot_cooldowns(cooldowns, requested_at, &durable_cooldowns)
+        .map_err(|error| format!("{error} after W09 full relog sequence={sequence}"))?;
     platform_premium_evidence(&scope, &mut verified, Some((&entitlement, revision))).await?;
     assert_cooling_down(&mut verified, spell, &settled).await?;
     logout(&mut verified).await?;

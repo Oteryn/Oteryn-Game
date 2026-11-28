@@ -10,7 +10,7 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
 
-const SPELL_COOLDOWNS_FIELD: &str = "spell_cooldowns_unix_us";
+pub(super) const SPELL_COOLDOWNS_FIELD: &str = "spell_cooldowns_unix_us";
 
 #[derive(Debug, Clone)]
 pub struct CharacterConditionSnapshot {

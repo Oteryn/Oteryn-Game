@@ -9,6 +9,27 @@ use oteryn_protocol_oteryn::presentation::ActorCooldown;
 
 const RESET_TEXT: &str = "Your spells are no longer on cooldown.";
 
+impl crate::gameplay_transport::item_use::ItemUseGates {
+    pub(in crate::gameplay_transport) fn pending_kooldown_aid(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(CommandRef, [u8; 32])> {
+        let pending = self
+            .0
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)?
+            .2
+            .cube_pending
+            .as_ref()?;
+        if pending.request.kind != ItemUseKind::Concoction {
+            return None;
+        }
+        let command = CommandId::new(pending.request.command_id).ok()?;
+        Some((CommandRef::new(session, command), pending.binding()?))
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
     pub(in crate::gameplay_transport) fn lose_next_kooldown_ack() {
@@ -21,7 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, DromeUseError> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
@@ -53,11 +74,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .gate(&runtime, actor, command.game_session_id)
                 .and_then(|gate| gate.cube_pending.clone())
         };
+        let reconciling = pending
+            .as_ref()
+            .is_some_and(|pending| pending.request.command_id == command.command_id);
         let retry = AdmissionRetryBudget::for_command(self.root);
         match retry_item_use_holder(&retry, async || {
-            self.root
-                .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
-                .await
+            if reconciling {
+                self.root
+                    .reconcile_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                    .await
+            } else {
+                self.root
+                    .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                    .await
+            }
         })
         .await
         {
@@ -71,7 +101,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }));
             }
             Ok(false) => {}
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                CubeStage::AidReceipt.report(&error);
+                return Err(DromeUseError::read_unavailable(error, reconciling));
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         }
         if let Some(pending) = pending.as_ref()
@@ -82,12 +115,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
             if !self.cube_actor_live(actor, command.game_session_id).await {
-                return Err(());
+                return Err(DromeUseError::OutcomeUnknown);
             }
             return self
                 .commit_kooldown_attempt(actor, command, pending.request.clone(), binding)
                 .await
-                .map(Some);
+                .map(Some)
+                .map_err(DromeUseError::from);
         }
         let native = match self
             .active_generation
@@ -127,7 +161,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         {
             Ok(inventory) => inventory,
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                return Err(DromeUseError::read_unavailable(error, reconciling));
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         };
         let Some(bag) = inventory.backpack.as_ref() else {
@@ -227,6 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.commit_kooldown_attempt(actor, command, request, binding)
             .await
             .map(Some)
+            .map_err(DromeUseError::from)
     }
 
     async fn commit_kooldown_attempt(
@@ -256,7 +293,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ))
         ) && test_faults::take_lost_ack()
         {
-            self.mark_cube_unknown(actor, command).await;
             return Err(());
         }
         let mut remaining_ms = None;
@@ -269,13 +305,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(error) => {
                 match self
                     .root
-                    .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                    .reconcile_kooldown_aid_receipt(self.character, fence, command_ref, binding)
                     .await
                 {
                     Ok(true) => UseDisposition::Committed,
                     _ if item_use_commit_unknown(&error) => {
                         // The write may have committed even when its receipt is unavailable.
-                        self.mark_cube_unknown(actor, command).await;
                         return Err(());
                     }
                     _ => match error {

@@ -82,17 +82,6 @@ impl super::super::ItemUseGate {
         Ok(())
     }
 
-    pub(super) fn mark_cube_unknown(&mut self, command: u64) {
-        if self
-            .cube_pending
-            .as_ref()
-            .is_some_and(|pending| pending.request.command_id == command)
-            && self.last.is_none_or(|(last, _)| last <= command)
-        {
-            self.last = Some((command, UseDisposition::Rejected));
-        }
-    }
-
     pub(super) fn finish_cube(&mut self, command: u64, result: UseDisposition) -> bool {
         let Some(pending) = self.cube_pending.as_ref() else {
             return false;
@@ -152,7 +141,6 @@ mod tests {
         let mut gate = super::super::super::ItemUseGate::default();
         let request = request(7);
         assert_eq!(gate.prepare_cube(request.clone(), 10), Ok(()));
-        gate.mark_cube_unknown(7);
         assert_eq!(gate.unspendable, [[1; 16], [2; 16]]);
         assert_eq!(
             gate.cube_pending.as_ref().map(|pending| &pending.request),
@@ -179,11 +167,9 @@ mod tests {
     fn historical_receipt_does_not_clear_other_reservations_or_newer_results() {
         let mut gate = super::super::super::ItemUseGate::default();
         assert_eq!(gate.prepare_cube(request(7), 10), Ok(()));
-        gate.mark_cube_unknown(7);
         gate.unspendable.push([8; 16]);
         gate.last = Some((8, UseDisposition::Exhausted));
         gate.in_flight_since_ms = Some(20);
-        gate.mark_cube_unknown(7);
         assert_eq!(gate.last, Some((8, UseDisposition::Exhausted)));
         assert!(!gate.finish_cube(6, UseDisposition::Committed));
         assert!(gate.finish_cube(7, UseDisposition::Committed));
@@ -222,7 +208,6 @@ mod tests {
             gate.cube_pending.as_ref().and_then(|p| p.binding()),
             Some([4; 32])
         );
-        gate.mark_cube_unknown(7);
         assert_eq!(
             gate.prepare_cube(request(8), 10_000),
             Err(UseDisposition::Exhausted)

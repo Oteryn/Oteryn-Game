@@ -290,7 +290,7 @@ fn guard_case(
                             COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
                                 assert_eq!(
                                     decode_spell_cast_result(results[0].payload),
-                                    Ok(SpellCastDisposition::Busy)
+                                    Ok(SpellCastDisposition::Rejected)
                                 );
                             }
                             COMMAND_TYPE_USE_INTENT => assert_eq!(

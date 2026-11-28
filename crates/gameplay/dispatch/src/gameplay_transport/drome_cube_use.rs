@@ -33,8 +33,36 @@ tokio::task_local! {
     pub(in crate::gameplay_transport) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<crate::gameplay_transport::composed_admission::HolderCheckoutProbe>>>;
 }
 
+#[derive(Debug)]
+pub enum DromeUseError {
+    Preflight,
+    OutcomeUnknown,
+}
+
+impl From<()> for DromeUseError {
+    fn from(_: ()) -> Self {
+        Self::OutcomeUnknown
+    }
+}
+
+impl DromeUseError {
+    fn read_unavailable(error: DurabilityError, reconciling: bool) -> Self {
+        if !reconciling
+            && matches!(
+                error,
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
+            )
+        {
+            Self::Preflight
+        } else {
+            Self::OutcomeUnknown
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum CubeStage {
+    AidReceipt,
     Receipt,
     Inventory,
     Commit,
@@ -44,7 +72,8 @@ enum CubeStage {
 impl CubeStage {
     fn report(self, error: &DurabilityError) {
         let stage = match self {
-            Self::Receipt => "cube_receipt",
+            Self::AidReceipt => "kooldown_aid_receipt",
+            Self::Receipt => "drome_cube_receipt",
             Self::Inventory => "cube_inventory",
             Self::Commit => "cube_commit",
             Self::Reconcile => "cube_reconcile",
@@ -122,14 +151,14 @@ fn item_use_commit_unknown(error: &ItemUseError) -> bool {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// None delegates an ordinary item. The route checks PREPARE before acknowledging an error.
+    /// None delegates an ordinary item. Only a proven preflight failure may be refused.
     pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, DromeUseError> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
@@ -161,13 +190,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let reconcile = pending
             .as_ref()
             .is_some_and(|pending| pending.request.command_id == command.command_id);
-        let budget = AdmissionRetryBudget::for_release_holder(self.root);
-        let stage = if reconcile {
-            CubeStage::Reconcile
+        let (receipt_budget, stage) = if reconcile {
+            (
+                AdmissionRetryBudget::for_release_holder(self.root),
+                CubeStage::Reconcile,
+            )
         } else {
-            CubeStage::Receipt
+            (
+                AdmissionRetryBudget::for_command(self.root),
+                CubeStage::Receipt,
+            )
         };
-        match retry_read(&budget, stage, async || {
+        match retry_read(&receipt_budget, stage, async || {
             if reconcile {
                 self.root
                     .reconcile_drome_cube_receipt(self.character, fence, command_ref, binding)
@@ -190,14 +224,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Committed)));
             }
             Ok(None) => {}
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                return Err(DromeUseError::read_unavailable(error, reconcile));
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         }
+        drop(receipt_budget);
+        let budget = AdmissionRetryBudget::for_release_holder(self.root);
         let Some(native) = self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
         else {
-            return if pending.is_some() { Err(()) } else { Ok(None) };
+            return if pending.is_some() {
+                Err(DromeUseError::OutcomeUnknown)
+            } else {
+                Ok(None)
+            };
         };
         let content = NativeItemWeights(native);
         if let Some(pending) = pending.as_ref()
@@ -209,12 +251,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Retry the original UUIDs/quantities/output, never re-PREPARE the next unit.
             // The writer still receives the independently current command fence and content.
             if !self.cube_actor_live(actor, command.game_session_id).await {
-                return Err(());
+                return Err(DromeUseError::OutcomeUnknown);
             }
             return self
                 .commit_cube_attempt(actor, command, &pending.request, &content, &budget)
                 .await
-                .map(|result| Some(outcome(result)));
+                .map(|result| Some(outcome(result)))
+                .map_err(DromeUseError::from);
         }
         let index = {
             let runtime = self.runtime.lock().await;
@@ -266,7 +309,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)) => {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                return Err(DromeUseError::read_unavailable(error, false));
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         };
         let Some(bag) = inventory.backpack.as_ref() else {
@@ -394,6 +439,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.commit_cube_attempt(actor, command, &request, &content, &budget)
             .await
             .map(|result| Some(outcome(result)))
+            .map_err(DromeUseError::from)
     }
 
     pub(in crate::gameplay_transport) async fn recover_drome_use(
@@ -411,7 +457,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding = Sha256::digest(wire).into();
         if self
             .root
-            .read_kooldown_aid_receipt(self.character, fence, reference, binding)
+            .reconcile_kooldown_aid_receipt(self.character, fence, reference, binding)
             .await
             .ok()?
         {
@@ -433,7 +479,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let receipt = self
             .root
-            .read_drome_cube_receipt(self.character, fence, reference, binding)
+            .reconcile_drome_cube_receipt(self.character, fence, reference, binding)
             .await
             .ok()?;
         let disposition = if receipt.is_some() {
@@ -533,7 +579,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(crate::durability::item_use::ItemUseOutcome::Written { .. })
             ) && test_faults::take_lost_ack()
             {
-                self.mark_cube_unknown(actor, command).await;
                 return Err(());
             }
             let error = match written {
@@ -575,7 +620,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     break (refusal(&error), index);
                 }
                 _ => {
-                    self.mark_cube_unknown(actor, command).await;
                     return Err(());
                 }
             }
@@ -586,17 +630,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.cube_notice(command.game_session_id, index);
         }
         Ok(disposition)
-    }
-
-    async fn mark_cube_unknown(&self, actor: ExactActorRef, command: UseCommand) {
-        let runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        if let Some(gate) = states
-            .item_uses
-            .gate(&runtime, actor, command.game_session_id)
-        {
-            gate.mark_cube_unknown(command.command_id);
-        }
     }
 
     async fn finish_cube(

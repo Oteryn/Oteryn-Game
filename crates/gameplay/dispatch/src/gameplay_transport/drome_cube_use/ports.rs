@@ -12,7 +12,10 @@ macro_rules! authority_methods {
             _intent: oteryn_protocol_oteryn::world_object::UseIntent,
             _source: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> impl std::future::Future<
-            Output = Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()>,
+            Output = Result<
+                Option<$crate::gameplay_transport::connection::UseOutcome>,
+                $crate::gameplay_transport::item_use::drome_cube::DromeUseError,
+            >,
         > {
             async { Ok(None) }
         }
@@ -36,7 +39,10 @@ macro_rules! composed_methods {
             command: $crate::gameplay_transport::connection::UseCommand,
             intent: oteryn_protocol_oteryn::world_object::UseIntent,
             source: Option<$crate::gameplay_transport::item_view::ItemKey>,
-        ) -> Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()> {
+        ) -> Result<
+            Option<$crate::gameplay_transport::connection::UseOutcome>,
+            $crate::gameplay_transport::item_use::drome_cube::DromeUseError,
+        > {
             if let Some(outcome) = self
                 .use_kooldown_aid_impl(actor, command, &intent, source)
                 .await?

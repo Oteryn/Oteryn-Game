@@ -306,7 +306,7 @@ async fn conjure_guard_busy(h: &Harness) -> TestResult {
         }
         let busy = result(&mut client).await?;
         assert_eq!(busy.0, CommandStatus::Rejected);
-        assert_eq!(decode_spell_cast_result(&busy.1), Ok(SpellCastDisposition::Busy));
+        assert_eq!(decode_spell_cast_result(&busy.1), Ok(SpellCastDisposition::Rejected));
         assert_eq!(result(&mut client).await?, (CommandStatus::DuplicateReplay, busy.1));
         assert_eq!(probe.casts.get(), 0);
         assert_eq!(snapshot().await?, before);

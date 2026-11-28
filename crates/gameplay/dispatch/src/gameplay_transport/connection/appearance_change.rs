@@ -175,8 +175,13 @@ impl SessionAppearance {
             {
                 Some(observation) => observation,
                 None => {
-                    let catalogue =
-                        note_none(authority.appearance_fallback_catalogue(), "content")?;
+                    let (catalogue, legacy_look) =
+                        note_none(authority.appearance_fallback(), "content")?;
+                    let look = if self.empty_outfit {
+                        wire::Look::EmptyOutfit
+                    } else {
+                        legacy_look
+                    };
                     // The negotiated client requires its appearance domain and a binding for
                     // each player. Publish placeholders which the first successful read can
                     // replace without resetting the dictionary or granting any cosmetics.
@@ -189,7 +194,7 @@ impl SessionAppearance {
                             root_revision: 1,
                             condition_revision: 0,
                             owner_time_us: 0,
-                            look: wire::Look::EmptyOutfit,
+                            look: look.clone(),
                             selection_revision: None,
                             forge_stacks: None,
                         })

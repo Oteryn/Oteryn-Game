@@ -67,7 +67,7 @@ fn s7c_cube_use_survives_a_short_holder_checkout() -> TestResult {
 }
 
 #[test]
-fn s7c_cube_use_closes_and_logs_when_holder_stays_busy() -> TestResult {
+fn s7c_cube_use_refuses_and_logs_when_holder_stays_busy() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -75,7 +75,7 @@ fn s7c_cube_use_closes_and_logs_when_holder_stays_busy() -> TestResult {
 }
 
 #[test]
-fn s7c_kooldown_aid_probe_exhaustion_keeps_cube_use_pending() -> TestResult {
+fn s7c_kooldown_aid_probe_exhaustion_refuses_before_writing() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -319,6 +319,15 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 client.shutdown().await?;
                 Ok(None)
             }
+            Case::CubeExhausted | Case::AidProbeExhausted => {
+                send_use(&mut client, 1, 1, UseTarget::ItemByDefinition(definition(DROME_CUBE_KEY)?)).await?;
+                assert_eq!(
+                    read_use(&mut client, 1).await?,
+                    (CommandStatus::Rejected, UseDisposition::Rejected),
+                );
+                client.shutdown().await?;
+                Ok(None)
+            }
             _ => {
                 let target = if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
                     let gold = definition(GOLD)?;
@@ -372,6 +381,7 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             );
         }
         Case::CubeExhausted | Case::AidProbeExhausted => {
+            assert_eq!(retained.continuity.next_command_id, 2);
             assert_eq!(
                 count(h, "SELECT count(*) FROM game_drome_cube_uses").await?,
                 0
@@ -559,7 +569,7 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, crate::gameplay_transport::item_use::drome_cube::DromeUseError> {
         let started = Instant::now();
         let using = async {
             let result = if matches!(self.case, Case::CubeExhausted) {

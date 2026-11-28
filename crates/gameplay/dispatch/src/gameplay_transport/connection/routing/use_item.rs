@@ -8,6 +8,7 @@ use super::super::{
     decode_use_intent_target,
 };
 use super::Dispatch;
+use transport::item_use::drome_cube::DromeUseError;
 use oteryn_protocol_oteryn::ClientCommandView;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -99,7 +100,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     ledger.set_use_receipt(reference, None);
                 }
             }
-            Ok(Err(())) | Err(_) => {
+            Ok(Err(DromeUseError::Preflight))
+                if !authority.drome_use_unresolved(actor, use_command).await =>
+            {
+                transport::operator_event("drome_cube_use failed: preflight_unavailable");
+                return Some(Dispatch::Use(UseOutcome::rejected()));
+            }
+            Ok(Err(_)) | Err(_) => {
                 transport::operator_event("drome_cube_use failed: owner_unavailable_or_deadline");
                 // A receipt read or retained write may require reconciliation.
                 return None;

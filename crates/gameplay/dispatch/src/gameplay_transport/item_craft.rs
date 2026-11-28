@@ -200,8 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(outcome)) => return Some(outcome),
             Ok(None) => {}
-            // The rope authority errors before the Channel movement is applied.
-            Err(()) => return Some(UseOutcome::rejected()),
+            Err(()) => return None,
         }
         let disposition = |d| {
             Some(UseOutcome {

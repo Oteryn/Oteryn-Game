@@ -113,9 +113,11 @@ def replay_targets():
             if "E2E_ALL_CAPTURE_DIR" not in source:
                 continue
             tests = re.findall(r"#\[test\]\s*fn (\w+)\(", source)
+            row = module.removeprefix("e2e_")
             if len(tests) != 1:
-                tests = [test for test in tests if test.startswith(f"{module}_")]
-            names = capture_names(module.removeprefix("e2e_"), source)
+                prefixes = (f"{module}_", f"replays_{row}_")
+                tests = [test for test in tests if test.startswith(prefixes)]
+            names = capture_names(row, source)
             targets.setdefault(module, []).extend(
                 (f"oteryn-{Path(package).name}", test, names) for test in tests
             )

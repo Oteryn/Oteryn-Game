@@ -9,7 +9,7 @@ import uuid
 
 PROFILES = (
     "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel",
-    "levitate", "magic-rope", "c05-exiva", "w09-aid-audit", "w09-kooldown", "w10-primal",
+    "levitate", "magic-rope", "c05-exiva", "c06-sorcerer", "w09-aid-audit", "w09-kooldown", "w10-primal",
     "w20b-light", "s13-party", "s08-knight", "s08-sorcerer", "f5-c17a", "f5-c17c",
     "f5-c13", "f5-c18a", "f5-c17d", "c11-unassigned", "c11-knight", "c12-monk", "premium",
 )

@@ -206,7 +206,7 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, crate::gameplay_transport::item_use::drome_cube::DromeUseError> {
         use std::sync::atomic::Ordering;
         if let Some((commit_at, _)) = self.1 {
             self.0.states.test_owner_time.store(commit_at + 1, Ordering::Relaxed);

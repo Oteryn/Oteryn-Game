@@ -43,8 +43,8 @@ impl FreshAdmissionAuthority for DepartingPeer<'_, '_, '_, '_> {
     ) -> Option<crate::gameplay_transport::world_spatial::ChannelEntities> {
         self.owner.observe_visible_entities(actor).await
     }
-    fn appearance_fallback_catalogue(&self) -> Option<appearance::Catalogue> {
-        self.owner.appearance_fallback_catalogue()
+    fn appearance_fallback(&self) -> Option<(appearance::Catalogue, appearance::Look)> {
+        self.owner.appearance_fallback()
     }
     async fn appearance_observation_projected(
         &self,
@@ -225,7 +225,9 @@ fn scenario(busy_at_join: bool) -> TestResult {
             };
             assert_eq!(initial.bindings.len(), 2);
             if busy_at_join {
-                assert!(initial.bindings.iter().all(|b| b.look == appearance::Look::EmptyOutfit));
+                let (_, legacy_look) = owner.appearance_fallback().ok_or("legacy fallback look")?;
+                assert!(matches!(legacy_look, appearance::Look::Outfit { .. }));
+                assert!(initial.bindings.iter().all(|b| b.look == legacy_look));
                 assert!(initial.catalogue.outfits.is_empty());
                 let recovered = tokio::select! {
                     end = &mut serving => return Err(format!("degraded join ended: {end:?}").into()),

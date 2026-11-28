@@ -152,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = item_fence_of(current) else {
             return Ok(false);
         };
-        let saved = {
+        let (mut saved, pending_aid) = {
             let runtime = self.runtime.lock().await;
             let valid = match fence.runtime_scope {
                 RuntimeScopeRefV1::Channel {
@@ -221,13 +221,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(spell_cooldowns) = checkpoint_cooldowns(&state.cooldowns, now) else {
                 return Ok(false);
             };
-            CharacterConditionSnapshot {
-                spell_cooldowns,
-                lease_generation: fence.character_lease_generation,
-                content_digest: runtime.content_pin().server_artifact_digest(),
-                conditions,
-            }
+            (
+                CharacterConditionSnapshot {
+                    spell_cooldowns,
+                    lease_generation: fence.character_lease_generation,
+                    content_digest: runtime.content_pin().server_artifact_digest(),
+                    conditions,
+                },
+                states.item_uses.pending_kooldown_aid(actor, session),
+            )
         };
+        // A lost acknowledgment may have left the actor's old deadlines in memory.
+        // The release fence is held, so settle that write before checkpointing them.
+        if let Some((command, binding)) = pending_aid {
+            match self
+                .root
+                .reconcile_kooldown_aid_receipt(self.character, fence, command, binding)
+                .await
+            {
+                Ok(true) => saved.spell_cooldowns.clear(),
+                Ok(false) => {}
+                Err(ItemUseError::Unavailable(error)) => return Err(error),
+                Err(_) => return Ok(false),
+            }
+        }
         // Never retain runtime/player locks across the database await. The release
         // fence remains held, and SQL independently locks and proves the live lease.
         match self

@@ -467,7 +467,7 @@ where
             oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
                 Dispatch::Reply(
                     crate::foundation::CommandStatus::Rejected,
-                    encode_spell_cast_result(SpellCastDisposition::Busy),
+                    encode_spell_cast_result(SpellCastDisposition::Rejected),
                 )
             }
             oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT

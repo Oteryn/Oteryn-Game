@@ -49,6 +49,7 @@ fn e2e_w09_replays_aid_clearance() -> Result<(), Box<dyn Error>> {
         match frame.message_type() {
             MessageType::CommandResult => {
                 let result = wire::decode_command_result(frame.payload())?;
+                assert!(clear, "Aid clearance must precede the USE result");
                 assert!(result_sequence.replace(frame.server_sequence()).is_none());
                 assert_eq!(result.command_id, command.command_id);
                 assert_eq!(result.status, CommandStatus::Accepted);
@@ -62,9 +63,14 @@ fn e2e_w09_replays_aid_clearance() -> Result<(), Box<dyn Error>> {
             MessageType::StateDelta => {
                 let delta = wire::decode_state_delta(frame.payload())?;
                 if delta.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS {
-                    assert!(result_sequence.is_some_and(|seq| frame.server_sequence() > seq));
+                    assert!(result_sequence.is_none());
+                    assert_eq!(
+                        delta.delta_type,
+                        presentation::DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1
+                    );
                     let update = presentation::decode_actor_cooldowns(delta.payload)
                         .map_err(|error| format!("{error:?}"))?;
+                    assert_eq!(update.server_now_ms, 0);
                     assert_eq!(update.entries.len(), 4);
                     assert!(update.entries.iter().all(|entry| entry.expires_at_ms == 0));
                     assert!(

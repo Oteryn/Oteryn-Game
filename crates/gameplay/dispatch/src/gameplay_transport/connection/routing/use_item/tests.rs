@@ -35,6 +35,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Failure {
+    CubeHolderExhausted,
+    CubePreflightTimeout,
     CubeReceiptUnavailable,
     CubeTimeout,
     TradeRead,
@@ -118,20 +120,24 @@ impl FreshAdmissionAuthority for Authority {
         command: UseCommand,
         _: UseIntent,
         _: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
-        if self.failure == Failure::CubeTimeout && command.command_id == 1 {
-            self.hits.set(self.hits.get() + 1);
-            return std::future::pending().await;
+    ) -> Result<Option<UseOutcome>, DromeUseError> {
+        if command.command_id != 1 {
+            return Ok(None);
         }
-        if matches!(
-            self.failure,
-            Failure::CubeReceiptUnavailable | Failure::CubeWriteUnknown
-        ) && command.command_id == 1
-        {
-            self.hits.set(self.hits.get() + 1);
-            return Err(());
+        let failure = match self.failure {
+            Failure::CubeHolderExhausted | Failure::CubePreflightTimeout => DromeUseError::Preflight,
+            Failure::CubeReceiptUnavailable | Failure::CubeWriteUnknown => DromeUseError::OutcomeUnknown,
+            Failure::CubeTimeout => {
+                self.hits.set(self.hits.get() + 1);
+                return std::future::pending().await;
+            }
+            _ => return Ok(None),
+        };
+        self.hits.set(self.hits.get() + 1);
+        if self.failure == Failure::CubePreflightTimeout {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
-        Ok(None)
+        Err(failure)
     }
 
     async fn tame_mount(
@@ -291,6 +297,16 @@ async fn drive_use(
         );
     }
     Ok(())
+}
+
+#[test]
+fn cube_holder_exhaustion_keeps_connection_open() -> Result<(), String> {
+    run_wire_case(Failure::CubeHolderExhausted, None)
+}
+
+#[test]
+fn cube_preflight_timeout_keeps_connection_open() -> Result<(), String> {
+    run_wire_case(Failure::CubePreflightTimeout, None)
 }
 
 #[test]

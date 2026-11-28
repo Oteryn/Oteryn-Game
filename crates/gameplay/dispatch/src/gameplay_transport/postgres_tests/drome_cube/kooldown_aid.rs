@@ -60,10 +60,10 @@ pub(super) async fn delayed_publication(
     let [clearance] = result.cooldowns.as_slice() else {
         return Err("expected one committed Aid clearance frame".into());
     };
-    assert_eq!(clearance.server_now_ms, publish.get() / 1_000);
+    assert_eq!(clearance.server_now_ms, 0);
     let keys = crate::gameplay_transport::spell_catalog::cooldown_group_keys().ok_or("group keys")?;
     let mut expected = Vec::new();
-    for key in ["support", "healing"] {
+    for key in ["attack", "support", "healing"] {
         let index = keys.iter().position(|candidate| candidate == key).ok_or("group index")?;
         expected.push(ActorCooldown {
             kind: ActorCooldownKind::Group,
@@ -74,7 +74,7 @@ pub(super) async fn delayed_publication(
     expected.sort_unstable_by_key(|entry| entry.id);
     assert_eq!(
         clearance.entries, expected,
-        "attack expired before commit and both active groups clear"
+        "the sparse delta clears each group rewritten by the reset"
     );
     eprintln!("KOOLDOWN_AID_DELAYED POSTGRES_CASE_COMPLETED");
     Ok(())
@@ -116,6 +116,23 @@ pub(super) async fn run(
     let keys = [light_healing, intense_healing];
     let before = armed(owner.owner_now(), keys)?;
     install(owner, actor, session, before.clone()).await?;
+    let fence = item_fence()?;
+    let conditions = serde_json::json!({"schema": 1, "conditions": []});
+    let content_digest = owner.runtime.lock().await.content_pin().server_artifact_digest();
+    let checkpoint = crate::durability::character_condition_snapshot::CharacterConditionSnapshot {
+        lease_generation: fence.character_lease_generation,
+        content_digest,
+        conditions: conditions.clone(),
+        spell_cooldowns: vec![("group:healing".into(), u64::try_from(
+            (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?
+                + Duration::from_secs(3600)).as_micros()
+        )?)],
+    };
+    let saved_deadlines = checkpoint.spell_cooldowns.clone();
+    owner.root.save_character_conditions(
+        owner.character, owner.holder, fence, *owner.channel_id.as_bytes(), checkpoint,
+    ).await.map_err(debug)?;
+    let saved = || owner.root.read_character_conditions(owner.character, fence.character_id);
     let open = encode_use_item_intent(NonZeroU64::new(2).ok_or("bag handle")?);
     let used = encode_use_item_intent(NonZeroU64::new(3).ok_or("concoction handle")?);
     let intent = UseIntent {
@@ -151,6 +168,10 @@ pub(super) async fn run(
     assert_eq!(source_quantity(harness).await?, 1);
     assert_eq!(harness.count("game_character_concoction_effects").await?, 0);
     assert_eq!(snapshot(owner, actor, session).await?, before);
+    assert_eq!(
+        saved().await.map_err(debug)?.ok_or("saved cooldowns before Aid")?.spell_cooldowns,
+        saved_deadlines,
+    );
 
     ComposedFreshAdmission::lose_next_kooldown_ack();
     let lost = wire::exchange(
@@ -170,6 +191,11 @@ pub(super) async fn run(
         before,
         "unknown storage acknowledgement must not apply the instant effect"
     );
+
+    // This is the checkpoint a fresh owner would restore after a crash at the lost ACK.
+    let saved = saved().await.map_err(debug)?.ok_or("saved conditions after Aid")?;
+    assert!(saved.spell_cooldowns.is_empty());
+    assert_eq!(saved.conditions, conditions);
 
     // A historical receipt cannot authorize the instant effect under a stale generation.
     assert!(

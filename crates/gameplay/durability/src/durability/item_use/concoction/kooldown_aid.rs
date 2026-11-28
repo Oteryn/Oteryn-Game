@@ -5,6 +5,7 @@
 
 use super::super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::*;
+use crate::durability::character_condition_snapshot::SPELL_COOLDOWNS_FIELD;
 use crate::foundation::CommandRef;
 
 pub const KOOLDOWN_AID_KEY: &str = "oteryn:item.tibia.i36723";
@@ -23,6 +24,30 @@ impl DurabilityRoot {
         command: CommandRef,
         binding: [u8; 32],
     ) -> Result<bool> {
+        self.kooldown_aid_receipt(authority, fence, command, binding, false)
+            .await
+    }
+
+    /// Wait for any earlier writer before treating absence as evidence of rollback.
+    pub async fn reconcile_kooldown_aid_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        binding: [u8; 32],
+    ) -> Result<bool> {
+        self.kooldown_aid_receipt(authority, fence, command, binding, true)
+            .await
+    }
+
+    async fn kooldown_aid_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        binding: [u8; 32],
+        settle_write: bool,
+    ) -> Result<bool> {
         if command.game_session_id() != fence.game_session_id {
             return Err(ItemUseError::InvalidInput);
         }
@@ -34,6 +59,10 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    if settle_write {
+                        // A missing receipt is authoritative only after the prior writer settles.
+                        lock_admission_relations(&mut tx).await?;
+                    }
                     let row = sqlx::query(
                         "SELECT e.wire_binding, uuid_send(u.character_id) AS character, \
                                 uuid_send(u.world_id) AS world, uuid_send(u.channel_id) AS channel \
@@ -169,6 +198,17 @@ impl DurabilityRoot {
                     .bind(request.transaction_id.as_slice())
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(binding.as_slice())
+                    .execute(&mut **tx)
+                    .await?;
+                    // A fresh owner restores this checkpoint even when the old owner
+                    // died before receiving COMMIT. Keep the other conditions intact.
+                    sqlx::query(
+                        "UPDATE game_character_condition_snapshots \
+                            SET snapshot=snapshot - $2::text \
+                          WHERE character_id=encode($1,'hex')::uuid AND snapshot ? $2::text",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(SPELL_COOLDOWNS_FIELD)
                     .execute(&mut **tx)
                     .await?;
                     tx.commit(deadline).await?;
