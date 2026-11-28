@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0631-house-podium-projection",
+    "kind": "handlers",
+    "id": "0631-house-podium-projection-unsupported",
+    "status": "unsupported",
+    "reason": "Native Renown appearance editing and rendering are pending client integration.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The existing panel stores one display key.",
+      "protocol": "The native client has yet to select capability 631.",
+      "view": "The existing podium panel renders the legacy display.",
+      "input": "The existing panel sends the legacy request.",
+      "settings": "The capability adds no client setting."
+    }
+  }
+]
