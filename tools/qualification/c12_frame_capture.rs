@@ -155,15 +155,6 @@ pub fn exact_target(origin: ActorPosition, target: ActorPosition, expected: Acto
         && target.y.checked_add(1) == Some(origin.y)
 }
 
-/// The level-80 Monk's 23-attack Fists and 10 fist skill put the unscaled
-/// Greater Tiger Clash roll near 26. Five Harmony multiplies it by 2.184.
-/// The authored integer roll bounds are 23 and 29 before Harmony at this fixture's stats.
-pub fn five_harmony_damage(roll: u64) -> bool {
-    const MULTIPLIER_BP: u64 = 21_840;
-    let expected = (23 * MULTIPLIER_BP / 10_000)..=(29 * MULTIPLIER_BP / 10_000);
-    expected.contains(&roll)
-}
-
 pub fn exact_cast_cooldowns(
     timers: &oteryn_protocol_oteryn::presentation::ActorCooldowns,
     spell: u32,
@@ -453,13 +444,5 @@ mod tests {
         timers.entries[0].expires_at_ms = 2100;
         timers.entries.pop();
         assert!(!exact_cast_cooldowns(&timers, 25, 1, 8000));
-    }
-
-    #[test]
-    fn five_harmony_rejects_one_charge_damage() {
-        assert!(five_harmony_damage(55));
-        assert!(!five_harmony_damage(31));
-        assert!(!five_harmony_damage(45));
-        assert!(!five_harmony_damage(70));
     }
 }

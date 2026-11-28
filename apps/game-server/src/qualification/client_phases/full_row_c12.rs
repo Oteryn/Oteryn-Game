@@ -508,6 +508,15 @@ impl Hunt {
             victim.generation,
         );
         let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
+        verify_harmony_evidence(
+            &self.cast_evidence_log,
+            evidence_start,
+            &hex_bytes(session.as_bytes()),
+            outcome.command_id,
+            &victim,
+            before.harmony,
+            &paired,
+        )?;
         if !super::client_row_c12::frame_capture::exact_hit(&hits, paired.committed) {
             return Err(format!(
                 "C12 owner HP loss does not match served damage: owner={paired:?} served={hits:?}"
@@ -2440,23 +2449,116 @@ fn c12_rejects_success_after_holder_contention() {
     ));
 }
 
-pub(super) fn require_global_harmony_scale(charges: u8, percent: u64) -> TestResult {
-    use oteryn_gameplay_spell_rules::harmony::{HarmonyMultiplier, MULTIPLIER_DENOMINATOR};
-    // Global Harmony lists +112% at five charges without a virtue or Ascetic.
-    let multiplier = HarmonyMultiplier::new(80, charges, false, false)
-        .ok_or("C12 five Harmony multiplier unavailable")?;
-    if multiplier.numerator() * 100 != MULTIPLIER_DENOMINATOR * percent {
-        return Err(format!(
-            "BLOCKER-SERVER C12 unbuffed Harmony scale for {charges} charges: expected {percent}/100, server rule gives {}/{}",
-            multiplier.numerator(), MULTIPLIER_DENOMINATOR
-        ).into());
-    }
-    Ok(())
+fn global_harmony_numerator(charges: u32) -> Option<u64> {
+    // Global level 80, unbuffed. The level term adds 0.4 points to the 7% base.
+    [1_000, 1_074, 1_148, 1_296, 1_592, 2_184]
+        .get(charges as usize)
+        .copied()
 }
 
 #[test]
 fn c12_global_five_harmony_scale_matches_server_rule() -> TestResult {
-    require_global_harmony_scale(5, 212)
+    use oteryn_gameplay_spell_rules::harmony::{HarmonyMultiplier, MULTIPLIER_DENOMINATOR};
+    for charges in 0..=5 {
+        let rule = HarmonyMultiplier::new(80, charges, false, false).ok_or("missing multiplier")?;
+        let expected =
+            global_harmony_numerator(u32::from(charges)).ok_or("missing Global multiplier")?;
+        assert_eq!(rule.numerator() * 1_000, expected * MULTIPLIER_DENOMINATOR);
+        if charges == 5 {
+            assert_eq!(rule.numerator() * 125, 273 * MULTIPLIER_DENOMINATOR);
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn verify_harmony_evidence(
+    path: &Path,
+    offset: u64,
+    session: &str,
+    command: u64,
+    target: &oteryn_dev_client::EntityRef,
+    charges: u32,
+    damage: &CommittedDamage,
+) -> TestResult {
+    use std::io::{BufRead, BufReader, Read, Seek};
+    let mut file = std::fs::File::open(path)?;
+    file.seek(std::io::SeekFrom::Start(offset))?;
+    let marker = format!(
+        "session={session} command={command} target=actor:{} generation={} ",
+        hex_bytes(&target.identity),
+        target.generation,
+    );
+    let mut seen = false;
+    for line in BufReader::new(file.take(512 * 1024)).lines() {
+        let line = line?;
+        if !line.starts_with("SEAM_EVIDENCE c12_harmony_damage ") {
+            continue;
+        }
+        let Some((_, rest)) = line.split_once(&marker) else {
+            continue;
+        };
+        if seen {
+            return Err("duplicate Harmony damage evidence for cast and target".into());
+        }
+        seen = true;
+        let fields = rest
+            .split_ascii_whitespace()
+            .filter_map(|field| field.split_once('='))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        let number = |key| -> TestResult<u64> {
+            Ok(fields
+                .get(key)
+                .ok_or_else(|| format!("missing Harmony evidence {key}"))?
+                .parse()?)
+        };
+        let pre = number("pre_harmony_roll")?;
+        let low = number("pre_harmony_low")?;
+        let high = number("pre_harmony_high")?;
+        let decision = number("decision_draw")?;
+        let rolled = number("rolled_damage")?;
+        let expected = global_harmony_numerator(charges).ok_or("invalid Harmony charges")?;
+        let denominator = number("multiplier_denominator")?;
+        if number("harmony_charges")? != u64::from(charges)
+            || denominator == 0
+            || u128::from(number("multiplier_numerator")?) * 1_000
+                != u128::from(expected) * u128::from(denominator)
+            || number("committed_damage")? != damage.committed
+            || rolled != damage.before
+            || !exact_harmony_draw(low, high, decision, expected, pre, rolled)
+        {
+            return Err(
+                format!("C12 exact Harmony damage mismatch: {line}; committed={damage:?}").into(),
+            );
+        }
+    }
+    if !seen {
+        return Err(format!("C12 missing Harmony evidence: {marker}").into());
+    }
+    Ok(())
+}
+
+fn exact_harmony_draw(
+    low: u64,
+    high: u64,
+    decision: u64,
+    expected: u64,
+    pre: u64,
+    rolled: u64,
+) -> bool {
+    let draw =
+        |min: u128, max: u128| (max >= min).then(|| min + u128::from(decision) % (max - min + 1));
+    let low = u128::from(low);
+    let high = u128::from(high);
+    let scale = |bound| bound * u128::from(expected) / 1_000;
+    draw(low, high) == Some(u128::from(pre))
+        && draw(scale(low), scale(high)) == Some(u128::from(rolled))
+}
+
+#[test]
+fn c12_harmony_rejects_an_overlapping_wrong_roll() {
+    assert!(exact_harmony_draw(23, 29, 3, 2184, 26, 53));
+    assert!(!exact_harmony_draw(23, 29, 3, 2184, 26, 51));
+    assert!(!exact_harmony_draw(23, 29, 3, 2120, 26, 53));
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -2624,7 +2726,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     logout(&mut fresh, false).await?;
-    require_global_harmony_scale(5, 212)?;
     row.pass("augment-attribution", (ITEM_ID, augment));
     Ok(())
 }

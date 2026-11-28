@@ -1002,12 +1002,15 @@ impl PreparedNativeCombatCast {
             let denominator = crate::spell::harmony::MULTIPLIER_DENOMINATOR;
             let committed = health.committed_health_loss().map_or(0, |loss| loss.get());
             eprintln!(
-                "SEAM_EVIDENCE c12_harmony_damage level=info actor={actor} session={session} command={command} target={target} generation={generation} spell={} pre_harmony_roll={} harmony_charges={} multiplier_numerator={} multiplier_denominator={denominator} rolled_damage={} committed_damage={committed}",
+                "SEAM_EVIDENCE c12_harmony_damage level=info actor={actor} session={session} command={command} target={target} generation={generation} spell={} pre_harmony_roll={} harmony_charges={} multiplier_numerator={} multiplier_denominator={denominator} rolled_damage={} committed_damage={committed} pre_harmony_low={} pre_harmony_high={} decision_draw={}",
                 evidence.spell,
                 evidence.pre_harmony_roll,
                 evidence.charges,
                 evidence.multiplier_numerator,
                 evidence.rolled_damage,
+                evidence.pre_harmony_low,
+                evidence.pre_harmony_high,
+                evidence.decision_draw,
             );
         }
         #[cfg(feature = "qualification-cast-evidence")]

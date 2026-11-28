@@ -372,8 +372,6 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         y = position.y,
         floor = position.floor,
     );
-    full_row_c12::require_global_harmony_scale(1, 107)?;
-    full_row_c12::require_global_harmony_scale(5, 212)?;
     let frames = frame_capture::envelopes(&bytes, id)
         .map_err(|error| error as Box<dyn std::error::Error>)?;
     let frames = serde_json::to_vec(&frames)?;
@@ -823,6 +821,16 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     }
     let marker = damage_marker(session, target, outcome.command_id);
     let damage = full_row_c12::committed_authored_damage(&path, offset, &marker, bps)?;
+    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
+    full_row_c12::verify_harmony_evidence(
+        &path,
+        offset,
+        &id,
+        outcome.command_id,
+        &target,
+        before.harmony,
+        &damage,
+    )?;
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
@@ -1046,13 +1054,16 @@ async fn cast_checked<S: SessionStream>(
         return Err(format!("C12 cast must apply exact mana and Harmony debits: before={before:?} mana_at_cast={mana_before} after={vitals:?}").into());
     }
     let damage = committed_damage(session, target, reply.command_id, &path, offset, bps)?;
-    if expected_harmony == 5 && !frame_capture::five_harmony_damage(damage.before) {
-        return Err(format!(
-            "C12 five Harmony damage outside independent fixture range: {}",
-            damage.before
-        )
-        .into());
-    }
+    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
+    full_row_c12::verify_harmony_evidence(
+        &path,
+        offset,
+        &id,
+        reply.command_id,
+        &target,
+        expected_harmony,
+        &damage,
+    )?;
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
