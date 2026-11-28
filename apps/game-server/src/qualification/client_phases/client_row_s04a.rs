@@ -30,6 +30,19 @@ fn only_entry(view: &serde_json::Value) -> TestResult<&serde_json::Value> {
     }
 }
 
+fn require_next_revision(step: &str, before: u64, after: u64) -> TestResult {
+    if before.checked_add(1) != Some(after) {
+        return Err(format!("S04a {step} revision did not advance by one: {before} -> {after}").into());
+    }
+    Ok(())
+}
+
+fn group_add_view_matches(view: &serde_json::Value, before: &serde_json::Value, group: u64) -> bool {
+    view["next_entry"].as_u64() == Some(0)
+        && view["entries"] == before["entries"]
+        && view["groups"] == serde_json::json!([{"group": group, "name": "Raid Friends"}])
+}
+
 fn renamed_group_matches(view: &serde_json::Value, group: u64) -> bool {
     view["groups"] == serde_json::json!([{"group": group, "name": "Raid Team"}])
 }
@@ -88,6 +101,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if added.code != 1 || added.number == 0 {
         return Err(format!("Add reply mismatch: {added:?}").into());
     }
+    require_next_revision("Add", initial.revision, added.revision)?;
     capture("s04a-added.bin", &added_bytes)?;
     let entry = added.number;
     let (_, after_add, _) = raw(&mut watcher, &query).await?;
@@ -112,11 +126,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if group.code != 1 || group.number == 0 {
         return Err(format!("GroupAdd reply mismatch: {group:?}").into());
     }
+    require_next_revision("GroupAdd", after_add.revision, group.revision)?;
     let (_, after_group, _) = raw(&mut watcher, &query).await?;
     let group_view: serde_json::Value = serde_json::from_str(&after_group.view)?;
     if after_group.code != 1 || after_group.revision != group.revision
-        || group_view["entries"] != added_view["entries"]
-        || group_view["groups"] != serde_json::json!([{"group": group.number, "name": "Raid Friends"}])
+        || !group_add_view_matches(&group_view, &added_view, group.number)
     {
         return Err("S04a client GroupAdd did not create the expected group".into());
     }
@@ -133,6 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
+    require_next_revision("Edit", after_group.revision, edited.revision)?;
     let (_, after_edit, _) = raw(&mut watcher, &query).await?;
     let edit_view: serde_json::Value = serde_json::from_str(&after_edit.view)?;
     let edited_entry = only_entry(&edit_view)?;
@@ -155,6 +170,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if edited.code != 1 || renamed.code != 1 {
         return Err(format!("Edit/GroupRename mismatch: {edited:?} {renamed:?}").into());
     }
+    require_next_revision("GroupRename", after_edit.revision, renamed.revision)?;
     let (listed_bytes, listed, listed_sequence) = raw(&mut watcher, &request(wire::Operation::Query, 0, "")).await?;
     let view: serde_json::Value = serde_json::from_str(&listed.view)?;
     let entry_ok = view["entries"].as_array().is_some_and(|entries| {
@@ -255,4 +271,29 @@ fn s04a_client_readbacks_reject_extra_entries_and_groups() {
         {"group": 4, "name": "Raid Team"}, {"group": 5, "name": "Extra"}
     ]);
     assert!(!renamed_group_matches(&view, 4));
+}
+
+#[test]
+fn s04a_mutations_reject_stale_and_skipped_revisions() {
+    for (step, before) in [("Add", 0), ("GroupAdd", 1), ("Edit", 2), ("GroupRename", 3)] {
+        assert!(require_next_revision(step, before, before + 1).is_ok());
+        assert!(require_next_revision(step, before, before).is_err());
+        assert!(require_next_revision(step, before, before + 2).is_err());
+    }
+    assert!(require_next_revision("GroupRename", u64::MAX, 0).is_err());
+}
+
+#[test]
+fn s04a_group_add_rejects_invalid_continuation_cursor() {
+    let before = serde_json::json!({"entries": [{"entry": 1}]});
+    let mut view = serde_json::json!({
+        "entries": [{"entry": 1}],
+        "groups": [{"group": 4, "name": "Raid Friends"}],
+        "next_entry": 0
+    });
+    assert!(group_add_view_matches(&view, &before, 4));
+    for invalid_cursor in [serde_json::json!(1), serde_json::json!("0"), serde_json::Value::Null] {
+        view["next_entry"] = invalid_cursor;
+        assert!(!group_add_view_matches(&view, &before, 4));
+    }
 }

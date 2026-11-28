@@ -15,7 +15,10 @@ struct Replay {
 }
 
 fn payload_digest(bytes: &[u8]) -> String {
-    Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Error> {
@@ -82,6 +85,15 @@ fn only_item<'a>(view: &'a serde_json::Value, field: &str) -> Result<&'a serde_j
         Some([item]) => Ok(item),
         _ => Err(format!("S04a replay requires exactly one item in {field}").into()),
     }
+}
+
+fn check_first_page_query(command: &VipCommand) -> Result<(), Error> {
+    let decoded = vip::decode_request(command.kind, &command.payload)
+        .map_err(|error| format!("VIP Query decode: {error:?}"))?;
+    if decoded.operation != vip::Operation::Query || decoded.number != 0 {
+        return Err("S04a replay requires a VIP Query with cursor 0".into());
+    }
+    Ok(())
 }
 
 fn check_group_encoder(intent: Intent, expected: vip::Request) -> Result<(), Error> {
@@ -173,7 +185,8 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     );
     assert!(!panel.pending);
 
-    assert!(request(&mut panel, Intent::Query(added_revision)).is_some());
+    let query = request(&mut panel, Intent::Query(0)).ok_or("Query request refused")?;
+    check_first_page_query(&query)?;
     apply_result(&mut panel, &response(&replay.listed)?);
     assert_eq!((panel.revision, panel.feedback.clone()), (revision, None));
     let view: serde_json::Value =
@@ -280,4 +293,21 @@ fn rejects_wrong_edit_and_group_intents() {
             .is_err()
         );
     }
+}
+
+#[test]
+fn rejects_add_revision_as_query_cursor() -> Result<(), Error> {
+    let mut panel = VipPanel {
+        selected: true,
+        revision: 1,
+        ..VipPanel::default()
+    };
+    let revision = panel.revision;
+    let wrong =
+        request(&mut panel, Intent::Query(revision)).ok_or("nonzero Query did not encode")?;
+    assert!(check_first_page_query(&wrong).is_err());
+    panel.pending = false;
+    let first_page =
+        request(&mut panel, Intent::Query(0)).ok_or("first-page Query did not encode")?;
+    check_first_page_query(&first_page)
 }
