@@ -101,7 +101,7 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/co
 # Dev/qualification-only (ADR-0011 §6, #162 C1b): drives the seam qualification's
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).
-oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
+oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client", features = ["session-replay"] }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true

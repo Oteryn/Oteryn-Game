@@ -303,10 +303,17 @@ impl<S: SessionStream> Session<S> {
         applied_revision: u64,
     ) -> Result<RawDelta, SessionError> {
         loop {
-            let (server_sequence, payload) = self
-                .read_sequenced("StateDelta", MessageType::StateDelta)
-                .await?;
-            let delta = decode_state_delta(&payload)?;
+            let frame = self.read_post_admission("StateDelta").await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            let (message_type, server_sequence) = self.sequence_pushed_envelope(&envelope)?;
+            if message_type != MessageType::StateDelta {
+                return Err(SessionError::UnexpectedMessage {
+                    expected: MessageType::StateDelta,
+                    actual: message_type,
+                });
+            }
+            let payload = envelope.payload();
+            let delta = decode_state_delta(payload)?;
             if delta.domain_id != domain_id {
                 if !matches!(
                     domain_id,
@@ -319,7 +326,7 @@ impl<S: SessionStream> Session<S> {
                         actual: delta.domain_id,
                     });
                 }
-                let event = self.apply_state_delta(server_sequence, &payload)?;
+                let event = self.apply_state_delta(server_sequence, payload)?;
                 self.queue_event(event)?;
                 continue;
             }
@@ -334,6 +341,8 @@ impl<S: SessionStream> Session<S> {
                 base_revision: delta.base_revision,
                 new_revision: delta.new_revision,
                 payload: delta.payload.to_vec(),
+                #[cfg(feature = "test-support")]
+                frame,
             });
         }
     }

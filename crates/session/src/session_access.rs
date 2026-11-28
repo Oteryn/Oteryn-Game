@@ -197,6 +197,8 @@ impl<S: SessionStream> Session<S> {
             None => self.gated_revisions.push((domain_id, delta.new_revision)),
         }
         let delta = GatedDelta {
+            #[cfg(feature = "test-support")]
+            frame: delta.frame,
             server_sequence: delta.server_sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
@@ -207,6 +209,42 @@ impl<S: SessionStream> Session<S> {
             self.poison_on_error(recorded)?;
         }
         Ok(delta)
+    }
+
+    /// Replays one NPC conversation from its pre-command revision on this retired
+    /// connection. Original envelopes may have sequence gaps from other domains.
+    #[cfg(feature = "test-support")]
+    pub fn replay_retired_npc_conversation(
+        &mut self,
+        baseline_revision: u64,
+        baseline_sequence: u64,
+        frames: &[Vec<u8>],
+    ) -> Result<Vec<SessionEvent>, SessionError> {
+        let domain = npc_service::STATE_DOMAIN_NPC_CONVERSATION;
+        if !self.unusable || frames.is_empty() {
+            return Err(SessionError::SessionUnusable);
+        }
+        let end_sequence = self.last_server_sequence;
+        self.gated_revisions.retain(|(id, _)| *id != domain);
+        self.gated_revisions.push((domain, baseline_revision));
+        let mut previous = baseline_sequence;
+        let mut events = Vec::with_capacity(frames.len());
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            self.check_generation(&envelope)?;
+            let sequence = envelope.server_sequence();
+            if envelope.message_type() != MessageType::StateDelta
+                || sequence <= previous
+                || sequence >= end_sequence
+                || decode_state_delta(envelope.payload())?.domain_id != domain
+            {
+                return Err(SessionError::SessionUnusable);
+            }
+            events.push(self.apply_state_delta(sequence, envelope.payload())?);
+            previous = sequence;
+        }
+        Ok(events)
     }
 
     pub fn join_snapshot(&self) -> &JoinSnapshot {

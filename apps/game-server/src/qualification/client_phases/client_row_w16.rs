@@ -1,10 +1,8 @@
 //! W16 client replay capture: the player walks to the Summer 2026 NPC Wayland Smythers
 //! (`TARGET_WALK`) and says `hi`, `danger`, `name`, `bye`. The driver asserts each server
-//! disposition and catalogue reply and writes the raw `STATE_DOMAIN_NPC_CONVERSATION` delta
-//! payloads (`Session::read_gated_delta`) that the session replay consumes
-//! (`crates/session/src/tests/e2e_w16.rs`).
+//! disposition and catalogue reply, then replays the original server envelopes.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
+use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as wire;
 
 const NPC: &str = "oteryn:npc.wayland_smythers";
@@ -24,11 +22,20 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
+struct CapturedDialogue {
+    record: String,
+    frame: Vec<u8>,
+    sequence: u64,
+    base: u64,
+    revision: u64,
+    conversation: wire::NpcConversation,
+}
+
 async fn talk(
     client: &mut DevClientSession,
     npc: EntityRef,
     (text, needle): (&str, &str),
-) -> TestResult<String> {
+) -> TestResult<CapturedDialogue> {
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: npc,
@@ -65,6 +72,9 @@ async fn talk(
     if !conversation.lines.iter().any(|line| line.contains(needle)) {
         return Err(format!("step={text} lines {:?} lack {needle:?}", conversation.lines).into());
     }
+    if conversation.open.map(|(id, _)| id) != (text != "bye").then_some(npc) {
+        return Err(format!("step={text} unexpected conversation actor or open state").into());
+    }
     capture(&format!("w16-{text}-conversation.bin"), &delta.payload);
     let open = conversation.open.map_or_else(
         || "-".to_owned(),
@@ -73,14 +83,22 @@ async fn talk(
             format!("{identity}:{}", actor.generation)
         },
     );
-    Ok(format!(
+    let record = format!(
         "{text}\t{}\t{}\t{}\t{}\t{open}\t{}\n",
         wire::STATE_DOMAIN_NPC_CONVERSATION,
         delta.server_sequence,
         delta.base_revision,
         delta.new_revision,
         conversation.lines.join("\u{1f}")
-    ))
+    );
+    Ok(CapturedDialogue {
+        record,
+        frame: delta.frame,
+        sequence: delta.server_sequence,
+        base: delta.base_revision,
+        revision: delta.new_revision,
+        conversation,
+    })
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -115,11 +133,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .map(|entry| entry.entity)
         .ok_or("W16 client capture: Wayland Smythers not visible")?;
-    let mut expected = String::new();
+    let session = client.join_snapshot().game_session_id;
+    let capture_dir = Path::new(&required("NODE_BOOT_WORLD_BUNDLE")?)
+        .with_file_name(format!("w16-replay-{}", uuid_text(session.as_bytes())));
+    std::fs::create_dir(&capture_dir)?;
+    let baseline_revision = client.session_mut()
+        .gated_snapshot(wire::STATE_DOMAIN_NPC_CONVERSATION)
+        .ok_or("W16 conversation snapshot absent")?.revision;
+    let baseline_sequence = client.last_server_sequence();
+    let mut captured = Vec::new();
     let mut failure = None;
     for step in STEPS {
         match talk(&mut client, actor, step).await {
-            Ok(line) => expected.push_str(&line),
+            Ok(dialogue) => {
+                std::fs::write(capture_dir.join(step.0), &dialogue.frame)?;
+                captured.push(dialogue);
+            }
             Err(error) => {
                 failure = Some(error);
                 break;
@@ -127,9 +156,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     }
     let landing = client.world_spatial().actor_position;
-    let session = client.join_snapshot().game_session_id;
     super::full_row_w16::logout_w16(&mut client).await?;
-    drop(client);
     if let Some(error) = failure {
         return Err(error);
     }
@@ -138,14 +165,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("W16 client relog expected={landing:?} observed={:?}", fresh.world_spatial().actor_position).into());
     }
     super::full_row_w16::logout_w16(&mut fresh).await?;
+    let frames = STEPS.iter()
+        .map(|(step, _)| std::fs::read(capture_dir.join(step)))
+        .collect::<Result<Vec<_>, _>>()?;
+    let replayed = client.session_mut().replay_retired_npc_conversation(
+        baseline_revision, baseline_sequence, &frames,
+    )?;
+    if replayed.len() != STEPS.len() || captured.len() != STEPS.len() {
+        return Err("W16 incomplete conversation replay".into());
+    }
+    for (event, expected) in replayed.iter().zip(&captured) {
+        let SessionEvent::NpcConversation(delta) = event else {
+            return Err("W16 replay did not emit a conversation".into());
+        };
+        if (delta.server_sequence, delta.base_revision, delta.new_revision)
+            != (expected.sequence, expected.base, expected.revision)
+            || delta.value != expected.conversation
+        {
+            return Err("W16 replay conversation differs from the live frame".into());
+        }
+    }
+    let expected: String = captured.iter().map(|frame| frame.record.as_str()).collect();
     capture("w16-expected.txt", expected.as_bytes());
-    Ok(format!("frames={}", STEPS.len()))
+    Ok(format!("original-envelope-replay session={} frames={}", uuid_text(session.as_bytes()), replayed.len()))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W16.client status=CAPTURED evidence={observed}"
+            "e2e_all scenario=W16.client status=PASS evidence={observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W16.client status=FAIL evidence={}",

@@ -28,6 +28,14 @@ impl<S: SessionStream> Session<S> {
     ) -> Result<(MessageType, u64, Vec<u8>), SessionError> {
         let frame = self.read_post_admission(label).await?;
         let envelope = decode_wire_envelope(&frame)?;
+        let (message_type, sequence) = self.sequence_pushed_envelope(&envelope)?;
+        Ok((message_type, sequence, envelope.payload().to_vec()))
+    }
+
+    pub(super) fn sequence_pushed_envelope(
+        &mut self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> Result<(MessageType, u64), SessionError> {
         let message_type = envelope.message_type();
         if !matches!(
             message_type,
@@ -38,8 +46,7 @@ impl<S: SessionStream> Session<S> {
                 actual: message_type,
             });
         }
-        let server_sequence = self.next_sequence(&envelope)?;
-        Ok((message_type, server_sequence, envelope.payload().to_vec()))
+        Ok((message_type, self.next_sequence(envelope)?))
     }
 
     /// Requires `envelope`'s `server_sequence` to be exactly the last applied one plus one and

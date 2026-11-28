@@ -34,6 +34,8 @@ pub(super) fn check_delta(
 
 /// A validated `StateDelta` with its domain-typed payload still undecoded.
 pub(super) struct RawDelta {
+    #[cfg(feature = "test-support")]
+    pub(super) frame: Vec<u8>,
     pub(super) server_sequence: u64,
     pub(super) base_revision: u64,
     pub(super) new_revision: u64,

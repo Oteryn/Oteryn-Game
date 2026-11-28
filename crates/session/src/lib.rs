@@ -327,6 +327,9 @@ pub struct GatedCommandResult {
 /// A `StateDelta` of a selected capability's domain, payload undecoded; its revision is applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GatedDelta {
+    /// Original server envelope bytes for qualification replay.
+    #[cfg(feature = "test-support")]
+    pub frame: Vec<u8>,
     pub server_sequence: u64,
     pub base_revision: u64,
     pub new_revision: u64,
