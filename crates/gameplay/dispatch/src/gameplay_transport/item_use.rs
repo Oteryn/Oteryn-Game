@@ -42,7 +42,9 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::item_use::fluid::{
     ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
 };
-use crate::durability::item_use::promotion_scroll::{self, PromotionScrollOutcome};
+use crate::durability::item_use::promotion_scroll::{
+    self, PromotionScrollOutcome, PromotionScrollReceiptKey,
+};
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
@@ -65,6 +67,16 @@ pub(super) const ITEMUSE0_RL_04_AMBIGUOUS_MS: u64 = 2_000;
 const POTION_COOLDOWN_MS: u64 = 1_000;
 /// The `food` cooldown. `PARITY_PENDING`: no official value.
 const FOOD_COOLDOWN_MS: u64 = 200;
+
+#[cfg(test)]
+thread_local! {
+    static LOSE_PROMOTION_SCROLL_ACK: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn lose_next_promotion_scroll_ack() {
+    LOSE_PROMOTION_SCROLL_ACK.set(true);
+}
 
 /// The item-use state of one present actor; runtime state only (ITEM-USE-0 §9 item 3).
 #[derive(Debug, Default)]
@@ -747,28 +759,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
+        let scroll = kind == ItemUseKind::PromotionScroll;
+        if scroll {
+            self.mark_use_receipt(
+                command,
+                Some(super::session_ingress::UseReceipt::PromotionScroll(
+                    PromotionScrollReceiptKey {
+                        transaction_id: request.transaction_id,
+                        source,
+                    },
+                )),
+            );
+        }
         let commit = async {
-            if kind == ItemUseKind::PromotionScroll {
-                return self
+            if scroll {
+                let outcome = self
                     .root
                     .redeem_promotion_scroll(self.character, self.holder, fence, request)
-                    .await
-                    .map(|outcome| match outcome {
-                        PromotionScrollOutcome::Redeemed => (UseDisposition::Committed, true),
-                        PromotionScrollOutcome::AlreadyCommitted => {
-                            (UseDisposition::Committed, false)
-                        }
-                        PromotionScrollOutcome::LevelRequired => {
-                            (UseDisposition::RequirementNotMet, false)
-                        }
-                        PromotionScrollOutcome::AlreadyUsed => {
-                            self.states.chat.push_quest_feedback(
-                                session,
-                                "You have already used an item of this type",
-                            );
-                            (UseDisposition::NotPossible, false)
-                        }
-                    });
+                    .await?;
+                #[cfg(test)]
+                if outcome == PromotionScrollOutcome::Redeemed
+                    && LOSE_PROMOTION_SCROLL_ACK.replace(false)
+                {
+                    return Err(ItemUseError::Unavailable(
+                        crate::durability::DurabilityError::CommitOutcomeUnknown,
+                    ));
+                }
+                return Ok(match outcome {
+                    PromotionScrollOutcome::Redeemed => (UseDisposition::Committed, true),
+                    PromotionScrollOutcome::AlreadyCommitted => (UseDisposition::Committed, false),
+                    PromotionScrollOutcome::LevelRequired => {
+                        (UseDisposition::RequirementNotMet, false)
+                    }
+                    PromotionScrollOutcome::AlreadyUsed => {
+                        self.states.chat.push_quest_feedback(
+                            session,
+                            "You have already used an item of this type",
+                        );
+                        (UseDisposition::NotPossible, false)
+                    }
+                });
             }
             self.root
                 .commit_item_use(self.character, self.holder, fence, request)
@@ -791,6 +821,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
+        if scroll {
+            if ambiguous {
+                // The live routes leave this command outstanding. Resume probes the
+                // original transaction, even after the source handle has retired.
+                return Err(UseDisposition::Rejected);
+            }
+            if disposition == UseDisposition::Committed
+                && let Ok(id) = crate::foundation::CommandId::new(command.command_id)
+            {
+                let reference = crate::foundation::CommandRef::new(session, id);
+                self.states
+                    .command_ingress
+                    .complete_item_use(reference, disposition);
+            }
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit {
@@ -825,6 +870,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if ambiguous { &reserved } else { &[] },
             );
             gate.last_utterance = *utterance;
+        }
+        if scroll && disposition != UseDisposition::Committed {
+            self.mark_use_receipt(command, None);
         }
         Ok(disposition)
     }

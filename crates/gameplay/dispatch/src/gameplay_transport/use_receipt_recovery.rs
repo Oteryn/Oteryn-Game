@@ -149,6 +149,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .ok()?
                 .unwrap_or(UseDisposition::Rejected),
+            UseReceipt::PromotionScroll(key) => {
+                let committed = AdmissionRetryBudget::for_command(self.root)
+                    .retry_unavailable(async || {
+                        self.root
+                            .read_promotion_scroll_receipt(self.character, fence, reference, key)
+                            .await
+                            .map_err(|_| super::AdmissionRefusal::Unavailable)
+                    })
+                    .await
+                    .ok()?;
+                if committed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                }
+            }
             UseReceipt::Coin => {
                 match self
                     .root

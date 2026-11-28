@@ -487,7 +487,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 intent, item_view.as_ref(), visibility.as_ref(),
                 &admitted.continuity.selected_capabilities,
             ).await {
-                Some(outcome) => Dispatch::Use(outcome),
+                Some(outcome) => {
+                    // Plain carried USE can fall through this bridge to a scroll.
+                    if authority.item_use_pending(actor, admitted.game_session_id).await {
+                        return None;
+                    }
+                    Dispatch::Use(outcome)
+                },
                 // A rune charge or spell commit may still be pending.
                 None => return None,
             },

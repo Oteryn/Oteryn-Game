@@ -1,6 +1,6 @@
 //! Advisory coherent read. The exact point-budget reader is shared with the unchanged writer.
-use crate::durability::db::commit_semantic_read;
 use super::*;
+use crate::durability::db::commit_semantic_read;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_gameplay_progression::atelier::AtelierState;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,7 +46,9 @@ pub(super) async fn read_budget(
     let task =
         super::super::task_board::read_promotion_points_in_transaction(tx, character).await?;
     let scrolls = super::super::item_use::promotion_scroll::read_points(tx, character).await?;
-    let earned = task.checked_add(scrolls).ok_or(DurabilityError::InvalidStoredState)?;
+    let earned = task
+        .checked_add(scrolls)
+        .ok_or(DurabilityError::InvalidStoredState)?;
     compose_budget(level, earned, pilgrimage, pilgrimage_points, grade_iv)
 }
 #[derive(Clone, Debug)]

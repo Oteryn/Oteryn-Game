@@ -52,6 +52,13 @@ fn wheel_promotion_scroll_use_postgres_grants_once_checks_level_and_funds_alloca
 async fn scenario(admin: String) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, "wheel_promotion_scroll", true, false).await?;
+    // The harness already applied all migrations. Reapply this one before using its schema.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/3358_wheel_promotion_scroll.sql"
+    )))
+    .execute(&h.pool)
+    .await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -103,6 +110,30 @@ async fn scenario(admin: String) -> TestResult {
     assert_eq!(item_state(&h, 170).await?, (1, 1, true));
 
     atelier_fixture::eligible(&h.pool).await?;
+    let stale_fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+        connection_generation: crate::foundation::ConnectionGeneration::new(
+            fence.item_fence().connection_generation.get() + 1,
+        )
+        .map_err(debug)?,
+        ..fence.item_fence()
+    };
+    assert_eq!(
+        owner
+            .use_item(
+                deps.actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 90,
+                    item_fence: Some(stale_fence),
+                },
+                ItemKey::Instance(id(170)),
+            )
+            .await
+            .disposition,
+        UseDisposition::Rejected
+    );
+    assert_eq!(item_state(&h, 170).await?, (1, 1, true));
+
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
     h.root
         .latch_premium_activation(
@@ -243,7 +274,7 @@ async fn scenario(admin: String) -> TestResult {
     assert_eq!(expected, 60);
     let audited: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_use_records u JOIN game_item_audit_outbox a \
-         USING(transaction_id,event_id) WHERE u.cause_kind=3339 AND u.shape=1",
+         USING(transaction_id,event_id) WHERE u.cause_kind=3358 AND u.shape=1",
     )
     .fetch_one(&h.pool)
     .await?;
@@ -258,13 +289,13 @@ async fn scenario(admin: String) -> TestResult {
 async fn assert_audited_burn(h: &Harness) -> TestResult {
     let bytes: Vec<u8> = sqlx::query_scalar(
         "SELECT a.envelope FROM game_item_use_records u JOIN game_item_audit_outbox a \
-         USING(transaction_id,event_id) WHERE u.cause_kind=3339 AND u.command_id=2",
+         USING(transaction_id,event_id) WHERE u.cause_kind=3358 AND u.command_id=2",
     )
     .fetch_one(&h.pool)
     .await?;
     let (_, use_event) = decode_item_use_envelope(&bytes).map_err(debug)?;
     let before = use_event.source_before.ok_or("audited source")?;
-    assert_eq!(use_event.cause.ok_or("audited cause")?.kind, 3339);
+    assert_eq!(use_event.cause.ok_or("audited cause")?.kind, 3358);
     assert_eq!(before.item_instance_id.as_slice(), id(170));
     assert_eq!(before.quantity, 1);
     assert_eq!(

@@ -144,11 +144,13 @@ before the rune's frozen cast applies. Runes use their own in-flight slot, besid
 (RUNE-USE-0 §7).
 
 **Promotion scroll amendment (owner decision 2026-11-28).** The closed list
-also admits `PromotionScroll` (3339), a one-unit carried-item burn. At level
-51 or above, each Character can redeem each type once. The immutable use
+also admits `PromotionScroll` (3358), a one-unit carried-item burn in a
+Channel. At level 51 or above, each Character can redeem each type once. The immutable use
 receipt is the permanent Wheel grant, in the same fenced transaction as the
 burn and audit event. Redemption adds 3, 5, 9, 13, or 20 available and unlock
 points for Abridged, Basic, Revised, Extended, or Advanced respectively.
+An unacknowledged write leaves the original USE pending. Resume reads the
+original receipt under the Character lock before recording the outcome.
 
 The individual item descriptions say “Only a hero of level 51 or above can
 decipher this scroll” and “Each character can only use it once.”

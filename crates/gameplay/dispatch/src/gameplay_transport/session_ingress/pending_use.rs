@@ -1,6 +1,7 @@
 //! The active USE can name one receipt owner for its outstanding reservation.
 use super::{CommandId, ExactActorRef, SessionCommands};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::item_use::promotion_scroll::PromotionScrollReceiptKey;
 use crate::foundation::{CommandRef, GameSessionId};
 
 #[derive(Clone, Copy)]
@@ -10,6 +11,7 @@ pub(in crate::gameplay_transport) enum UseReceipt {
     Harvest,
     Terrain,
     Coin,
+    PromotionScroll(PromotionScrollReceiptKey),
 }
 
 pub(in crate::gameplay_transport) struct PendingUseReceipt {
@@ -25,6 +27,25 @@ pub(in crate::gameplay_transport) struct TerrainQuestController {
 }
 
 impl SessionCommands {
+    pub(in crate::gameplay_transport) fn promotion_scroll_use_pending(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        self.0.lock().is_ok_and(|commands| {
+            commands.get(&session).is_some_and(|entry| {
+                entry.lock().is_ok_and(|state| {
+                    state.active
+                        && state
+                            .pending_delivery
+                            .is_some_and(|pending| pending.proven_native.is_none())
+                        && state.pending_use.as_ref().is_some_and(|pending| {
+                            matches!(pending.receipt, Some(UseReceipt::PromotionScroll(_)))
+                        })
+                })
+            })
+        })
+    }
+
     pub(in crate::gameplay_transport) fn recovered_terrain_quest(
         &self,
         session: GameSessionId,

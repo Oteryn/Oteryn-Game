@@ -1345,6 +1345,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        if self
+            .states
+            .command_ingress
+            .promotion_scroll_use_pending(session)
+        {
+            return true;
+        }
         let states = self.states.spell_states.lock().await;
         states
             .pending_gourmet
