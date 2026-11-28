@@ -923,7 +923,10 @@ async fn grant_premium(
     let (effective_from, effective_until) = if account_text == Q_S13C_ACCOUNT {
         (timestamp(now)?, timestamp(now + 30 * 24 * 60 * 60)?)
     } else {
-        ("2026-01-01T00:00:00Z".to_owned(), "2030-01-01T00:00:00Z".to_owned())
+        (
+            "2026-01-01T00:00:00Z".to_owned(),
+            "2030-01-01T00:00:00Z".to_owned(),
+        )
     };
     let body = serde_json::to_vec(&serde_json::json!({
         "schema": SNAPSHOT_SCHEMA,
