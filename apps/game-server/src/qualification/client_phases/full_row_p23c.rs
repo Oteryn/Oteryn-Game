@@ -55,33 +55,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     let clients = &character.clients(clients);
     let mut client = connect_seeded(clients, 0xc3, "P23c.full").await?;
-    let legacy = command(&mut client, 0, 0).await?;
-    if legacy.status != CommandStatus::Accepted
-        || legacy.reply.refused
-        || !legacy.reply.tasks.is_empty()
-    {
-        return Err(format!("step=legacy-query observed={legacy:?}").into());
-    }
     let (initial, _) = exchange(&mut client, 4, 0).await?;
     if initial.refusal != 0 || initial.weekly.started || initial.bounty.active.is_some() {
         return Err(format!("step=modern-query observed={initial:?}").into());
     }
-    for action in [1, 2] {
-        let refused = command(&mut client, action, 1).await?;
-        if refused.status != CommandStatus::Accepted
-            || refused.reply
-                != (wire::TaskBoardReply {
-                    refused: true,
-                    ..legacy.reply.clone()
-                })
-            || exchange(&mut client, 4, 0).await?.0 != initial
-        {
-            return Err(format!(
-                "step=legacy-negative-control action={action} observed={refused:?}"
-            )
-            .into());
-        }
-    }
+    check_legacy_controls(&mut client, &initial).await?;
 
     let (weekly, _) = exchange(&mut client, 5, 0).await?;
     let task = weekly
@@ -106,18 +84,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=weekly-start observed={weekly:?}").into());
     }
 
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
+    let world = full_e2ef7::qualification_world(clients)?;
+    prepare_hunt_ground(&mut client, world).await?;
     for current in 1..=task.required {
-        travel_to_spawn(&mut client, world, &metadata.spawns, &task.race).await?;
-        client_hunt::hunt(&mut client).await?;
+        credit_one_kill(&mut client, clients, &task.race).await?;
         let (progress, _) = exchange(&mut client, 4, 0).await?;
         let expected_pending = if current == task.required { 25 } else { 0 };
         if progress.refusal != 0
@@ -153,6 +123,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=bounty-select observed={selection:?}").into());
     }
+    check_legacy_controls(&mut client, &selection).await?;
     let (early, _) = exchange(&mut client, 9, 0).await?;
     if early
         != (wire::full::Reply {
@@ -162,9 +133,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=bounty-early-claim observed={early:?}").into());
     }
+    let mut completed = selection.clone();
     for current in 1..=offer.required {
-        travel_to_spawn(&mut client, world, &metadata.spawns, &offer.race).await?;
-        client_hunt::hunt(&mut client).await?;
+        credit_one_kill(&mut client, clients, &offer.race).await?;
         let (progress, _) = exchange(&mut client, 4, 0).await?;
         let state = if current == offer.required { 3 } else { 2 };
         if progress.refusal != 0
@@ -177,6 +148,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 format!("step=bounty-credit expected={current} observed={progress:?}").into(),
             );
         }
+        completed = progress;
     }
     let (claimed, _) = exchange(&mut client, 9, 0).await?;
     let expected_points = initial
@@ -189,7 +161,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || claimed.bounty.current != 0
         || claimed.bounty_points != expected_points
         || claimed.points != initial.points
-        || claimed.weekly.pending_points < 25
+        || claimed.weekly != completed.weekly
+        || claimed.soulseals != completed.soulseals
+        || claimed.bounty.rerolls
+            != completed
+                .bounty
+                .rerolls
+                .saturating_add(1)
+                .min(oteryn_gameplay_quests::quest::task_board::full::MAX_REROLL_TOKENS)
     {
         return Err(format!(
             "step=bounty-claim expected-bounty-points={expected_points} observed={claimed:?}"
@@ -219,11 +198,175 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if relog.join_snapshot().game_session_id == session {
         return Err("step=task-board-relog reused the previous game session".into());
     }
+    if persisted.refusal != 0
+        || persisted.bounty != claimed.bounty
+        || persisted.bounty_points != claimed.bounty_points
+    {
+        return Err(
+            format!("step=bounty-relog observed={persisted:?} expected={claimed:?}").into(),
+        );
+    }
+    evidence(&format!(
+        "P23C_CHECK step=bounty-relog bounty-points={}",
+        persisted.bounty_points
+    ));
     verify_settlement(&claimed, &persisted)
 }
 
+async fn check_legacy_controls(
+    client: &mut DevClientSession,
+    modern: &wire::full::Reply,
+) -> TestResult {
+    let bounty = modern
+        .bounty
+        .active
+        .as_ref()
+        .map_or(modern.bounty.offers.as_slice(), std::slice::from_ref);
+    let tasks: Vec<_> = bounty
+        .iter()
+        .map(|task| (&task.race, task.required))
+        .chain(
+            modern
+                .weekly
+                .kills
+                .iter()
+                .filter(|task| !task.race.is_empty())
+                .map(|task| (&task.race, task.required)),
+        )
+        .take(wire::MAX_TASKS)
+        .map(|(race, required)| wire::TaskBoardTask {
+            race: race.clone(),
+            required: i64::from(required),
+            claimed_at_unix: 0,
+        })
+        .collect();
+    let query = command(client, 0, 0).await?;
+    if query.status != CommandStatus::Accepted
+        || query.reply.refused
+        || query.reply.tasks != tasks
+        || (query.reply.selected, query.reply.kills) != (0, 0)
+        || u64::try_from(query.reply.points)? != modern.points
+        || u64::try_from(query.reply.bounty_points)? != modern.bounty_points
+    {
+        return Err(
+            format!("step=compact-projection expected-tasks={tasks:?} observed={query:?}").into(),
+        );
+    }
+
+    for action in [1, 2] {
+        let refused = command(client, action, 1).await?;
+        if refused.status != CommandStatus::Accepted
+            || refused.reply
+                != (wire::TaskBoardReply {
+                    refused: true,
+                    ..query.reply.clone()
+                })
+            || super::client_row_p23c::exchange(client, 4, 0).await?.0 != *modern
+        {
+            return Err(format!(
+                "step=legacy-negative-control action={action} observed={refused:?}"
+            )
+            .into());
+        }
+    }
+    evidence(&format!(
+        "P23C_CHECK step=legacy-negative-control projected-tasks={}",
+        tasks.len()
+    ));
+    Ok(())
+}
+
+async fn prepare_hunt_ground(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let basis = spatial_basis::current(client)?;
+    let path = route(world, from, |at| {
+        open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter_map(|direction| destination(world, at, direction))
+            .any(|adjacent| {
+                open(adjacent)
+                    && client.world_entities().is_some_and(|entities| {
+                        entities
+                            .iter()
+                            .all(|entity| entity.position != basis.position(adjacent))
+                    })
+            })
+    })
+    .ok_or("step=hunt-ground no open adjacent fixture cell")?;
+    walk(client, world, &path).await
+}
+
+async fn credit_one_kill(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    creature: &str,
+) -> TestResult {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let response = request_spawn(session, creature.to_owned())
+        .await
+        .map_err(|error| format!("step=fixture-hunt-input creature={creature} observed={error}"))?;
+    let target = parse_spawned_entity(&response)?;
+    evidence(&format!(
+        "P23C_FIXTURE creature={creature} response={response}"
+    ));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !client.world_entities().is_some_and(|entities| {
+            entities
+                .get(&target)
+                .is_some_and(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
+        }) {
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+        TestResult::Ok(())
+    })
+    .await
+    .map_err(|_| "step=hunt-target exact fixture creature not visible")??;
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        || client
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.target != Some(target))
+    {
+        return Err(format!("step=hunt-attack target={target:?} observed={attack:?}").into());
+    }
+    let death = committed_hunt_death(
+        client,
+        clients,
+        Some(clients.characters[0]),
+        creature,
+        target,
+        deadline,
+    )
+    .await?;
+    if death.shared || !death.awards.contains_key(&clients.characters[0]) {
+        return Err(format!("step=hunt-death target={target:?} missing solo kill award").into());
+    }
+    evidence(&format!(
+        "P23C_CHECK step=exact-kill creature={creature} target={target:?}"
+    ));
+    Ok(())
+}
+
 fn verify_settlement(before: &wire::full::Reply, after: &wire::full::Reply) -> TestResult {
-    if after.period <= before.period {
+    let expected_period = before
+        .period
+        .checked_add(7)
+        .ok_or("weekly period overflow")?;
+    if after.period != expected_period {
         return Err(format!(
             "step=weekly-settlement observed-period={} need=committed-reset-after-{} pending-points={}",
             after.period, before.period, before.weekly.pending_points
@@ -233,12 +376,18 @@ fn verify_settlement(before: &wire::full::Reply, after: &wire::full::Reply) -> T
         .points
         .checked_add(before.weekly.pending_points)
         .ok_or("weekly balance overflow")?;
+    let expected_seals = before
+        .soulseals
+        .checked_add(before.weekly.pending_soulseals)
+        .ok_or("weekly soulseal balance overflow")?;
     if before.weekly.pending_points == 0
         || after.refusal != 0
         || after.points != expected
+        || after.soulseals != expected_seals
         || after.bounty_points != before.bounty_points
         || after.weekly.started
         || after.weekly.pending_points != 0
+        || after.weekly.pending_soulseals != 0
     {
         return Err(format!(
             "step=weekly-settlement expected-points={expected} observed={after:?}"

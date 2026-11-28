@@ -47,6 +47,7 @@ fn e2e_p23c_replays_hunting_task_query_and_select() -> Result<(), Box<dyn std::e
         assert!(next_command > command_id && next_sequence > server_sequence);
         command_id = next_command;
         server_sequence = next_sequence;
+        assert_eq!(frame["status"].as_str(), Some("Accepted"));
         apply_full_result(
             &mut panel,
             &GatedCommandResult {

@@ -32,6 +32,7 @@ pub(super) async fn exchange(
         "request": request,
         "command": result.command_id,
         "sequence": result.server_sequence,
+        "status": format!("{:?}", result.status),
         "payload": result.payload,
     });
     Ok((reply, capture))
