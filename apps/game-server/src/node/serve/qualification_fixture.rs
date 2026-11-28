@@ -62,7 +62,7 @@ const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
 #[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
-        "s04b-level" => Some((crate::durability::character_build::NO_VOCATION, 3)),
+        "s04b-level" => Some(("sorcerer", 3)),
         "s02-knight" => Some(("knight", 8)),
         "s02-sorcerer" => Some(("sorcerer", 8)),
         "s08-knight" => Some(("knight", 8)),
