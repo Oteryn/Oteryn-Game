@@ -12,6 +12,7 @@ use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterRevision;
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_encounter_rules::hazard::unlocked_after_primal_menace;
+use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 const PRIMAL_MENACE: &str = "oteryn:creature.the_primal_menace";
@@ -214,6 +215,21 @@ async fn commit_contributor(
             .bind(fence.character_id.as_bytes().as_slice()).bind(after as i16).bind(member.unlocked as i16).bind(member.selected as i16)
             .execute(&mut **tx).await.map_err(DurabilityError::from)?.rows_affected() != 1
         { return Err(DurabilityError::InvalidStoredState.into()); }
+    }
+    // TibiaWiki's Royalty of Hazard requires the effective encounter level 11.
+    if minimum == 11 {
+        let occurrence = Sha256::new()
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(death_key)
+            .finalize();
+        super::super::account_achievement::grant_missing(
+            tx,
+            fence.character_id,
+            &["oteryn:achievement/royalty_of_hazard"],
+            "oteryn:primal-menace-hazard",
+            &occurrence,
+        )
+        .await?;
     }
     Ok(())
 }

@@ -23,6 +23,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    let ledger = authority.session_commands();
+    let reference = crate::foundation::CommandId::new(command.command_id)
+        .ok()
+        .map(|id| crate::foundation::CommandRef::new(admitted.game_session_id, id));
+    if decoded.is_ok() && let (Some(ledger), Some(reference)) = (ledger, reference) {
+        ledger.remember_use_wire(reference, command.payload)?;
+    }
     // A harvest can have sent its durable write before an opaque error or timeout.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
@@ -76,6 +83,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             command_id: command.command_id,
             item_fence: admitted.item_fence,
         };
+        let receipt = ledger.zip(reference);
+        if let Some((ledger, reference)) = receipt {
+            ledger.set_use_receipt(reference, Some(transport::session_ingress::UseReceipt::Drome));
+        }
         match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_drome_cube(actor, use_command, intent.clone(), source),
@@ -83,13 +94,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .await
         {
             Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
-            Ok(Ok(None)) => {}
-            Ok(Err(())) | Err(_) => {
-                // A retained Cube or Kooldown Aid write may have committed without an ACK.
-                if authority.drome_use_unresolved(actor, use_command).await {
-                    return None;
+            Ok(Ok(None)) => {
+                if let Some((ledger, reference)) = receipt {
+                    ledger.set_use_receipt(reference, None);
                 }
-                return Some(Dispatch::Use(UseOutcome::rejected()));
+            }
+            Ok(Err(())) | Err(_) => {
+                transport::operator_event("drome_cube_use failed: owner_unavailable_or_deadline");
+                // A receipt read or retained write may require reconciliation.
+                return None;
             }
         }
     }

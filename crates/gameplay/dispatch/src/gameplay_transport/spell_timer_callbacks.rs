@@ -795,6 +795,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let leech_rates = super::super::item_spell_augments::leech(
                             &owned, &saved.binding.source, state, phase_now,
                         );
+                        let mut source: serde_json::Value =
+                            serde_json::from_slice(&saved.binding.parent_binding)
+                                .map_err(|_| DurabilityError::Unavailable)?;
+                        use crate::spell::native_combat::Element;
+                        let bond = match source["source_monk_chain_bond"].as_str() {
+                            Some("earth") => Some(Element::Earth),
+                            Some("energy") => Some(Element::Energy),
+                            Some("physical") => Some(Element::Physical),
+                            _ => None,
+                        };
                         let requests = super::prepare_ordinary_due_presentations(
                             &mut tx,
                             authority,
@@ -804,6 +814,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &saved.binding.source,
                             saved.from,
                             saved.target,
+                            bond,
                         )
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
@@ -815,9 +826,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     == Some(saved.binding.source.as_ref())
                             })
                             .ok_or(DurabilityError::Unavailable)?;
-                        let mut source: serde_json::Value =
-                            serde_json::from_slice(&saved.binding.parent_binding)
-                                .map_err(|_| DurabilityError::Unavailable)?;
                         let object = source.as_object_mut().ok_or(DurabilityError::Unavailable)?;
                         object.remove("source_presentation_bytes");
                         object.insert("ordinary_due_phase".into(), saved.phase.into());
@@ -894,7 +902,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 minimum
                             }
                         };
-                        let (mut effect, magnitude) = super::prepare_ordinary_due_from_owners(
+                        let (mut effect, mut magnitude) = super::prepare_ordinary_due_from_owners(
                             &mut tx,
                             authority,
                             runtime,
@@ -907,6 +915,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &saved.binding.source,
                             saved.target,
                             saved.step,
+                            bond,
                             saved.binding.command,
                             &saved.binding.occurrence,
                             phase_now,
@@ -927,10 +936,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let candidates = super::native_combat_cast::due_candidates(
                             &mut tx, authority, runtime, room, objects, &batch,
                         ).await.map_err(|_| DurabilityError::Unavailable)?;
-                        states.apply_prey_spell_damage(runtime, &mut batch);
                         let talisman = crate::durability::task_board::read_talisman_in_item_transaction(&mut tx, **fence).await?;
                         let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
-                            runtime, &mut batch, &talisman, &stream, decision, &mut leech,
+                            runtime, &mut batch, &talisman, &stream, decision, &mut leech, (states, Some(&mut magnitude)),
                         ).ok_or(DurabilityError::Unavailable)?;
                         let presentation = states
                             .presentations

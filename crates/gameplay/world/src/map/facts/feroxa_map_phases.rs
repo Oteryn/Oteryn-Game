@@ -1,7 +1,9 @@
 //! M52: atomic Channel-local scenery snapshots for the retained full-moon maps.
 use super::*;
-use crate::content::bundle_spell_tiles::{BundleTilePhases, tile_pos};
+use crate::content::bundle_spell_tiles::{BundleSpellTiles, BundleTilePhases, tile_pos};
 use crate::content::{LogicalCell, QualifiedSpellTile, SpellTileLookupError};
+use crate::map::boot::BundleMap;
+use std::sync::Weak;
 
 /// Physical facts resolved from the admitted phase palette, never portable custody.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -85,23 +87,45 @@ pub(super) struct FeroxaMapPhase {
     footprint: usize,
 }
 
-pub(super) struct PhaseTiles(Arc<Mutex<Arc<CallbackStates>>>);
+struct PhaseTiles {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    map: Weak<BundleMap>,
+    baseline: BundleSpellTiles,
+}
+
 impl BundleTilePhases for PhaseTiles {
     fn lookup(
         &self,
         cell: LogicalCell,
     ) -> Result<Option<QualifiedSpellTile>, SpellTileLookupError> {
         let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
-        self.0
+        let states = self
+            .callbacks
             .lock()
-            .map_err(|_| SpellTileLookupError::Unknown)?
-            .phase_spell(pos)
+            .map_err(|_| SpellTileLookupError::Unknown)?;
+        if let Some(tile) = states.phase_spell(pos)? {
+            return Ok(Some(tile));
+        }
+        if !states.has_timed_base_transform(pos) {
+            return Ok(None);
+        }
+        let snapshot = Arc::clone(&states);
+        drop(states);
+        let map = self.map.upgrade().ok_or(SpellTileLookupError::Unknown)?;
+        let baseline = self.baseline.lookup(cell)?;
+        map.facts
+            .timed_base_spell_tile(map.overlay.base(), pos, &snapshot, &baseline)
+            .map(Some)
     }
 }
 
 impl BundleFacts {
-    pub(crate) fn phase_spell_owner(&self) -> Arc<dyn BundleTilePhases> {
-        Arc::new(PhaseTiles(Arc::clone(&self.callbacks)))
+    pub(crate) fn phase_spell_owner(&self, map: &Arc<BundleMap>) -> Arc<dyn BundleTilePhases> {
+        Arc::new(PhaseTiles {
+            callbacks: Arc::clone(&self.callbacks),
+            map: Arc::downgrade(map),
+            baseline: map.spell_tiles.fork_without_phases(),
+        })
     }
 
     /// Called under the current Channel owner after its fenced World phase read.

@@ -212,7 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
             return self
-                .commit_cube_attempt(actor, command, pending.request.clone(), &content)
+                .commit_cube_attempt(actor, command, &pending.request, &content, &budget)
                 .await
                 .map(|result| Some(outcome(result)));
         }
@@ -391,9 +391,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(disposition)));
             }
         }
-        self.commit_cube_attempt(actor, command, request, &content)
+        self.commit_cube_attempt(actor, command, &request, &content, &budget)
             .await
             .map(|result| Some(outcome(result)))
+    }
+
+    pub(in crate::gameplay_transport) async fn recover_drome_use(
+        &self,
+        actor: ExactActorRef,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        reference: CommandRef,
+        wire: &[u8],
+    ) -> Option<UseDisposition> {
+        let command = UseCommand {
+            game_session_id: reference.game_session_id(),
+            command_id: reference.command_id().get(),
+            item_fence: Some(fence),
+        };
+        let binding = Sha256::digest(wire).into();
+        if self
+            .root
+            .read_kooldown_aid_receipt(self.character, fence, reference, binding)
+            .await
+            .ok()?
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if let Some(pending) = states
+                .item_uses
+                .gate(&runtime, actor, command.game_session_id)
+                .and_then(|gate| gate.cube_pending.as_mut())
+                && pending.request.command_id == command.command_id
+                && pending.request.kind == ItemUseKind::Concoction
+                && pending.binding() == Some(binding)
+            {
+                // The durable effect is proven. Apply its live cooldown reset only
+                // after reconnect restores this actor, including on a later attempt.
+                pending.recovered_concoction = true;
+            }
+            return Some(UseDisposition::Committed);
+        }
+        let receipt = self
+            .root
+            .read_drome_cube_receipt(self.character, fence, reference, binding)
+            .await
+            .ok()?;
+        let disposition = if receipt.is_some() {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Rejected
+        };
+        if self.finish_cube(actor, command, disposition).await
+            && let Some(receipt) = receipt
+        {
+            self.cube_notice(command.game_session_id, receipt.reward_index);
+        }
+        Some(disposition)
     }
 
     pub(in crate::gameplay_transport) async fn drome_use_has_prepared_write(
@@ -428,8 +481,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        request: ItemUseRequest,
+        request: &ItemUseRequest,
         content: &NativeItemWeights<'_>,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> Result<UseDisposition, ()> {
         let fence = command.item_fence.ok_or(())?;
         let ItemUseKind::DromeCube { wire_binding } = request.kind else {
@@ -444,7 +498,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
-        let budget = AdmissionRetryBudget::for_release_holder(self.root);
         let mut retried = false;
         let (disposition, index) = loop {
             let write = self.root.commit_drome_cube(

@@ -355,12 +355,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(state) = states.get_mut(&runtime, actor, session) else {
             return SpellCastOutcome::rejected();
         };
+        let before = state.cooldowns.clone();
         if state
             .commit_stance_receipt(prepared, receipt, spell, self.owner_now())
             .is_err()
         {
             return SpellCastOutcome::rejected();
         }
+        let vitals = (state.revision(), state.vitals());
+        let after = state.cooldowns.clone();
+        states.record_cooldown_changes(&runtime, actor, session, &before, &after, None);
         SpellCastOutcome {
             refresh_inventory: false,
             disposition: if prepared.matches_command(actor, session, command_id) {
@@ -368,7 +372,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 SpellCastDisposition::Rejected
             },
-            vitals: Some((state.revision(), state.vitals())),
+            vitals: Some(vitals),
         }
     }
 }

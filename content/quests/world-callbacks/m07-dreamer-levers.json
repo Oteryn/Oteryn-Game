@@ -337,6 +337,275 @@
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamer-dread-lord-tower-3054",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32815,
+          "y": 32344,
+          "floor": -4
+        },
+        "unique": 3054,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32815,
+            "y": 32344,
+            "floor": -4
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33213,
+        "y": 32454,
+        "floor": -1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:8-29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5021",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "on_step": true
+      },
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/dreamer-dread-lord-tower-3055",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32822,
+          "y": 32344,
+          "floor": -4
+        },
+        "unique": 3055,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32822,
+            "y": 32344,
+            "floor": -4
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33194,
+        "y": 32853,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:8-29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5021",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "on_step": true
+      },
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/dreamer-dread-lord-tower-3056",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32819,
+          "y": 32347,
+          "floor": -4
+        },
+        "unique": 3056,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32819,
+            "y": 32347,
+            "floor": -4
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32417,
+        "y": 32139,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:8-29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5021",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "on_step": true
+      },
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/dreamer-dread-lord-scroll",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32781,
+          "y": 32225,
+          "floor": -14
+        },
+        "unique": 3047,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32781,
+            "y": 32225,
+            "floor": -14
+          },
+          "ordinal": 2,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 4,
+          "maximum": 5,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/dread_lord_scroll_claim",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32781,
+            "y": 32226,
+            "floor": -14
+          },
+          "item": "oteryn:item.tibia.i3028",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua:55-71",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/dread_lord_scroll_claim": 0
+      },
+      "requires_world_admission": true,
+      "effects": {
+        "reset_after_ms": 4000,
+        "magic": {
+          "position": {
+            "x": 32781,
+            "y": 32226,
+            "floor": -14
+          },
+          "effect": 11
+        },
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32781,
+                "y": 32226,
+                "floor": -14
+              },
+              "create": 7845,
+              "passable": true
+            }
+          ],
+          "close": []
+        }
+      }
     }
   ]
 }

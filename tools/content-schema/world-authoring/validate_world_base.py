@@ -34,6 +34,7 @@ from convert_world_base import (
     catalogue_keys,
     defined_item_keys,
     key_family,
+    placed_door_keys,
     world_otbm_totals,
 )
 from scoped_spawn_ground import CAPTURE, captured_grounds, plain_ground, scoped_slots
@@ -101,7 +102,7 @@ def _init(root: str, extent: tuple[int, int], palette_size: int, scoped=None) ->
     )
 
 
-def check_region(row: dict) -> dict:
+def check_region(row: dict, *, compare_counts: bool = True) -> dict:
     """Validate one region file in isolation; runs in a worker process."""
     path = row["path"]
     result = {
@@ -186,7 +187,7 @@ def check_region(row: dict) -> dict:
                             ((x, y, z), palette, tuple(attrs["teleport"]))
                         )
         tiles += len(sector)
-    if (tiles, items) != (row["tiles"], row["items"]):
+    if compare_counts and (tiles, items) != (row["tiles"], row["items"]):
         errors.append(
             f"{path}: decoded {tiles} tiles/{items} items, index says {row['tiles']}/{row['items']}"
         )
@@ -913,6 +914,8 @@ def validate(
             and row["target"]["key"] in defined
         ):
             bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
+    for source_id, key in placed_door_keys(root, defined).items():
+        bound.setdefault(source_id, set()).add(key)
     terrain = catalogue_keys("terrain", root)
     world_object = catalogue_keys("world_object", root)
     palette = index["palette"]

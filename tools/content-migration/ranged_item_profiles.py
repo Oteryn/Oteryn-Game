@@ -26,6 +26,11 @@ RANGED_PROFILES = "content/items/ranged-profiles.json"
 MANIFEST = "content/spells.manifest.json"
 REPORT = "tools/content-migration/samples/ranged-content-source.json"
 ELEMENTS = {"PHYSICAL", "DEATH", "EARTH", "ENERGY", "FIRE", "ICE"}
+# Crystal 201189f8 items.xml and weapons.cpp:805–900. The sealed wiki
+# hit percentages for these stacks do not describe weapon overrides.
+SOURCE_AMMUNITION_CHANCE = (3448, 3449, 6528, 14251, 14252, 15793, 16141, 16142, 16143)
+# poison_arrow.lua:20–26 overrides the XML attack during registration.
+POISON_ARROW = "oteryn:item.tibia.i3448"
 
 
 def encode(value):
@@ -224,11 +229,17 @@ def resolved_profile(profile, authoring):
     return profile
 
 
-def apply_authoring(root, document):
+def apply_authoring(root, document, *, retained_keys=()):
     """Annotate existing admitted policies; never expand native admission."""
     raw = (root / RANGED_PROFILES).read_bytes()
-    if raw != outputs(root)[RANGED_PROFILES]:
+    generated = outputs(root)
+    if raw != generated[RANGED_PROFILES]:
         raise ValueError("RANGED_PROFILE_SOURCE_DRIFT")
+    source = json.loads(generated[REPORT])["profiles"]
+    ammunition_overrides = {
+        f"oteryn:item.tibia.i{item_id}": source[str(item_id)]["hit_chance"]
+        for item_id in SOURCE_AMMUNITION_CHANCE
+    }
     rows = {row["definition"]["identity"]["key"]: row for row in item_rows(root)}
     profiles = json.loads(raw)
     if profiles["schema"] != "OTERYN_RANGED_ITEM_PROFILES/v1":
@@ -242,17 +253,23 @@ def apply_authoring(root, document):
             raise ValueError("RANGED_PROFILE_TARGET")
     for record in document["records"]:
         key = record["production_binding"]["target"]["key"]
-        if key in profiles:
+        if key in profiles and key not in retained_keys:
             row = rows[key]
-            owner = row.get("authoring", {})
-            record["authoring"]["ranged"] = resolved_profile(
-                profiles[key]["profile"], owner
+            profile = resolved_profile(
+                profiles[key]["profile"], row.get("authoring", {})
             )
+            # Keep the sealed metadata evidence intact and publish the actual
+            # shot override independently from the source maximum chance.
+            if key in ammunition_overrides:
+                profile["hit_chance"] = ammunition_overrides[key]
+            if key == POISON_ARROW:
+                profile["attack"] = 21
+            record["authoring"]["ranged"] = profile
 
 
-def apply_native(root, generated):
+def apply_native(root, generated, *, retained_keys=()):
     document = json.loads(generated[PROFILES])
-    apply_authoring(root, document)
+    apply_authoring(root, document, retained_keys=retained_keys)
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])

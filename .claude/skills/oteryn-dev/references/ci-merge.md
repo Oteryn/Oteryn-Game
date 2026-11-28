@@ -293,6 +293,13 @@ A PR is mergeable when all of these hold on its **current** head SHA:
    not waive it for a content train PR or a PR with code in a risk class
    (owner 2026-11-25); only a data-only `heavy-tests` PR keeps the automatic
    skip.
+5. **Stale base.** The PR's tested merge base is older than the current
+   `main`, and `main` has changed a `.rs`, `Cargo.toml` or `Cargo.lock` file
+   since then. In that case `cargo check --workspace --all-targets` passes on
+   the local merge result (`git merge --no-commit origin/main` in a scratch
+   worktree, never pushed). This is not a branch update, so the rule against
+   merging `origin/main` below still holds. Two heads that were each green
+   can still fail to compile together: #3516 and #3518 broke `main` this way.
 
 Merge with squash and pass the full 40-character head SHA. After the merge,
 watch the post-merge `Game Merge Queue gate` run on the new `main`, and check
@@ -453,8 +460,30 @@ Owner decision 2026-11-25.
   depend on the culprit, a migration is already applied) or the fix is
   already green on its own head. Search the open PRs for an existing fix
   first (*Reading a red check*, step 3). A forward fix that meets the
-  hotfix conditions below is also allowed.
+  hotfix conditions below merges as described there.
 - A main-red fix never travels in a content train.
+- **Hotfix merge without waiting for CI** (owner 2026-11-26). This is the
+  second exception to root `AGENTS.md` "merge only a head whose own CI is
+  green" and to *Merge conditions* 1-3 (no wait for `game-gate`, PostgreSQL legs or `heavy-gate`); conditions 4 and 5 still hold. A fix of a red `main` merges as soon as
+  all of these hold on its current head:
+  - The PR targets `main` and the GitHub PR `additions + deletions` is at most
+    20.
+  - No changed path matches `^\.github/`, `^tools/repository/`,
+    `/migrations/` or `repository-policy`.
+  - `cargo fmt --all --check`, Clippy (`-D warnings`, all targets) and the lib
+    tests of each changed crate pass locally on that head.
+  - *Merge conditions* 4 holds: a clean Codex review receipt for that head.
+  - No check run on that head has completed as `failure`. The one exception
+    is `heavy-gate`: it never blocks a hotfix, whether it is a mirror or real,
+    pending or failed.
+
+  Revert-first and the seam and node-boot wait of `oteryn-debugging` step 5
+  do not hold this fix back. The coordinator merges it with
+  `C:\Users\Public\fm-hotfix.ps1 -Num <pr> -Sha <head>`. The script re-checks
+  these conditions, bypasses ruleset 20991995 for the one squash and
+  restores the ruleset in `finally` (`docs/agents/AGENTS.md`, Game override
+  of the bypass substitute). The post-merge run on `main` is the
+  verification: if it is red, revert the hotfix.
 - **Hotfix merge without waiting for CI** (owner 2026-11-26). A main-red fix
   merges as soon as all of the following hold. It is not held for
   `game-gate` or `heavy-gate`.

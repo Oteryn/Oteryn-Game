@@ -201,6 +201,7 @@ pub fn load_embedded_quest_state(
     let lowered = lower_embedded_quest_state(content_revision)?;
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
+    super::published_quest_pins::retain_authored_predecessors(&mut lowered.catalogue);
     super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
@@ -260,6 +261,8 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // An empty binding snapshot keeps the predecessor set from the legacy loader.
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -282,6 +285,9 @@ pub(super) fn lower_embedded_quest_state(
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::classic_dialogue::extend_rottin(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Zelos's passage advances the donor questline to Jack's report stage.
+    lowered.catalogue =
+        super::grave_danger::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
@@ -298,8 +304,6 @@ pub(super) fn lower_embedded_quest_state(
         super::classic_dialogue::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::liquid_black::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::grave_danger::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::wrath_sleeping_dragon::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -359,6 +363,8 @@ pub(super) fn lower_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::reward_callbacks::retain_warrior_reward_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
@@ -558,6 +564,7 @@ fn effect_kind(effect: &Tagged) -> Option<QuestEffectKind> {
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    mod donor_quest_tests;
     use super::super::{QuestRefusal, valid_quest_key};
     use super::*;
 
@@ -568,6 +575,45 @@ mod tests {
 
     fn embedded() -> LoweredQuestState {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
+    }
+
+    #[test]
+    fn quest_gap_loader_billy_pan_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.billy"
+            && row.key == "oteryn:quest-reward/billy-pan-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_lee_delle_studded_legs_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.lee_delle"
+            && row.key == "oteryn:quest-reward/lee-delle-flower-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_ahmet_oasis_box() -> Result<(), String> {
+        let loaded = embedded();
+        let callbacks = super::super::world_callbacks::load_for(loaded.catalogue())?;
+        let chest = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-callback/qd-steal-from-thieves-oasis-box")
+            .ok_or("oasis box must be in the live callback catalogue")?;
+        assert_eq!(chest.selector.action, Some(19910));
+        assert_eq!(
+            chest
+                .item_reward()
+                .as_ref()
+                .map(|reward| reward.item.as_str()),
+            Some("oteryn:item.tibia.i235")
+        );
+        Ok(())
     }
 
     #[test]
@@ -634,6 +680,347 @@ mod tests {
     }
 
     #[test]
+    fn quest_parity_outlaw_camp_treasure_loads_as_one_terminal_container_reward()
+    -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position, Trigger};
+
+        let key = "oteryn:quest-callback/outlaw-camp-treasure";
+        let lowered =
+            load_embedded_quest_state("outlaw-camp").map_err(|error| format!("{error:?}"))?;
+        let transition = lowered
+            .catalogue()
+            .transition(key)
+            .ok_or("missing treasure transition")?;
+        assert!(transition.completes);
+        assert_eq!(transition.quest, "oteryn:quest.the_outlaw_camp_quest");
+        let callbacks = world_callbacks::load_for(lowered.catalogue())?;
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or("missing treasure callback")?;
+        assert_eq!(callback.trigger, Trigger::Use);
+        assert_eq!(
+            callback.selector.position,
+            Some(Position {
+                x: 32620,
+                y: 32198,
+                floor: -10
+            })
+        );
+        assert_eq!(callback.selector.appearance, Some(2472));
+        assert_eq!(callback.selector.unique, Some(14091));
+        let reward = callback.item_reward().as_ref().ok_or("missing bag")?;
+        assert_eq!(
+            (reward.item.as_str(), reward.count),
+            ("oteryn:item.tibia.i2853", 1)
+        );
+        assert_eq!(
+            reward
+                .contents
+                .iter()
+                .map(|item| (item.item.as_str(), item.count))
+                .collect::<Vec<_>>(),
+            [
+                ("oteryn:item.tibia.i3295", 1),
+                ("oteryn:item.tibia.i3039", 1)
+            ],
+        );
+        assert_eq!(
+            callback.storage[0].track,
+            "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest"
+        );
+        assert_eq!(
+            (
+                callback.storage[0].minimum,
+                callback.storage[0].maximum,
+                callback.storage[0].set
+            ),
+            (0, 0, 1)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_explorer_society_loads_ordered_enrollment_and_powder_report()
+    -> Result<(), String> {
+        use crate::quest::{reward_callbacks, world_callbacks};
+
+        let lowered =
+            load_embedded_quest_state("explorer-society").map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        let callbacks = reward_callbacks::offered_for(catalogue)?;
+        let world = world_callbacks::load_for(catalogue)?;
+        let line = "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line";
+        for (name, minimum, maximum, after) in [
+            ("angus/enroll", 0, 0, 1),
+            ("mortimer/enroll", 0, 0, 1),
+            ("uzgod/brooch-errand", 1, 1, 2),
+            ("uzgod/pickaxe", 3, 3, 4),
+            ("angus/pickaxe-report", 1, 4, 5),
+            ("mortimer/pickaxe-report", 1, 4, 5),
+            ("angus/orc-powder-report", 33, 33, 35),
+            ("mortimer/orc-powder-report", 33, 33, 35),
+        ] {
+            let key = format!("oteryn:quest-reward/explorer-society/{name}");
+            let row = callbacks
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            let gate = row
+                .storage
+                .iter()
+                .find(|gate| gate.track == line)
+                .ok_or("missing quest-line guard")?;
+            assert_eq!(
+                (gate.minimum, gate.maximum, gate.set),
+                (minimum, maximum, after),
+                "{name}"
+            );
+            assert!(catalogue.transition(&key).is_some(), "{name}");
+        }
+        for (name, uid, reward, before, after) in [
+            ("family-brooch", 14029, 4834, 2, 3),
+            ("bonelord-parchment", 14030, 173, 30, 31),
+            ("orc-powder", 14031, 13974, 33, 34),
+            ("elven-poetry", 14032, 4844, 36, 37),
+            ("memory-stone", 14033, 4841, 39, 40),
+            ("spectral-dress", 14034, 4836, 48, 49),
+            ("lizard-urn", 40041, 4847, 27, 28),
+            ("frozen-dragon", 40042, 7314, 57, 58),
+        ] {
+            let key = format!("oteryn:quest-callback/explorer-society-{name}");
+            let row = world
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            assert_eq!(row.selector.unique, Some(uid), "{name}");
+            assert!(row.selector.native.is_some(), "{name}");
+            assert_eq!(
+                row.item_reward().as_ref().ok_or("missing pickup")?.item,
+                format!("oteryn:item.tibia.i{reward}")
+            );
+            let gate = row.storage.first().ok_or("missing mission guard")?;
+            assert_eq!(
+                (gate.minimum, gate.maximum, gate.set),
+                (before, before, after),
+                "{name}"
+            );
+            assert!(catalogue.transition(&key).is_some(), "{name}");
+        }
+        let final_report = "oteryn:quest-reward/explorer-society/lurik/ice-music-report";
+        let row = callbacks
+            .iter()
+            .find(|row| row.key == final_report)
+            .ok_or("missing final Explorer Society report")?;
+        assert_eq!(row.take.len(), 1);
+        assert_eq!(
+            (row.take[0].item.as_str(), row.take[0].count),
+            ("oteryn:item.tibia.i7315", 1)
+        );
+        assert!(
+            catalogue
+                .transition(final_report)
+                .is_some_and(|transition| transition.completes)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn explorer_legacy_pickaxe_saves_enter_ice_delivery_and_can_retry() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let prefix = "oteryn:quest-progress/quest/u7_6/explorer_society/";
+        let line = format!("{prefix}quest_line");
+        let field = format!("{prefix}field_course");
+        let ice = format!("{prefix}the_ice_delivery");
+        let callbacks = crate::quest::world_callbacks::load_for(catalogue)?;
+        let authored = catalogue.authored_bindings().ok_or("authored bindings")?;
+        let explorer = authored
+            .quests
+            .iter()
+            .find(|quest| quest.quest == "oteryn:quest.the_explorer_society_quest")
+            .ok_or("Explorer Society binding")?;
+        for stage in &explorer.stages {
+            let world = matches!(
+                stage.trigger,
+                crate::quest::authored_bindings::Trigger::MapUse { .. }
+                    | crate::quest::authored_bindings::Trigger::StepIn { .. }
+            );
+            for operation in stage.transitions(&explorer.quest)? {
+                let registered = catalogue.transition(&operation.key).ok_or(&operation.key)?;
+                crate::quest::admission_binding::validate_resolved_world(
+                    catalogue, registered, world, &callbacks,
+                )
+                .map_err(|error| format!("{}: {error}", operation.key))?;
+            }
+        }
+        for npc in ["angus", "mortimer"] {
+            let before = BTreeMap::from([(field.clone(), 5), (line.clone(), 1), (ice.clone(), 0)]);
+            let start = format!("oteryn:quest-reward/explorer-society/assign-ice-{npc}");
+            let transition = catalogue.transition(&start).ok_or(start)?;
+            let changes = catalogue
+                .evaluate(transition, &before, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            let after = |track: &str| {
+                changes
+                    .iter()
+                    .find(|change| change.track == track)
+                    .map(|change| change.after)
+            };
+            assert_eq!(after(&line), Some(6));
+            assert_eq!(after(&field), Some(6));
+            assert_eq!(after(&ice), Some(6));
+
+            let before = BTreeMap::from([(field.clone(), 7), (line.clone(), 7), (ice.clone(), 7)]);
+            let retry = format!("oteryn:quest-reward/explorer-society/retry-ice-{npc}");
+            let transition = catalogue.transition(&retry).ok_or(retry)?;
+            let changes = catalogue
+                .evaluate(transition, &before, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(changes.len(), 3);
+            assert!(changes.iter().all(|change| change.after == 6));
+        }
+
+        for suffix in ["/cut-ice", "-ice-delivery-1", "-ice-delivery-2"] {
+            let key = format!("oteryn:quest-callback/explorer-society{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            let sample = callback
+                .item_reward
+                .as_ref()
+                .ok_or("scheduled icicle source")?;
+            assert_eq!(
+                (sample.item.as_str(), sample.count),
+                ("oteryn:item.tibia.i4837", 1)
+            );
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|storage| storage.add == Some(1))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_explorer_tools_and_portals_bind_exact_assets() -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position, Trigger};
+
+        let callbacks = world_callbacks::load()?;
+        for (name, target, tool, replacement) in [
+            ("ice-delivery-1", 4994, 4872, None),
+            ("ice-delivery-2", 4994, 4872, None),
+            ("jungle-bells", 3874, 4867, Some(4868)),
+            ("witches-cauldron", 3885, 4867, Some(4869)),
+            ("giant-jungle-rose", 3878, 4867, Some(4870)),
+            ("rune-tracing", 2199, 4842, Some(4843)),
+            ("ice-music", 6966, 7242, Some(7315)),
+        ] {
+            let key = format!("oteryn:quest-callback/explorer-society-{name}");
+            let row = callbacks
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            let input = row.item_on_target.as_ref().ok_or("missing selected tool")?;
+            assert_eq!(row.trigger, Trigger::Use);
+            assert_eq!(
+                row.selector
+                    .native
+                    .as_ref()
+                    .ok_or("missing target")?
+                    .appearance,
+                target
+            );
+            assert_eq!(input.item, format!("oteryn:item.tibia.i{tool}"));
+            assert_eq!(
+                input.replacement,
+                replacement.map(|id| format!("oteryn:item.tibia.i{id}"))
+            );
+            assert!(input.selected_instance && row.requires_world_admission);
+            if tool == 4872 {
+                assert!(input.reusable);
+                assert_eq!(
+                    row.item_reward().as_ref().ok_or("missing ice")?.item,
+                    "oteryn:item.tibia.i4837"
+                );
+            }
+        }
+        for (uid, landing) in [
+            (25018, (32498, 31622)),
+            (25019, (32665, 32735)),
+            (25020, (32320, 31137)),
+            (25021, (32359, 32807)),
+        ] {
+            let row = callbacks
+                .iter()
+                .find(|row| row.trigger == Trigger::StepIn && row.selector.unique == Some(uid))
+                .ok_or("missing astral portal")?;
+            assert_eq!(
+                row.teleport,
+                Some(Position {
+                    x: landing.0,
+                    y: landing.1,
+                    floor: -6
+                })
+            );
+            assert!(row.return_on_failure);
+            let fee = row.item_on_target.as_ref().ok_or("missing pearl cost")?;
+            assert_eq!(
+                (fee.item.as_str(), fee.count),
+                ("oteryn:item.tibia.i5021", 1)
+            );
+            assert!(fee.on_step && !fee.reusable);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_outlaw_oven_reopens_and_restores_the_source_tiles() -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position};
+
+        let callbacks = world_callbacks::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-callback/outlaw-camp-oven")
+            .ok_or("missing oven callback")?;
+        assert_eq!(callback.selector.unique, Some(30031));
+        assert_eq!(callback.lever, Some([2772, 2773]));
+        assert!(callback.reversible);
+        let scene = callback
+            .effects
+            .scene
+            .as_ref()
+            .ok_or("missing oven movement")?;
+        let origin = Position {
+            x: 32623,
+            y: 32188,
+            floor: -9,
+        };
+        let destination = Position { y: 32189, ..origin };
+        assert_eq!(
+            (scene.open[0].position, scene.open[0].remove),
+            (origin, Some(2535))
+        );
+        assert_eq!(
+            (scene.open[1].position, scene.open[1].create),
+            (destination, Some(2535))
+        );
+        assert_eq!(
+            (scene.close[0].position, scene.close[0].remove),
+            (destination, Some(2535))
+        );
+        assert_eq!(
+            (scene.close[1].position, scene.close[1].create),
+            (origin, Some(2535))
+        );
+        Ok(())
+    }
+
+    #[test]
     fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
         let loaded =
             load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;
@@ -662,6 +1049,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/cursed-crystal.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/hot-cuisine-books.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),
@@ -678,12 +1066,15 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
             include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
+            include_str!("../../../../../content/quests/world-callbacks/postman.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
             include_str!("../../../../../content/quests/world-callbacks/quest-contacts.json"),
+            include_str!("../../../../../content/quests/world-callbacks/source-outfits.json"),
+            include_str!("../../../../../content/quests/world-callbacks/nomads-land.json"),
             include_str!(
                 "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
             ),
@@ -849,6 +1240,8 @@ mod tests {
             "worldchg-m31/fury_gates/seal",
             "worldchg-m31/grimvale/island",
             "worldchg-m31/grimvale/survey",
+            "worldchg-m31/hive_born/eastern-inner",
+            "worldchg-m31/hive_born/western-inner",
             "worldchg-m31/hive_outpost/outpost",
             "worldchg-m31/hive_outpost/survey",
             "worldchg-m31/insectoid_invasion/incursion",
@@ -856,7 +1249,43 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 79);
+        assert_eq!(expected.len() - before_qmech_native, 81);
+        let before_ape_city_and_beginning = expected.len();
+        for suffix in [
+            "ape-city-amphora-40092",
+            "ape-city-amphora-40093",
+            "ape-city-amphora-40094",
+            "ape-city-amphora-40095",
+            "ape-city-cask-32495",
+            "ape-city-cask-32497",
+            "ape-city-cask-32499",
+            "ape-city-cask-32501",
+            "ape-city-cask-32503",
+            "ape-city-cask-32505",
+            "ape-city-cask-32507",
+            "ape-city-catacombs-amphora-gate",
+            "ape-city-catacombs-entry",
+            "ape-city-decipher",
+            "ape-city-destroy-monument",
+            "ape-city-holy-hair",
+            "ape-city-lever-1",
+            "ape-city-lever-2",
+            "ape-city-lever-3",
+            "ape-city-lever-4",
+            "ape-city-lever-5",
+            "ape-city-lever-6",
+            "ape-city-wall-1040",
+            "ape-city-wall-1041",
+            "ape-city-witches-cap",
+            "beginning-santiago-cellar",
+            "beginning-santiago-coat",
+            "beginning-zirella-rope",
+            "beginning-zirella-shovel",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_ape_city_and_beginning, 29);
+        assert!(expected.insert("oteryn:quest-callback/qd-steal-from-thieves-oasis-box".into()));
         assert_eq!(
             callbacks
                 .into_iter()

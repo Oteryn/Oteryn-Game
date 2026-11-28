@@ -17,6 +17,7 @@ use super::{
 use crate::ability::AbilityOccurrence;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{QualifiedNativeEntryRoom, SpellTileLookupError};
+use crate::durability::DurabilityError;
 use crate::durability::character_build::{
     BuildChangeRequest, BuildOccurrence, CommittedBuildChange,
 };
@@ -320,20 +321,30 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<SpellLanePermit>> + Send + '_>>
     {
+        Box::pin(async move { self.try_spell_lane_permit().await.ok() })
+    }
+
+    pub(in crate::gameplay_transport) fn try_spell_lane_permit(
+        &self,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<SpellLanePermit, DurabilityError>> + Send + '_>,
+    > {
         Box::pin(async move {
             let permit = match self.spell_lane.acquire().await {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            if permit.has_unresolved()
-                || !self.resolve_player_trades(&permit).await
-                || !self.resolve_primal_pod_steps(&permit).await
+            if permit.has_unresolved() {
+                return Err(DurabilityError::Unavailable);
+            }
+            self.resolve_player_trades(&permit).await?;
+            if !self.resolve_primal_pod_steps(&permit).await
                 || !self.resolve_cloak_blood_steps(&permit).await
                 || !self.resolve_spite_steps(&permit).await
             {
-                return None;
+                return Err(DurabilityError::Unavailable);
             }
-            Some(permit)
+            Ok(permit)
         })
     }
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
@@ -1752,9 +1763,28 @@ pub(in crate::gameplay_transport) async fn read_tile(
     objects: &LocalObjectRuntime,
     position: TilePosition,
 ) -> Result<TileFlags, SpellCastDisposition> {
-    read_cast_tile(tx, authority, room, runtime, objects, position)
+    read_projectile_tile(tx, authority, room, runtime, objects, position)
         .await
-        .map_err(|_| SpellCastDisposition::Rejected)
+        .map_err(|_| SpellCastDisposition::Rejected)?
+        .map(|(flags, _)| flags)
+        .ok_or(SpellCastDisposition::Rejected)
+}
+
+/// A missing geometry fact is a local obstruction for a splash, while an
+/// invalid authority, scope, or SQL read must still abort the shot.
+pub(in crate::gameplay_transport) async fn read_projectile_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<Option<(TileFlags, bool)>, SpellCastDisposition> {
+    match read_cast_tile(tx, authority, room, runtime, objects, position).await {
+        Ok(tile) => Ok(Some(tile)),
+        Err(CastTileError::MissingMetadata | CastTileError::MissingProjectileFlags) => Ok(None),
+        Err(CastTileError::Unavailable) => reject(),
+    }
 }
 
 pub(in crate::gameplay_transport) async fn read_chain_visual_tile(
@@ -1766,16 +1796,17 @@ pub(in crate::gameplay_transport) async fn read_chain_visual_tile(
     position: TilePosition,
 ) -> Result<Option<TileFlags>, SpellCastDisposition> {
     match read_cast_tile(tx, authority, room, runtime, objects, position).await {
-        Ok(tile) => Ok(Some(tile)),
+        Ok((tile, _)) => Ok(Some(tile)),
         // Crystal 201189f8 combat.cpp:1329–1344 still emits the destination effect when
         // it cannot find a walking path. This tile cannot be used for combat or sight.
         Err(CastTileError::MissingMetadata) => Ok(None),
-        Err(CastTileError::Unavailable) => reject(),
+        Err(CastTileError::Unavailable | CastTileError::MissingProjectileFlags) => reject(),
     }
 }
 
 enum CastTileError {
     MissingMetadata,
+    MissingProjectileFlags,
     Unavailable,
 }
 
@@ -1786,7 +1817,8 @@ async fn read_cast_tile(
     runtime: &ChannelRuntimeV1,
     objects: &LocalObjectRuntime,
     position: TilePosition,
-) -> Result<TileFlags, CastTileError> {
+) -> Result<(TileFlags, bool), CastTileError> {
+    use crate::spell::world_execution::WorldRelocationError;
     let cells = room.movement_cells();
     let logical = crate::content::LogicalCell {
         x: position.x,
@@ -1795,20 +1827,23 @@ async fn read_cast_tile(
     };
     match cells.spell_tiles().lookup(cells.scope(), logical) {
         Err(SpellTileLookupError::Absent) => {
-            return Ok(TileFlags {
-                projectile: false,
-                solid: false,
-                floor_change: false,
-                protection: false,
-                present: false,
-            });
+            return Ok((
+                TileFlags {
+                    projectile: false,
+                    solid: false,
+                    floor_change: false,
+                    protection: false,
+                    present: false,
+                },
+                false,
+            ));
         }
         Err(SpellTileLookupError::ScopeMismatch) => return Err(CastTileError::Unavailable),
         // Mutable source placements require same-transaction initialization receipts;
         // the source index alone intentionally leaves these cells unknown.
         Err(SpellTileLookupError::Unknown) | Ok(_) => {}
     }
-    let static_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
+    let static_tile = match crate::spell::world_execution::qualified_combat_tile_in_transaction(
         tx,
         authority,
         room,
@@ -1817,25 +1852,32 @@ async fn read_cast_tile(
         cell(position),
     )
     .await
-    .map_err(|error| match error {
-        crate::spell::world_execution::WorldRelocationError::MissingTileMetadata => {
-            CastTileError::MissingMetadata
+    {
+        Ok(tile) => tile,
+        Err(WorldRelocationError::MissingTileMetadata) => {
+            return Err(CastTileError::MissingMetadata);
         }
-        _ => CastTileError::Unavailable,
-    })?;
+        Err(WorldRelocationError::MissingDynamicProjectileFlags) => {
+            return Err(CastTileError::MissingProjectileFlags);
+        }
+        Err(_) => return Err(CastTileError::Unavailable),
+    };
     let target = SpellGroundTarget::for_native_tile_read(room, runtime, cell(position))
         .map_err(|_| CastTileError::Unavailable)?;
     let actual = read_spell_tile_in_transaction(tx, authority, &target)
         .await
         .map_err(|_| CastTileError::Unavailable)?;
-    Ok(TileFlags {
-        projectile: static_tile.block_projectile()
-            || actual.items.iter().any(|i| i.blocks_projectile),
-        solid: static_tile.block_solid() || actual.items.iter().any(|i| i.blocks_movement),
-        floor_change: static_tile.floor_change(),
-        protection: static_tile.protection_zone(),
-        present: static_tile.ground_present(),
-    })
+    Ok((
+        TileFlags {
+            projectile: static_tile.block_projectile()
+                || actual.items.iter().any(|i| i.blocks_projectile),
+            solid: static_tile.block_solid() || actual.items.iter().any(|i| i.blocks_movement),
+            floor_change: static_tile.floor_change(),
+            protection: static_tile.protection_zone(),
+            present: static_tile.ground_present(),
+        },
+        static_tile.qualified_tile().flags().immovable_block_solid,
+    ))
 }
 
 /// Canary 99902524 map.cpp 845–949: endpoint-exclusive u16 Wu accumulator.
@@ -1878,6 +1920,8 @@ fn area_candidates(
 pub(in crate::gameplay_transport) mod delayed_strikes;
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
 /// transaction. Missing Premium/learning/Wheel/elemental/magnitude is refused before RNG.
+#[path = "native_combat_cast/monk_equipment.rs"]
+mod monk_equipment;
 #[path = "native_combat_cast/prepare.rs"]
 mod preparation;
 pub use preparation::prepare_from_owners;
@@ -1890,13 +1934,16 @@ fn presentation_requests(
     profile: &crate::spell::native::CompiledNativeSpell,
     actors: &[LiveActorBinding],
     caster: ExactActorRef,
+    monk_impact: Option<&str>,
 ) -> Result<Vec<super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition> {
     use super::super::spell_presentations::{CueTarget, LocatedCueRequest, QualifiedCueTile};
     let mut result = Vec::new();
-    let effect =
-        profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
-            .as_str()
-            .ok_or(SpellCastDisposition::Rejected)?;
+    let effect = monk_impact
+        .or_else(|| {
+            profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
+                .as_str()
+        })
+        .ok_or(SpellCastDisposition::Rejected)?;
     let actor = |id| {
         actors
             .iter()
@@ -2435,7 +2482,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some((spell, active_spell)) = self.spells.source_indexed(intent.spell) else {
             return NativeCastDispatch::NotApplicable;
         };
-        let native_combat = matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
+        let native_combat = monk_equipment::applies(spell)
+            || matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
             p.spell()["execution"]["native_behavior"]["key"].as_str(), Some("wheel_combat" | "avatar_state"
                 | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike")));
         if !native_combat
@@ -2845,10 +2893,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     prepared.leech_inputs=item_spell_augments::leech_projection::capture(
                         runtime,states,owner.imported_charms,&prepared.batch,prepared.item_spell_leech,
                         prepared.magnitude.as_deref(),&stream,decision).map_err(|_|DurabilityError::Unavailable)?;
-                    states.apply_prey_spell_damage(runtime,&mut prepared.batch);
                     let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
                     let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
-                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs).ok_or(DurabilityError::Unavailable)?;
+                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs,
+                        (states,prepared.magnitude.as_deref_mut())).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;

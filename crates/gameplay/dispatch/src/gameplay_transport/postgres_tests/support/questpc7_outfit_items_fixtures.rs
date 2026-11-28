@@ -101,7 +101,14 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.key == format!("oteryn:quest-reward/questpc7-{slug}-commission"))
         .ok_or("intro")?;
+    let intro_word = intro.keywords.first().ok_or("report keyword")?;
     let fiend = slug == "fiend";
+    let parent = if fiend {
+        "oteryn:quest.no_rest_for_the_wicked_quest"
+    } else {
+        "oteryn:quest.grave_danger_quest"
+    };
+    let parent_revision = completion_revision(h, parent).await?;
     let [npc] = if fiend {
         super::classic_quests_fixtures::install_above(owner, admitted, [intro.npc.as_str()]).await?
     } else {
@@ -133,35 +140,28 @@ pub(super) async fn exercise(
             admitted,
             npc,
             &mut npc_sequence,
-            &format!("{slug} commission")
+            intro_word
         )
         .await?,
         NpcIntentDisposition::Rejected,
         "commission requires its prerequisite"
     );
     eprintln!("QUESTPC7_OUTFIT_ITEMS prerequisite refusal complete");
-    let parent_revision = if fiend {
+    if fiend {
         super::quest_container_chests_fixtures::forgemaster::claim_for_fiend(h, owner, admitted)
             .await?;
-        None
     } else {
-        let parent = intro
-            .requirements
-            .as_ref()
-            .ok_or("requirements")?
-            .completed_quests
-            .first()
-            .ok_or("parent completion requirement")?;
-        super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
-        let revision = completion_revision(h, parent)
-            .await?
-            .ok_or("parent completion")?;
-        Some((parent, revision))
-    };
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted,
+            &[(oteryn_gameplay_quests::quest::grave_danger::QUESTLINE.into(), 4)], 233,
+        ).await?;
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+    }
     assert_eq!(
         talk(owner, admitted, npc, &mut npc_sequence, "hi").await?,
         NpcIntentDisposition::Ok
     );
+    if fiend {
     for words in [format!("{slug} commission"), format!("{slug} first token")] {
         eprintln!("QUESTPC7_OUTFIT_ITEMS requesting {words}");
         assert_eq!(
@@ -196,6 +196,22 @@ pub(super) async fn exercise(
         .await?,
         NpcIntentDisposition::Ok
     );
+    } else {
+        assert_eq!(talk(owner, admitted, npc, &mut npc_sequence, intro_word).await?, NpcIntentDisposition::Ok);
+        for (index, item) in items.into_iter().enumerate() {
+            // Inventory setup for this USE test. Native boss loot admission has its own loader proof.
+            let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
+            super::quest_world_callbacks_fixtures::input_item(owner, fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: oteryn_gameplay_quests::quest::world_callbacks::Position { x: 33293, y: 31677, floor: -15 },
+                    item: format!("oteryn:item.tibia.i{item}"),
+                    count: 1,
+                }, 970 + u64::try_from(index)?, true).await?;
+        }
+        assert_eq!(quantity(h, items[0]).await?, 1);
+        use_token(owner, admitted, items[0]).await?;
+        assert_eq!(quantity(h, items[0]).await?, 0);
+    }
     assert_eq!(quantity(h, items[1]).await?, 1);
     assert_eq!(
         talk(
@@ -224,18 +240,13 @@ pub(super) async fn exercise(
     );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&intro.quest).fetch_one(&h.pool).await?;
     assert!(completed);
-    if let Some((parent, revision)) = parent_revision {
-        assert_eq!(
-            completion_revision(h, parent).await?.as_deref(),
-            Some(revision.as_str()),
-            "prerequisite remains read-only"
-        );
-    } else {
-        assert_eq!(
-            completion_revision(h, "oteryn:quest.no_rest_for_the_wicked_quest").await?,
-            None,
-            "the native chest and Fiend programme never complete the parent quest"
-        );
+    assert_eq!(
+        completion_revision(h, parent).await?,
+        parent_revision,
+        "the outfit programme does not complete its prerequisite quest"
+    );
+    if fiend {
+        assert_eq!(parent_revision, None, "the Fiend journey starts uncompleted");
     }
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let observed = owner

@@ -108,6 +108,68 @@
         }
       ]
     },
+    "oteryn:service.trade.briasol": {
+      "npc": "oteryn:npc.briasol",
+      "source_path": "data-global/npc/briasol.lua",
+      "sha256": "b1091927eb3f772bf9973211e2b2ed884c9bd09c9a2eca73ae3cf1abf1f173e0",
+      "prices": [
+        {
+          "item": "oteryn:item.tibia.i44602",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 134
+        },
+        {
+          "item": "oteryn:item.tibia.i44605",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 135
+        },
+        {
+          "item": "oteryn:item.tibia.i44608",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 137
+        },
+        {
+          "item": "oteryn:item.tibia.i44611",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 136
+        }
+      ]
+    },
+    "oteryn:service.trade.gail": {
+      "npc": "oteryn:npc.gail",
+      "source_path": "data-global/npc/gail.lua",
+      "sha256": "c8d50bdf2f44a3b41bfbcc18a2c8efda106adefcc79841090ce17e207bd469f5",
+      "prices": [
+        {
+          "item": "oteryn:item.tibia.i44602",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 129
+        },
+        {
+          "item": "oteryn:item.tibia.i44605",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 130
+        },
+        {
+          "item": "oteryn:item.tibia.i44608",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 132
+        },
+        {
+          "item": "oteryn:item.tibia.i44611",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 131
+        }
+      ]
+    },
     "oteryn:service.trade.galuna": {
       "npc": "oteryn:npc.galuna",
       "source_path": "data-global/npc/galuna.lua",
@@ -131,6 +193,37 @@
           "direction": "SellToPlayer",
           "price": 40,
           "line": 158
+        }
+      ]
+    },
+    "oteryn:service.trade.hanna": {
+      "npc": "oteryn:npc.hanna",
+      "source_path": "data-global/npc/hanna.lua",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "prices": [
+        {
+          "item": "oteryn:item.tibia.i44602",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 162
+        },
+        {
+          "item": "oteryn:item.tibia.i44605",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 163
+        },
+        {
+          "item": "oteryn:item.tibia.i44608",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 165
+        },
+        {
+          "item": "oteryn:item.tibia.i44611",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 164
         }
       ]
     },
@@ -169,6 +262,37 @@
           "direction": "SellToPlayer",
           "price": 10,
           "line": 65
+        }
+      ]
+    },
+    "oteryn:service.trade.ishina": {
+      "npc": "oteryn:npc.ishina",
+      "source_path": "data-global/npc/ishina.lua",
+      "sha256": "9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71",
+      "prices": [
+        {
+          "item": "oteryn:item.tibia.i44602",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 152
+        },
+        {
+          "item": "oteryn:item.tibia.i44605",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 153
+        },
+        {
+          "item": "oteryn:item.tibia.i44608",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 155
+        },
+        {
+          "item": "oteryn:item.tibia.i44611",
+          "direction": "BuyFromPlayer",
+          "price": 1000,
+          "line": 154
         }
       ]
     },
@@ -249,6 +373,90 @@
           "direction": "BuyFromPlayer",
           "price": 10,
           "line": 193
+        }
+      ]
+    },
+    "oteryn:service.trade.messenger_of_santa": {
+      "npc": "oteryn:npc.messenger_of_santa",
+      "source_path": "data-global/npc/messenger_of_santa.lua",
+      "sha256": "cb91c928e0d5dfd8dbf4cd327667a2456be8bcc57461e226cde3af36260939b1",
+      "exclude_items": [
+        "oteryn:item.tibia.i10208",
+        "oteryn:item.tibia.i6489",
+        "oteryn:item.tibia.i6510"
+      ],
+      "prices": [
+        {
+          "item": "oteryn:item.tibia.i6507",
+          "direction": "SellToPlayer",
+          "price": 60,
+          "line": 52
+        },
+        {
+          "item": "oteryn:item.tibia.i6504",
+          "direction": "SellToPlayer",
+          "price": 25,
+          "line": 53
+        },
+        {
+          "item": "oteryn:item.tibia.i6488",
+          "direction": "SellToPlayer",
+          "price": 40,
+          "line": 54
+        },
+        {
+          "item": "oteryn:item.tibia.i6387",
+          "direction": "SellToPlayer",
+          "price": 10,
+          "line": 55
+        },
+        {
+          "item": "oteryn:item.tibia.i6502",
+          "direction": "SellToPlayer",
+          "price": 25,
+          "line": 56
+        },
+        {
+          "item": "oteryn:item.tibia.i6509",
+          "direction": "SellToPlayer",
+          "price": 20,
+          "line": 57
+        },
+        {
+          "item": "oteryn:item.tibia.i6505",
+          "direction": "SellToPlayer",
+          "price": 20,
+          "line": 58
+        },
+        {
+          "item": "oteryn:item.tibia.i2812",
+          "direction": "SellToPlayer",
+          "price": 50,
+          "line": 59
+        },
+        {
+          "item": "oteryn:item.tibia.i6501",
+          "direction": "SellToPlayer",
+          "price": 45,
+          "line": 60
+        },
+        {
+          "item": "oteryn:item.tibia.i6508",
+          "direction": "SellToPlayer",
+          "price": 80,
+          "line": 61
+        },
+        {
+          "item": "oteryn:item.tibia.i6506",
+          "direction": "SellToPlayer",
+          "price": 70,
+          "line": 62
+        },
+        {
+          "item": "oteryn:item.tibia.i6503",
+          "direction": "SellToPlayer",
+          "price": 25,
+          "line": 63
         }
       ]
     },

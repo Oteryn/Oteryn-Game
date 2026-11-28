@@ -8,7 +8,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        self.refresh_wheel_vitals_with_budget(actor, session, None)
+        self.refresh_wheel_vitals_for_transport(actor, session, None)
+            .await
+    }
+
+    pub(super) async fn refresh_wheel_vitals_for_transport(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: Option<u64>,
+    ) -> bool {
+        self.refresh_wheel_vitals_with_context(actor, session, None, generation)
             .await
     }
 
@@ -17,6 +27,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> bool {
+        self.refresh_wheel_vitals_with_context(actor, session, budget, None)
+            .await
+    }
+
+    async fn refresh_wheel_vitals_with_context(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: Option<&AdmissionRetryBudget<'_>>,
+        generation: Option<u64>,
     ) -> bool {
         // Without a current allocation there are no Wheel effects to qualify. In particular,
         // observing vitals must not take the root's sole holder away from death reconciliation.
@@ -38,7 +59,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Install the same owner-qualified promotion and conservative Premium deadline
             // that spell casts use. A bool-only gate cannot authorize later combat reads.
             !matches!(
-                &*self.refresh_and_apply_spell_access_with_budget(actor, session, budget).await,
+                &*self.refresh_and_apply_spell_access_for_transport(actor, session, budget, generation).await,
                 crate::gameplay_transport::spell_premium_coordinator::RegisteredSpellAccessOwner::Unavailable { .. }
             )
         } else {
@@ -49,6 +70,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if generation.is_some_and(|generation| {
+            !states.current_cooldown_transport(actor, session, generation)
+        }) {
+            return false;
+        }
         let Some(state) = states.get(&runtime, actor, session) else {
             return false;
         };

@@ -2,10 +2,8 @@
 //! `reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md`; boundary gate
 //! `NPC_SINGLE_TRADE_COMMIT_V1`).
 //!
-//! One trade is one item-only transaction of one physical PostgreSQL transaction, without a
-//! CharacterRevision advance (§5.2): it reads nothing of the Character root but its lock in the
-//! complete Character item fence, and writes its cause record, its lines, the item changes and one
-//! audit event.
+//! One trade writes its cause record, lines, item changes and audit event in one PostgreSQL
+//! transaction. Carlos's first tutorial sale also writes its fenced quest successor.
 //! - BUY (§5.3): the price `unit_price x quantity` is paid by the deterministic coin fee plan of
 //!   GOLD-FEE-1a over the direct entries of the equipped main backpack (the BURN lines realize
 //!   `FeeBurnCause::NpcTrade` under the trade's own record). The existing V2 owner may pay
@@ -1306,6 +1304,9 @@ impl DurabilityRoot {
                         (house_key.as_deref(), &shop),
                     )
                     .await?;
+                    if super::quest_state::carlos_trade::is_food_sale(&request) {
+                        super::quest_state::carlos_trade::advance(&mut tx, fence.character_id, &request).await?;
+                    }
                     if let Some(source)=&hireling
                         && let Err(error)=source.apply_materialized(&mut tx,world_id,&request,plan.item_instance_id).await {return Ok(Err(error));}
                     grant_missing(

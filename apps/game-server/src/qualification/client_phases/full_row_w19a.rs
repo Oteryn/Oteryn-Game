@@ -2,8 +2,11 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Admit the player. Record a purchase GAP because the donor Messenger is unplaced.
-//! 2. Seed two red Christmas bundles and verify their exact backpack quantity.
+//! 1. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", and read the
+//!    live offer price. If needed, walk to a real rat spawn, ATTACK and loot until
+//!    the character can afford two bags. Return on foot and open the shop again.
+//! 2. BUY each red Christmas bundle separately; expect two accepted purchases
+//!    and verify the exact inventory and gold change after each.
 //! 3. Send USE-WITH-POSITION for one bundle; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
 //! 4. Send ordinary USE for one bundle; expect Accepted/Committed and an inventory
@@ -17,6 +20,11 @@ use std::collections::BTreeMap;
 
 // Crystal 201189f8 data-global/npc/messenger_of_santa.lua:62.
 pub(super) const BAG_ID: u32 = 6506;
+const BUNDLES_TO_BUY: u32 = 2;
+const MESSENGER_NAME: &str = "Messenger of Santa";
+// Crystal 201189f8 data-global/npc/messenger_of_santa.lua:11.
+// Stop walking close enough to talk even at the edge of the spawn radius.
+const MESSENGER_WANDER_RADIUS: u32 = 2;
 
 pub(super) fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
     let mut result = BTreeMap::new();
@@ -39,7 +47,10 @@ fn gold_and_goods(
     mut items: BTreeMap<u32, u64>,
     coins: &[(u32, u64); 3],
 ) -> (u64, BTreeMap<u32, u64>) {
-    let gold = coins.iter().map(|(key, value)| items.remove(key).unwrap_or(0) * value).sum();
+    let gold = coins
+        .iter()
+        .map(|(key, value)| items.remove(key).unwrap_or(0) * value)
+        .sum();
     (gold, items)
 }
 
@@ -60,7 +71,14 @@ async fn earn_price(
             )
             .into());
         }
-        super::full_row_w22a::travel_to_named_spawn(client, world, spawns, "oteryn:creature.rat", "Rat").await?;
+        super::full_row_w22a::travel_to_named_spawn(
+            client,
+            world,
+            spawns,
+            "oteryn:creature.rat",
+            "Rat",
+        )
+        .await?;
         let entries = super::full_row_w22a::kill_and_open(client, "Rat").await?;
         super::full_row_w22a::move_loot(client, &entries).await?;
     }
@@ -121,15 +139,30 @@ async fn use_intent(
 ) -> TestResult<(CommandStatus, use_wire::UseDisposition, u64)> {
     let payload = use_wire::encode_item_use_intent(&intent)
         .map_err(|error| format!("W19a USE encode: {error:?}"))?;
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
         .map_err(|error| format!("W19a refusal detail: {error:?}"))?;
     let disposition = use_wire::decode_use_result(payload)
         .map_err(|error| format!("W19a USE result: {error:?}"))?;
     Ok((reply.status, disposition, reply.server_sequence))
+}
+
+fn is_messenger_in_talk_range(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    at: ActorPosition,
+) -> bool {
+    entity.kind == oteryn_dev_client::EntityKind::Npc
+        && entity.display_name.is_some_and(|name| {
+            name.as_str()
+                .is_ok_and(|shown| shown.eq_ignore_ascii_case(MESSENGER_NAME))
+        })
+        && entity.position.floor == at.floor
+        && entity
+            .position
+            .x
+            .abs_diff(at.x)
+            .max(entity.position.y.abs_diff(at.y))
+            <= npc::TALK_RANGE_TILES
 }
 
 const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
@@ -139,28 +172,53 @@ async fn quote(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let seller = npcs.npcs.iter().find(|entry| entry.key == MESSENGER && !entry.placements.is_empty())
+    let seller = npcs
+        .npcs
+        .iter()
+        .find(|entry| entry.key == MESSENGER && !entry.placements.is_empty())
         .ok_or("step 2: compiled world has no Messenger of Santa placement")?;
-    let near_placement = |at: TilePos, placement: TilePos| {
-        at.floor == placement.floor && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-    };
-    let placements = seller.placements.iter().map(|p| TilePos { x: p.x, y: p.y, floor: p.floor });
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        placements.clone().any(|placement| near_placement(at, placement))
-    }).ok_or("step 2: no player-walk route within three tiles of a compiled Messenger placement")?;
+        seller.placements.iter().any(|p| {
+            p.floor == at.floor
+                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) + MESSENGER_WANDER_RADIUS
+                    <= npc::TALK_RANGE_TILES
+        })
+    })
+    .ok_or("step 2: no player-walk route to Messenger of Santa")?;
     walk(client, world, &path).await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let actor = client.world_entities().and_then(|entities| {
-        let mut matches = entities.iter().filter(|entry| {
-            entry.kind == oteryn_dev_client::EntityKind::Npc
-                && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
-                && placements.clone().any(|placement| {
-                    near_placement(here, placement) && tile(entry.position).ok() == Some(placement)
-                })
-        });
-        let actor = matches.next()?.entity;
-        matches.next().is_none().then_some(actor)
-    }).ok_or("step 2: expected one live Messenger of Santa at a compiled placement")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    verdict::Harness::global().bounded_wait(deadline, "Messenger in talk range");
+    let actor = loop {
+        let at = client.world_spatial().actor_position;
+        if let Some(merchant) = client.world_entities().and_then(|entities| {
+            let mut merchants = entities.iter().filter(|entry| {
+                is_messenger_in_talk_range(entry, at)
+                    && tile(entry.position).is_ok_and(|position| {
+                        seller.placements.iter().any(|placement| {
+                            position.floor == placement.floor
+                                && u32::from(
+                                    position
+                                        .x
+                                        .abs_diff(placement.x)
+                                        .max(position.y.abs_diff(placement.y)),
+                                ) <= MESSENGER_WANDER_RADIUS
+                        })
+                    })
+            });
+            let merchant = merchants.next()?;
+            merchants.next().is_none().then_some(merchant)
+        }) {
+            break merchant.entity;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                "step 2: expected one live Messenger of Santa within talk and placement range"
+                    .into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    client.take_events();
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
@@ -174,12 +232,25 @@ async fn quote(
             return Err(format!("step 2: TALK {text:?} observed={reply:?}").into());
         }
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = npc::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("step 2: trade window decode: {error:?}"))?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    verdict::Harness::global().bounded_wait(deadline, "Messenger shop window");
+    let (window, catalogue_revision) = loop {
+        if let Some(open) = client.take_events().into_iter().find_map(|event| {
+            if let SessionEvent::NpcTradeWindow(delta) = event
+                && let Some((merchant, revision)) = delta.value.open
+                && merchant == actor
+            {
+                return Some((delta.value, revision));
+            }
+            None
+        }) {
+            break open;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step 2: live Messenger trade window did not open".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
     let reference = bag_reference()?;
     let (offer_index, offer) = window
         .offers
@@ -189,17 +260,17 @@ async fn quote(
             offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
         })
         .ok_or("step 2: live Messenger trade window has no red Christmas bundle")?;
-    let (window_actor, catalogue_revision) = window.open.ok_or("step 2: trade window closed")?;
-    if window_actor != actor {
-        return Err("step 2: trade window exposed a different NPC actor".into());
-    }
+    evidence(&format!(
+        "W19A_CHECK live_shop=open unit_price={}",
+        offer.unit_price
+    ));
     Ok((
         npc::NpcTradeIntent {
             npc_actor: actor,
             catalogue_revision,
             offer_index: u32::try_from(offer_index)?,
             side: offer.side,
-            quantity: 2,
+            quantity: 1,
             expected_unit_price: offer.unit_price,
         },
         offer.count,
@@ -212,22 +283,43 @@ async fn acquire(
     count: u32,
 ) -> TestResult<u64> {
     let coins = coin_values()?;
-    let (gold, mut goods) = gold_and_goods(quantities(client)?, &coins);
-    let cost = u64::from(intent.expected_unit_price) * u64::from(intent.quantity);
-    let remaining = gold.checked_sub(cost).ok_or_else(|| {
-        format!("step 2: live unit price={} requires {cost} gold; starter earned {gold}", intent.expected_unit_price)
-    })?;
-    client.take_events();
-    let reply = oteryn_dev_client::client_runtime::npc_shop::buy(client.session_mut(), intent).await?;
-    if reply != npc::NpcIntentDisposition::Ok {
+    let mut wanted = gold_and_goods(quantities(client)?, &coins);
+    let unit_price = u64::from(intent.expected_unit_price);
+    let cost = unit_price * u64::from(BUNDLES_TO_BUY);
+    if wanted.0 < cost {
         return Err(format!(
-            "step 2: BUY two bundles observed={reply:?} unit_price={}",
-            intent.expected_unit_price
+            "step 2: two bundles require {cost} gold; starter earned {}",
+            wanted.0
         )
         .into());
     }
-    *goods.entry(bag_reference()?.get()).or_default() += u64::from(count) * u64::from(intent.quantity);
-    wait_quantities(client, &(remaining, goods), &coins).await
+    let reference = bag_reference()?.get();
+    let mut previous_sequence = 0;
+    for purchase in 1..=BUNDLES_TO_BUY {
+        client.take_events();
+        let reply =
+            oteryn_dev_client::client_runtime::npc_shop::buy(client.session_mut(), intent).await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(format!(
+                "step 2: BUY bundle {purchase} observed={reply:?} unit_price={unit_price}"
+            )
+            .into());
+        }
+        wanted.0 -= unit_price;
+        *wanted.1.entry(reference).or_default() += u64::from(count);
+        let sequence = wait_quantities(client, &wanted, &coins).await?;
+        if sequence <= previous_sequence {
+            return Err(format!(
+                "step 2: BUY bundle {purchase} did not advance inventory sequence"
+            )
+            .into());
+        }
+        evidence(&format!(
+            "W19A_CHECK bundle_purchase={purchase} inventory_sequence={sequence}"
+        ));
+        previous_sequence = sequence;
+    }
+    Ok(previous_sequence)
 }
 
 pub(super) fn random_outcome_matches(
@@ -259,7 +351,10 @@ pub(super) fn random_outcome_matches(
     gains == picks
 }
 
-pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<u64> {
+pub(super) async fn acquire_bundles(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<u64> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin: serde_json::Value =
@@ -271,7 +366,7 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
         ChannelId::decode(&clients.channel)?,
     )?;
     let (mut intent, mut count) = quote(client, world, &metadata.npcs).await?;
-    let cost = u64::from(intent.expected_unit_price) * u64::from(intent.quantity);
+    let cost = u64::from(intent.expected_unit_price) * u64::from(BUNDLES_TO_BUY);
     if gold_and_goods(quantities(client)?, &coin_values()?).0 < cost {
         earn_price(client, world, &metadata.spawns, cost).await?;
         (intent, count) = quote(client, world, &metadata.npcs).await?;
@@ -282,7 +377,11 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19A_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut client = connect_world(clients, 0xa9).await?;
     let source_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
@@ -381,11 +480,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", String::new()),
         Ok(Err(error)) => ("FAIL", error.to_string()),
-        Err(_) => ("FAIL", "step=journey observed=timeout-after-180s".to_owned()),
+        Err(_) => (
+            "FAIL",
+            "step=journey observed=timeout-after-180s".to_owned(),
+        ),
     };
     let suffix = if detail.is_empty() {
         String::new()
@@ -404,11 +508,64 @@ mod tests {
     use super::*;
 
     #[test]
+    fn quote_selects_a_wandering_messenger_within_talk_range() -> TestResult {
+        use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+        use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+
+        let at = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        let mut merchant = WorldSpatialEntity {
+            motion: None,
+            display_name: Some(
+                EntityDisplayName::new("Messenger Of Santa")
+                    .map_err(|error| format!("Messenger name: {error:?}"))?,
+            ),
+            kind: EntityKind::Npc,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: at.x + i32::try_from(npc::TALK_RANGE_TILES)?,
+                ..at
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(is_messenger_in_talk_range(&merchant, at));
+        merchant.position.x += 1;
+        assert!(!is_messenger_in_talk_range(&merchant, at));
+        merchant.position = at;
+        merchant.display_name = Some(
+            EntityDisplayName::new("Santa Claus")
+                .map_err(|error| format!("Santa name: {error:?}"))?,
+        );
+        assert!(!is_messenger_in_talk_range(&merchant, at));
+        Ok(())
+    }
+
+    #[test]
     fn journey_regression_rejects_loss_of_unrelated_inventory() {
         let consumed = BTreeMap::from([(6506, 1), (3031, 20)]);
         let rewards = BTreeMap::from([(6570, (1, 1))]);
-        assert!(!random_outcome_matches(&consumed, &BTreeMap::from([(6506, 1), (6570, 1)]), &rewards, 1));
-        assert!(random_outcome_matches(&consumed, &BTreeMap::from([(6506, 1), (3031, 20), (6570, 1)]), &rewards, 1));
+        assert!(!random_outcome_matches(
+            &consumed,
+            &BTreeMap::from([(6506, 1), (6570, 1)]),
+            &rewards,
+            1
+        ));
+        assert!(random_outcome_matches(
+            &consumed,
+            &BTreeMap::from([(6506, 1), (3031, 20), (6570, 1)]),
+            &rewards,
+            1
+        ));
     }
 
     #[test]
@@ -420,5 +577,4 @@ mod tests {
         assert!(random_outcome_matches(&consumed, &observed, &rewards, 7));
         assert!(!random_outcome_matches(&consumed, &observed, &rewards, 6));
     }
-
 }

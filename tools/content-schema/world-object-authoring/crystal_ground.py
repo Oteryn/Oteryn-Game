@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
 from build_crystal_item_collision import load_source
 from build_source_world import fields, policies
 
-SHARD = ROOT / "content/world/terrain/terrain-09000-09492.json"
+SHARD = ROOT / "content/world/terrain/terrain-09000-09476.json"
 PLACEMENTS = ROOT / "content/world/placements/index.json"
 
 
@@ -65,7 +65,8 @@ def regenerate(source, check):
         row.update(key=record["identity"]["key"], provisional=False)
         if record["identity"]["key"] not in existing:
             records.append(record)
-    if len(records) != 493 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
+    # The scoped and Blood Vestibule shards already own 16 shared records.
+    if len(records) != 477 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
         raise ValueError(f"Crystal ground catalogue coverage changed: {len(records)}")
     for path, document in (
         (SHARD, {"family": "Terrain", "records": records}),

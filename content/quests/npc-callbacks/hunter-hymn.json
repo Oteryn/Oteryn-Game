@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/hunter-hymn-verse-1",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "carried_item": "oteryn:item.tibia.i6087",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6087",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned verse 1 of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-24:sha256:8653becf365a45b26f8759e26094cd39b8d082cedf4f388a0e5500bf4bd9c65d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunter-hymn-verse-2",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "carried_item": "oteryn:item.tibia.i6088",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6088",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned verse 2 of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-24:sha256:8653becf365a45b26f8759e26094cd39b8d082cedf4f388a0e5500bf4bd9c65d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunter-hymn-verse-3",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "carried_item": "oteryn:item.tibia.i6089",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6089",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned verse 3 of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-24:sha256:8653becf365a45b26f8759e26094cd39b8d082cedf4f388a0e5500bf4bd9c65d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunter-hymn-verse-4",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "carried_item": "oteryn:item.tibia.i6090",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6090",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned verse 4 of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-24:sha256:8653becf365a45b26f8759e26094cd39b8d082cedf4f388a0e5500bf4bd9c65d"
+      ]
+    }
+  ]
+}

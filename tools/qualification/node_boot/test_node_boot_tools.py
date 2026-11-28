@@ -344,10 +344,10 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 30)
+        self.assertEqual(len(accounts), 32)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
-        self.assertEqual(accounts[29], "01934f10-7c00-7000-8000-000000000021")
+        self.assertEqual(accounts[29], "01934f10-7c00-7000-8000-000000000023")
 
 
 class ReuseTests(unittest.TestCase):
@@ -853,7 +853,9 @@ class CloudRunSummaryTests(unittest.TestCase):
                 stop_runtime_diagnostics() { :; }
                 pg_observability_dump() { :; }
                 ''')
-            stage_test += '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage'))
+            stage_test += '\n'.join(function(name) for name in (
+                'stage_rows', 'known_rows', 'node_boot_row_selection', 'w19a_rows', 'stage'
+            ))
             stage_test += '\nstage seam_stages -- true\nprintf "STAGE_STATUS=%s\\n" "${STATUS[seam_stages]}"\n'
             for batch, cause in (
                 ('0:0', 'empty-batch'),

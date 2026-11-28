@@ -145,8 +145,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(_foreground) = self.root.foreground_demand() else {
             return GraceExpiryResult::Unknown;
         };
-        let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
-            return GraceExpiryResult::Unknown;
+        let token = {
+            if !self.settle_paid_quest_callbacks(session).await {
+                return GraceExpiryResult::Unknown;
+            }
+            let mut runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(session) {
+                return GraceExpiryResult::Unknown;
+            }
+            let Ok(token) = release.fence(&mut runtime) else {
+                return GraceExpiryResult::Unknown;
+            };
+            token
         };
         let mut hold = FenceHold::new(session, token);
         let mut progress = ReleaseProgress::default();

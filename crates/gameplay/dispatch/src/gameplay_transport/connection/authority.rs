@@ -808,6 +808,16 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn destroy_map_bars(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: super::super::house_destroy::wooden_bars::Target,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<UseOutcome>> + Send + '_>> {
+        Box::pin(async { None })
+    }
+
     fn observe_house_destroy(
         &self,
         _actor: ExactActorRef,
@@ -1222,8 +1232,13 @@ pub trait FreshAdmissionAuthority {
     fn observe_party_icons(
         &self,
         _admitted: AdmittedSession,
-    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
-        std::future::ready(None)
+    ) -> impl Future<
+        Output = Result<
+            Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        std::future::ready(Err(crate::durability::DurabilityError::Unavailable))
     }
 
     /// GUILD-EMBLEM-1: every positioned player's guild emblem relative to this session's
@@ -1249,8 +1264,13 @@ pub trait FreshAdmissionAuthority {
     fn observe_pvp_status(
         &self,
         _admitted: AdmittedSession,
-    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::party_skull::PvpStatus>> {
-        std::future::ready(None)
+    ) -> impl Future<
+        Output = Result<
+            oteryn_protocol_oteryn::party_skull::PvpStatus,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        std::future::ready(Err(crate::durability::DurabilityError::Unavailable))
     }
 
     /// PARTY-1: basic session-fenced membership commands and own-state query.
@@ -1604,6 +1624,26 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_join_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> impl Future<Output = super::super::spell_cooldowns::JoinVitals> {
+        async move {
+            let vitals = if house {
+                self.observe_house_vitals(actor, admitted).await
+            } else {
+                self.observe_vitals(actor, admitted.game_session_id).await
+            };
+            (vitals, None)
+        }
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        0
+    }
+
     /// Committed cooldowns of the exact actor on the Channel owner's monotonic clock.
     fn observe_actor_cooldowns(
         &self,
@@ -1812,8 +1852,9 @@ pub trait FreshAdmissionAuthority {
         _game_session_id: GameSessionId,
         _command_id: u64,
         _modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> impl Future<Output = AttackIntentDisposition> {
-        async { AttackIntentDisposition::Rejected }
+    ) -> impl Future<Output = Result<AttackIntentDisposition, crate::durability::DurabilityError>>
+    {
+        async { Ok(AttackIntentDisposition::Rejected) }
     }
 
     fn observe_expert_modes(

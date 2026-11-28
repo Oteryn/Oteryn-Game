@@ -133,6 +133,19 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         self.0.logout_session(admitted).await
     }
 
+    async fn observe_join_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        self.0.observe_join_vitals(actor, admitted, house).await
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        self.0.cooldown_clock_us()
+    }
+
     async fn observe_actor_cooldowns(
         &self,
         actor: ExactActorRef,

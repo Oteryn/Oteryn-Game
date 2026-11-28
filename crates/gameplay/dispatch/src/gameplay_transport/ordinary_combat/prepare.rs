@@ -416,13 +416,28 @@ async fn prepare_spatial(
         .read_actor_position(actor)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let caster_position = tile(position.position());
+    // Crystal spells.cpp:1158–1206 resolves the held creature before placing the
+    // area of a target-required instant spell. Legacy position requests still
+    // resolve the held creature when the catalogue advertises held-target casts.
+    let targeting = &profile.header.targeting;
+    let held_target_profile = matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
+        && targeting.cast_at_position.is_some()
+        && targeting.needs_target;
+    let target = if held_target_profile
+        && aim.is_none()
+        && matches!(intent.target, SpellTarget::Position(_))
+    {
+        SpellTarget::AttackTarget
+    } else {
+        intent.target
+    };
     // SPELL-TARGET-1: the held ATTACK-0 §4 target. No target is `TargetRequired`; one that is no
     // longer a visible creature is `TargetIllegal`.
-    let attack_target_actor = match intent.target {
+    let attack_target_actor = match target {
         SpellTarget::AttackTarget => {
             let held = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
-            let creature = runtime
-                .visible_entities()
+            let visible = runtime.visible_entities();
+            let creature = visible
                 .creatures
                 .iter()
                 .find(|c| {
@@ -430,18 +445,16 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    // An item use names a specific creature, including the caster.
-                    // The caller captured its generation before acquiring the writer.
                     (rune_target == Some(held)
+                        || held_target_profile
                         || matches!(
                             spell.carrier,
                             crate::spell::Carrier::Rune { item: 3165, .. }
                         ))
                     .then(|| {
-                        runtime
-                            .visible_entities()
+                        visible
                             .players
-                            .into_iter()
+                            .iter()
                             .find(|p| {
                                 p.actor.placement_identity() == held.identity
                                     && p.generation == held.generation
@@ -486,7 +499,7 @@ async fn prepare_spatial(
     // A directional or aimed spell keeps the caster as geometry origin; the target only picks
     // the facing (`aim_at_target`). A single-target spell is centred on the target.
     let directional = profile.header.targeting.needs_direction || spell.target_or_direction;
-    let origin = match (aimed, intent.target) {
+    let origin = match (aimed, target) {
         (Some((origin, _)), _) => origin,
         (None, SpellTarget::Position(p)) => TilePosition {
             x: p.x,
@@ -820,7 +833,7 @@ async fn qualify_targets(
     {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    if let (SpellTarget::AttackTarget, Some(target)) = (intent.target, attack_target_tile) {
+    if let Some(target) = attack_target_tile {
         let distance = target
             .x
             .abs_diff(caster_position.x)

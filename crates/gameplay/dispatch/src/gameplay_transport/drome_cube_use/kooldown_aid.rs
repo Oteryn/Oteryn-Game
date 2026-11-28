@@ -344,33 +344,76 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        let applied = self.apply_kooldown_aid(
+            &runtime,
+            &mut states,
+            actor,
+            command.game_session_id,
+            command.command_id,
+        )?;
+        drop(states);
+        drop(runtime);
+        if applied.is_some() {
+            self.kooldown_aid_notice(command.game_session_id);
+        }
+        Ok(applied)
+    }
+
+    pub(in crate::gameplay_transport) fn finish_resumed_kooldown_aid(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let command = states
+            .item_uses
+            .0
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+            .and_then(|(_, _, gate)| gate.cube_pending.as_ref())
+            .filter(|pending| pending.recovered_concoction)
+            .map(|pending| pending.request.command_id);
+        command.is_some_and(|command| {
+            self.apply_kooldown_aid(runtime, states, actor, session, command)
+                .is_ok_and(|applied| applied.is_some())
+        })
+    }
+
+    fn apply_kooldown_aid(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command: u64,
+    ) -> Result<Option<Vec<ActorCooldown>>, ()> {
         if runtime.owner_fence().is_err()
             || !runtime
-                .player_control_facts(actor, command.game_session_id)
+                .player_control_facts(actor, session)
                 .is_ok_and(|facts| facts.control_loss.is_none())
             || states.is_dead(actor)
-            || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || pinned_index(&runtime, self.active_generation).is_none()
+            || !states.spell_idle(runtime, actor, session)
+            || pinned_index(runtime, self.active_generation).is_none()
         {
             return Err(());
         }
         let actor_index = states
             .actors
             .iter()
-            .position(|(present, session, _)| {
-                *present == actor && *session == command.game_session_id
-            })
+            .position(|(present, held, _)| *present == actor && *held == session)
             .ok_or(())?;
         // The source-qualified reset helper is intentionally independent of casting Focus:
         // it must not spend Harmony, heal, arm a stance or rearm any spell cooldown.
         if !states
             .item_uses
-            .gate(&runtime, actor, command.game_session_id)
-            .is_some_and(|gate| gate.finish_cube(command.command_id, disposition))
+            .gate(runtime, actor, session)
+            .is_some_and(|gate| gate.finish_cube(command, UseDisposition::Committed))
         {
             return Ok(None);
         }
         let (_, _, state) = states.actors.get_mut(actor_index).ok_or(())?;
+        let before = state.cooldowns.clone();
         let committed_at = self.owner_now();
         let mut clearance = crate::gameplay_transport::spell_catalog::active_cooldowns(
             self.spells,
@@ -381,14 +424,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entry.expires_at_ms = 0;
         }
         clear_kooldown_cooldowns(&mut state.cooldowns, committed_at);
+        states.record_cooldown_changes(
+            runtime,
+            actor,
+            session,
+            &before,
+            &states.actors[actor_index].2.cooldowns,
+            None,
+        );
         states.owner_wake.notify_one();
-        drop(states);
-        drop(runtime);
+        Ok(Some(clearance))
+    }
+
+    pub(in crate::gameplay_transport) fn kooldown_aid_notice(&self, session: GameSessionId) {
         self.states.tutorial_sessions.notice(
-            command.game_session_id,
+            session,
             oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(RESET_TEXT.into()),
         );
-        Ok(Some(clearance))
     }
 }
 

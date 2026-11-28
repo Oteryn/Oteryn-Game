@@ -74,6 +74,18 @@ impl FreshAdmissionAuthority for GuardAuthority {
         })
     }
 
+    async fn observe_expert_modes(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+        Some(ExpertFightModes {
+            modes: FightModes::DEFAULT,
+            expert: ExpertMode::Dove,
+        })
+    }
+
     async fn attack_target(
         &self,
         _: ExactActorRef,
@@ -139,6 +151,16 @@ fn guard_case(
                             payload: &payload,
                         },
                     )?
+                } else if command_type == oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT {
+                    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode, encode_expert_fight_modes};
+                    let payload = encode_expert_fight_modes(&ExpertFightModes {
+                        modes: FightModes::DEFAULT,
+                        expert: ExpertMode::Dove,
+                    });
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue { command_id: 1, command_type, payload: &payload },
+                    )?
                 } else if command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
                     cast_command(
                         1,
@@ -152,11 +174,18 @@ fn guard_case(
                     command(1, 1, u64::from(command_type), StepDirection::East)
                 };
                 let mut admitted = positioned()?;
-                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
-                    capabilities,
-                )
-                .ok_or("capability selection")?;
+                let expert = command_type
+                    == oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT;
+                let offered = if expert {
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+                } else {
+                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES
+                };
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(offered, capabilities).ok_or("capability selection")?;
+                if expert {
+                    assert!(admitted.continuity.selected_capabilities.command_selected(command_type));
+                }
                 if house {
                     use crate::foundation::{
                         ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
@@ -249,6 +278,13 @@ fn guard_case(
                                         disposition: ChatDisposition::Rejected,
                                         wait_seconds: 0,
                                     })
+                                );
+                            }
+                            oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
+                                assert_eq!(results[0].payload, &[0x08, 0x06]);
+                                assert_eq!(
+                                    oteryn_protocol_oteryn::attack::decode_attack_intent_result(results[0].payload),
+                                    Ok(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
                                 );
                             }
                             COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
@@ -479,6 +515,22 @@ fn ordinary_commands_ignore_busy_house_input_holder() -> Result<(), Box<dyn Erro
         .join()
         .map_err(|_| "guard test thread panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn selected_expert_mode_guard_deferral_returns_retryable_refusal() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::{attack::CAPABILITY_ATTACK_V1, pvp_expert::*};
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+        &[
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_ATTACK_V1,
+            CAPABILITY_PVP_EXPERT_V1,
+        ],
+        false,
+    )
 }
 
 #[test]

@@ -91,7 +91,9 @@ impl DurabilityRoot {
                     if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         return Ok(Err(error));
                     }
-                    let snapshot = if equipped {
+                    let snapshot = if npc == postman_olrik::NPC {
+                        postman_olrik::inventory(&mut tx, fence).await?
+                    } else if equipped {
                         super::equipped::inventory(
                             &mut tx,
                             &recovery,

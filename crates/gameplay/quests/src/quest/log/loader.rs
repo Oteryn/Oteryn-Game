@@ -6,7 +6,9 @@ use serde::Deserialize;
 use super::super::loader::LoweredQuestState;
 use super::journal_source::{Journal, track};
 use super::source_texts::SourceTexts;
-use super::{QuestLogCatalogue, QuestLogContent, QuestLogKind, QuestLogMission, QuestLogQuest};
+use super::{
+    QuestJournal, QuestLogCatalogue, QuestLogContent, QuestLogKind, QuestLogMission, QuestLogQuest,
+};
 
 const APE_CITY: &str = "oteryn:quest.the_ape_city_quest";
 const APE_CITY_STAGE: &str = "oteryn:quest-progress/chosen/ape-city/stage";
@@ -148,7 +150,7 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             }
             let binding = track(lowered, &mission.progress);
             let journal = mission.journal.lower(lowered, &texts)?;
-            let (Some(track), Some(journal)) = (binding, journal) else {
+            let (Some(track), Some(mut journal)) = (binding, journal) else {
                 exclusions.push(QuestLogExclusion {
                     quest: key.clone(),
                     mission: Some(mission.key),
@@ -156,10 +158,19 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
                 });
                 continue;
             };
+            let mut start_value = mission.start_value;
+            if track == "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task" {
+                // The sealed cave blocks the peace negotiation. Keep the later
+                // journal stages for characters who already reached them.
+                start_value = 2;
+                if let QuestJournal::PerStage(stages) = &mut journal {
+                    stages.remove(&1);
+                }
+            }
             missions.push(QuestLogMission {
                 name: mission.name,
                 track,
-                start_value: mission.start_value,
+                start_value,
                 end_value: mission.end_value,
                 journal,
             });
@@ -192,7 +203,7 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
 }
 
 fn blind_the_enemy_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest> {
-    use super::{JournalText, QuestJournal};
+    use super::JournalText;
     let key = "oteryn:quest.to_blind_the_enemy_quest";
     let mission = "oteryn:quest-progress/to-blind-the-enemy/mission";
     lowered.catalogue().track(mission)?;

@@ -91,8 +91,9 @@ fn select_cooldown_capabilities(admitted: &mut AdmittedSession) -> TestResult {
             OfferedCapability { id: 15, requires: &[4] },
             OfferedCapability { id: 23, requires: &[6] },
             OfferedCapability { id: 31, requires: &[] },
+            OfferedCapability { id: 618, requires: &[23] },
         ],
-        &[4, 6, 14, 15, 23, 31],
+        &[4, 6, 14, 15, 23, 31, 618],
     ).ok_or("cooldown capability selection")?;
     Ok(())
 }
