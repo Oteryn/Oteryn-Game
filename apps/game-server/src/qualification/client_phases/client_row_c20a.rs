@@ -1,7 +1,14 @@
 //! C20a client replay capture: query GeneralStats before and after a real lethal PvE encounter.
 
 use super::*;
+use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
+use oteryn_dev_client::client_ui::cyclopedia_character::{
+    self as panel, CyclopediaCharacterPanel, Intent, TabExtensions,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
+
+const BEFORE: (u64, u32) = (9300, 10);
+const AFTER: (u64, u32) = (8370, 9);
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_character as wire};
 
 pub(super) async fn run_packet(
@@ -9,9 +16,6 @@ pub(super) async fn run_packet(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     let result = verdict::indexed_timeout(
         Duration::from_secs(240),
         capture_journey(clients, world, spawns),
@@ -21,7 +25,7 @@ pub(super) async fn run_packet(
     .and_then(|result| result);
     match result {
         Ok(()) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=C20a.client status=PASS evidence=general-stats-before-after-real-death",
+            "SEAM_EVIDENCE e2e_all scenario=C20a.client status=PASS evidence=exact-death-loss-relog-and-live-general-stats-replay",
         ),
         Err(error) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C20a.client status=FAIL evidence={error}"
@@ -29,29 +33,41 @@ pub(super) async fn run_packet(
     }
 }
 
-async fn stats(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
+async fn stats(client: &mut DevClientSession) -> TestResult<GatedCommandResult> {
+    let mut view = CyclopediaCharacterPanel {
+        selected: true,
+        limit: 1,
+        tab: wire::CharacterTab::GeneralStats,
+        ..Default::default()
+    };
+    let request = panel::request(&mut view, Intent::Tab).ok_or("C20a stats request unavailable")?;
     let reply = client
         .session_mut()
-        .gated_command(
-            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
-            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
-        )
+        .gated_command(request.capability, request.kind, &request.payload)
         .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("C20a GeneralStats query refused: {:?}", reply.status).into());
     }
-    Ok(reply.payload)
+    Ok(reply)
 }
 
-fn progress(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
-    if general_stats::validate(payload, vocation_selected).is_err() || payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8)) {
+fn progress(reply: &GatedCommandResult) -> TestResult<(u64, u32)> {
+    let payload = &reply.payload;
+    if payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8)) {
         return Err("C20a malformed GeneralStats reply".into());
     }
     Ok((
-        u64::from_le_bytes(payload[1..9].try_into()?),
-        u32::from_le_bytes(payload[9..13].try_into()?),
+        u64::from_le_bytes(payload.get(1..9).ok_or("C20a XP missing")?.try_into()?),
+        u32::from_le_bytes(payload.get(9..13).ok_or("C20a level missing")?.try_into()?),
     ))
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C20a logout refused: {reply:?}").into());
+    }
+    Ok(())
 }
 
 async fn capture_journey(
@@ -59,16 +75,36 @@ async fn capture_journey(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    let directory =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C20a capture directory missing")?;
+    let directory = Path::new(&directory);
+    character_prep::declare_seeded(
+        "C20a.client",
+        "sorcerer-level-10",
+        "earnable XP exceeds the row budget",
+    );
     let mut client = connect_world(clients, 0xca).await?;
-    let before_payload = stats(&mut client).await?;
-    let before = progress(&before_payload, general_stats::selected(&client))?;
-    travel_to_spawn(
-        &mut client,
-        world,
-        spawns,
-        "oteryn:creature.poison_spider",
+    let setup_session = client.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(setup_session.as_bytes()),
+        "--profile",
+        "c20a".into(),
     )
     .await?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, 0xcb).await?;
+    let session = client.join_snapshot().game_session_id;
+    if setup_session == session {
+        return Err("C20a preparation reused the original session".into());
+    }
+    let before = stats(&mut client).await?;
+    if progress(&before)? != BEFORE {
+        return Err(format!("C20a wrong pre-death progress: {:?}", progress(&before)?).into());
+    }
+    let vocation_selected = general_stats::selected(&client);
+    travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
     client.session_mut().attack_target(None).await?;
     client.take_events();
     let health = client
@@ -99,33 +135,100 @@ async fn capture_journey(
             return Err("C20a did not observe lethal damage and respawn".into());
         }
     }
-    let after_payload = stats(&mut client).await?;
-    let after = progress(&after_payload, general_stats::selected(&client))?;
-    if after.0 >= before.0 {
-        return Err(format!("C20a death did not reduce experience: {before:?} -> {after:?}").into());
+    let after = stats(&mut client).await?;
+    if progress(&after)? != AFTER {
+        return Err(format!(
+            "C20a wrong death progress: expected={AFTER:?} observed={:?}",
+            progress(&after)?
+        )
+        .into());
     }
-    general_stats::record_selection("c20a-before.bin", &before_payload, general_stats::selected(&client))?;
-    general_stats::record_selection("c20a-after.bin", &after_payload, general_stats::selected(&client))?;
-    write_capture(&before_payload, &after_payload, before, after);
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_world(clients, 0xcc).await?;
+    let persisted = progress(&stats(&mut fresh).await?)?;
+    if fresh.join_snapshot().game_session_id == session || persisted != AFTER {
+        return Err(
+            format!("C20a death outcome did not survive fresh admission: {persisted:?}").into(),
+        );
+    }
+    logout(&mut fresh).await?;
+    let session = uuid_text(session.as_bytes());
+    replay(directory, &session, vocation_selected, [&before, &after])?;
+    general_stats::record_selection("c20a-before.bin", &before.payload, vocation_selected)?;
+    general_stats::record_selection("c20a-after.bin", &after.payload, vocation_selected)?;
+    std::fs::write(directory.join("c20a-before.bin"), &before.payload)?;
+    std::fs::write(directory.join("c20a-after.bin"), &after.payload)?;
+    std::fs::write(
+        directory.join("c20a-expected.txt"),
+        format!("{} {}\n{} {}\n", BEFORE.0, BEFORE.1, AFTER.0, AFTER.1),
+    )?;
     Ok(())
 }
 
-fn write_capture(before: &[u8], after: &[u8], old: (u64, u32), new: (u64, u32)) {
-    let result: TestResult = (|| {
-        let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-            .ok_or("E2E_ALL_CAPTURE_DIR disappeared")?;
-        let directory = Path::new(&directory);
-        std::fs::write(directory.join("c20a-before.bin"), before)?;
-        std::fs::write(directory.join("c20a-after.bin"), after)?;
-        std::fs::write(
-            directory.join("c20a-expected.txt"),
-            format!("{} {}\n{} {}\n", old.0, old.1, new.0, new.1),
-        )?;
-        Ok(())
-    })();
-    if let Err(error) = result {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C20a.client status=CAPTURE-WRITE-FAIL evidence={error}"
-        ));
+fn replay(
+    directory: &Path,
+    session: &str,
+    vocation: bool,
+    replies: [&GatedCommandResult; 2],
+) -> TestResult {
+    if replies[0].server_sequence >= replies[1].server_sequence
+        || replies[0].command_id == replies[1].command_id
+    {
+        return Err("C20a captures did not have distinct ordered live replies".into());
     }
+    let path = directory.join(format!("c20a-{session}.json"));
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?;
+    let frames = replies.map(|reply| (reply.command_id, reply.server_sequence, &reply.payload));
+    serde_json::to_writer(file, &(session, vocation, frames))?;
+    type CapturedReply = (u64, u64, Vec<u8>);
+    let (captured_session, captured_vocation, captured): (String, bool, [CapturedReply; 2]) =
+        serde_json::from_reader(std::fs::File::open(&path)?)?;
+    if captured_session != session || captured_vocation != vocation {
+        return Err("C20a capture identity mismatch".into());
+    }
+    let mut view = CyclopediaCharacterPanel {
+        selected: true,
+        limit: 1,
+        tab: wire::CharacterTab::GeneralStats,
+        extensions: TabExtensions {
+            vocation,
+            death_details: false,
+        },
+        ..Default::default()
+    };
+    for (((command_id, server_sequence, payload), live), (xp, level)) in
+        captured.into_iter().zip(replies).zip([BEFORE, AFTER])
+    {
+        if (command_id, server_sequence, &payload)
+            != (live.command_id, live.server_sequence, &live.payload)
+        {
+            return Err("C20a capture differs from the live reply".into());
+        }
+        panel::request(&mut view, Intent::Tab).ok_or("C20a replay request unavailable")?;
+        let reply = GatedCommandResult {
+            command_id,
+            server_sequence,
+            status: live.status,
+            payload,
+        };
+        if !panel::apply_result(&mut view, &reply) {
+            return Err("C20a replay rejected a live reply".into());
+        }
+        let result = view
+            .result
+            .as_deref()
+            .ok_or("C20a replay produced no view")?;
+        if !result
+            .lines()
+            .any(|line| line == format!("Experience: {xp}"))
+            || !result.lines().any(|line| line == format!("Level: {level}"))
+        {
+            return Err(format!("C20a replay rendered the wrong stats: {result:?}").into());
+        }
+    }
+    Ok(())
 }

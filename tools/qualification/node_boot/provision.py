@@ -8,6 +8,7 @@ import uuid
 
 
 PROFILES = (
+    "c20a",
     "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel",
     "levitate", "magic-rope",
 )
