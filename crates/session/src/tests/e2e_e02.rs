@@ -92,7 +92,12 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
 
     let frames = std::fs::read(path.join("e02-server.frames"))?;
     let (client, mut server) = tokio::io::duplex(256 * 1024);
-    let peer = tokio::spawn(async move { server.write_all(&frames).await });
+    let peer = tokio::spawn(async move {
+        server.write_all(&frames).await?;
+        server.shutdown().await?;
+        tokio::io::copy(&mut server, &mut tokio::io::sink()).await?;
+        Ok::<(), std::io::Error>(())
+    });
     let mut session =
         Session::admit(client, admission_with(CLIENT_SUPPORTED_CAPABILITIES)?).await?;
     let live_session: String = session
@@ -131,6 +136,7 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
         trailing.is_empty(),
         "frames remain after the live sequence boundary"
     );
+    drop(session);
     peer.await??;
     Ok(())
 }
