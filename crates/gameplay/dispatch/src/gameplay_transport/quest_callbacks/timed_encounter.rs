@@ -332,7 +332,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     index += 1;
                     continue;
                 };
-                let mound = oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(&memo.callback).is_some();
+                let mound = oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(
+                    &memo.callback,
+                )
+                .is_some();
                 if mound {
                     super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
                 }

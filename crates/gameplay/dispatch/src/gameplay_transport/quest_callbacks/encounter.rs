@@ -368,7 +368,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
                     callback,
                 )
-                    || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(callback).is_some()
+                    || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(
+                        callback,
+                    )
+                    .is_some()
                     || (callback.starts_merchant_wave() && projection.is_some());
                 let ready = ready
                     && encounter.players.is_empty()

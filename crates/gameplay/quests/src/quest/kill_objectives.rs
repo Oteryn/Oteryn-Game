@@ -71,8 +71,8 @@ impl KillObjective {
     pub fn contains(self, x: i32, y: i32, floor: i16) -> bool {
         self.in_drillworm_caves(x, y, floor)
             || (self.minimum.0..=self.maximum.0).contains(&x)
-            && (self.minimum.1..=self.maximum.1).contains(&y)
-            && (self.minimum.2..=self.maximum.2).contains(&floor)
+                && (self.minimum.1..=self.maximum.1).contains(&y)
+                && (self.minimum.2..=self.maximum.2).contains(&floor)
     }
 
     fn in_drillworm_caves(self, x: i32, y: i32, floor: i16) -> bool {

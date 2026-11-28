@@ -427,7 +427,8 @@ impl WorldRequirement {
     }
     pub fn valid(&self) -> bool {
         (-15..=0).contains(&self.position.floor)
-            && (!self.hidden || (self.appearance != 0 && self.ground_stack.is_none() && self.ground.is_none()))
+            && (!self.hidden
+                || (self.appearance != 0 && self.ground_stack.is_none() && self.ground.is_none()))
             && match &self.ground {
                 Some(ground) => {
                     self.appearance == 0 && self.ground_stack.is_none() && ground.valid()
@@ -1006,7 +1007,8 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         .filter(|callback| callback.vampire_coffin_fallback().is_some())
         .count();
     let spike = spike_mound::published_count(callbacks)?;
-    if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS || spike > spike_mound::MAX_PUBLISHED
+    if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS
+        || spike > spike_mound::MAX_PUBLISHED
         || callbacks.len() - coffin_variants - spike > MAX_RUNTIME_CALLBACKS
     {
         return Err("callback runtime registry bounds".into());
@@ -1068,8 +1070,11 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             || peers.iter().any(|peer| {
                 let coffin_pair = peer.vampire_coffin_fallback() == Some(callback.key.as_str())
                     || callback.vampire_coffin_fallback() == Some(peer.key.as_str());
-                let separate_mounds = spike_mound::chances(peer).zip(spike_mound::chances(callback)).is_some_and(|(a,b)| a.end() < b.start() || b.end() < a.start());
-                !coffin_pair && !separate_mounds
+                let separate_mounds = spike_mound::chances(peer)
+                    .zip(spike_mound::chances(callback))
+                    .is_some_and(|(a, b)| a.end() < b.start() || b.end() < a.start());
+                !coffin_pair
+                    && !separate_mounds
                     && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)

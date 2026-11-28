@@ -483,8 +483,10 @@ impl RewardCallback {
             }
             (None, Some(_)) => false,
             (Some(source), None) if self.survey.is_some() && self.take.is_empty() => {
-                self.give.is_none() && self.present.len() == 1
-                    && self.present[0].item == *source && self.present[0].count == 1
+                self.give.is_none()
+                    && self.present.len() == 1
+                    && self.present[0].item == *source
+                    && self.present[0].count == 1
             }
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
@@ -1252,10 +1254,19 @@ fn validate_document_with_capacity(
                         b"._/-",
                         128,
                     )))
-            || c.survey.as_ref().is_some_and(|survey| !survey.valid() || c.carried_item.is_none()
-                || c.carried_exchange || c.carried_target.is_some() || c.creature_target.is_some()
-                || c.self_target.is_some() || c.peer_requires.is_some() || c.corpse_target.is_some())
-            || c.npc_area.as_ref().is_some_and(|area| !area.valid() || c.carried_item.is_some() || c.world_claim.is_some())
+            || c.survey.as_ref().is_some_and(|survey| {
+                !survey.valid()
+                    || c.carried_item.is_none()
+                    || c.carried_exchange
+                    || c.carried_target.is_some()
+                    || c.creature_target.is_some()
+                    || c.self_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.corpse_target.is_some()
+            })
+            || c.npc_area.as_ref().is_some_and(|area| {
+                !area.valid() || c.carried_item.is_some() || c.world_claim.is_some()
+            })
             || c.self_target.as_ref().is_some_and(|area| {
                 !area.valid()
                     || c.carried_item.is_none()
@@ -1296,7 +1307,8 @@ fn validate_document_with_capacity(
                     || c.achievement.is_some()
                     || c.completes
                     || !(c.state_ops.is_empty()
-                        || (!c.take.is_empty() && c.experience.is_some()
+                        || (!c.take.is_empty()
+                            && c.experience.is_some()
                             && matches!(c.state_ops.as_slice(), [StateOperation {
                                 from: StateCondition::ElapsedAtLeast { seconds },
                                 effect: StateMutation::SetNow, ..
@@ -2838,22 +2850,47 @@ mod tests {
         let loaded = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let rows = load_for(loaded.catalogue())?;
-        let parcels = rows.iter().filter_map(|row| row.npc_area.as_ref()).collect::<Vec<_>>();
+        let parcels = rows
+            .iter()
+            .filter_map(|row| row.npc_area.as_ref())
+            .collect::<Vec<_>>();
         assert_eq!(parcels.len(), 4);
         for area in &parcels {
             let p = area.minimum;
-            assert_eq!(parcels.iter().filter(|site| site.contains(p.x.into(), p.y.into(), -i16::from(p.floor))).count(), 1);
+            assert_eq!(
+                parcels
+                    .iter()
+                    .filter(|site| site.contains(p.x.into(), p.y.into(), -i16::from(p.floor)))
+                    .count(),
+                1
+            );
         }
-        let readings = rows.iter().filter(|row| row.survey.is_some()).collect::<Vec<_>>();
+        let readings = rows
+            .iter()
+            .filter(|row| row.survey.is_some())
+            .collect::<Vec<_>>();
         assert_eq!(readings.len(), 4);
-        let thermometer = readings.iter().find(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19206")).and_then(|row| row.survey.as_ref()).ok_or("thermometer survey")?;
+        let thermometer = readings
+            .iter()
+            .find(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19206"))
+            .and_then(|row| row.survey.as_ref())
+            .ok_or("thermometer survey")?;
         for player in [[0; 16], [1; 16]] {
             assert_eq!(thermometer.clue(&player, 0, 32263, 32481, 13), None);
             assert!(thermometer.clue(&player, 1, 32263, 32481, 13).is_some());
             assert_eq!(thermometer.clue(&player, 1, 32163, 32558, 13), None);
         }
-        let ghost = readings.iter().filter(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19205")).collect::<Vec<_>>();
-        assert_eq!(ghost.iter().filter(|row| row.take.is_empty() && row.present.len() == 1).count(), 2);
+        let ghost = readings
+            .iter()
+            .filter(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19205"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ghost
+                .iter()
+                .filter(|row| row.take.is_empty() && row.present.len() == 1)
+                .count(),
+            2
+        );
         assert_eq!(ghost.iter().filter(|row| row.take.len() == 1).count(), 1);
         Ok(())
     }
@@ -3959,8 +3996,14 @@ mod tests {
             .filter(|key| friends_exchanges.contains(key))
             .collect::<BTreeSet<_>>();
         let owners = load()?;
-        let steel: Vec<_> = owners.iter().filter(|callback| callback.npc == "oteryn:npc.a_sweaty_cyclops"
-            && callback.topic == 6 && callback.keywords.iter().any(|word| word == "yes")).collect();
+        let steel: Vec<_> = owners
+            .iter()
+            .filter(|callback| {
+                callback.npc == "oteryn:npc.a_sweaty_cyclops"
+                    && callback.topic == 6
+                    && callback.keywords.iter().any(|word| word == "yes")
+            })
+            .collect();
         assert_eq!(steel.len(), 1);
         if steel[0].key == "oteryn:quest-reward/qc-obsidian-draconian-steel" {
             assert!(actual_friends_exchanges.is_empty());

@@ -139,11 +139,17 @@ mod tests {
         let death = catalogue
             .transition("oteryn:quest-transition/native-kills/engenc-asura-orchid")
             .ok_or("Orchid death")?;
-        for change in catalogue.evaluate(death, &tracks, 100_000).map_err(|e| format!("{e:?}"))? {
+        for change in catalogue
+            .evaluate(death, &tracks, 100_000)
+            .map_err(|e| format!("{e:?}"))?
+        {
             tracks.insert(change.track, change.after);
         }
         assert_eq!(tracks["oteryn:quest-progress/engenc/asura/orchid/count"], 1);
-        assert_eq!(tracks["oteryn:quest-progress/engenc/asura/orchid/last_kill"], 100_000);
+        assert_eq!(
+            tracks["oteryn:quest-progress/engenc/asura/orchid/last_kill"],
+            100_000
+        );
         assert!(catalogue.evaluate(entry, &tracks, 172_000).is_err());
         tracks.insert("oteryn:quest-progress/engenc/asura/hydra/count".into(), 3);
         tracks.insert("oteryn:quest-progress/engenc/asura/s3/count".into(), 2);

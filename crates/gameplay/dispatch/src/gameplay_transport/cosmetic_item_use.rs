@@ -851,11 +851,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         if let Some(survey) = &callback.survey {
-            let position = self.runtime.lock().await.read_actor_position(actor).map_err(|_| ())?.position();
+            let position = self
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(|_| ())?
+                .position();
             if let Some(clue) = survey.clue(
-                fence.character_id.as_bytes(), self.reset_epoch, position.x, position.y, position.floor,
+                fence.character_id.as_bytes(),
+                self.reset_epoch,
+                position.x,
+                position.y,
+                position.floor,
             ) {
-                self.states.chat.push_quest_feedback(command.game_session_id, clue);
+                self.states
+                    .chat
+                    .push_quest_feedback(command.game_session_id, clue);
                 return Ok(Some(outcome(UseDisposition::NotPossible)));
             }
         }

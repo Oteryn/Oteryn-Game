@@ -11,7 +11,7 @@ fn trial() -> Result<Callback, String> {
     c.requires_world_admission = true;
     c.world_requirements = vec![WorldRequirement {
         hidden: false,
-            ground: None,
+        ground: None,
         position: c.selector.position.ok_or("sample position")?,
         appearance: 2523,
         ground_stack: None,

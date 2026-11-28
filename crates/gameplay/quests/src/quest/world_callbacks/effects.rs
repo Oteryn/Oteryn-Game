@@ -510,17 +510,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if !effects.alternative_rewards.is_empty()
-        && (!effects.item_reward_per_use || effects.alternative_rewards.len() > 7
-            || callback.item_reward.is_some() || !callback.state_operations.is_empty()
+        && (!effects.item_reward_per_use
+            || effects.alternative_rewards.len() > 7
+            || callback.item_reward.is_some()
+            || !callback.state_operations.is_empty()
             || callback.storage.iter().any(|s| s.add.is_some())
-            || !effects.alternative_rewards.iter().all(super::super::reward_callbacks::valid_item_reward))
+            || !effects
+                .alternative_rewards
+                .iter()
+                .all(super::super::reward_callbacks::valid_item_reward))
     {
         return false;
     }
     if effects.achievement_at.as_ref().is_some_and(|guard| {
-        callback.achievements.is_empty() || guard.minimum != guard.maximum || guard.minimum < 1
-            || !callback.storage.iter().any(|s| s.track == guard.track && s.increment && s.set == 1
-                && (s.minimum..=s.maximum).contains(&(guard.minimum - 1)))
+        callback.achievements.is_empty()
+            || guard.minimum != guard.maximum
+            || guard.minimum < 1
+            || !callback.storage.iter().any(|s| {
+                s.track == guard.track
+                    && s.increment
+                    && s.set == 1
+                    && (s.minimum..=s.maximum).contains(&(guard.minimum - 1))
+            })
     }) {
         return false;
     }
@@ -1027,7 +1038,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
-                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave() && super::spike_mound::chances(callback).is_none())
+                    || (callback.item_on_target.is_some()
+                        && !callback.starts_merchant_wave()
+                        && super::spike_mound::chances(callback).is_none())
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()

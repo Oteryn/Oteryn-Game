@@ -195,10 +195,19 @@ pub(super) fn prepare(
             });
             let callbacks = callbacks
                 .iter()
-                .filter(|callback| callback.npc_area.as_ref().is_none_or(|area| {
-                    super::service_context::npc_in_talk_range(runtime, actor, command.game_session_id, intent.npc_actor)
-                        .is_some_and(|npc| area.contains(npc.position.x, npc.position.y, npc.position.floor))
-                }))
+                .filter(|callback| {
+                    callback.npc_area.as_ref().is_none_or(|area| {
+                        super::service_context::npc_in_talk_range(
+                            runtime,
+                            actor,
+                            command.game_session_id,
+                            intent.npc_actor,
+                        )
+                        .is_some_and(|npc| {
+                            area.contains(npc.position.x, npc.position.y, npc.position.floor)
+                        })
+                    })
+                })
                 .filter(|callback| match eroth_uses_authored {
                     Some(true) => !callback.key.starts_with(EROTH_LEGACY),
                     Some(false) => !callback.key.starts_with(EROTH_AUTHORED),
