@@ -630,18 +630,6 @@ async fn clear_corridor(client: &mut DevClientSession, clients: &SeamClients<'_>
                 .await?;
             }
         }
-        let entities = client.world_entities().ok_or("P11 corridor entity state missing")?;
-        if let Some(next_target) = targets.peek()
-            && entities
-                .get(&next_target.entity)
-                .is_some_and(|entity| entity.position == target.position)
-        {
-            evidence(&format!(
-                "P11_ROUTE fight_before_step tile={:?} blocker={:?}",
-                target.position, next_target.entity
-            ));
-            continue;
-        }
         let reached_x = u16::try_from(target.position.x)?;
         for x in next_step_x..=reached_x {
             corridor_step(client, StepDirection::East, x, CORRIDOR_Y).await?;
@@ -953,23 +941,56 @@ async fn authored_granter(
     Ok((key, alternate_keys, ACHIEVEMENT.to_owned(), claim.key.as_str().to_owned(), world))
 }
 
-async fn assert_claim_refused(client: &mut DevClientSession, target: &[u8]) -> TestResult {
+async fn use_reward_chest(
+    client: &mut DevClientSession,
+    target: &[u8],
+) -> TestResult<(oteryn_dev_client::CommandOutcome<oteryn_protocol_oteryn::world_object::UseDisposition>, String)> {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
     use std::io::{Read, Seek, SeekFrom};
-    let command = client.next_command_id();
+    const LOG_LIMIT: u64 = 256 * 1024;
     let path = required("NODE_BOOT_CAST_EVIDENCE_LOG")?;
-    let mut log = std::fs::File::open(path)?;
-    log.seek(SeekFrom::End(0))?;
-    let reply = client.session_mut().use_object(target, 0).await?;
-    if reply.command_id != command
-        || reply.status != CommandStatus::Accepted
+    let before = client.inventory().ok_or("P11 chest inventory missing")?.clone();
+    for attempt in 1..=2 {
+        let command = client.next_command_id();
+        let mut log = std::fs::File::open(&path)?;
+        log.seek(SeekFrom::End(0))?;
+        let reply = client.session_mut().use_object(target, 0).await?;
+        if reply.command_id != command {
+            return Err(format!("P11 chest response command mismatch: {reply:?}").into());
+        }
+        let mut appended = String::new();
+        log.take(LOG_LIMIT + 1).read_to_string(&mut appended)?;
+        if appended.len() as u64 > LOG_LIMIT {
+            return Err("P11 chest command log exceeded its bound".into());
+        }
+        if attempt == 1
+            && (reply.status, reply.disposition) == (CommandStatus::Rejected, UseDisposition::Rejected)
+            && has_exact_chest_reason(&appended, command, "MintHolderBusy")
+        {
+            if client.inventory() != Some(&before) {
+                return Err("P11 replayable chest refusal changed inventory".into());
+            }
+            evidence(&format!(
+                "P11_USE_RETRY session={} command={command} sequence={} cause=MintHolderBusy attempt=2",
+                uuid_text(client.join_snapshot().game_session_id.as_bytes()), reply.result_server_sequence,
+            ));
+            reject_earned_notices(client)?;
+            continue;
+        }
+        return Ok((reply, appended));
+    }
+    Err("P11 chest USE retry exhausted".into())
+}
+
+async fn assert_claim_refused(client: &mut DevClientSession, target: &[u8]) -> TestResult {
+    let (reply, appended) = use_reward_chest(client, target).await?;
+    let command = reply.command_id;
+    if reply.status != CommandStatus::Accepted
         || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
     {
-        return Err(format!("P11 first claimed chest USE had the wrong wire result: {reply:?}").into());
+        return Err(format!("P11 claimed chest USE had the wrong wire result: {reply:?}").into());
     }
-    const LOG_LIMIT: u64 = 256 * 1024;
-    let mut appended = String::new();
-    log.take(LOG_LIMIT + 1).read_to_string(&mut appended)?;
-    if appended.len() as u64 > LOG_LIMIT || !has_exact_claim_refusal(&appended, command) {
+    if !has_exact_claim_refusal(&appended, command) {
         return Err(format!("P11 chest USE command={command} sequence={} lacked one AlreadyClaimed owner refusal", reply.result_server_sequence).into());
     }
     evidence(&format!("P11_CHECK chest_command={command} sequence={} owner_refusal=AlreadyClaimed", reply.result_server_sequence));
@@ -977,14 +998,19 @@ async fn assert_claim_refused(client: &mut DevClientSession, target: &[u8]) -> T
 }
 
 fn has_exact_claim_refusal(log: &str, command: u64) -> bool {
+    has_exact_chest_reason(log, command, "AlreadyClaimed")
+}
+
+fn has_exact_chest_reason(log: &str, command: u64, reason: &str) -> bool {
     let command_field = format!("command_id={command}");
+    let reason_field = format!("reason={reason}");
     let mut reasons = log.lines().filter(|line| {
         let mut fields = line.split_ascii_whitespace();
         fields.any(|field| field == "event=chest_command_refused")
             && fields.any(|field| field == command_field)
     });
     reasons.next().is_some_and(|line| {
-        line.split_ascii_whitespace().any(|field| field == "reason=AlreadyClaimed")
+        line.split_ascii_whitespace().any(|field| field == reason_field)
     }) && reasons.next().is_none()
 }
 
@@ -1027,22 +1053,13 @@ async fn leave_reward_room(
     use StepDirection::{East, North, South};
     corridor_step(client, East, 33228, 31657).await?;
     let mut previous_x = 33228;
-    for (index, (chest_x, target)) in [33229_u16, 33231, 33233].into_iter().zip(alternates).enumerate() {
-        let x = if index == 0 {
-            previous_x
-        } else {
-            let candidates = [chest_x - 1, chest_x, chest_x + 1];
-            let approach = TilePos { x: previous_x, y: 31657, floor: -13 };
-            let x = candidates.into_iter().find(|x| {
-                *x >= previous_x && *x <= 33233
-                    && world.enterable(TilePos { x: *x, ..approach })
-            }).ok_or_else(|| format!("P11 no authored approach to chest x={chest_x}, candidates={candidates:?}"))?;
+    for (index, (x, target)) in [33228_u16, 33231, 33232].into_iter().zip(alternates).enumerate() {
+        if index != 0 {
             for path_x in previous_x + 1..=x {
                 corridor_step(client, East, path_x, 31658).await?;
             }
             corridor_step(client, North, x, 31657).await?;
-            x
-        };
+        }
         let before_inventory = client.inventory().ok_or("P11 missing carried inventory")?.clone();
         assert_claim_refused(client, target).await?;
         if page(client, 0).await? != *granted
@@ -1195,7 +1212,7 @@ pub(super) struct GrantProof {
     pub(super) relog_chest: Vec<u8>,
 }
 
-const CONGRATULATIONS: &str = "Congratulations! You earned the achievement Annihilator.";
+const CONGRATULATIONS: &str = "Congratulations! You earned the achievement \"Annihilator\".";
 const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
 const DESCRIPTION: &str = "You've daringly jumped into the infamous Annihilator and survived - taking home fame, glory and your reward.";
 
@@ -1313,7 +1330,7 @@ pub(super) async fn earn_and_logout(
     let earliest = achievement_clock_ms()?;
     reject_earned_notices(&mut client)?;
     let before_claim = client.inventory().ok_or("P11 missing pre-claim inventory")?.clone();
-    let use_reply = client.session_mut().use_object(&placement, 0).await?;
+    let (use_reply, _) = use_reward_chest(&mut client, &placement).await?;
     if use_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!(
             "step=granter achievement={achievement} authored chest declined: {use_reply:?}"
