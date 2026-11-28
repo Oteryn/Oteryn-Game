@@ -75,14 +75,13 @@ fn scenarios(cases: &[(bool, bool)], combat_room_only: bool, cooldown_clock: boo
                 "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             )),
         )?;
-        for &(full, missing_reagent) in cases {
+        for &case in cases {
             scenario(
                 admin.clone(),
                 world,
                 &controller,
                 &pin,
-                full,
-                missing_reagent,
+                case,
                 cooldown_clock,
                 combat_room_only,
             )
@@ -99,8 +98,7 @@ async fn scenario(
     world: crate::foundation::WorldId,
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
-    full: bool,
-    missing_reagent: bool,
+    (full, missing_reagent): (bool, bool),
     cooldown_clock: bool,
     combat_room_only: bool,
 ) -> TestResult {
