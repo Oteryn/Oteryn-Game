@@ -95,7 +95,10 @@ mod e2ef1 {
             "M05",
             &["basic-door", "unlocked-key-door", "locked-refusal"],
         ),
-        ("M07", &["carried-rope", "rope-ascent", "relogin"]),
+        (
+            "M07",
+            &["carried-rope", "rope-ascent", "relogin", "return-to-thais"],
+        ),
     ];
     const FLOOR_EXHAUST_SPELL: &str = "exevo infir flam hur";
     const MOVEMENT_LOGOUT_WINDOW: Duration = Duration::from_secs(70);
@@ -1776,17 +1779,31 @@ mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
+            if *row == "M07" {
+                return_to_movement_origin(&mut client, world, origin).await?;
+                checks.pass("return-to-thais", client.world_spatial().actor_position);
+            }
             failed |= !record_row(verdicts, row, required, started, &checks, &result, durable);
-            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                at == origin
-            })
-            .ok_or("movement full row has no return route")?;
-            walk(&mut client, world, &back).await?;
+            if *row != "M07" {
+                return_to_movement_origin(&mut client, world, origin).await?;
+            }
         }
         if failed {
             evidence("E2EF1_INCOMPLETE full_row_failures_reported_to_e2e_all");
         }
         Ok(client)
+    }
+
+    async fn return_to_movement_origin(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        origin: TilePos,
+    ) -> TestResult<()> {
+        let from = tile(client.world_spatial().actor_position)?;
+        let back = route(world, from, |at| at == origin).ok_or_else(|| {
+            format!("movement full row has no return route from {from:?} to {origin:?}")
+        })?;
+        walk(client, world, &back).await
     }
 
     fn record_row(
@@ -1863,6 +1880,21 @@ mod e2ef1 {
             .await?;
             assert_eq!(attempts, [0, 250, 60_250, 115_250, 115_500]);
             Ok(())
+        }
+
+        #[test]
+        fn qualification_m07_verdict_requires_the_return_to_thais() {
+            let mut checks = Checks {
+                row: "M07",
+                ..Checks::default()
+            };
+            for case in ["carried-rope", "rope-ascent", "relogin"] {
+                checks.pass(case, TOWN);
+            }
+            assert!(!checks.complete(ROWS[5].1));
+
+            checks.pass("return-to-thais", TOWN);
+            assert!(checks.complete(ROWS[5].1));
         }
 
         #[test]
