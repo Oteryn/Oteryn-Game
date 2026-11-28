@@ -1,5 +1,9 @@
 //! Fenced death commit, including promotion and held-blessing settlement.
 use super::*;
+use crate::domain::progression::DeathLossModifiers;
+use crate::durability::spell_field_policy::{
+    FieldWorldType, read_world_field_policy_in_transaction,
+};
 
 impl DurabilityRoot {
     #[allow(
@@ -190,13 +194,21 @@ impl DurabilityRoot {
                         regular_blessings,
                         promoted_with_current_premium: promotion::benefit(&mut tx, fence.character_id, premium).await?,
                     };
-                    let mut staged = match crate::domain::progression::calculate_progression_with_bless(
+                    let opponent_levels = if adventurer_applied {
+                        0
+                    } else {
+                        unfair_fight_opponent_levels(&mut tx, &durability, fence, contributors).await?
+                    };
+                    let mut staged = match crate::domain::progression::calculate_progression_with_death_modifiers(
                         &snapshot,
                         &request.context,
                         &request.policy_revision,
                         &operation,
                         &request.policy,
-                        charm_loss.as_ref().map_or(0, |loss| loss.percent),
+                        DeathLossModifiers {
+                            bless_reduction_percent: charm_loss.as_ref().map_or(0, |loss| loss.percent),
+                            opponent_levels,
+                        },
                     ) {
                         Ok(staged) => staged,
                         Err(error) => {
@@ -453,4 +465,45 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// Snapshot the levels of damaging opponents under the existing admission fence.
+async fn unfair_fight_opponent_levels(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    root: &DurabilityRoot,
+    fence: CurrentCharacterGameplayFence,
+    contributors: &[crate::durability::pvp_death_consequences::PvpDeathContributor],
+) -> std::result::Result<u64, DurabilityError> {
+    use crate::durability::pvp_death_consequences::PvpContributorKind;
+
+    let opponents: Vec<_> = contributors
+        .iter()
+        .filter(|c| c.kind == PvpContributorKind::Damage)
+        .map(|c| c.character_id.as_bytes().to_vec())
+        .collect();
+    if opponents.is_empty() || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
+        return Ok(0);
+    }
+    let policy = read_world_field_policy_in_transaction(
+        tx,
+        root,
+        fence.runtime_scope,
+        fence.scope_ownership_generation.get(),
+    )
+    .await?;
+    if !policy.is_some_and(|policy| policy.bind(tx).mode() == FieldWorldType::Pvp) {
+        return Ok(0);
+    }
+
+    let levels: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(p.level), 0)::bigint FROM unnest($1::bytea[]) AS opponent(id) \
+         JOIN game_character_roots r ON r.character_id = encode(opponent.id,'hex')::uuid \
+         JOIN game_character_progression_state p USING(character_id) \
+         WHERE r.world_id = encode($2,'hex')::uuid",
+    )
+    .bind(&opponents)
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    u64::try_from(levels).map_err(|_| DurabilityError::InvalidStoredState)
 }

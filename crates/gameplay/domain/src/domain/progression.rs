@@ -115,24 +115,44 @@ where
     S: Clone,
     M: Clone,
 {
-    calculate_progression_with_bless(
+    calculate_progression_with_death_modifiers(
         snapshot,
         operation_context,
         operation_policy_revision,
         operation,
         policy,
-        0,
+        DeathLossModifiers::default(),
     )
 }
 
-/// The death owner supplies the Bless percentage captured at the exact lethal creature hit.
-pub fn calculate_progression_with_bless<O, R, S, M, const N: usize>(
+/// Death facts captured by the owner at settlement.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DeathLossModifiers {
+    pub bless_reduction_percent: u8,
+    pub opponent_levels: u64,
+}
+
+impl DeathLossModifiers {
+    fn unfair_fight_loss(self, level: u32, loss: u128) -> u128 {
+        let level = u64::from(level);
+        if self.opponent_levels <= level {
+            loss
+        } else if self.opponent_levels >= level * 5 {
+            loss / 5
+        } else {
+            loss * u128::from(level) / u128::from(self.opponent_levels)
+        }
+    }
+}
+
+/// The death owner supplies the lethal Bless percentage and qualified opponent levels.
+pub fn calculate_progression_with_death_modifiers<O, R, S, M, const N: usize>(
     snapshot: &CurrentProgressionSnapshot<S, M>,
     operation_context: &ProgressionRevisionContext<R>,
     operation_policy_revision: &R,
     operation: &ProgressionOperation<O, R>,
     policy: &FiniteProgressionPolicy<R, N>,
-    bless_reduction_percent: u8,
+    death_modifiers: DeathLossModifiers,
 ) -> Result<StagedProgressionOutcome<S, M>, ProgressionCalculationError>
 where
     R: PartialEq,
@@ -193,14 +213,15 @@ where
                 snapshot.total_experience,
                 *regular_blessings,
                 *promoted_with_current_premium,
-                bless_reduction_percent,
+                death_modifiers.bless_reduction_percent,
             )
             .map_err(|error| match error {
                 PveDeathError::TooManyBlessings => ProgressionCalculationError::TooManyBlessings,
                 PveDeathError::InvalidLevel => ProgressionCalculationError::InvalidSnapshot,
                 _ => ProgressionCalculationError::Numeric(NumericError::Overflow),
             })?;
-            let lost = i64::try_from(raw)
+            let reduced = death_modifiers.unfair_fight_loss(snapshot.level, raw);
+            let lost = i64::try_from(reduced)
                 .unwrap_or(i64::MAX)
                 .min(snapshot.total_experience.get());
             let after = snapshot.total_experience.checked_sub(ExactI64::new(lost))?;
