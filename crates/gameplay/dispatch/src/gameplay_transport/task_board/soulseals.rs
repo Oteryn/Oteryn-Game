@@ -19,7 +19,7 @@ struct Quote {
 pub(crate) struct Quotes(Mutex<BTreeMap<[u8; 16], Quote>>);
 fn rules() -> wire::EntryRules {
     wire::EntryRules {
-        required_level: crate::domain::soulpit::REQUIRED_LEVEL,
+        required_level: crate::domain::soulpit::SOULSEAL_REQUIRED_LEVEL,
         time_limit_seconds: (crate::domain::soulpit::TIME_LIMIT_MICROS / 1_000_000) as u32,
         authorization_ms: 10_000,
     }
@@ -211,7 +211,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return TaskBoardReply::Unavailable;
                 };
-                let ready = ready && level >= crate::domain::soulpit::REQUIRED_LEVEL;
+                let ready = ready && level >= crate::domain::soulpit::SOULSEAL_REQUIRED_LEVEL;
                 let now = self.owner_now().get();
                 let token = if ready {
                     let Some(token) = SecureIdentifiers.game_session_id().map(|s| *s.as_bytes())

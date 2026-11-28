@@ -1141,6 +1141,10 @@ fn bound_without_action(attrs: &Attrs) -> bool {
 /// record is walkable or has no collision fact (Terrain).
 const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
 
+// The Faceless Bane return anchor has this walkable floor decoration over its ground
+// and no native Item solidity profile. Tibia Fandom archive: /wiki/Ornate_Carpet.
+const FACELESS_BANE_RETURN_CARPET: &str = "oteryn:item.tibia.i17396";
+
 // The WorldObject catalogue marks the Cursed Crystal stair decoration as non-solid.
 // Its floor changes are action callbacks, so the ordinary floor mask has no entry.
 const CURSED_CRYSTAL_STAIR: &str = "oteryn:item.tibia.i19387";
@@ -1274,6 +1278,7 @@ fn palette_facts(
         facts.pickupable = definition.pickupable;
         solid = definition.solid.unwrap_or_else(|| {
             entry.key != CURSED_CRYSTAL_STAIR
+                && entry.key != FACELESS_BANE_RETURN_CARPET
                 && !walkable_floor_change(&entry.key)
                 && !terrain_floor(entry)
         });

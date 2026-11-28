@@ -14,8 +14,8 @@ use crate::gameplay_transport::item_fence_of;
 
 #[path = "soulpit_shared_entry/native.rs"]
 pub(super) mod native;
-#[path = "soulpit_shared_entry/staff.rs"]
-mod staff;
+#[path = "soulpit_shared_entry/low_level.rs"]
+mod low_level;
 
 #[test]
 fn soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres() -> TestResult {
