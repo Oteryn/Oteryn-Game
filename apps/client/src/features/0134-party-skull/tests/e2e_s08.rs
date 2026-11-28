@@ -12,6 +12,9 @@ const IDENTITY: usize = 16;
 
 struct Capture {
     payload: Vec<u8>,
+    command_id: u64,
+    server_sequence: u64,
+    status: CommandStatus,
     identity: [u8; IDENTITY],
     generation: u64,
     skull: u8,
@@ -30,7 +33,7 @@ fn hex(text: &str) -> Result<[u8; IDENTITY], String> {
 }
 
 fn capture() -> Result<Capture, String> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+    if let Some(root) = std::env::var_os("NODE_BOOT_S08_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
         let expected = std::fs::read_to_string(root.join("s08-expected.txt"))
             .map_err(|e| format!("s08-expected.txt: {e}"))?;
@@ -40,7 +43,25 @@ fn capture() -> Result<Capture, String> {
                 .find_map(|line| line.strip_prefix(&format!("{key}=")))
                 .ok_or_else(|| format!("{key}= missing"))
         };
+        let session = value("session")?;
+        if hex(&session.replace('-', ""))? == [0; IDENTITY] {
+            return Err("missing capture session identity".into());
+        }
+        let command_id = value("command_id")?.parse().map_err(|e| format!("{e}"))?;
+        let server_sequence = value("server_sequence")?
+            .parse()
+            .map_err(|e| format!("{e}"))?;
+        if command_id == 0 || server_sequence == 0 {
+            return Err("invalid live capture command or sequence".into());
+        }
+        let status = match value("command_status")?.parse::<u32>() {
+            Ok(code) if code == CommandStatus::Accepted as u32 => CommandStatus::Accepted,
+            _ => return Err("live capture command was not accepted".into()),
+        };
         return Ok(Capture {
+            command_id,
+            server_sequence,
+            status,
             payload: std::fs::read(root.join("s08-skull.bin"))
                 .map_err(|e| format!("s08-skull.bin: {e}"))?,
             identity: hex(value("identity")?)?,
@@ -63,6 +84,9 @@ fn capture() -> Result<Capture, String> {
             icon(identity, 9, WHITE),
         ])
         .map_err(|e| format!("{e:?}"))?,
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
         identity,
         generation: 9,
         skull: WHITE,
@@ -93,9 +117,18 @@ fn e2e_s08_white_skull_after_unjustified_attack_replay() -> Result<(), String> {
     let (mut panel, query) = pending(&Panel::default())?;
     assert_eq!(
         (query.capability, query.kind),
-        (wire::CAPABILITY_PARTY_SKULL_V1, wire::COMMAND_TYPE_PARTY_SKULL_QUERY)
+        (
+            wire::CAPABILITY_PARTY_SKULL_V1,
+            wire::COMMAND_TYPE_PARTY_SKULL_QUERY
+        )
     );
-    apply(&mut panel, &query, &result(CommandStatus::Accepted, &capture.payload));
+    let reply = GatedCommandResult {
+        command_id: capture.command_id,
+        server_sequence: capture.server_sequence,
+        status: capture.status,
+        payload: capture.payload.clone(),
+    };
+    apply(&mut panel, &query, &reply);
     assert!(!panel.pending);
     assert_eq!(panel.feedback, "Party icons updated");
     let attacker = format!(
@@ -103,7 +136,11 @@ fn e2e_s08_white_skull_after_unjustified_attack_replay() -> Result<(), String> {
         capture.identity, capture.generation
     );
     assert_eq!(
-        panel.summary.split("\r\n").filter(|line| **line == *attacker).count(),
+        panel
+            .summary
+            .split("\r\n")
+            .filter(|line| **line == *attacker)
+            .count(),
         1,
         "{:?}",
         panel.summary
@@ -113,12 +150,23 @@ fn e2e_s08_white_skull_after_unjustified_attack_replay() -> Result<(), String> {
         .iter()
         .find(|icon| icon.entity.identity == capture.identity)
         .ok_or("attacker icon absent")?;
-    assert_eq!((shown.entity.generation, shown.skull), (capture.generation, WHITE));
+    assert_eq!(
+        (shown.entity.generation, shown.skull),
+        (capture.generation, WHITE)
+    );
 
     // A refused status and an undecodable payload leave the shown icons unchanged.
     for (status, payload, message) in [
-        (CommandStatus::Rejected, capture.payload.clone(), "The server refused the request"),
-        (CommandStatus::Accepted, vec![0xff, 0x00], "Invalid party icons reply"),
+        (
+            CommandStatus::Rejected,
+            capture.payload.clone(),
+            "The server refused the request",
+        ),
+        (
+            CommandStatus::Accepted,
+            vec![0xff, 0x00],
+            "Invalid party icons reply",
+        ),
     ] {
         let (mut bad, query) = pending(&panel)?;
         apply(&mut bad, &query, &result(status, &payload));

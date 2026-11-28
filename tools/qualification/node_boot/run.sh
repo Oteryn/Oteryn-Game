@@ -1158,7 +1158,7 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
 # Give the journey runner the same parsed range used by the fixture and verifier.
-node_boot_row_selection() { # batch|w19a
+node_boot_row_selection() { # batch|s08|w19a
   python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
 import os
 import re
@@ -1195,7 +1195,8 @@ else:
     groups = env_text(raw_groups, "").strip()
     if not groups or "rows" in (group.strip() for group in groups.split(",")):
         # Indices passed to e2e_row_selected in the Rust journeys.
-        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
+        rows = ((198, "S08.client"),) if mode == "s08" else ((12, "W19a.full"), (216, "W19a.client"))
+        for index, row in rows:
             if index >= start and index - start < length:
                 print(row)
 PY_ROW_SELECTION
@@ -1962,6 +1963,41 @@ pvp_s02_selected() {
   (( first <= 44 && 44 - first < count ))
 }
 
+s08_client_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 1
+  [[ $(node_boot_row_selection s08) == S08.client ]]
+}
+
+s08_client_replay() {
+  local capture_count binding payload_hash test_log check=e2e_s08_white_skull_after_unjustified_attack_replay started=$SECONDS
+  capture_count=$(grep -Ec '^SEAM_EVIDENCE e2e_all scenario=S08\.client status=CAPTURED evidence=skull_bytes=[1-9][0-9]* payload_sha256=[a-f0-9]{64} session=[a-f0-9-]+ command_id=[1-9][0-9]* server_sequence=[1-9][0-9]* command_status=1$' \
+    "$WORK/stage-$seam_stage_name.log") || true
+  if [[ "$capture_count" != 1 || ! -s "$NODE_BOOT_S08_CAPTURE_DIR/s08-skull.bin" \
+    || ! -s "$NODE_BOOT_S08_CAPTURE_DIR/s08-expected.txt" ]]; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=S08.client status=FAIL seconds=0.000 evidence=fresh_capture_missing'
+    return 1
+  fi
+  binding=$(sed -n '4,7p' "$NODE_BOOT_S08_CAPTURE_DIR/s08-expected.txt" | paste -sd ' ' -)
+  payload_hash=$(sha256sum "$NODE_BOOT_S08_CAPTURE_DIR/s08-skull.bin")
+  if ! grep -Fxq "SEAM_EVIDENCE e2e_all scenario=S08.client status=CAPTURED evidence=skull_bytes=$(stat -c %s "$NODE_BOOT_S08_CAPTURE_DIR/s08-skull.bin") payload_sha256=${payload_hash%% *} $binding" "$WORK/stage-$seam_stage_name.log"; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=S08.client status=FAIL seconds=0.000 evidence=capture_binding_mismatch'
+    return 1
+  fi
+  test_log="$WORK/s08-client-test.log"
+  if ! cargo +1.100.0 test --locked -p oteryn-client --lib "$check" -- --nocapture >"$test_log" 2>&1; then
+    cat "$test_log"
+    echo 'SEAM_EVIDENCE e2e_all scenario=S08.client status=FAIL seconds=0.000 evidence=client_replay_failed'
+    return 1
+  fi
+  cat "$test_log"
+  if ! grep -Eq "^test [[:alnum:]_:]*::$check \.\.\. ok$" "$test_log" \
+    || ! grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$test_log"; then
+    echo 'SEAM_EVIDENCE e2e_all scenario=S08.client status=FAIL seconds=0.000 evidence=client_replay_did_not_execute'
+    return 1
+  fi
+  echo "SEAM_EVIDENCE e2e_all scenario=S08.client status=PASS seconds=$((SECONDS - started)).000 evidence=live_unjustified_attack_white_skull_client_replay"
+}
+
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
   node_signal -TERM "$PVP_NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
@@ -1977,6 +2013,10 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+if s08_client_selected; then
+  NODE_BOOT_S08_CAPTURE_DIR=$(mktemp -d "$WORK/s08-capture.XXXXXX")
+  export NODE_BOOT_S08_CAPTURE_DIR
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   reused_w19a="$(w19a_rows)"
   if [[ -n "$reused_w19a" && "${kept_seasonal_fixture:-}" != christmas_epoch_1 ]]; then
@@ -2009,6 +2049,9 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if s08_client_selected; then
+  stage s08_client_replay "$seam_stage_name" -- s08_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

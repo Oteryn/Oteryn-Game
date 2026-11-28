@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the node boot knobs, stack reuse, PostgreSQL observability, failure summary and timeline."""
 from pathlib import Path
+import hashlib
 import importlib.util
 import json
 import os
@@ -413,6 +414,43 @@ class ReuseTests(unittest.TestCase):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)
         self.assertIn('result=NODE_BOOT_PARTIAL\n  exit 3', RUN_TEXT)
         self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
+
+
+class S08ReplayTests(unittest.TestCase):
+    def test_s08_selection_matches_world_row_batch(self):
+        script = '\n'.join((function('node_boot_row_selection'), function('s08_client_selected'),
+                            's08_client_selected'))
+        for batch, group, world, selected in (
+            ('198:1', 'rows', '1', True),
+            ('+00000000198:+1', 'core, rows', '1', True),
+            ('all', '', '1', True),
+            ('197:1', 'rows', '1', False),
+            ('198:0', 'rows', '1', False),
+            ('198:1', 'core', '1', False),
+            ('198:1', 'rows', '0', False),
+        ):
+            with self.subTest(batch=batch, group=group, world=world):
+                result = bash(script, env={'OTERYN_E2E_ROW_BATCH': batch,
+                                           'NODE_BOOT_E2E_ONLY': group, 'NODE_BOOT_WORLD': world})
+                self.assertEqual(result.returncode, 0 if selected else 1, result.stderr)
+
+    def test_s08_stale_capture_fails_before_invoking_cargo(self):
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp)
+            live = 'session=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa command_id=3 server_sequence=5 command_status=1'
+            stale = live.replace('sequence=5', 'sequence=4')
+            (folder / 'stage-seam.log').write_text(
+                'SEAM_EVIDENCE e2e_all scenario=S08.client status=CAPTURED evidence=skull_bytes=1 '
+                f'payload_sha256={hashlib.sha256(b"x").hexdigest()} {live}\n')
+            (folder / 's08-skull.bin').write_bytes(b'x')
+            (folder / 's08-expected.txt').write_text('identity=x\ngeneration=1\nskull=3\n' +
+                                                    stale.replace(' ', '\n') + '\n')
+            script = '\n'.join((function('s08_client_replay'), 'seam_stage_name=seam',
+                                'cargo() { echo CARGO_INVOKED; return 99; }', 's08_client_replay'))
+            result = bash(script, env={'WORK': temp, 'NODE_BOOT_S08_CAPTURE_DIR': temp})
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(result.stdout.strip(), 'SEAM_EVIDENCE e2e_all scenario=S08.client '
+                             'status=FAIL seconds=0.000 evidence=capture_binding_mismatch')
 
 
 class SeamPassThroughTests(unittest.TestCase):
