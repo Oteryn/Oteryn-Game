@@ -501,6 +501,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
         }
+        if !self
+            .restore_pve_logout_block(&runtime, actor, game_session_id, saved_conditions.as_ref())
+            .await
+        {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
         self.states.spell_states.lock().await.load_stamina_at(
             &runtime,
             actor,

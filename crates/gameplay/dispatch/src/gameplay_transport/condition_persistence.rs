@@ -4,6 +4,7 @@ use crate::durability::character_condition_snapshot::CharacterConditionSnapshot;
 use crate::durability::item_use::ItemUseError;
 use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use std::time::{Duration, Instant};
 
 fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
     conditions
@@ -84,6 +85,25 @@ pub(super) fn restore(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn restore_pve_logout_block(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        saved: Option<&CharacterConditionSnapshot>,
+    ) -> bool {
+        let Some(deadline) = saved.and_then(|saved| saved.pve_logout_deadline) else {
+            return true;
+        };
+        let mut attack = self.states.attack.lock().await;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let Ok(remaining_us) = u64::try_from(remaining.as_micros()) else {
+            return false;
+        };
+        remaining_us == 0
+            || attack.restore_in_fight(runtime, actor, session, self.owner_now(), remaining_us)
+    }
+
     /// Called only after the release fence stops this actor's mutation lanes.
     pub(super) async fn save_conditions_at_actor_end(
         &self,
@@ -134,8 +154,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return true;
             };
-            let now = self.owner_now().get();
-            let native = if states.is_dead(actor) {
+            let dead = states.is_dead(actor);
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return false;
+            };
+            let now = self.owner_now();
+            let captured_at = Instant::now();
+            let pve_logout_deadline = if dead {
+                None
+            } else {
+                attack
+                    .in_fight_until(actor, session, now)
+                    .and_then(|until| {
+                        captured_at.checked_add(Duration::from_micros(until.get() - now.get()))
+                    })
+            };
+            drop(attack);
+            let now = now.get();
+            let native = if dead {
                 // The spell owner has settled death. The native slot may still
                 // hold pre-death conditions until its respawn step clears them.
                 None
@@ -171,6 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 lease_generation: fence.character_lease_generation,
                 content_digest: runtime.content_pin().server_artifact_digest(),
                 conditions,
+                pve_logout_deadline,
             }
         };
         // Never retain runtime/player locks across the database await. The release
@@ -215,6 +252,7 @@ mod tests {
             conditions: ConditionStore::<String>::new()
                 .persistent_snapshot(0)
                 .map_err(|_| "snapshot")?,
+            pve_logout_deadline: None,
         };
         assert!(prepare(Some(&saved), 3, [7; 32], 1).is_some());
         assert!(prepare(Some(&saved), 2, [7; 32], 1).is_none());
@@ -288,6 +326,7 @@ mod tests {
                 .owned_conditions()
                 .persistent_snapshot(0)
                 .map_err(|_| "saved")?,
+            pve_logout_deadline: None,
         };
         for current in [
             GourmetConditions::default(),
@@ -330,6 +369,7 @@ mod tests {
                 .owned_conditions()
                 .persistent_snapshot(0)
                 .map_err(|_| "saved food")?,
+            pve_logout_deadline: None,
         };
         for food_ms in [0, 9_000] {
             let rest = [20, food_ms, 500, 400];

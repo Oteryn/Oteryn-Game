@@ -1,8 +1,10 @@
 use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::*;
 use crate::durability::item_use::ItemUseError;
+use crate::gameplay_transport::TerminalRelease;
 use crate::gameplay_transport::connection::{
-    ConnectionIdentifiers, FirstEntryOutcome, LogoutReply,
+    ConnectionIdentifiers, FirstEntryOutcome, FreshAdmissionAuthority, GraceExpiryResult,
+    LogoutReply,
 };
 use crate::gameplay_transport::paced_movement::underwater_drown::{
     DROWN_DEFINITION_KEY, DROWN_SOURCE, drown_definition,
@@ -13,6 +15,7 @@ use oteryn_gameplay_entities::{ActorConditionTransition, ConditionSource};
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, TickFacts, TickKind,
 };
+use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use std::time::Duration;
 
@@ -20,13 +23,14 @@ use std::time::Duration;
 const REGENERATION: ConflictKey = ConflictKey::Recovery;
 const DURATION_US: u64 = 60_000_000;
 const FIRST_TICK_US: u64 = 2_000_000;
+const PVE_OFFLINE_MS: u32 = 15_000;
 
 #[test]
 fn native_finite_condition_postgres_relogin_preserves_remaining_ticks() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, false)
+    on_thread(admin, Case::Condition)
 }
 
 #[test]
@@ -34,10 +38,25 @@ fn native_condition_postgres_terminal_save_excludes_environment_and_stale_lease(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, true)
+    on_thread(admin, Case::Environment)
 }
 
-fn on_thread(admin: String, with_environment: bool) -> TestResult {
+#[test]
+fn pve_logout_block_survives_fresh_admission_until_original_deadline_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, Case::PveLogout)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Condition,
+    Environment,
+    PveLogout,
+}
+
+fn on_thread(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
@@ -50,7 +69,7 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment))
+                    rt.block_on(scenario(&h, case))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -79,7 +98,8 @@ impl ConnectionIdentifiers for FreshIds {
     }
 }
 
-async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
+async fn scenario(h: &Harness, case: Case) -> TestResult {
+    let with_environment = case == Case::Environment;
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -130,13 +150,40 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             .ok_or("fixture spell state")?;
     }
     let applied_at = install_conditions(&owner, &deps, with_environment).await?;
+    if case == Case::PveLogout {
+        let runtime = owner.runtime.lock().await;
+        owner.states.attack.lock().await.record_hit_taken(
+            &runtime,
+            deps.actor,
+            session,
+            owner.owner_now(),
+        );
+    }
     owner.clock_origin -= Duration::from_millis(750);
     let _clock = owner.freeze_owner_clock_for_test();
     let elapsed_at_save = owner.owner_now().get() - applied_at;
-    assert_eq!(
-        owner.logout_session(admitted).await,
-        LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    );
+    let original_retry = if case == Case::PveLogout {
+        let LogoutReply::Result(LogoutResult::InFight { retry_after_ms }) =
+            owner.logout_session(admitted).await
+        else {
+            return Err("the PvE hit must refuse logout".into());
+        };
+        // A force-disconnect retires the old actor while its deadline is live.
+        let transport = admitted.controller.ok_or("original transport")?.transport;
+        assert_eq!(
+            owner
+                .release_terminal(admitted, TerminalRelease::StaffKick(transport))
+                .await,
+            GraceExpiryResult::Released
+        );
+        Some(retry_after_ms)
+    } else {
+        assert_eq!(
+            owner.logout_session(admitted).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
+        None
+    };
     let saved = h
         .root
         .read_character_conditions(&authority, old_fence.character_id)
@@ -161,6 +208,19 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     );
     let ends_in = rows[0]["ends_at"].as_u64().ok_or("remaining duration")?;
     assert_eq!(ends_in, DURATION_US - elapsed_at_save);
+
+    if original_retry.is_some() {
+        // Age the durable checkpoint without sleeping or changing actor clocks.
+        let aged = sqlx::query(
+            "UPDATE game_character_condition_snapshots SET saved_at = saved_at - $2 * interval '1 millisecond' \
+             WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(old_fence.character_id.as_bytes().as_slice())
+        .bind(i64::from(PVE_OFFLINE_MS))
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(aged.rows_affected(), 1);
+    }
 
     let fresh_deps = Dependencies::new()?;
     let mut fresh_owner = fresh_deps.owner(h, &authority);
@@ -197,6 +257,50 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     );
     let fresh_fence = fresh.item_fence.ok_or("fresh lease fence")?;
     assert!(fresh_fence.character_lease_generation > saved.lease_generation);
+    if let Some(original_retry) = original_retry {
+        let actor = fresh.runtime_actor.ok_or("fresh actor")?;
+        assert!(
+            fresh_owner
+                .observe_combat_state(actor, fresh.game_session_id)
+                .await
+                .ok_or("combat snapshot")?
+                .in_fight,
+            "the first combat snapshot on a fresh transport must show the retained PvE block"
+        );
+        let LogoutReply::Result(LogoutResult::InFight { retry_after_ms }) =
+            fresh_owner.logout_session(fresh).await
+        else {
+            return Err(
+                "the original PvE deadline must refuse logout after fresh admission".into(),
+            );
+        };
+        assert!(
+            retry_after_ms > 0 && retry_after_ms <= original_retry - PVE_OFFLINE_MS,
+            "the restored block must subtract the time spent offline"
+        );
+        let attack = fresh_owner.states.attack.lock().await;
+        let deadline = attack
+            .in_fight_until(actor, fresh.game_session_id, fresh_owner.owner_now())
+            .ok_or("restored PvE deadline")?;
+        drop(attack);
+        fresh_owner
+            .states
+            .test_owner_time
+            .store(deadline.get(), std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(
+            fresh_owner.logout_session(fresh).await,
+            LogoutReply::Result(LogoutResult::InFight { retry_after_ms: 1 })
+        );
+        fresh_owner
+            .states
+            .test_owner_time
+            .store(deadline.get() + 1, std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(
+            fresh_owner.logout_session(fresh).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
+        return Ok(());
+    }
     let restored = {
         let runtime = fresh_deps.runtime.lock().await;
         let states = fresh_owner.states.spell_states.lock().await;

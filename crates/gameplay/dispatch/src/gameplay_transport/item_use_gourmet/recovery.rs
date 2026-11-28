@@ -145,6 +145,10 @@ pub(in crate::gameplay_transport) async fn restore_house(
     }
     drop(states);
     owner
+        .restore_pve_logout_block(&runtime, actor, session, saved_conditions.as_ref())
+        .await
+        .then_some(())?;
+    owner
         .install_house_admission_suppressions(&runtime, actor, session, fence, effects)
         .await?;
     Some(())

@@ -9,12 +9,16 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone)]
 pub struct CharacterConditionSnapshot {
     pub lease_generation: u64,
     pub content_digest: [u8; 32],
     pub conditions: serde_json::Value,
+    /// A live PvE logout deadline on this process's clock. The database
+    /// persists the time remaining against its own `saved_at` clock.
+    pub pve_logout_deadline: Option<Instant>,
 }
 impl CharacterConditionSnapshot {
     fn valid(&self) -> bool {
@@ -45,13 +49,23 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT character_lease_generation::text,content_digest,snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
+            let sampled_at = Instant::now();
+            let row = sqlx::query("SELECT character_lease_generation::text, content_digest, \
+                snapshot - 'pve_logout_remaining_us' AS snapshot, \
+                GREATEST(0, COALESCE((snapshot->>'pve_logout_remaining_us')::bigint, 0) \
+                    - GREATEST(0, (extract(epoch FROM (clock_timestamp() - saved_at)) * 1000000)::bigint)) AS pve_logout_remaining_us \
+                FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let saved = row.map(|row| {
+                let remaining = row.try_get::<i64, _>("pve_logout_remaining_us")?;
                 Ok::<_, DurabilityError>(CharacterConditionSnapshot {
                     lease_generation: row.try_get::<String, _>("character_lease_generation")?.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
                     content_digest: row.try_get::<Vec<u8>, _>("content_digest")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
                     conditions: row.try_get("snapshot")?,
+                    pve_logout_deadline: if remaining > 0 {
+                        Some(sampled_at.checked_add(Duration::from_micros(remaining as u64))
+                            .ok_or(DurabilityError::InvalidStoredState)?)
+                    } else { None },
                 })
             }).transpose()?;
             commit_semantic_read(tx, deadline).await?;
@@ -83,10 +97,20 @@ impl DurabilityRoot {
                 _ => super::house_hireling::fence::assert_inventory_fence(&mut tx, &node, &fence, origin_channel).await?,
             };
             if !current { return Ok(Err(ItemUseError::AuthorityRejected)); }
-            sqlx::query("INSERT INTO game_character_condition_snapshots(character_id,character_lease_generation,content_digest,snapshot) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT(character_id) DO UPDATE SET character_lease_generation=EXCLUDED.character_lease_generation,content_digest=EXCLUDED.content_digest,snapshot=EXCLUDED.snapshot,saved_at=clock_timestamp()")
+            // Keep the optional wall-time metadata outside the condition codec. A
+            // repeated checkout uses the original cutoff and saves less time.
+            let mut snapshot = saved.conditions;
+            if let Some(deadline) = saved.pve_logout_deadline {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                let micros = i64::try_from(remaining.as_micros()).map_err(|_| DurabilityError::InvalidStoredState)?;
+                if micros > 0 {
+                    snapshot["pve_logout_remaining_us"] = serde_json::Value::from(micros);
+                }
+            }
+            sqlx::query("INSERT INTO game_character_condition_snapshots(character_id,character_lease_generation,content_digest,snapshot) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT(character_id) DO UPDATE SET character_lease_generation=EXCLUDED.character_lease_generation,content_digest=EXCLUDED.content_digest,snapshot=EXCLUDED.snapshot,saved_at=EXCLUDED.saved_at")
                 .bind(fence.character_id.as_bytes().as_slice())
                 .bind(saved.lease_generation.to_string())
-                .bind(saved.content_digest.as_slice()).bind(saved.conditions).execute(&mut *tx).await?;
+                .bind(saved.content_digest.as_slice()).bind(snapshot).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))
         })).await?
@@ -102,6 +126,7 @@ mod tests {
             lease_generation: 1,
             content_digest: [7; 32],
             conditions: serde_json::json!({"schema":1,"conditions":[]}),
+            pve_logout_deadline: None,
         };
         assert!(snapshot.valid());
         snapshot.lease_generation = 0;

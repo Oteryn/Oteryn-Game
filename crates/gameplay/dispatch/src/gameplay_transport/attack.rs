@@ -594,6 +594,15 @@ impl ChannelAttackStates {
         session: GameSessionId,
     ) -> Option<&mut ActorAttack> {
         runtime.player_control_facts(actor, session).ok()?;
+        self.current_entry(runtime, actor, session)
+    }
+
+    fn current_entry(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<&mut ActorAttack> {
         let index = match self.index(actor, session) {
             Some(index) => index,
             None => {
@@ -623,6 +632,27 @@ impl ChannelAttackStates {
             }
         };
         self.entries.get_mut(index)
+    }
+
+    /// Restore only the deadline; fresh admission carries no target or swing.
+    pub(super) fn restore_in_fight(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+        remaining_us: u64,
+    ) -> bool {
+        if runtime.player_control_facts(actor, session).is_err()
+            && runtime.house_player_control_facts(actor, session).is_err()
+        {
+            return false;
+        }
+        let Some(entry) = self.current_entry(runtime, actor, session) else {
+            return false;
+        };
+        entry.state.record_hit(now, remaining_us);
+        true
     }
 
     /// One `ATTACK_TARGET` intent (§3). `None` stops attacking. A new target starts the lineage

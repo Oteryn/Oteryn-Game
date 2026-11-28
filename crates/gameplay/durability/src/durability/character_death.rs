@@ -2455,6 +2455,7 @@ mod death_build_postgres {
                         lease_generation: current.character_lease_generation,
                         content_digest: [7; 32],
                         conditions: conditions.persistent_snapshot(0).map_err(debug)?,
+                        pve_logout_deadline: None,
                     };
                     h.root
                         .save_character_conditions(
