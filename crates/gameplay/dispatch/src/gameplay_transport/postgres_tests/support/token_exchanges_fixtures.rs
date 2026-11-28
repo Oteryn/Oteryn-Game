@@ -159,7 +159,10 @@ pub(super) async fn exercise(
 
     let mut regressions = Vec::new();
     let mut shop_windows = Vec::new();
-    for (index, text) in ["hi", "trade silver", "silver", "bye"].into_iter().enumerate() {
+    for (index, text) in ["hi", "trade silver", "silver", "bye"]
+        .into_iter()
+        .enumerate()
+    {
         use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
         use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
 
@@ -180,7 +183,10 @@ pub(super) async fn exercise(
                     command_id: 949_980 + u64::try_from(index)?,
                     item_fence: Some(fence.item_fence()),
                 },
-                NpcTalkIntent { npc_actor: cledwyn, text: text.into() },
+                NpcTalkIntent {
+                    npc_actor: cledwyn,
+                    text: text.into(),
+                },
             )
             .await;
         if text.contains("silver") {
@@ -189,8 +195,10 @@ pub(super) async fn exercise(
     }
     for (message, window) in ["trade silver", "silver"].into_iter().zip(shop_windows) {
         let open = window.as_ref().and_then(|window| window.open);
-        if !open.is_some_and(|(npc, _)| npc == cledwyn) {
-            regressions.push(format!("Cledwyn {message:?} did not open his shop"));
+        if open.is_some() {
+            regressions.push(format!(
+                "Cledwyn {message:?} opened an unusable silver-token shop"
+            ));
         } else if window.is_some_and(|window| !window.offers.is_empty()) {
             regressions.push(format!("Cledwyn {message:?} showed silver offers as gold"));
         }

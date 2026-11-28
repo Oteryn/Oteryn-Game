@@ -84,7 +84,6 @@ pub(super) use premium_purchase::resume_npc_talk;
 enum TradeWindowSelection {
     Ordinary,
     Mordecai(&'static mordecai_shop::Category),
-    CledwynSilver,
 }
 
 /// What the server holds of one session's NPC state.
@@ -456,8 +455,6 @@ impl NpcConversations {
                     lines: vec![category.reply()],
                 });
                 TradeWindowSelection::Mordecai(category)
-            } else if silver_trade {
-                TradeWindowSelection::CledwynSilver
             } else {
                 TradeWindowSelection::Ordinary
             };
