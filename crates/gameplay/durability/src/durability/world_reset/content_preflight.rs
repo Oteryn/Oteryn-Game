@@ -1,4 +1,5 @@
 //! Bind the reset to the loaded content and its verified durable House tiles.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_content::content::QualifiedNativeEntryRoom;
 
@@ -59,7 +60,7 @@ pub(super) async fn check(
             .fetch_optional(&mut *tx).await?;
         let qualified = validate_house_qualification(durable_houses, same_content, known_empty_rooms)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        commit_semantic_transaction(tx, deadline).await?;
+        commit_semantic_read(tx, deadline).await?;
         Ok(qualified)
     })).await
 }

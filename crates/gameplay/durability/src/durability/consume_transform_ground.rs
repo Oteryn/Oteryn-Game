@@ -202,7 +202,7 @@ impl DurabilityRoot {
                     action_ground_output: row.try_get("action_ground_output")?,
                 })
             }).transpose()?;
-            crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+            crate::durability::db::commit_semantic_read(tx, deadline).await?;
             Ok(result)
         })).await
     }

@@ -2,11 +2,13 @@
 //! This data snapshot grants no session authority; the gameplay owner qualifies its binding anew.
 use super::cast::PlayerSpellState;
 use super::harmony::HarmonyMultiplier;
+use super::magnitude_owner::IntrinsicWeaponDamage;
 use super::{CasterState, SpellDefinition};
 use crate::content::native_gameplay::NativeGameplayState;
-use crate::content::{ReferenceItemField, ReferenceWeaponType};
+use crate::content::{ProjectV2RangedWeapon, ReferenceItemField, ReferenceWeaponType};
+use crate::domain::equipment_policy_abi::{EquipmentBaseVocation, EquipmentPolicyLookup};
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot};
+use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot, EquippedItem};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -61,6 +63,7 @@ pub struct OwnedCastFacts {
     build: DurableBuildState,
     level: u32,
     equipment: EquipmentSnapshot,
+    quiver_ammunition: Vec<EquippedItem>,
     pub access: AccessProjections,
     native_health_observations: Vec<oteryn_gameplay_entities::NativeHealthChangeObservation>,
 }
@@ -105,6 +108,7 @@ impl OwnedCastFacts {
             build,
             level,
             equipment,
+            quiver_ammunition: Vec::new(),
             access,
             native_health_observations: Vec::new(),
         })
@@ -225,6 +229,125 @@ impl OwnedCastFacts {
         }
         Ok(stage)
     }
+    fn main_hand_melee(
+        &self,
+        content: &NativeGameplayState,
+    ) -> Option<oteryn_gameplay_combat_rules::resolution::SwingWeapon> {
+        oteryn_gameplay_combat_rules::resolution::swing_weapon(content, |slot| {
+            (slot == 5)
+                .then(|| self.equipment.items.iter().find(|item| item.slot == slot))
+                .flatten()
+                .map(|item| {
+                    (
+                        item.definition.production_key.as_str(),
+                        item.definition.revision_ref.as_str(),
+                    )
+                })
+        })
+    }
+
+    /// Ammunition read under the same equipment transaction as the launcher.
+    pub fn with_quiver_ammunition(mut self, ammunition: Vec<EquippedItem>) -> Self {
+        self.quiver_ammunition = ammunition;
+        self
+    }
+
+    fn ranged_skill_attack(
+        &self,
+        content: &NativeGameplayState,
+        profile: &ProjectV2RangedWeapon,
+    ) -> Option<IntrinsicWeaponDamage> {
+        match profile {
+            ProjectV2RangedWeapon::Throwing {
+                attack,
+                elemental_attack,
+                element,
+                ..
+            } => Some(IntrinsicWeaponDamage {
+                physical_attack: u32::from(*attack),
+                elemental_attack: u32::from(*elemental_attack),
+                element: *element,
+            }),
+            ProjectV2RangedWeapon::Distance {
+                attack: launcher,
+                ammunition,
+                ..
+            } => self
+                .quiver_ammunition
+                .iter()
+                .chain(self.equipment.items.iter().filter(|item| item.slot == 10))
+                .filter(|item| item.quantity > 0)
+                .find_map(|item| {
+                    let key = &item.definition.production_key;
+                    let revision = &item.definition.revision_ref;
+                    let equipment = content.equipment_policy(key, revision)?;
+                    let claims = equipment
+                        .claims()
+                        .iter()
+                        .find(|(slot, _)| *slot == 10)?
+                        .1
+                        .as_ref()
+                        .ok()?;
+                    if self.level < u32::from(claims.level) {
+                        return None;
+                    }
+                    if !claims.vocations.is_empty() {
+                        use super::Vocation;
+                        use EquipmentBaseVocation as Base;
+                        let vocation = match Vocation::from_key(self.build.vocation())? {
+                            Vocation::None => Base::None,
+                            Vocation::Druid | Vocation::ElderDruid => Base::Druid,
+                            Vocation::Knight | Vocation::EliteKnight => Base::Knight,
+                            Vocation::Monk | Vocation::ExaltedMonk => Base::Monk,
+                            Vocation::Paladin | Vocation::RoyalPaladin => Base::Paladin,
+                            Vocation::Sorcerer | Vocation::MasterSorcerer => Base::Sorcerer,
+                        };
+                        if !claims.vocations.contains(&vocation) {
+                            return None;
+                        }
+                    }
+                    let projectile = content.item_policy(key, revision)?;
+                    let ProjectV2RangedWeapon::Ammunition {
+                        attack,
+                        ammunition: kind,
+                        elemental_attack,
+                        element,
+                        ..
+                    } = projectile.record().authoring.ranged.as_ref()?
+                    else {
+                        return None;
+                    };
+                    (kind == ammunition).then_some(IntrinsicWeaponDamage {
+                        physical_attack: u32::from(*launcher) + u32::from(*attack),
+                        elemental_attack: u32::from(*elemental_attack),
+                        element: *element,
+                    })
+                }),
+            _ => None,
+        }
+    }
+
+    /// Weapon-skill callbacks divide damage by the qualified attack points of the
+    /// held weapon, or by the launcher plus the compatible projectile.
+    pub fn intrinsic_weapon_for_spell(
+        &self,
+        spell: &SpellDefinition,
+        content: &NativeGameplayState,
+    ) -> Option<IntrinsicWeaponDamage> {
+        if !uses_attack_formula(spell) {
+            return None;
+        }
+        let item = self.equipment.items.iter().find(|item| item.slot == 5)?;
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        if let Some(profile) = &policy.record().authoring.ranged {
+            return self.ranged_skill_attack(content, profile);
+        }
+        IntrinsicWeaponDamage::from_melee(self.main_hand_melee(content)?)
+    }
+
     pub fn caster(
         &self,
         state: &PlayerSpellState,
@@ -233,8 +356,20 @@ impl OwnedCastFacts {
         harmony: HarmonyMultiplier,
         now: u64,
     ) -> Result<CasterState, OwnedFactsError> {
-        self.caster_projection(state, spell, content, harmony, now, true)
+        self.caster_projection(state, spell, content, harmony, now, (true, true))
     }
+    /// Leave absent equipment to the ordered cast admission rules.
+    pub fn caster_for_admission(
+        &self,
+        state: &PlayerSpellState,
+        spell: &SpellDefinition,
+        content: &NativeGameplayState,
+        harmony: HarmonyMultiplier,
+        now: u64,
+    ) -> Result<CasterState, OwnedFactsError> {
+        self.caster_projection(state, spell, content, harmony, now, (true, false))
+    }
+
     /// An already accepted chain callback reads current numerical owners without
     /// re-running the initial premium/learning admission. It cannot pay a cast.
     pub fn numerical_caster(
@@ -245,7 +380,7 @@ impl OwnedCastFacts {
         harmony: HarmonyMultiplier,
         now: u64,
     ) -> Result<CasterState, OwnedFactsError> {
-        self.caster_projection(state, spell, content, harmony, now, false)
+        self.caster_projection(state, spell, content, harmony, now, (false, true))
     }
     fn caster_projection(
         &self,
@@ -254,7 +389,7 @@ impl OwnedCastFacts {
         content: &NativeGameplayState,
         harmony: HarmonyMultiplier,
         now: u64,
-        require_cast_access: bool,
+        (require_cast_access, require_equipment): (bool, bool),
     ) -> Result<CasterState, OwnedFactsError> {
         let facts = state.character_facts();
         let vitals = state.vitals();
@@ -310,15 +445,8 @@ impl OwnedCastFacts {
         if require_cast_access && spell.learning_required && learned.is_none() {
             return Err(OwnedFactsError::UnavailableLearning);
         }
-        let needs_attack = spell.needs_weapon
-            || matches!(&spell.execution, super::Execution::NativeProfile(profile)
-                if attack_input(&profile.spell()["execution"]))
-            || spell.authored.as_ref().is_some_and(|p| {
-                p.dependencies.formulas.iter().any(|f| {
-                    f.minimum.as_ref().is_some_and(attack_input)
-                        || f.maximum.as_ref().is_some_and(attack_input)
-                })
-            });
+        let skill_formula = uses_attack_formula(spell);
+        let needs_attack = spell.needs_weapon || skill_formula;
         let mut attack = None;
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
@@ -335,10 +463,13 @@ impl OwnedCastFacts {
                         &item.definition.revision_ref,
                     )
                     .ok_or(OwnedFactsError::UnknownItemPolicy)?;
-                let weapon = match &policy.record().semantics.weapon {
-                    ReferenceItemField::Known(weapon) => weapon,
-                    ReferenceItemField::NotApplicable => continue,
-                    _ => return Err(OwnedFactsError::UnavailableEquipment),
+                if slot == 6
+                    && policy.record().semantics.weapon == ReferenceItemField::NotApplicable
+                {
+                    continue;
+                }
+                let ReferenceItemField::Known(weapon) = &policy.record().semantics.weapon else {
+                    return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 let ReferenceItemField::Known(kind) = weapon.weapon_type else {
                     return Err(OwnedFactsError::UnavailableEquipment);
@@ -366,6 +497,22 @@ impl OwnedCastFacts {
                         let ReferenceItemField::Known(value) = weapon.attack else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
+                        let ranged = policy.record().authoring.ranged.as_ref();
+                        let attack_value = if skill < 4 {
+                            self.main_hand_melee(content)
+                                .ok_or(OwnedFactsError::UnavailableEquipment)?
+                                .attack(0)
+                        } else if let Some(damage) =
+                            ranged.and_then(|profile| self.ranged_skill_attack(content, profile))
+                        {
+                            damage.total_attack()
+                        } else if matches!(ranged, Some(ProjectV2RangedWeapon::Distance { .. })) {
+                            // A launcher without a usable projectile supplies no attack.
+                            continue;
+                        } else {
+                            u32::try_from(value.0)
+                                .map_err(|_| OwnedFactsError::UnavailableEquipment)?
+                        };
                         attack = Some((
                             skill_adjustments
                                 .adjust_skill(
@@ -376,8 +523,15 @@ impl OwnedCastFacts {
                                     value.checked_add(self.access.proficiency_skills[skill])
                                 })
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
-                            u32::try_from(value.0)
-                                .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
+                            attack_value,
+                            if needs_attack {
+                                self.equipment
+                                    .combat_mode
+                                    .unwrap_or(CombatMode::Attack)
+                                    .attack_factor()
+                            } else {
+                                0.0
+                            },
                             skill < 4,
                         ));
                     }
@@ -386,25 +540,16 @@ impl OwnedCastFacts {
         }
         // Initial casts admit equipment in source order with the other cast rules.
         // An already accepted callback has no admission phase to check required inputs.
-        if !require_cast_access
+        if require_equipment
             && ((spell.needs_weapon && attack.is_none())
                 || (spell.needs_shield && shield.is_none()))
         {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        // Crystal 201189f8 player.hpp:2009 starts players in attack mode.
-        let attack_factor = if needs_attack && attack.is_some() {
-            self.equipment
-                .combat_mode
-                .unwrap_or(CombatMode::Attack)
-                .attack_factor()
-        } else {
-            0.0
-        };
-        // Crystal 201189f8 combat.cpp:2051,2065-2077 supplies skill 0, attack 7
-        // and factor 0 when a skill callback runs without a weapon.
-        let (attack_skill, attack_value, melee_weapon) =
-            attack.unwrap_or((0, if needs_attack { 7 } else { 0 }, false));
+        // Crystal COMBAT_FORMULA_SKILL initializes these inputs before looking up the weapon.
+        let unarmed_attack = if skill_formula { 7 } else { 0 };
+        let (attack_skill, attack_value, attack_factor, melee_weapon) =
+            attack.unwrap_or((0, unarmed_attack, 0.0, false));
         let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
             if let Some(monk) = &state.monk {
                 let stage = if self.has_current_wheel(now) {
@@ -448,6 +593,17 @@ impl OwnedCastFacts {
         })
     }
 }
+fn uses_attack_formula(spell: &SpellDefinition) -> bool {
+    matches!(&spell.execution, super::Execution::NativeProfile(profile)
+                if attack_input(&profile.spell()["execution"]))
+        || spell.authored.as_ref().is_some_and(|p| {
+            p.dependencies.formulas.iter().any(|f| {
+                f.minimum.as_ref().is_some_and(attack_input)
+                    || f.maximum.as_ref().is_some_and(attack_input)
+            })
+        })
+}
+
 pub fn attack_input(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::String(s) => matches!(

@@ -2,8 +2,9 @@
 // OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by
 // ACCEPT-SPELL-PRESENT0-V1): typed payloads of capability 23 PRESENTATION_V1, state domain 19
 // WORLD_PRESENTATION (snapshot type 1, delta type 1) and state domain 20 ACTOR_COOLDOWNS (snapshot
-// type 1, delta type 1). Numbers leased by the #1622 control plane; the capability has no command
-// type and requires capability 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name.
+// type 1, delta types 1 and 2). Capability 23 has no command type and requires capability 6
+// WORLD_SPATIAL_ENTITIES, whose D85 identities the events name. Cooldown delta type 2 also
+// requires capability 618 ACTOR_COOLDOWN_DELTAS_V1.
 // FND-02 envelopes own server sequence, domain ID and revisions; these payloads never duplicate
 // them. Unknown fields, repeated singular fields, zero or unknown enum values, an empty oneof and
 // values outside the declared bounds all fail closed.
@@ -153,21 +154,25 @@ message ActorCooldownV1 {
   ActorCooldownKind kind = 1;
   // SPELL: the SPELL-D1 index, 1..=2^28 - 1 (a 4-byte id keeps the entry at 16 bytes). GROUP: the S9 catalogue ordinal, 1..=16.
   uint32 id = 2;
-  // Absolute expiry on the channel runtime's monotonic millisecond clock, below 2^42.
+  // Expiry in milliseconds relative to the message clock basis below, below 2^42.
+  // With a zero clock basis this is remaining time. Zero clears the key.
   uint64 expires_at_ms = 3;
 }
 
-// StateDomainSnapshot.payload of domain 20, snapshot type 1 (every running cooldown, at admission,
-// reconnect and channel transfer) and StateDelta.payload of delta type 1 (the entries changed at a
-// PRIMARY COMMIT, or the one corrective delta at the first liveness ack). Own actor only. At most
-// one entry per {kind, id}; a repeated key fails closed.
+// Domain 20, own actor only. Snapshot type 1 and delta type 1 carry every running cooldown.
+// Delta type 2 requires ACTOR_COOLDOWN_DELTAS_V1 and carries the keys changed at a PRIMARY COMMIT.
+// Delta type 3 carries a Gift of Life rescue. It uses the sparse payload when
+// ACTOR_COOLDOWN_DELTAS_V1 is selected and the complete view otherwise. The next frame must be an
+// ACTOR_VITALS delta with the next sequence and the same connection generation. The client
+// validates and publishes both updates together. At most one entry per {kind, id}; a repeated key
+// fails closed.
 message ActorCooldownsV1 {
-  // The channel runtime's monotonic clock when the server encoded the message, below 2^42.
+  // Complete views carry the channel runtime's monotonic clock at encode time. Sparse deltas use
+  // zero and carry remaining time directly. Countdown = max(0, expires_at_ms - server_now_ms) starting at
+  // frame decode. No liveness timing adjusts the countdown.
   uint64 server_now_ms = 1;
-  // The server's smoothed round-trip estimate from FND-02 §17 liveness pairs; 0 before the first
-  // ack of the connection generation.
+  // Legacy fields kept for wire compatibility. The current publisher leaves both unset.
   uint32 rtt_ms = 2;
-  // False before the first ack; then rtt_ms is 0.
   bool rtt_estimated = 3;
   repeated ActorCooldownV1 entries = 4;
 }

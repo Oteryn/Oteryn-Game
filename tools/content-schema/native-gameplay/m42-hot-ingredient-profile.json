@@ -143,11 +143,11 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
         "speed_bonus": 0,
         "spell_augments": [],
+        "field_replaceable": null,
         "field_condition": null,
         "rune_consumption": null
       },
@@ -299,7 +299,7 @@
               "value": true
             },
             "write_once_target": {
-              "state": "UNKNOWN"
+              "state": "NOT_APPLICABLE"
             },
             "writeable": {
               "state": "KNOWN",
@@ -467,7 +467,7 @@
               "value": true
             },
             "write_once_target": {
-              "state": "UNKNOWN"
+              "state": "NOT_APPLICABLE"
             },
             "writeable": {
               "state": "KNOWN",

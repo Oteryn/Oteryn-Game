@@ -18,10 +18,7 @@ fn lane_qengine_reward_npcs_open_only_source_conversations() -> Result<(), Strin
             .get(&key)
             .ok_or_else(|| format!("missing reward conversation {key}"))?;
         assert!(!entry.greeting_reply.is_empty());
-        assert!(
-            entry.dialogue_keywords.is_empty(),
-            "no scripted reward branch opens through talk rules"
-        );
+        source_dialogue_tests::assert_reward_lore(name, entry);
     }
     assert!(!reward_callback_npc("oteryn:npc.unqualified"));
     Ok(())

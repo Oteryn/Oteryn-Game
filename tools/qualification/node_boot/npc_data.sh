@@ -6,24 +6,8 @@ node_boot_stage_npc_data() {
   (
     # The privileged runner stages as the operator and serves as a separate user.
     umask 022
-    PYTHONPATH="$GAME_SOURCE/deploy/synology-game" python3 - "$GAME_SOURCE" "$WORK" <<'PY_NPC_STAGE'
-import json
-import sys
-from pathlib import Path
-from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
-
-repo, work = map(Path, sys.argv[1:])
-content = repo / "content"
-revision, project = project_files(content / "world")
-pin = work / "npc-data.pin.json"
-pin.write_text(json.dumps({
-    "schema": PIN_SCHEMA,
-    "project_revision": revision,
-    "project_sha256": catalogue_digest(project.items()),
-    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
-}), encoding="utf-8")
-stage(pin, repo, work / "npc-data")
-PY_NPC_STAGE
+    python3 "$GAME_SOURCE/deploy/synology-game/stage_npc_data.py" \
+      "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" "$GAME_SOURCE" "$WORK/npc-data" >/dev/null
   )
   "${as_operator[@]}" mv -- "$WORK/npc-data" "$BASE/npc-data"
   NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"

@@ -52,7 +52,7 @@ use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
-mod immovable;
+pub(super) mod immovable;
 
 pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;
@@ -365,13 +365,14 @@ pub mod tests {
         extent: Option<oteryn_world_bundle::writer::Extent>,
         ground_key: &str,
     ) -> (Vec<u8>, BundlePins) {
-        bundle_with_projectiles(custom, extent, ground_key, None)
+        bundle_with_projectiles(custom, extent, ground_key, KEYS[4], None)
     }
 
     fn bundle_with_projectiles(
         custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
         extent: Option<oteryn_world_bundle::writer::Extent>,
         ground_key: &str,
+        rope_key: &str,
         projectile: Option<[Option<bool>; 9]>,
     ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
@@ -423,7 +424,12 @@ pub mod tests {
                 .zip(terrains)
                 .enumerate()
                 .map(|(id, (key, terrain))| PaletteEntry {
-                    key: if id == 0 { ground_key } else { key }.into(),
+                    key: match id {
+                        0 => ground_key,
+                        4 => rope_key,
+                        _ => key,
+                    }
+                    .into(),
                     family: Family::Item,
                     id: id as u32,
                     terrain: terrain.map(|mut terrain| {
@@ -590,6 +596,35 @@ pub mod tests {
     }
 
     #[test]
+    fn timed_base_transform_updates_bundle_spell_collision_until_decay() {
+        use crate::map::view::{MapFacts, placement_key};
+        let world = world();
+        let (_, cells) = cells(&world);
+        let pos = TilePos {
+            x: 4,
+            y: 0,
+            floor: -7,
+        };
+        let key = placement_key(pos, 1).unwrap();
+        let facts = world.facts();
+        let before = facts.base_entry(pos, 1, 2).unwrap();
+        let debris = facts.base_entry(TilePos { x: 5, ..pos }, 1, 3).unwrap();
+        let spell = || cells.spell_tiles().lookup(cells.scope(), at(4)).unwrap();
+        let original = spell();
+        assert!(original.flags().block_solid);
+        assert!(facts.transform_base_item_until(key, 0, before, debris, 100));
+        assert!(world.enterable(pos));
+        let opened = spell();
+        assert!(!opened.flags().block_solid);
+        assert_eq!(opened.top_source_ids(), &[u32::from(debris.appearance_id)]);
+        assert_eq!(facts.expire_movement_items(99), 0);
+        assert_eq!(spell(), opened);
+        assert_eq!(facts.expire_movement_items(100), 1);
+        assert!(!world.enterable(pos));
+        assert_eq!(spell(), original);
+    }
+
+    #[test]
     fn terrain_projectile_overrides_preserve_solidity_and_visible_lookthrough() {
         use crate::map::view::{ComposedEntry, EntrySource, MapFacts, RoofFacts};
         // Crystal src/items/items.cpp:234: unsight is blockProjectile,
@@ -598,6 +633,7 @@ pub mod tests {
             None,
             None,
             KEYS[0],
+            KEYS[4],
             Some([
                 Some(false),
                 Some(true),

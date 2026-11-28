@@ -19,6 +19,13 @@
     {
       "repository": "zimbadev/crystalserver",
       "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/startup/tables/tile_pick.lua",
+      "sha256": "b4839e13c284d32724d0b304bde18bb0d5d9924f6dd3cbd27c884e76c69a48a6",
+      "git_blob_sha1": "9b7f1cb43878b2f34a5a99efc77f14a784799647"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-global/startup/tables/door_key.lua",
       "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b",
       "git_blob_sha1": "61414780c50287cb7982e4286eafa1224b7e2b65"
@@ -44,7 +51,7 @@
       "source_path": "data-global/startup/tables/teleport_item.lua",
       "source_line": 45,
       "map_path": "content/world/placements/region-z07-x125-y126.b3",
-      "map_sha256": "203f0465d9d1373a41ec2e77590f63fc1e1adb0416c39b35f5622c53bf92bad8"
+      "map_sha256": "dd6d7b1fdd94aed020377b8e6dfd3bc216891c4969036cf34f844a8e4f3e8305"
     },
     {
       "position": [
@@ -58,7 +65,7 @@
       "source_path": "data-global/startup/tables/teleport_item.lua",
       "source_line": 45,
       "map_path": "content/world/placements/region-z07-x125-y126.b3",
-      "map_sha256": "203f0465d9d1373a41ec2e77590f63fc1e1adb0416c39b35f5622c53bf92bad8"
+      "map_sha256": "dd6d7b1fdd94aed020377b8e6dfd3bc216891c4969036cf34f844a8e4f3e8305"
     },
     {
       "position": [
@@ -72,7 +79,7 @@
       "source_line": 148,
       "storage_line": 362,
       "map_path": "content/world/placements/region-z08-x125-y126.b3",
-      "map_sha256": "2ae5fc270e0f91649c8e17c2edb7a83bfa410effd5fb0cafa9c09f80939ec704"
+      "map_sha256": "6c981b532b4ee2451ca37490e19dd1ff8a5dbb0a817e9a6a5f3edb650f2ae25e"
     },
     {
       "position": [
@@ -86,7 +93,7 @@
       "source_path": "data-global/startup/tables/door_level.lua",
       "source_line": 116,
       "map_path": "content/world/placements/region-z10-x125-y126.b3",
-      "map_sha256": "13360bece5e67fe7701947ef269c949ac5110752421f973bdbab9b432e2e58f6"
+      "map_sha256": "5e549556141aadbd54406f35310730ee56e86ff1be83f8552d09dec3f6c19520"
     },
     {
       "position": [
@@ -100,7 +107,203 @@
       "source_line": 153,
       "storage_line": 363,
       "map_path": "content/world/placements/region-z10-x126-y126.b3",
-      "map_sha256": "b55a1d19a97d0cdd2b7db8ece0554bea8aec3b91d6833782cca781b9e673385a"
+      "map_sha256": "19b0891e0997f601a4c2a370c4b5352544193493276727426cefeb2b1987b4d3"
+    },
+    {
+      "position": [
+        32450,
+        31967,
+        10
+      ],
+      "item": 5106,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z10-x126-y124.b3",
+      "map_sha256": "ef7644d13410555bf525df225f67d519294def3a69cc4bab19736b83d31aeb75"
+    },
+    {
+      "position": [
+        32452,
+        31972,
+        10
+      ],
+      "item": 5097,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z10-x126-y124.b3",
+      "map_sha256": "ef7644d13410555bf525df225f67d519294def3a69cc4bab19736b83d31aeb75"
+    },
+    {
+      "position": [
+        32456,
+        31972,
+        10
+      ],
+      "item": 5097,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z10-x126-y124.b3",
+      "map_sha256": "ef7644d13410555bf525df225f67d519294def3a69cc4bab19736b83d31aeb75"
+    },
+    {
+      "position": [
+        32457,
+        31966,
+        10
+      ],
+      "item": 5106,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z10-x126-y124.b3",
+      "map_sha256": "ef7644d13410555bf525df225f67d519294def3a69cc4bab19736b83d31aeb75"
+    },
+    {
+      "position": [
+        32479,
+        31903,
+        4
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "value": 3899,
+      "source_line": 143,
+      "storage_line": 361,
+      "map_path": "content/world/placements/region-z04-x126-y124.b3",
+      "map_sha256": "1a35ab2ff9381ead1a2984710f723559ccabe495cb275d2a97f543275da3c155"
+    },
+    {
+      "position": [
+        32600,
+        31926,
+        6
+      ],
+      "item": 7711,
+      "attribute": "action",
+      "value": 3801,
+      "source_line": 125,
+      "storage_line": 359,
+      "map_path": "content/world/placements/region-z06-x127-y124.b3",
+      "map_sha256": "5e3aa6796ec4ac19ff73372d298189e3503be68a5bdfba08c1fdf8d9f42a2d91"
+    },
+    {
+      "position": [
+        32602,
+        31975,
+        14
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z14-x127-y124.b3",
+      "map_sha256": "dfa362ee88cd8e9d4b587c05403ab4317ec097604074387c2f3555590f681b28"
+    },
+    {
+      "position": [
+        32603,
+        31975,
+        14
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z14-x127-y124.b3",
+      "map_sha256": "dfa362ee88cd8e9d4b587c05403ab4317ec097604074387c2f3555590f681b28"
+    },
+    {
+      "position": [
+        32614,
+        32175,
+        9
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "value": 3303,
+      "source_line": 214,
+      "storage_line": 348,
+      "map_path": "content/world/placements/region-z09-x127-y125.b3",
+      "map_sha256": "a09496b778e63c77f254faed1b79bb5bb28e80b921fb40b3f3f75b24814da3cf"
+    },
+    {
+      "position": [
+        32620,
+        32199,
+        10
+      ],
+      "item": 6251,
+      "attribute": "action",
+      "value": 3304,
+      "source_line": 218,
+      "storage_line": 349,
+      "map_path": "content/world/placements/region-z10-x127-y125.b3",
+      "map_sha256": "cea254cfd8b171e6d336d07dc80c8062f10e8de255d6bed7aff5db7ca61d9398"
+    },
+    {
+      "position": [
+        32624,
+        31929,
+        3
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "value": 3802,
+      "source_line": 130,
+      "storage_line": 360,
+      "map_path": "content/world/placements/region-z03-x127-y124.b3",
+      "map_sha256": "419ed104a313cf6f29347036375b2f94c2bbfdef9721d264d9d442d2792e2b1a"
+    },
+    {
+      "position": [
+        32645,
+        31906,
+        3
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "value": 3800,
+      "source_line": 120,
+      "storage_line": 358,
+      "map_path": "content/world/placements/region-z03-x127-y124.b3",
+      "map_sha256": "419ed104a313cf6f29347036375b2f94c2bbfdef9721d264d9d442d2792e2b1a"
+    },
+    {
+      "position": [
+        33081,
+        31651,
+        11
+      ],
+      "item": 355,
+      "attribute": "action",
+      "value": 101,
+      "source_path": "data-global/startup/tables/tile_pick.lua",
+      "source_line": 6,
+      "map_path": "content/world/placements/region-z11-x129-y123.b3",
+      "map_sha256": "bacc5232de80a6b14714aeef1bd98e7b4ee77735a6eeb19f2100aa10c91b782e"
+    },
+    {
+      "position": [
+        33085,
+        31650,
+        10
+      ],
+      "item": 5111,
+      "attribute": "action",
+      "value": 1060,
+      "source_path": "data-global/startup/tables/door_level.lua",
+      "source_line": 132,
+      "map_path": "content/world/placements/region-z10-x129-y123.b3",
+      "map_sha256": "cddf7cc9586a87f793ea9d10176f3f09425c426e9036173063da97de509d47d5"
     }
   ]
 }

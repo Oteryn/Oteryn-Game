@@ -137,6 +137,19 @@ pub async fn serve_gameplay(
             .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
         store_purchases: owners.store_purchases,
     };
+    #[cfg(feature = "qualification-clock")]
+    if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some()
+        && std::env::var_os("OTERYN_QUALIFICATION_ECHO_PORTAL").as_deref()
+            == Some(std::ffi::OsStr::new("1"))
+    {
+        authority
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .enable_qualification_echo_portal();
+    }
     // Capture actual registered source execution time before startup awaits,
     // rather than anchoring a GlobalEvent to its first Think or a boss birth.
     let registered_global_us = authority.owner_now().get();
@@ -153,6 +166,11 @@ pub async fn serve_gameplay(
         .register_current_runtime()
         .await
         .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    if let Some(map) = authority.bundle_map() {
+        Box::pin(authority.restore_paid_quest_scene(map))
+            .await
+            .ok_or(GameplayServeError::OwnerUnavailable)?;
+    }
     for template in owners.activity_templates {
         authority
             .activity_runtimes
@@ -203,9 +221,12 @@ pub async fn serve_gameplay(
             return Ok(());
         }
     }
-    // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
-    // not the session's connection runs any other cadence. It never ends on its own.
-    let quest_retries = async {
+    // Recover retained boss awards before the listener and the other cadences
+    // start competing for the durability holder.
+    let _ = authority.reconcile_boss_achievement_queue().await;
+
+    // Retry deferred boss awards and QUEST-STATE-0 §5.4 obligations even in an empty Channel.
+    let owner_retries = async {
         loop {
             if first(
                 tokio::time::sleep(QUEST_RETRY_CADENCE),
@@ -216,6 +237,10 @@ pub async fn serve_gameplay(
             {
                 std::future::pending::<()>().await;
             }
+            let _ = authority
+                .root
+                .with_background_operation(authority.reconcile_boss_achievement_queue())
+                .await;
             authority.refresh_due_quest_sessions().await;
         }
     };
@@ -230,7 +255,7 @@ pub async fn serve_gameplay(
             shutdown,
             Some(drain),
         ),
-        DurabilityRoot::with_background_holder(quest_retries),
+        DurabilityRoot::with_background_holder(owner_retries),
     );
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();

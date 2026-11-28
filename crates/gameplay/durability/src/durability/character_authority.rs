@@ -2,6 +2,7 @@
 mod bootstrap_character;
 mod creation_integrity;
 
+use crate::durability::db::commit_semantic_read;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
@@ -145,7 +146,7 @@ impl DurabilityRoot {
                 Some(row) => Some(read_record_row(&row, uuid_text(row.try_get("account_id")?)?, uuid_text(row.try_get("world_id")?)?)?),
                 None => None,
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(record))
         })).await?
     }
@@ -163,7 +164,7 @@ impl DurabilityRoot {
             let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(record))
         })).await?
     }
@@ -217,7 +218,7 @@ impl DurabilityRoot {
                     if exists {
                         return Err(DurabilityError::Unavailable);
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     return Ok(Ok(None));
                 }
                 Err(error) => return Err(error),
@@ -225,7 +226,7 @@ impl DurabilityRoot {
             if current.session_state() == crate::foundation::GameSessionState::Terminal
                 || (!reconnectable && current.session_state() != crate::foundation::GameSessionState::Active)
             {
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 return Ok(Ok(None));
             }
             let character = *current.commit().character_id().as_bytes();
@@ -234,7 +235,7 @@ impl DurabilityRoot {
             let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(Some(super::character_progression::CurrentCharacterGameplayFence {
                 character_id,
                 game_session_id: session,
@@ -267,7 +268,7 @@ impl DurabilityRoot {
                 Some(2) => crate::domain::appearance::Sex::Male,
                 _ => return Err(DurabilityError::InvalidStoredState),
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(sex)
         })).await
     }
@@ -325,7 +326,7 @@ impl DurabilityRoot {
                     } else {
                         false
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(compatible.then_some(interpretation)))
                 })
             })
@@ -360,7 +361,7 @@ impl DurabilityRoot {
                         assert_recovery_fence(&mut tx, &checked).await,
                     )?;
                     verify_character_integrity(&mut tx, definitions.as_deref()).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok::<(), CharacterAuthorityError>(()))
                 })
             })
@@ -513,7 +514,7 @@ impl DurabilityRoot {
                     payload: row.try_get("payload")?,
                 });
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(deliveries))
         })).await?
     }

@@ -15,6 +15,7 @@ from convert_world_metadata import canonical
 
 ROOT = Path(__file__).resolve().parents[3]
 CAPTURE = "imports/crystalserver/spawn-reconciliation/slice-2.json"
+CRYSTAL_DELTA_CAPTURE = "imports/crystalserver/spawn-delta-201189f8.json"
 COMPILER_CELLS = "tools/world-bundle-compiler/scoped-spawn-ground.json"
 INDEX = "content/world/placements/index.json"
 SHARD = "content/world/terrain/terrain-08794-08845.json"
@@ -23,7 +24,21 @@ NOTE = " Additionally 52 source-qualified spawn grounds bound at the slice 2 cel
 
 
 def captured_grounds(root=ROOT):
-    return ground_cells((root / CAPTURE).read_bytes())
+    grounds = ground_cells((root / CAPTURE).read_bytes())
+    delta = root / CRYSTAL_DELTA_CAPTURE
+    if delta.is_file():
+        # The delta's Michael the Stalwart uses the same appearance as slice 2.
+        # Keep both placements scoped to specific captured cells.
+        cell = (33863, 32115, 0)
+        groups = json.loads(delta.read_bytes())["groups"]
+        if cell in grounds or not any(
+            point["name"] == "michael the stalwart" and tuple(point["cell"]) == cell
+            for group in groups
+            for point in group["points"]
+        ):
+            raise ValueError("Crystal delta ground differs from its spawn capture")
+        grounds[cell] = 50815
+    return grounds
 
 
 def ground_cells(raw):

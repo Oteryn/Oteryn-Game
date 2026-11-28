@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain::CharacterId;
+use crate::durability::db::commit_semantic_read;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 
 pub struct ArenaProjection {
@@ -124,7 +125,7 @@ impl DurabilityRoot {
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                 })
             }).collect::<Result<Vec<_>, _>>()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok((now_ms, states))
         })).await
     }
@@ -233,7 +234,7 @@ impl DurabilityRoot {
                     let now_ms = now(&mut tx).await?;
                     let can_leave = !pending_relocation(&mut tx, fence, &state).await?
                         && !pit_lease::owned(&mut tx, fence, &state, now_ms).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(can_leave)
                 })
             })
@@ -267,7 +268,7 @@ impl DurabilityRoot {
                     }
                     let current = load_state(&mut tx, fence).await? == state;
                     let dead = dead_since_entry(&mut tx, fence.character_id, &state).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(current && !dead)
                 })
             })

@@ -30,9 +30,14 @@ class ComposeTests(unittest.TestCase):
         incoming = compose.indexed(json.loads(self.current[compose.CREATURES]))
         baseline = compose.indexed(json.loads(self.base[compose.CREATURES]))
         combined = compose.indexed(json.loads(result[compose.CREATURES]))
-        self.assertEqual(len(combined), 1871)
-        self.assertEqual(set(combined) - set(adopted), {importer.canonical_bytes({
-            "family": "Creature", "key": "oteryn:creature.cake_golem", "revision": "definition-r1"})})
+        added_names = ("cake_golem", "common_beetle", "cublarc_the_plunderer", "gorga",
+                       "grove_guardian", "herd_weevil", "rootthing_cocoon")
+        self.assertEqual(len(combined), 1877)
+        self.assertEqual(set(combined) - set(adopted), {
+            importer.canonical_bytes({
+                "family": "Creature", "key": f"oteryn:creature.{name}", "revision": "definition-r1"})
+            for name in added_names
+        })
         self.assertTrue(adopted.keys() <= combined.keys())
         changed = 0
         for key, retained in adopted.items():
@@ -54,8 +59,8 @@ class ComposeTests(unittest.TestCase):
         old_presentations = json.loads(self.adopted[presentation_path])["records"]
         new_presentations = json.loads(result[presentation_path])["records"]
         self.assertEqual(new_presentations[:len(old_presentations)], old_presentations)
-        self.assertEqual([r["target"]["key"] for r in new_presentations[len(old_presentations):]],
-                         ["oteryn:presentation.creature.cake_golem"])
+        self.assertEqual(sorted(r["target"]["key"] for r in new_presentations[len(old_presentations):]),
+                         [f"oteryn:presentation.creature.{name}" for name in added_names])
         for section in ("catalog", "source_selection"):
             self.assertEqual(
                 json.loads(result[current.MANIFEST])[section],

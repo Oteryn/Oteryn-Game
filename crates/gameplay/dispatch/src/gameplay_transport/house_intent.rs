@@ -1,9 +1,11 @@
 //! HOUSE-WIRE-1. Only the composed server owner supplies authority and the live pin.
 use super::{
-    ComposedFreshAdmission,
-    connection::{FreshAdmissionAuthority, UseCommand},
+    AdmissionRetryBudget, ComposedFreshAdmission,
+    connection::{AdmissionRefusal, FreshAdmissionAuthority, UseCommand},
 };
+use crate::durability::DurabilityError;
 use crate::durability::house_management::{HouseManagementError, HouseManagementRequest};
+use crate::durability::house_ownership::HouseOwnershipError;
 use crate::durability::house_scope_handoff::HouseId;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_housing::house_management::{HouseManagementAction, HouseManagementList};
@@ -94,25 +96,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 kind: kind.database(),
                 catalogue_rent,
             };
-            return match self
-                .root
-                .house_bid(self.character, self.holder, gate, fence, request)
-                .await
+            return match retry_house_holder(
+                self.root,
+                async || {
+                    self.root
+                        .house_bid(self.character, self.holder, gate, fence, request.clone())
+                        .await
+                },
+                |error| matches!(error, HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable)),
+            )
+            .await
             {
                 Ok(_) => Some(wire::encode_house_result(D::Ok, 0)),
-                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(
-                    error,
-                )) => {
+                Err(HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable)) => refuse(),
+                Err(HouseOwnershipError::Unavailable(error)) => {
                     #[cfg(test)]
                     eprintln!("House bid unavailable: {error:?}");
                     #[cfg(not(test))]
                     let _ = error;
                     None
                 }
-                Err(crate::durability::house_ownership::HouseOwnershipError::RequestConflict) => {
+                Err(HouseOwnershipError::RequestConflict) => {
                     Some(wire::encode_house_result(D::Conflict, 0))
                 }
-                Err(crate::durability::house_ownership::HouseOwnershipError::Guildhall(reason)) => {
+                Err(HouseOwnershipError::Guildhall(reason)) => {
                     use oteryn_gameplay_housing::guildhall::GuildhallRefusal as R;
                     let disposition = match reason {
                         R::NotGuildLeader => D::NotGuildLeader,
@@ -223,16 +230,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content_digest,
         };
         reply(
-            self.root
-                .commit_house_management(self.character, self.holder, fence, request)
-                .await,
+            retry_management(self.root, async || {
+                self.root
+                    .commit_house_management(self.character, self.holder, fence, request.clone())
+                    .await
+            })
+            .await,
         )
     }
 }
+pub(super) async fn retry_management<T>(
+    root: &crate::durability::DurabilityRoot,
+    step: impl AsyncFnMut() -> Result<T, HouseManagementError>,
+) -> Result<T, HouseManagementError> {
+    retry_house_holder(root, step, |error| {
+        matches!(error, HouseManagementError::Unavailable(DurabilityError::RootUnavailable))
+    }).await
+}
+
+async fn retry_house_holder<T, E>(
+    root: &crate::durability::DurabilityRoot,
+    mut step: impl AsyncFnMut() -> Result<T, E>,
+    holder_busy: impl Fn(&E) -> bool,
+) -> Result<T, E> {
+    let retry = AdmissionRetryBudget::for_command(root);
+    loop {
+        let result = step().await;
+        // A holder checkout refusal issued no House mutation. A database error
+        // or deadline on a live pass may leave a receipt to reconcile.
+        if !result.as_ref().is_err_and(&holder_busy)
+            || !retry.retries_unavailable(AdmissionRefusal::Unavailable).await
+        {
+            return result;
+        }
+    }
+}
+
 pub(super) fn reply(result: Result<u64, HouseManagementError>) -> Option<Vec<u8>> {
     match result {
         Ok(revision) => Some(wire::encode_house_result(D::Ok, revision)),
-        Err(HouseManagementError::Rejected) => Some(wire::encode_house_result(D::Rejected, 0)),
+        Err(HouseManagementError::Rejected | HouseManagementError::Unavailable(DurabilityError::RootUnavailable)) => {
+            Some(wire::encode_house_result(D::Rejected, 0))
+        }
         Err(HouseManagementError::Conflict) => Some(wire::encode_house_result(D::Conflict, 0)),
         Err(HouseManagementError::Unavailable(_)) => None,
     }

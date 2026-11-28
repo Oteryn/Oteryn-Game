@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::character_progression::{CurrentCharacterGameplayFence, assert_gameplay_fence};
 use super::super::db::{
@@ -298,7 +299,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let receipt = lookup_delivery(&mut tx, id, &plan, hireling.as_ref()).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(receipt)
                 })
             })

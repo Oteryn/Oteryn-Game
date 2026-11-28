@@ -5,7 +5,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 
-use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+use super::item_forge_fusion_fixtures::fixture::{bank, seed_bank};
 
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
@@ -14,6 +14,46 @@ const TRACK: &str = "oteryn:quest-progress/questpc7/golden/commission";
 async fn money(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity * CASE i.definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+
+pub(super) async fn legacy(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use super::classic_quests_fixtures::{install, progress, talk};
+    const LEGACY_TRACK: &str = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit";
+    let [king] = install(owner, admitted, ["oteryn:npc.king_tibianus"]).await?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool).await?;
+    seed_bank(h).await?;
+    for (command, word) in [(800, "hi"), (801, "outfit"), (802, "yes")] {
+        talk(owner, admitted, king, command, word).await?;
+    }
+    for (index, (keyword, price, stage)) in [
+        ("armor", 500_000_000, 1),
+        ("boots", 250_000_000, 2),
+        ("helmet", 250_000_000, 4),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let command = 803 + 2 * u64::try_from(index)?;
+        let before = bank(h).await?;
+        let price_quote = talk(owner, admitted, king, command, keyword).await?;
+        assert!(price_quote.iter().any(|line| line.contains(&format!("{price} gold"))));
+        talk(owner, admitted, king, command + 1, "yes").await?;
+        assert_eq!(bank(h).await?, before - price);
+        assert_eq!(progress(owner, admitted, authority, LEGACY_TRACK).await?, stage);
+    }
+    let amount: i64 = sqlx::query_scalar(
+        "SELECT sum(bank_debit_gold_units)::bigint FROM game_item_fee_burns WHERE cause_kind=18",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(amount, 1_000_000_000);
+    assert_eq!(bank(h).await?, 0);
+    assert_eq!(money(h).await?, 0);
+    Ok(())
 }
 
 pub(super) async fn exercise(
@@ -47,28 +87,26 @@ pub(super) async fn exercise(
     super::classic_quests_fixtures::talk(owner, admitted, king, 800, "hi").await?;
     super::classic_quests_fixtures::talk(owner, admitted, king, 801, "golden commission").await?;
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
-    for (index, (suffix, _offer, price)) in [
-        ("base", "base outfit", 100000_i64),
-        ("gloves", "boots and gloves", 50000),
-        ("helmet", "golden helmet", 50000),
+    let base = callbacks.iter().find(|c| c.key == "oteryn:quest-reward/questpc7-golden-base").ok_or("base donation")?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool).await?;
+    let (unpaid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, admitted, king, base, false).await?;
+    assert_eq!(unpaid, NpcIntentDisposition::Rejected, "the commission requires payment");
+    assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
+    seed_bank(h).await?;
+    for (index, (suffix, before, after, price)) in [
+        ("base", 0, 1, 100_000_i64),
+        ("gloves", 1, 2, 50_000),
+        ("helmet", 2, 3, 50_000),
     ].into_iter().enumerate() {
         let callback = callbacks.iter().find(|c| c.key == format!("oteryn:quest-reward/questpc7-golden-{suffix}")).ok_or("callback")?;
         assert_eq!(money(h).await?, 0);
-        // Keep the actual offer and confirmation on one connection, as required
-        // by the normal conversation owner. Closing it clears engagement.
-        let (unpaid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, admitted, king, callback, false).await?;
-        assert_eq!(unpaid, NpcIntentDisposition::Rejected, "a commission never grants without its payment");
-        assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, i64::try_from(index)?);
-        let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
-        super::quest_world_callbacks_fixtures::input_item(owner, fence.item_fence(), &Offering {
-            position: Position { x: 33293, y: 31677, floor: -15 },
-            item: "oteryn:item.tibia.i3043".into(), count: u16::try_from(price / 10000)?,
-        }, 950 + u64::try_from(index)?, true).await?;
-        assert_eq!(money(h).await?, price);
+        assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, before);
+        let before_payment = bank(h).await?;
         let (result, _, last) = super::qengine_rewards_fixtures::wire_grant(owner, admitted, king, callback).await?;
         assert_eq!(result, NpcIntentDisposition::Ok);
-        assert_eq!(money(h).await?, 0, "each milestone consumes exactly its own price");
-        assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, i64::try_from(index + 1)?);
+        assert_eq!(bank(h).await?, before_payment - price, "each milestone debits exactly its own price");
+        assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, after);
         let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fee_burns WHERE character_id=encode($1,'hex')::uuid AND cause_kind=18")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(receipts, i64::try_from(index + 1)?);
@@ -76,6 +114,7 @@ pub(super) async fn exercise(
             oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&oteryn_protocol_oteryn::npc_service::NpcTalkIntent { npc_actor: king, text: "yes".into() }).map_err(debug)?).await?;
         assert_eq!(oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&replay).map_err(debug)?, NpcIntentDisposition::Ok);
         assert_eq!(money(h).await?, 0);
+        assert_eq!(bank(h).await?, before_payment - price, "replay cannot debit the bank twice");
     }
     super::classic_quests_fixtures::talk(owner, admitted, king, 899, "hi").await?;
     super::classic_quests_fixtures::talk(owner, admitted, king, 900, "complete commission").await?;
