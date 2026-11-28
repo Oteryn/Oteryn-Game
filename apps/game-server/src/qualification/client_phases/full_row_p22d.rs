@@ -94,7 +94,9 @@ async fn walk_to_rat(
             })
     })
     .ok_or("step=route;observed=no-reachable-rat-spawn")?;
-    for direction in path {
+    let mut path = VecDeque::from(path);
+    let mut detours = std::collections::BTreeSet::new();
+    while let Some(direction) = path.pop_front() {
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, before, direction).ok_or("step=route;observed=no-landing")?;
@@ -112,6 +114,30 @@ async fn walk_to_rat(
             evidence(&format!(
                 "p22d blocked={expected:?} entity={blocker:?} frame={outcome:?}"
             ));
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let occupied = client
+                .world_entities()
+                .and_then(|entities| entities.get(&blocker))
+                .map(|entity| tile(entity.position))
+                .transpose()?;
+            if occupied == Some(expected)
+                && detours.len() < 8
+                && detours.insert(expected)
+                && let Some(detour) = route_around_occupant(
+                    before,
+                    expected,
+                    &path,
+                    |at| !detours.contains(&at),
+                    |at, step| destination(world, at, step),
+                )
+            {
+                evidence(&format!(
+                    "p22d detour entity={blocker:?} tile={expected:?} steps={}",
+                    detour.len()
+                ));
+                path = detour.into();
+                continue;
+            }
             let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
             verdict::Harness::global().bounded_wait(deadline, "p22d-creature-step");
             loop {
