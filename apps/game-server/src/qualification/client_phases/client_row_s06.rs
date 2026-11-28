@@ -403,11 +403,18 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         .as_ref()
         .ok_or("control selection absent")?
         .revision;
+    // The second session has finished observing. Close it before the actor's relog
+    // sequence, which needs only the actor's character holder.
+    let observer_logout = observer.session_mut().logout().await?;
+    if observer_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=peer-logout observed={observer_logout:?}").into());
+    }
+    drop(observer);
+    wait_character_released(clients, 0).await?;
     let session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("appearance logout refused".into());
+    let actor_logout = client.session_mut().logout().await?;
+    if actor_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=actor-logout observed={actor_logout:?}").into());
     }
     let mut fresh = connect_world(clients, 0x6a).await?;
     let (_, persisted) = raw_snapshot(&mut fresh)?;
@@ -426,15 +433,9 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     require_look(&visible_look(&mut fresh)?, &control_look)
         .map_err(|error| format!("step=relog {error}"))?;
     evidence("S06_CLIENT_CHECK relog=exact-catalogue-and-visible-look");
-    if fresh.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("fresh appearance logout refused".into());
-    }
-    if observer.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("observer logout refused".into());
+    let final_logout = fresh.session_mut().logout().await?;
+    if final_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=fresh-logout observed={final_logout:?}").into());
     }
     first.expected = format!(
         "session={}\n{}{refusals}{}",
