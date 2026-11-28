@@ -81,8 +81,7 @@ fn scenarios(cases: &[(bool, bool)], cooldown_clock: bool, combat_room_only: boo
                 world,
                 &controller,
                 &pin,
-                full,
-                missing_reagent,
+                (full, missing_reagent),
                 cooldown_clock,
                 combat_room_only,
             )
@@ -99,8 +98,7 @@ async fn scenario(
     world: crate::foundation::WorldId,
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
-    full: bool,
-    missing_reagent: bool,
+    (full, missing_reagent): (bool, bool),
     cooldown_clock: bool,
     combat_room_only: bool,
 ) -> TestResult {
