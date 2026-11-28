@@ -6,14 +6,8 @@ use super::*;
 use oteryn_protocol_oteryn::attack::{self, ActorCombatState, ChaseMode, FightMode, FightModes};
 
 fn payloads() -> Result<(Vec<u8>, Vec<u8>, String), BoxError> {
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let directory = std::path::Path::new(&directory);
-        return Ok((
-            std::fs::read(directory.join("c01-snapshot.bin"))?,
-            std::fs::read(directory.join("c01-modes.bin"))?,
-            std::fs::read_to_string(directory.join("c01-expected.txt"))?,
-        ));
-    }
+    // The live C01 row replays its exact transcript in game-server qualification.
+    // This fixture independently exercises malformed-delta rejection.
     let initial = ActorCombatState {
         target: None,
         modes: FightModes::DEFAULT,
