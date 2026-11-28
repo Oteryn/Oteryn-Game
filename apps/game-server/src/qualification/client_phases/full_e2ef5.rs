@@ -3218,6 +3218,13 @@ async fn non_pz(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
     .ok_or("companion: no player walk route outside PZ")?;
     walk(client, world, &path).await
 }
+pub(super) async fn summon_rat_for_forge(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    Ok(summon_rat(client, world, native_spell_book()?, companion_mana(native_input()?, "Rat")?, true).await?.0)
+}
+
 async fn summon_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
