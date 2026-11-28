@@ -310,7 +310,6 @@ struct Capture<'a> {
     directory: &'a Path,
     full: bool,
     visible_top: Option<[u8; 16]>,
-    diagonal_corpse: [u8; 16],
     previous: (u64, u64),
 }
 
@@ -358,15 +357,24 @@ impl Capture<'_> {
                 format!("I07 probe {key} expected the exact corpse tiles and stack").into(),
             );
         }
-        let southeast = (
-            actor.x.checked_add(1).ok_or("I07 corpse tile overflow")?,
-            actor.y.checked_add(1).ok_or("I07 corpse tile overflow")?,
-        );
-        if !nearby
-            .iter()
-            .any(|(x, y, identity, _)| (*x, *y) == southeast && *identity == self.diagonal_corpse)
-        {
-            return Err(format!("I07 probe {key} live diagonal corpse is not southeast").into());
+        let east = actor.x.checked_add(1).ok_or("I07 corpse tile overflow")?;
+        let south = actor.y.checked_add(1).ok_or("I07 corpse tile overflow")?;
+        for (position, count) in [
+            ((actor.x, actor.y), 1),
+            ((east, actor.y), 2),
+            ((east, south), 1),
+        ] {
+            if nearby
+                .iter()
+                .filter(|(x, y, _, _)| (*x, *y) == position)
+                .count()
+                != count
+            {
+                return Err(format!(
+                    "I07 probe {key} live corpse tile {position:?} must contain {count} corpses"
+                )
+                .into());
+            }
         }
         let anchor = clicked.last().ok_or("I07 missing selected corpse")?.2;
         if east_stack && Some(anchor) != self.visible_top {
@@ -890,7 +898,6 @@ pub(super) async fn journey(
         directory: capture_dir,
         full,
         visible_top: None,
-        diagonal_corpse: diagonal_corpse.as_slice().try_into()?,
         previous: inbox_identity,
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
@@ -1676,7 +1683,7 @@ pub(super) async fn journey(
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
                 "corpse_definition": provisioning::item_reference(&index, 5973)?.get(),
-                "primary_use_sequence": primary_use_sequence, "diagonal_corpse": capture.diagonal_corpse,
+                "primary_use_sequence": primary_use_sequence,
                 "opened": captured_container(opened)?, "after_click": captured_container(after_click)?,
                 "coin": coin.item, "diagonal_coin": diagonal_coin.item, "top_food": top_food.item, "bottom_food": bottom_food.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,

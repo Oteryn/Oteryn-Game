@@ -541,7 +541,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         corpse_position: [i32; 3],
         corpse_definition: u32,
         primary_use_sequence: u64,
-        diagonal_corpse: [u8; 16],
         opened: ContainerDelta,
         after_click: ContainerDelta,
         coin: [u8; 16],
@@ -1182,18 +1181,26 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 4,
                 "I07 probe {key} competing corpse omitted"
             );
-            let southeast = (
-                tile.actor_x
-                    .checked_add(1)
-                    .ok_or("I07 corpse tile overflow")?,
-                tile.y.checked_add(1).ok_or("I07 corpse tile overflow")?,
-            );
-            assert!(
-                tile.corpses.iter().any(|(x, y, identity, _)| {
-                    (*x, *y) == southeast && *identity == expected.diagonal_corpse
-                }),
-                "I07 probe {key} live diagonal corpse is not southeast"
-            );
+            let east = tile
+                .actor_x
+                .checked_add(1)
+                .ok_or("I07 corpse tile overflow")?;
+            let south = tile.y.checked_add(1).ok_or("I07 corpse tile overflow")?;
+            assert_eq!(tile.x, if key >= 15 { east } else { tile.actor_x });
+            for (position, count) in [
+                ((tile.actor_x, tile.y), 1),
+                ((east, tile.y), 2),
+                ((east, south), 1),
+            ] {
+                assert_eq!(
+                    tile.corpses
+                        .iter()
+                        .filter(|(x, y, _, _)| (*x, *y) == position)
+                        .count(),
+                    count,
+                    "I07 probe {key} live corpse tile {position:?}"
+                );
+            }
             if key >= 15 {
                 let top = tile
                     .corpses
