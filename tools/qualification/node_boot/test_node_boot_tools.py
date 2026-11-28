@@ -313,6 +313,26 @@ WORK=.
                 for region in ('130,122', '130,126'):
                     self.assertEqual(regions.count(region), int(authored))
 
+    def test_soulpit_region_follows_w08_row_selection(self):
+        profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
+        script = 'set -Eeuo pipefail\n' + profile + 'printf "%s\\n" "$WORLD_REGIONS"\n'
+        for batch, groups, authored in [
+            ('18:1', 'rows', True),
+            ('17:2', 'rows', True),
+            ('all', '', True),
+            ('17:1', 'rows', False),
+            ('19:1', 'rows', False),
+            ('18:1', 'core', False),
+        ]:
+            with self.subTest(batch=batch, groups=groups):
+                result = bash(script, {
+                    'GAME_SOURCE': str(HERE.parents[2]),
+                    'NODE_BOOT_E2E_ONLY': groups,
+                    'OTERYN_E2E_ROW_BATCH': batch,
+                })
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.strip().split(';').count('126,121'), int(authored))
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')

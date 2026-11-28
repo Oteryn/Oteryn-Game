@@ -173,6 +173,17 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    # W08's authored obelisk and Soulpit arena share region 126,121.
+    case ",${selected_groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        w08_batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
+        if [[ "$w08_batch" == all ]] ||
+          { [[ "$w08_batch" =~ ^\+?0*([0-9]{1,9}):\+?0*([0-9]{1,9})$ ]] &&
+            (( 10#${BASH_REMATCH[1]} <= 18 && 18 - 10#${BASH_REMATCH[1]} < 10#${BASH_REMATCH[2]} )); }; then
+          WORLD_REGIONS+=";126,121"
+        fi
+        ;;
+    esac
     # Grave Danger's room is in 130,122 and its authored approach teleport is in 130,126.
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*)

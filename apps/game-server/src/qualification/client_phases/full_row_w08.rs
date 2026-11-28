@@ -2,9 +2,9 @@
 //!
 //! Concrete player scenario derived from the W08 audit/matrix row and the named
 //! `kill_reward`/Animus owners:
-//! The dedicated character starts with a Rat Soul Core, a seeded Knight build,
+//! The dedicated character starts with a Minotaur Soul Core, a seeded Knight build,
 //! and an empty mastery page. Command 232 must reject a zero limit without
-//! changing the page. The intended gameplay leg earns Rat mastery in Soulpit,
+//! changing the page. The intended gameplay leg earns Minotaur mastery in Soulpit,
 //! then checks the exact species after relog and measures its XP bonus.
 
 use super::*;
@@ -12,12 +12,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::animus_mastery as wire;
 use std::collections::BTreeSet;
 
-const RAT: &str = "oteryn:creature.rat";
+const MINOTAUR: &str = "oteryn:creature.minotaur";
 
 const ACTIONS: &[&str] = &[
     "seeded-prerequisites",
     "initial-query",
     "invalid-query-refused",
+    "soulpit-entry",
     "completion-observed",
     "fresh-admission-persistence",
     "species-xp-multiplier",
@@ -131,12 +132,155 @@ async fn page(client: &mut DevClientSession) -> TestResult<wire::AnimusMasteries
         .ok_or_else(|| format!("accepted command-232 malformed-page={:?}", reply.payload).into())
 }
 
+const ENTRY: TilePos = TilePos {
+    x: 32375,
+    y: 31158,
+    floor: -8,
+};
+
+async fn stage(clients: &SeamClients<'_>) -> TestResult {
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let result = sqlx::query(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions AS s
+               WHERE s.character_id=p.character_id AND s.world_id=p.world_id AND s.session_state<>3
+           )",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(ENTRY.x))
+    .bind(i32::from(ENTRY.y))
+    .bind(-i32::from(ENTRY.floor))
+    .execute(&mut db)
+    .await?;
+    if result.rows_affected() != 1 {
+        return Err("W08 staging requires one saved offline world position".into());
+    }
+    db.close().await?;
+    evidence("W08_FIXTURE placement=(32375,31158,-8) source=authored-soulpit-slot-zero");
+    Ok(())
+}
+
+fn core_count(client: &DevClientSession, core: std::num::NonZeroU32) -> TestResult<u64> {
+    Ok(client
+        .inventory()
+        .ok_or("W08 admitted without inventory")?
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == core)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum())
+}
+
+async fn enter_soulpit(
+    clients: &SeamClients<'_>,
+    client: &mut DevClientSession,
+    core: std::num::NonZeroU32,
+) -> TestResult {
+    use oteryn_gameplay_domain::domain::soulpit;
+    use oteryn_protocol_oteryn::world_object::{
+        self, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    };
+
+    let obelisk = soulpit::OBELISK_POSITION;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let mut ordinals = Vec::new();
+    oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
+        if sector.floor == obelisk.floor {
+            for tile in sector.tiles {
+                if (tile.x, tile.y) == (obelisk.x, obelisk.y) {
+                    for (ordinal, item) in
+                        tile.items.iter().filter(|item| item.depth == 0).enumerate()
+                    {
+                        if manifest.palette[item.palette as usize].key == "oteryn:item.tibia.i47367"
+                        {
+                            ordinals.push(ordinal);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let [ordinal] = ordinals.as_slice() else {
+        return Err(format!(
+            "W08 expected one authored Soulpit obelisk, found {}",
+            ordinals.len()
+        )
+        .into());
+    };
+    let world = full_e2ef7::qualification_world(clients)?;
+    let mut placement = world.base().digest().to_vec();
+    let key = (u64::from(obelisk.x) << 32)
+        | (u64::from(obelisk.y) << 16)
+        | (u64::from(u8::try_from(-i16::from(obelisk.floor))?) << 8)
+        | u64::from(u8::try_from(*ordinal)?);
+    placement.extend_from_slice(&key.to_be_bytes());
+
+    let payload = world_object::encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(core),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
+        use_with_position: None,
+    })
+    .map_err(|error| format!("W08 obelisk USE encoding: {error:?}"))?;
+    let source = client.join_snapshot().game_session_id;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition = world_object::decode_use_result(&reply.payload);
+    if reply.status != CommandStatus::Accepted
+        || !matches!(disposition, Ok(UseDisposition::Committed))
+    {
+        return Err(format!(
+            "W08 obelisk USE status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
+    }
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client.join_snapshot().game_session_id == source {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("W08 obelisk USE did not admit an Instance".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    let destination = client.join_snapshot().game_session_id;
+    let position = tile(client.world_spatial().actor_position)?;
+    let scope = client
+        .session_mut()
+        .activity_scope()
+        .ok_or("W08 Instance scope absent")?;
+    if scope.source_session != *source.as_bytes()
+        || scope.session != *destination.as_bytes()
+        || !matches!(
+            scope.scope,
+            oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. }
+        )
+        || position != soulpit::entry_destination(0)?
+    {
+        return Err(
+            format!("W08 incorrect Soulpit handoff scope={scope:?} position={position:?}").into(),
+        );
+    }
+    if core_count(client, core)? != 0 {
+        return Err("W08 Soulpit entry did not debit the Minotaur Soul Core".into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W08_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
     character_prep::declare_seeded(
         "W08",
-        "knight-level=100,rat-soul-core=1",
+        "knight-level=100,minotaur-soul-core=1",
         "ordinary leveling and core acquisition are outside the mastery scenario",
     );
     let mut setup = connect_character(clients, 0xc8, 0).await?;
@@ -154,6 +298,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("W08 fixture setup logout refused".into());
     }
     drop(setup);
+    stage(clients).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
     if client.join_snapshot().game_session_id == setup_session {
         return Err("W08 fixture setup reused its admission".into());
@@ -169,19 +314,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if (vitals.max_health, vitals.max_mana) != (max_health, max_mana) {
         return Err(format!("W08 seeded Knight vitals differ: {vitals:?}").into());
     }
-    let core = provisioning::item_reference(&provisioning::item_index()?, 47398)?;
-    let core_count: u64 = client
-        .inventory()
-        .ok_or("W08 admitted without inventory")?
-        .entries
-        .iter()
-        .filter(|entry| entry.item_definition_ref == core)
-        .map(|entry| u64::from(entry.count.get()))
-        .sum();
-    if core_count != 1 {
-        return Err(format!("W08 expected one Rat Soul Core, found {core_count}").into());
+    let core = provisioning::item_reference(&provisioning::item_index()?, 47402)?;
+    let count = core_count(&client, core)?;
+    if count != 1 || tile(client.world_spatial().actor_position)? != ENTRY {
+        return Err(format!(
+            "W08 expected one Minotaur Soul Core and exact entry slot, found count={count}"
+        )
+        .into());
     }
-    row.pass("seeded-prerequisites", (max_health, max_mana, core_count));
+    row.pass("seeded-prerequisites", (max_health, max_mana, count, ENTRY));
     let before = page(&mut client).await?;
     if before.total != 0 || !before.keys.is_empty() {
         row.fail(
@@ -207,12 +348,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("invalid-query-refused", (refused.status, &after_refusal));
 
+    enter_soulpit(clients, &mut client, core).await?;
+    row.pass(
+        "soulpit-entry",
+        "slot-zero Instance admission and one core consumed",
+    );
+
     // The acquisition driver must earn mastery before the completion query.
     let completed = page(&mut client).await?;
-    if completed.total != 1 || completed.keys.as_slice() != [RAT] {
+    if completed.total != 1 || completed.keys.as_slice() != [MINOTAUR] {
         row.fail(
             "completion-observed",
-            format!("expected player-earned Rat mastery, got {completed:?}"),
+            format!("expected player-earned Minotaur mastery, got {completed:?}"),
         );
         return Ok(());
     }
