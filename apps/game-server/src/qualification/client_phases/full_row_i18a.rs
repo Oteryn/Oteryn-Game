@@ -249,7 +249,6 @@ async fn browse_open(
                 && ordinary_landing(
                     world.floors().contains(pos),
                     world.floors().teleport(pos).is_some()
-                        || world.floors().doomforge_portal(pos).is_some()
                         || world.facts().quest_portal_destination(pos, 0).is_some(),
                 )
                 && world
