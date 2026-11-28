@@ -5,7 +5,8 @@
 //! §4.1), writes one immutable kill receipt keyed by the (death, character)
 //! reward occurrence and moves the race's `kill_count` up by one. Experience
 //! and level are unchanged. A kill at the race's final threshold is
-//! saturated: nothing is written and the revision does not advance.
+//! saturated: progress and revision stay fixed. A qualifying retained defeat history
+//! may still award a previously unearned achievement.
 //!
 //! The write uses the R7 P03 XP writer's own fence
 //! (`character_progression::assert_gameplay_fence`): recovery fence,
@@ -16,6 +17,7 @@
 //! This component does not prove that Combat legitimately produced the
 //! occurrence or that the kill was credited; `combat::death_reward` does.
 
+use crate::durability::db::commit_semantic_read;
 use super::account_achievement::grant_missing;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -33,7 +35,7 @@ use crate::domain::progression::ProgressionRevisionContext;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_progression::bestiary_achievement::{
-    SOURCE_KIND, completion_keys, kill_count_keys,
+    SOURCE_KIND, completion_keys, deepling_defeats, kill_count_keys,
 };
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -220,7 +222,7 @@ impl DurabilityRoot {
                         super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
                     let increment =
                         talisman_bestiary_increment(occurrence, projection.bonuses(&race)[3]);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CapturedBountyTalismanKill {
                         fence,
                         occurrence,
@@ -348,6 +350,14 @@ impl DurabilityRoot {
                     };
                     let Some(first_kill_count) = request.race.next_kill_count(kill_count_before)
                     else {
+                        if let Some(key) = deepling_achievement(
+                            &mut tx, fence.character_id, request.race.key(), kill_count_before,
+                        ).await? {
+                            grant_missing(
+                                &mut tx, fence.character_id, &[key], SOURCE_KIND,
+                                request.occurrence.as_bytes(),
+                            ).await?;
+                        }
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(BestiaryKillOutcome::Saturated {
                             race_key: request.race.key().to_owned(),
@@ -524,7 +534,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -573,7 +583,7 @@ impl DurabilityRoot {
                         }),
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(progress))
                 })
             })
@@ -771,6 +781,36 @@ fn canonical_difficulties() -> &'static HashMap<String, (BestiaryRace, String)> 
     &RACES
 }
 
+/// One receipt is one actual defeat even when Bounty Talisman adds Bestiary credit.
+async fn deepling_achievement(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    race: &str,
+    credited: u32,
+) -> std::result::Result<Option<&'static str>, DurabilityError> {
+    let Some(rule) = deepling_defeats(race).filter(|rule| credited >= rule.total) else {
+        return Ok(None);
+    };
+    let eligible: bool = sqlx::query_scalar(
+        "SELECT NOT EXISTS (\
+            SELECT 1 FROM game_account_achievements a \
+            JOIN game_character_roots r USING (account_id) \
+            WHERE r.character_id = encode($1,'hex')::uuid AND a.achievement_key = $4 \
+         ) AND EXISTS (\
+            SELECT 1 FROM game_character_bestiary_kill_receipts \
+            WHERE character_id = encode($1,'hex')::uuid AND race_key = $2 \
+            LIMIT 1 OFFSET $3 \
+         )",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(race)
+    .bind(i64::from(rule.total) - 1)
+    .bind(rule.key)
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(eligible.then_some(rule.key))
+}
+
 /// P11: the Bestiary achievements of this kill, in its fenced, root-locked transaction. The
 /// completion counts are read only when this kill fully unlocks its entry.
 async fn grant_achievements(
@@ -781,6 +821,7 @@ async fn grant_achievements(
 ) -> std::result::Result<(), DurabilityError> {
     let race = request.race.key();
     let mut keys: Vec<&str> = kill_count_keys(race, kill_count_after).collect();
+    keys.extend(deepling_achievement(tx, character, race, kill_count_after).await?);
     if request.race.is_complete(kill_count_after) {
         let races = canonical_difficulties();
         // One row per Bestiary race at most: the canonical population bounds it.

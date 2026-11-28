@@ -108,20 +108,17 @@ pub struct NativeDelayedFacts {
     pub field_items: Vec<FieldItemSnapshot>,
     /// Exact item instances created by this cast; never a type-only cleanup list.
     pub created_field_instances: BTreeSet<u64>,
-    /// Grenade's formula bounds captured at cast, supplied from its ScheduledStrike.
-    pub captured_raw_bounds: Option<(i64, i64)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueTiming {
     RecomputeAtOccurrence,
-    RawBoundsAtCast,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModifierTiming {
     CurrentAtOccurrence,
     CastStanceSnapshot,
-    RawCastAndExpiryModifiers,
+    CastBuffsAndOccurrenceModifiers,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScheduledStrike {
@@ -131,7 +128,6 @@ pub struct ScheduledStrike {
     pub explicit_target: Option<u64>,
     pub value_timing: ValueTiming,
     pub modifier_timing: ModifierTiming,
-    pub captured_raw_bounds: Option<(i64, i64)>,
     pub stance: Option<StanceSnapshot>,
     pub requires_caster_online: bool,
     pub ignore_caster_floor: bool,
@@ -453,13 +449,13 @@ fn strike(
             if delayed { 0.5 } else { 1.0 },
         ),
         "divine grenade" => {
-            let captured = f
-                .captured_raw_bounds
-                .ok_or_else(|| Error("missing grenade cast bounds".into()))?;
-            if captured.0 < 0 || captured.1 < captured.0 || captured.1 > i64::from(i32::MAX) {
-                return Err(Error("invalid captured grenade bounds".into()));
-            }
-            (Element::Holy, (captured.0 as f64, captured.1 as f64), 1.0)
+            let multiplier = if actor.stage == 0 {
+                1.0
+            } else {
+                let bonus = stage_number(p, "base_damage_bonus_percent_by_stage", actor.stage)?;
+                (100.0 + bonus as f64) / 100.0
+            };
+            (Element::Holy, formula_bounds(p, actor)?, multiplier)
         }
         "spiritual outburst" => {
             let percent = if delayed {
@@ -549,7 +545,7 @@ fn strike(
         .to_owned(),
         modifier_timing: match name {
             "death echo" => ModifierTiming::CastStanceSnapshot,
-            "divine grenade" => ModifierTiming::RawCastAndExpiryModifiers,
+            "divine grenade" => ModifierTiming::CastBuffsAndOccurrenceModifiers,
             _ => ModifierTiming::CurrentAtOccurrence,
         },
         stance: if name == "death echo" {
@@ -594,32 +590,18 @@ pub fn plan(
                         "divine grenade" => true,
                         _ => full,
                     };
-                    let raw = if name == "divine grenade" {
-                        let multiplier = 1.0
-                            + stage_number(p, "base_damage_bonus_percent_by_stage", f.cast.stage)?
-                                as f64
-                                / 100.0;
-                        Some(bounds(formula_bounds(p, &f.cast)?, multiplier)?)
-                    } else {
-                        None
-                    };
                     let scheduled = if schedules {
                         Some(Box::new(ScheduledStrike {
                             due_ms: due,
                             expected_caster: f.cast.identity.clone(),
                             position: f.cast_position,
                             explicit_target: f.explicit_target,
-                            value_timing: if raw.is_some() {
-                                ValueTiming::RawBoundsAtCast
-                            } else {
-                                ValueTiming::RecomputeAtOccurrence
-                            },
+                            value_timing: ValueTiming::RecomputeAtOccurrence,
                             modifier_timing: match name {
                                 "death echo" => ModifierTiming::CastStanceSnapshot,
-                                "divine grenade" => ModifierTiming::RawCastAndExpiryModifiers,
+                                "divine grenade" => ModifierTiming::CastBuffsAndOccurrenceModifiers,
                                 _ => ModifierTiming::CurrentAtOccurrence,
                             },
-                            captured_raw_bounds: raw,
                             stance: f.cast.stance.clone(),
                             requires_caster_online: true,
                             ignore_caster_floor: name == "death echo",
@@ -837,7 +819,6 @@ mod tests {
             field_tiles: vec![],
             field_items: vec![],
             created_field_instances: BTreeSet::new(),
-            captured_raw_bounds: None,
         }
     }
     fn strike_parameters(name: &str) -> Value {
@@ -850,7 +831,7 @@ mod tests {
             "effect_asset_binding":"canary.appearance:effect/death_echo",
             "chain_effect_asset_binding":"canary.appearance:effect/blow_white",
             "marker_asset_binding":"canary.appearance:effect/divine_grenade",
-            "cooldown_ms_by_stage":[26000,20000,14000],"base_damage_bonus_percent_by_stage":[0,16,32]})
+            "cooldown_ms_by_stage":[26000,20000,16000],"base_damage_bonus_percent_by_stage":[30,60,100]})
     }
     #[test]
     fn area_strikes_share_one_roll_while_outburst_keeps_independent_draws() {
@@ -864,13 +845,12 @@ mod tests {
             let mut f = facts();
             f.targets.push(TargetSnapshot {
                 actor: 3,
-                ..f.targets[0].clone()
+                ..f.targets[0]
             });
             f.event = event;
             if event == Event::DelayedOccurrence {
                 f.now_ms = if name == "divine grenade" { 3100 } else { 1100 };
             }
-            f.captured_raw_bounds = Some((100, 200));
             let mut p = strike_parameters(name);
             p["formula"]["maximum"] =
                 json!({"op":"add","args":[p["formula"]["minimum"].clone(),{"const":"100"}]});
@@ -914,7 +894,6 @@ mod tests {
             if event == Event::DelayedOccurrence {
                 f.now_ms = if name == "divine grenade" { 3100 } else { 1100 };
             }
-            f.captured_raw_bounds = Some((100, 200));
             let mut draws = 0;
             let result = plan(
                 "delayed_strike",
@@ -946,6 +925,75 @@ mod tests {
             "field_item":{"key":"candidate:item/40450","revision":"spell-p2-r21"},
             "cooldown_ms_by_stage":[32000,28000,24000],"bonus_damage_percent_by_stage":[8,10,12]})
     }
+    #[test]
+    fn c18b_death_echo_rolls_crystal_damage_bounds_at_both_occurrences() {
+        let document: Value = serde_json::from_str(include_str!(
+            "../../../../../content/abilities/definitions/player-spells.json"
+        ))
+        .expect("registered spell catalogue");
+        let echo = document["bundles"]
+            .as_array()
+            .expect("bundles")
+            .iter()
+            .find(|entry| entry["bundle"]["spell"]["name"] == "Death Echo")
+            .expect("Death Echo");
+        let compiled =
+            super::super::native::spell_from_bundle(&echo["bundle"], &echo["dependencies"])
+                .expect("compile Death Echo");
+        let mut f = facts();
+        f.cast.inputs.level = 300;
+        f.cast.inputs.magic_level = 50;
+        f.current = Some(f.cast.clone());
+        for (id, (x, y)) in [(8, 8), (8, 12), (12, 8), (12, 12)].into_iter().enumerate() {
+            let corner = position(x, y);
+            f.targets.push(TargetSnapshot {
+                actor: id as u64 + 3,
+                position: corner,
+                ..f.targets[0].clone()
+            });
+            f.clear_sight.insert((f.cast_position, corner));
+        }
+        for (event, now_ms, expected) in [
+            (Event::Cast, 100, (180, 240)),
+            (Event::DelayedOccurrence, 1100, (90, 120)),
+        ] {
+            f.event = event;
+            f.now_ms = now_ms;
+            let mut rolled = None;
+            let planned = compiled
+                .plan(
+                    super::super::native::Facts::Delayed(&f),
+                    &mut |low, high| {
+                        rolled = Some((low, high));
+                        low
+                    },
+                )
+                .expect("plan Death Echo occurrence");
+            assert_eq!(rolled, Some(expected), "{event:?}");
+            let super::super::native::Plan::Delayed(plan) = planned else {
+                panic!("expected delayed plan for {event:?}");
+            };
+            let strike = match *plan {
+                NativeDelayedPlan::Cast {
+                    immediate: Some(strike),
+                    ..
+                }
+                | NativeDelayedPlan::Occurrence {
+                    strike: Some(strike),
+                    ..
+                } => strike,
+                _ => panic!("expected strike for {event:?}"),
+            };
+            assert_eq!(strike.area_tiles.len(), 25, "{event:?}");
+            assert_eq!(
+                strike.hits.iter().map(|hit| hit.actor).collect::<Vec<_>>(),
+                [2, 3, 4, 5, 6],
+                "{event:?} must hit the center and all four corners",
+            );
+        }
+        assert_eq!(echo["bundle"]["spell"]["base_power"], 75);
+    }
+
     #[test]
     fn all_four_canonical_profiles_reach_their_typed_cast_plans() {
         let document: Value = serde_json::from_str(include_str!(
@@ -1011,7 +1059,7 @@ mod tests {
                     },
                 ) => {
                     assert_eq!(schedule.due_ms, 3100);
-                    assert!(schedule.captured_raw_bounds.is_some());
+                    assert_eq!(schedule.value_timing, ValueTiming::RecomputeAtOccurrence);
                     assert_eq!(marker.remove_at_ms, 3100);
                 }
                 (
@@ -1072,8 +1120,97 @@ mod tests {
             }
         ));
     }
+    fn grenade_profile() -> super::super::native::CompiledNativeSpell {
+        let profile = super::super::native::profiles()
+            .unwrap()
+            .iter()
+            .find(|p| {
+                p["name"]
+                    .as_str()
+                    .is_some_and(|name| name.eq_ignore_ascii_case("divine grenade"))
+                    && p["carrier"] == "instant"
+            })
+            .expect("canonical Divine Grenade profile");
+        super::super::native::spell_from_bundle(
+            &json!({"spell": profile["spell"]}),
+            &profile["dependencies"],
+        )
+        .unwrap()
+    }
+
     #[test]
-    fn grenade_snapshots_bounds_marker_cleanup_survives_logout() {
+    fn grenade_detonation_uses_current_magic_level_and_wheel_grade() {
+        use super::super::native::{Facts, Plan};
+        let compiled = grenade_profile();
+        let mut f = facts();
+        let Plan::Delayed(cast) = compiled
+            .plan(Facts::Delayed(&f), &mut |_, _| panic!("no cast damage"))
+            .unwrap()
+        else {
+            panic!("expected delayed cast")
+        };
+        let NativeDelayedPlan::Cast {
+            scheduled: Some(schedule),
+            ..
+        } = *cast
+        else {
+            panic!("expected scheduled grenade")
+        };
+        f.event = Event::DelayedOccurrence;
+        f.now_ms = schedule.due_ms;
+        let current = f.current.as_mut().unwrap();
+        current.inputs.magic_level = 200;
+        // At level 1200, Crystal's flat 214 plus 4x/6x magic level
+        // gives 1014..1414 before applying the current grade multiplier.
+        let mut bounds_by_grade = Vec::new();
+        for stage in 0..=3 {
+            f.current.as_mut().unwrap().stage = stage;
+            let Plan::Delayed(result) = compiled
+                .plan(Facts::Delayed(&f), &mut |low, high| {
+                    bounds_by_grade.push((low, high));
+                    low
+                })
+                .unwrap()
+            else {
+                panic!("expected delayed occurrence")
+            };
+            assert!(matches!(
+                *result,
+                NativeDelayedPlan::Occurrence {
+                    strike: Some(_),
+                    marker_removed: true,
+                    dropped: false
+                }
+            ));
+        }
+        assert_eq!(
+            bounds_by_grade,
+            [(1014, 1414), (1318, 1838), (1622, 2262), (2028, 2828)]
+        );
+    }
+
+    #[test]
+    fn grenade_cast_selects_crystal_cooldown_at_each_wheel_grade() {
+        use super::super::native::{Facts, Plan};
+        let compiled = grenade_profile();
+        let mut f = facts();
+        for (stage, expected) in [(1, 26000), (2, 20000), (3, 16000)] {
+            f.cast.stage = stage;
+            let Plan::Delayed(result) = compiled
+                .plan(Facts::Delayed(&f), &mut |_, _| panic!("no cast damage"))
+                .unwrap()
+            else {
+                panic!("expected delayed cast")
+            };
+            let NativeDelayedPlan::Cast { cooldown_ms, .. } = *result else {
+                panic!("expected grenade cast")
+            };
+            assert_eq!(cooldown_ms, Some(expected), "cast grade {stage}");
+        }
+    }
+
+    #[test]
+    fn grenade_recomputes_bounds_and_marker_cleanup_survives_logout() {
         let mut f = facts();
         let p = strike_parameters("divine grenade");
         let NativeDelayedPlan::Cast {
@@ -1089,11 +1226,10 @@ mod tests {
         else {
             panic!("grenade")
         };
-        assert_eq!(schedule.captured_raw_bounds, Some((364, 364)));
+        assert_eq!(schedule.value_timing, ValueTiming::RecomputeAtOccurrence);
         assert_eq!(marker.remove_at_ms, 3100);
         f.event = Event::DelayedOccurrence;
         f.now_ms = 3100;
-        f.captured_raw_bounds = schedule.captured_raw_bounds;
         f.current.as_mut().unwrap().inputs.magic_level = 999;
         let NativeDelayedPlan::Occurrence {
             strike: Some(hit), ..
@@ -1101,7 +1237,7 @@ mod tests {
         else {
             panic!("explosion")
         };
-        assert_eq!(hit.hits[0].magnitude, 364);
+        assert_eq!(hit.hits[0].magnitude, 1940);
         f.current = None;
         assert_eq!(
             plan("delayed_strike", &p, &f, &mut |_, _| panic!("offline draw")).unwrap(),

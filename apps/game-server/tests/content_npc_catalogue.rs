@@ -26,15 +26,15 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
     assert_eq!(
         catalogue.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
+        "cyclopedia-creatures-crystal-201189f-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "40947c716ba37cae03c6057ab4fa99a6b6a1313e2cd9bbaff9edf952797f94d5"
+        "714b6059116037edb8fa8bbbd18166b486bd018c5f151bfb5a9be70c4b9abf95"
     );
     assert_eq!(catalogue.npc_count(), 1282);
-    assert_eq!(catalogue.dialogue_count(), 836);
-    assert_eq!(catalogue.service_count(), 400);
+    assert_eq!(catalogue.dialogue_count(), 852);
+    assert_eq!(catalogue.service_count(), 401);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);
     let (reference, imported) = catalogue

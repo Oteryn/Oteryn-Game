@@ -365,12 +365,14 @@ fn run_scenario(scenario: MarketScenario) -> TestResult {
             }
         }
         if population {
-            let key = "oteryn:item.tibia.i10219";
+            // The tail of the Keeper is still admitted by the Crystal Market catalogue alone.
+            let key = "oteryn:item.tibia.i11367";
             let revision = "definition-r1";
             assert!(native.item_policy(key, revision).is_none());
+            assert!(native.marketable_definition(key, revision));
             let reference = index
                 .definition_ref("Item", key, revision)
-                .ok_or("crocodile steak ref")?;
+                .ok_or("the tail of the Keeper Item reference")?;
             ware = Some((key.into(), revision.into(), reference.get()));
         }
         let (key, revision, reference) = ware.ok_or("marketable native ware")?;
@@ -465,7 +467,7 @@ fn run_scenario(scenario: MarketScenario) -> TestResult {
             }
             assert!(
                 found,
-                "sourced crocodile steak omitted from market catalogue"
+                "{key} omitted from market catalogue"
             );
             // Crystal item.cpp:3504 rejects imbuements even on a marketable type.
             let mut retained = harness.pool.begin().await?;

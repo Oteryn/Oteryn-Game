@@ -31,6 +31,9 @@ use crate::combat::{
 };
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
+use crate::durability::account_achievement::{
+    BossDeathAchievementRecipient, BossDeathAchievementWork, BossDeathAchievements,
+};
 use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgressError};
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::cyclopedia_tracker::TrackerKind;
@@ -68,6 +71,13 @@ fn apply_hunting_stamina_to_loot(
         .is_some_and(|minutes| !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes))
     {
         loot_table.entries.clear();
+        if matches!(
+            loot_table.algorithm,
+            crate::combat::LootSelectionAlgorithm::DailyBoosted { .. }
+        ) {
+            // The boosted prefix described the cleared entries, not later corpse drops.
+            loot_table.algorithm = crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm;
+        }
     }
 }
 
@@ -136,10 +146,13 @@ pub struct PendingKillSettlement {
     pub activity_at_death:
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
+    boss_achievements: Option<Arc<BossAchievementSettlement>>,
     /// PREY-DIFF: freeze selection and access on the lethal turn; retries must not
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
+    /// Frozen at death and added after ordinary loot modifiers.
+    fiendish_sliver: Option<Arc<FiendishCorpseLoot>>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
@@ -161,6 +174,13 @@ pub struct PendingKillSettlement {
     pub(super) objectives: Option<Arc<Vec<super::quest_kill_objectives::CapturedObjective>>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
+}
+
+#[derive(Debug)]
+struct FiendishCorpseLoot {
+    sliver: crate::combat::LootTableEntry,
+    // The sliver cause and its destination slot must both replay after a partial settle.
+    prepared: OnceLock<crate::combat::LootTableDefinition>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -204,6 +224,29 @@ pub(super) fn tracks_native_progression(creature: &str) -> bool {
 }
 
 impl PendingKillSettlement {
+    pub(super) fn has_boss_achievement_work(&self) -> bool {
+        self.boss_achievements.is_some()
+    }
+
+    fn has_corpse(&self) -> bool {
+        self.row
+            .as_ref()
+            .is_some_and(|row| row.corpse_item.is_some())
+    }
+
+    pub(super) async fn retain_boss_achievements(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        skips_corpse: bool,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        if (skips_corpse || !self.has_corpse())
+            && let Some(achievement) = self.boss_achievements.as_ref()
+        {
+            achievement.work.retain(tx, self.facts.death).await?;
+        }
+        Ok(())
+    }
+
     pub(super) fn experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
         self.soulpit_experience
             .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
@@ -263,9 +306,11 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
+            boss_achievements: None,
             world_change: None,
             prey_checkpoint: None,
             forge: None,
+            fiendish_sliver: None,
             echo: None,
             callback_loot: Vec::new(),
             tutorial_loot: Arc::default(),
@@ -551,6 +596,7 @@ pub struct KillSettlementQueue(
     Arc<super::public_kill_statistics::CaptureQueue>,
     pub(super) Arc<Mutex<super::quest_kill_objectives::ObjectiveCaptureCache>>,
     Arc<std::sync::OnceLock<std::sync::Weak<super::raid_notices::ServerMessageHub>>>,
+    #[cfg(any(test, feature = "qualification-clock"))] Arc<OnceLock<()>>,
 );
 
 #[derive(Debug, Clone)]
@@ -570,6 +616,11 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    #[cfg(any(test, feature = "qualification-clock"))]
+    pub(super) fn enable_qualification_echo_portal(&self) {
+        let _ = self.5.set(());
+    }
+
     pub(super) fn bind_kill_notices(&self, hub: &Arc<super::raid_notices::ServerMessageHub>) {
         self.4.get_or_init(|| Arc::downgrade(hub));
     }
@@ -1606,7 +1657,9 @@ impl KillSettlementQueue {
                 // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
                 // point; capacity therefore has to cover every direct and nested candidate.
                 mints
-                    .checked_add(entry.callback_loot.len())
+                    .checked_add(
+                        entry.callback_loot.len() + usize::from(entry.fiendish_sliver.is_some()),
+                    )
                     .and_then(|mints| {
                         mints.checked_add(
                             usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
@@ -1913,6 +1966,10 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    let lethal_unix_micros = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|at| i64::try_from(at.as_micros()).ok());
     // Physical statistics precede every reward/principal/Bestiary admission.
     // The owner-issued lethal receipt proves death even for a no-corpse arena
     // or Instance; projections and rewards retain their existing independent rules.
@@ -2015,6 +2072,15 @@ pub fn record_creature_kill(
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
+    let robbery = runtime
+        .raid_identity_for_actor_including_dead(target)
+        .ok()
+        .flatten()
+        .filter(|identity| {
+            identity.wave == crate::durability::world_event::bank_robbery::RAID_WAVE
+                && identity.entry == 0
+        })
+        .map(|identity| identity.firing_id);
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
@@ -2100,6 +2166,7 @@ pub fn record_creature_kill(
     else {
         return;
     };
+    facts.bank_robbery = robbery;
     facts.died_at_unix_ms =
         u64::try_from(overlord_death_at.unwrap_or_else(super::npc_trade_command::unix_ms_now))
             .unwrap_or(0);
@@ -2110,6 +2177,11 @@ pub fn record_creature_kill(
     let Ok(damage_shares) = owner.reward_damage_shares(target) else {
         refuse("damage_shares_unavailable", &creature);
         return;
+    };
+    let boss_achievements = if wild {
+        capture_boss_achievements(runtime, target, &creature)
+    } else {
+        None
     };
     if !top.is_gone()
         && let Some(states) = sink.prey
@@ -2193,22 +2265,31 @@ pub fn record_creature_kill(
             observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
         )
     });
-    let echo_effect =
-        super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000)
-            .and_then(|draw| {
-                runtime
-                    .record_echo_death(
-                        oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
-                            death: facts.death,
-                            occurrence: facts.occurrence,
-                            bestiary_stars: source.and_then(|source| source.bestiary_stars),
-                            has_boss_race: source.is_some_and(|source| source.has_boss_race),
-                            draw,
-                            now_ms,
-                        },
-                    )
-                    .ok()
-            });
+    let portal_draw =
+        || super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000);
+    #[cfg(any(test, feature = "qualification-clock"))]
+    let portal_draw = || {
+        // Inject the winning roll only. The exact death occurrence still owns portal identity.
+        if sink.queue.5.get().is_some() {
+            Some(1)
+        } else {
+            portal_draw()
+        }
+    };
+    let echo_effect = portal_draw().and_then(|draw| {
+        runtime
+            .record_echo_death(
+                oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
+                    death: facts.death,
+                    occurrence: facts.occurrence,
+                    bestiary_stars: source.and_then(|source| source.bestiary_stars),
+                    has_boss_race: source.is_some_and(|source| source.has_boss_race),
+                    draw,
+                    now_ms,
+                },
+            )
+            .ok()
+    });
     let echo = (echo_effect
         == Some(crate::domain::echo_warden::EchoDeathEffect::FirstSpeciesReward))
     .then(|| {
@@ -2231,6 +2312,7 @@ pub fn record_creature_kill(
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if !overlord
+                && boss_achievements.is_none()
                 && boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
@@ -2268,9 +2350,11 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
+                            boss_achievements: None,
                             world_change,
                             prey_checkpoint,
                             forge: None,
+                            fiendish_sliver: None,
                             echo,
                             callback_loot: Vec::new(),
                             tutorial_loot: Arc::default(),
@@ -2287,6 +2371,7 @@ pub fn record_creature_kill(
                             source_completion: None,
                             no_progression_logged: false,
                         },
+                        lethal_unix_micros,
                     );
                 }
                 return;
@@ -2368,12 +2453,13 @@ pub fn record_creature_kill(
             // steps use actual damaging players independently of corpse MINT
             // qualification. Preserve the native lethal ledger on the rowless path.
             entry.damage_shares = damage_shares;
+            entry.boss_achievements = boss_achievements;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
-            accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+            accept_encounter_kill(runtime, sink.queue, sink.prey, entry, lethal_unix_micros);
             return;
         }
     };
@@ -2438,26 +2524,29 @@ pub fn record_creature_kill(
             }
         }
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
-    {
-        let Some(item) = sink.rewards.forge_sliver() else {
+    let fiendish_sliver = if !top.is_gone()
+        && personal_reward_row.is_none()
+        && row.corpse_item.is_some()
+        && matches!(
+            forge_kind,
+            Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _))
+        ) {
+        let Some(sliver) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
             return;
         };
         let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        if count > 0 {
-            Arc::make_mut(&mut row)
-                .loot_table
-                .entries
-                .push(crate::combat::LootTableEntry {
-                    item: item.clone(),
-                    min_count: count,
-                    max_count: count,
-                    probability_ppm: Some(1_000_000),
-                    details: Default::default(),
-                });
-        }
-    }
+        Some(Arc::new(FiendishCorpseLoot {
+            sliver: crate::combat::LootTableEntry {
+                min_count: count,
+                max_count: count,
+                ..sliver.clone()
+            },
+            prepared: OnceLock::new(),
+        }))
+    } else {
+        None
+    };
     if let Some((kind, _)) = forge_kind {
         let Some(amount) = kind.experience(row.xp_amount.get()) else {
             refuse("forge_xp_overflow", &creature);
@@ -2504,8 +2593,7 @@ pub fn record_creature_kill(
         )
     });
     let percent = sink.queue.prey_at_death(runtime, target, percent);
-    // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's
-    // 29 draws; a forge sliver adds two more, still below the existing 32 ceiling.
+    // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's 29 draws.
     let base = sink
         .rewards
         .row(&creature)
@@ -2660,6 +2748,7 @@ pub fn record_creature_kill(
         boss_reward,
         activity_death,
         forge,
+        fiendish_sliver,
         echo,
         callback_loot,
         tutorial_loot: Arc::default(),
@@ -2671,6 +2760,7 @@ pub fn record_creature_kill(
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
+        boss_achievements,
         prey_checkpoint,
         facts,
         creature,
@@ -2689,7 +2779,7 @@ pub fn record_creature_kill(
         source_completion: None,
         no_progression_logged: false,
     };
-    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry, lethal_unix_micros);
 }
 
 /// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
@@ -2775,7 +2865,7 @@ fn record_soulpit_kill(
     entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
     entry.activity_at_death = Some(sink.activity.to_vec());
     entry.damage_shares = shares;
-    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry, None);
 }
 
 /// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
@@ -2788,7 +2878,7 @@ fn accept_kill(
     queue: &KillSettlementQueue,
     entry: PendingKillSettlement,
 ) -> AppendOutcome {
-    accept_encounter_kill(runtime, queue, None, entry)
+    accept_encounter_kill(runtime, queue, None, entry, None)
 }
 
 fn accept_encounter_kill(
@@ -2796,6 +2886,7 @@ fn accept_encounter_kill(
     queue: &KillSettlementQueue,
     states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
+    lethal_unix_micros: Option<i64>,
 ) -> AppendOutcome {
     queue.state().prune_source_refusals(runtime);
     // A source-controlled lethal publication already reserved its deferred
@@ -2810,7 +2901,7 @@ fn accept_encounter_kill(
         }
     };
     if entry.soulpit_experience.is_none() {
-        super::grizzly_kills::capture(runtime, queue, &mut entry);
+        super::grizzly_kills::capture(runtime, queue, &mut entry, lethal_unix_micros);
         super::quest_kill_objectives::capture(runtime, queue, &mut entry);
     }
     super::quest_death_loot::capture(&mut entry);
@@ -3258,9 +3349,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return DrainOutcome::Deferred;
         }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
-            let principal = match self.states.attack.lock().await.kills().ordered_principal() {
+            let principal = self.states.attack.lock().await.kills().ordered_principal();
+            let principal = match principal {
                 Ok(Some(principal)) => principal,
-                Ok(None) => return DrainOutcome::Drained,
+                Ok(None) => return self.reconcile_boss_achievement_queue().await,
                 Err(()) => return DrainOutcome::Deferred,
             };
             let fence = match self.current_quest_fence(principal.0).await {
@@ -3360,6 +3452,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DrainOutcome::Drained
         }
     }
+    pub(super) async fn reconcile_boss_achievement_queue(&self) -> DrainOutcome {
+        use std::sync::atomic::Ordering;
+        let reconciled = &self.states.boss_achievement_reconciled;
+        if reconciled.load(Ordering::Acquire) {
+            return DrainOutcome::Drained;
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return DrainOutcome::Deferred;
+        };
+        if reconciled.load(Ordering::Acquire) {
+            return DrainOutcome::Drained;
+        }
+        if self.states.attack.lock().await.kills().has_pending() {
+            return DrainOutcome::Deferred;
+        }
+        let binding = self.runtime.lock().await.binding();
+        for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            match self
+                .root
+                .reconcile_boss_death_achievement(
+                    self.character,
+                    self.holder,
+                    binding.runtime_scope(),
+                    binding.scope_generation(),
+                )
+                .await
+            {
+                Ok(true) => {
+                    reconciled.store(true, Ordering::Release);
+                    return DrainOutcome::Drained;
+                }
+                Ok(false) => {}
+                Err(_) => return DrainOutcome::Deferred,
+            }
+        }
+        DrainOutcome::Deferred
+    }
+
     /// Drain earlier deaths even for a non-damaging shared member before its
     /// terminal release. A prior committing mark only reconciles its own outcome.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
@@ -3435,6 +3565,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
+#[derive(Debug)]
+struct BossAchievementSettlement {
+    work: BossDeathAchievementWork,
+    // Once the rewards resolve, a grant-only retry does not need the live corpse.
+    settled_rewards: OnceLock<SettleReport>,
+}
+
+fn record_settled_boss_rewards(
+    entry: &PendingKillSettlement,
+    report: SettleReport,
+) -> SettleReport {
+    if report.verdict == SettleVerdict::Final
+        && let Some(achievement) = &entry.boss_achievements
+    {
+        let _ = achievement.settled_rewards.set(report);
+    }
+    report
+}
+
+fn boss_xp_settled(
+    xp: &Result<
+        crate::durability::character_progression::ExperienceCommitOutcome,
+        CombatDeathRewardXpError,
+    >,
+) -> bool {
+    matches!(
+        xp,
+        Ok(_)
+            | Err(CombatDeathRewardXpError::NoProgressionBinding
+                | CombatDeathRewardXpError::NoExperienceAward)
+    )
+}
+
+/// Crystal's killingLibrary event reads Player IDs from the physical damage map.
+fn capture_boss_achievements(
+    runtime: &ChannelRuntimeV1,
+    target: ExactActorRef,
+    creature: &str,
+) -> Option<Arc<BossAchievementSettlement>> {
+    let boss = BossDeathAchievements::for_creature(creature)?;
+    let recipients: Vec<_> = runtime
+        .all_source_player_damage_shares(target)
+        .ok()?
+        .into_iter()
+        .filter_map(|share| {
+            let (session, lease) = runtime.present_player_lease(share.actor).ok()?;
+            if share.total == 0 || lease.character_id() != share.character {
+                return None;
+            }
+            Some(BossDeathAchievementRecipient {
+                character_id: crate::domain::CharacterId::from_bytes(*share.character.as_bytes())
+                    .ok()?,
+                lease_generation: lease.generation(),
+                session,
+            })
+        })
+        .collect();
+    (!recipients.is_empty()).then(|| {
+        Arc::new(BossAchievementSettlement {
+            work: BossDeathAchievementWork { boss, recipients },
+            settled_rewards: OnceLock::new(),
+        })
+    })
+}
+
 /// Copied Soul War onDeath settles XP before the ordinary drain can take the
 /// death. Run the same victory/chest prerequisites first, including the exact
 /// late-death classification; the XP transaction keeps its victory gate.
@@ -3461,18 +3656,48 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         if entry.soulpit_experience.is_some() {
             return self.settle_soulpit(entry).await;
         }
-        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
-            return SettleReport {
-                verdict: SettleVerdict::Retry,
-                no_progression: false,
-            };
+        let achievement = entry.boss_achievements.as_deref();
+        if achievement.is_some() {
+            // A reward writer can leave work even if its caller loses the commit reply.
+            self.admission
+                .states
+                .boss_achievement_reconciled
+                .store(false, std::sync::atomic::Ordering::Release);
         }
-        let report = super::grizzly_kills::settle(
-            self.admission,
-            entry,
-            Box::pin(self.settle_durably(entry, inflight_before)),
-        )
-        .await;
+        let mut report = if let Some(report) = achievement.and_then(|a| a.settled_rewards.get()) {
+            *report
+        } else {
+            if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+            super::grizzly_kills::settle(
+                self.admission,
+                entry,
+                Box::pin(self.settle_durably(entry, inflight_before)),
+            )
+            .await
+        };
+        // The separate idempotent grant may outlive this drain. It can only
+        // start after the quest and applicable reward owners finish this death.
+        if let Some(achievement) = achievement
+            && achievement.settled_rewards.get().is_some()
+            && self
+                .admission
+                .root
+                .grant_boss_death_achievements(
+                    self.admission.character,
+                    self.admission.holder,
+                    entry.facts.death,
+                    achievement.work.clone(),
+                )
+                .await
+                .is_err()
+        {
+            report.verdict = SettleVerdict::Retry;
+        }
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;
@@ -3645,6 +3870,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .and_then(|reference| plan_creature_loot(seed, reference, table).ok())
                 .map_or(0, |plan| plan.entries.len())
                 + entry.callback_loot.len()
+                + usize::from(entry.fiendish_sliver.is_some())
         };
         let (before, after) = (count(loot_table), count(&extended));
         let extra = after.saturating_sub(before);
@@ -3743,7 +3969,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             };
             if admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, true)
                 .await
                 .is_err()
             {
@@ -3753,6 +3979,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
+        let mut encounter_xp_settled = true;
         if let Some(experience) = entry.encounter_experience {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -3765,6 +3992,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Some(self.modified_experience(entry, experience.get()).await);
             match admission.settle_party_experience(&permit, &captured).await {
                 Ok(party) => {
+                    encounter_xp_settled = boss_xp_settled(&party.xp);
                     // Publish while the same Character revision slots and scope
                     // lane are held, so an activity handoff carries these marks.
                     admission
@@ -3786,6 +4014,27 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                         no_progression: false,
                     };
                 }
+            }
+        }
+        // A real death may owe account awards even when no ordinary corpse
+        // qualifies and the damage contributors have no payable experience.
+        let awards_without_corpse = entry.row.is_none() && entry.has_boss_achievement_work();
+        if awards_without_corpse {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            if admission
+                .settle_boss_without_experience(&permit, entry, true)
+                .await
+                .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
             }
         }
         if let Some(boss) = &entry.bosstiary_only {
@@ -3828,7 +4077,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     &boss.key,
                 );
             }
-            if let Err(error) = result {
+            if let Err(ref error) = result {
                 operator_event(&format!(
                     "kill_reward_bosstiary_failed creature={} reason={error:?}",
                     entry.creature
@@ -3843,18 +4092,28 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             }
-            return SettleReport {
+            let report = SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
+            };
+            return if awards_without_corpse || (result.is_ok() && encounter_xp_settled) {
+                record_settled_boss_rewards(entry, report)
+            } else {
+                report
             };
         }
         // Explicit native encounter XP and the Grizzly wrapper have settled.
         // A missing reward row admits no additional progression, Task Board,
         // equipment, proficiency or loot descendant.
         if entry.row.is_none() {
-            return SettleReport {
+            let report = SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
+            };
+            return if awards_without_corpse || encounter_xp_settled {
+                record_settled_boss_rewards(entry, report)
+            } else {
+                report
             };
         }
         // SPELL-LOCK-2: qualify the party roster and equipment under the existing
@@ -3894,7 +4153,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
         if proficiency_only {
             if admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, true)
                 .await
                 .is_err()
             {
@@ -3915,19 +4174,23 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
             admission.credit_weapon_proficiency_kill(entry).await;
-            return SettleReport {
-                verdict: SettleVerdict::Final,
-                no_progression: false,
-            };
+            return record_settled_boss_rewards(
+                entry,
+                SettleReport {
+                    verdict: SettleVerdict::Final,
+                    no_progression: false,
+                },
+            );
         }
         // A session without an XP binding keeps its existing no-write XP refusal.
         // Its admitted private rewards still use the same canonical death owner.
         if admission
             .progression_binding(self.fence.game_session_id)
             .is_none()
-            && entry.boss_reward_plan.get().is_some()
+            && (entry.boss_reward_plan.get().is_some()
+                || (entry.has_boss_achievement_work() && !entry.has_corpse()))
             && admission
-                .settle_boss_without_experience(&permit, entry)
+                .settle_boss_without_experience(&permit, entry, false)
                 .await
                 .is_err()
         {
@@ -4023,8 +4286,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => Some(party),
                 Err(error) => {
                     operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
-                    // A composed Quest failure must retry the entire settlement.
-                    if super::quest_kill_objectives::has_grave_boss_credit(&entry) {
+                    // The corpse is the last writer for a boss achievement roster.
+                    // A retryable XP failure must leave that writer uncommitted.
+                    if (entry.has_boss_achievement_work()
+                        && matches!(error, CharacterProgressionError::Unavailable(_)))
+                        || super::quest_kill_objectives::has_grave_boss_credit(&entry)
+                    {
                         return SettleReport {
                             verdict: SettleVerdict::Retry,
                             no_progression: false,
@@ -4068,68 +4335,112 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let mut loot_table = row.loot_table.clone();
-        if let Some(race) = &row.race {
-            let bonus = entry
-                .talisman
-                .get()
-                .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
-            apply_talisman_loot_bonus(&mut loot_table, bonus);
-        }
-        if entry.boss_reward.is_none() {
-            let bonus = entry
-                .boss_slot_bonuses
-                .get()
-                .and_then(|v| {
-                    v.iter()
-                        .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
-                })
-                .map_or(0, |(_, b)| *b);
-            super::boss_encounter::apply_slot_loot_bonus(
-                &mut loot_table,
-                bonus,
-                entry.facts.occurrence,
-                |key| admission.reward_table().is_daily_boss_equipment(key),
-            );
-        }
-        // The captured reward principal is Global's highest-damage loot owner. Read its live
-        // session value only after the current fence has been requalified; party members' stamina
-        // affects their XP, not ownership of this corpse's loot.
-        let live_stamina = admission
-            .states
-            .spell_states
-            .lock()
-            .await
-            .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
-        apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
-        // SV09: two full rolls for Double Loot; Reward System loot is excluded.
-        if entry.boss_reward.is_none() {
-            apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
-        }
-        if !loot_table.entries.is_empty() {
-            let Ok(active) = admission
-                .root
-                .wealth_duplex_active(admission.character, self.fence.character_id)
-                .await
-            else {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
-            };
-            if active
-                && let Ok(base) = admission.reward_table().row(&entry.creature)
-                && !self
-                    .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
-                    .await
-            {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
+        let retained_fiendish_loot = entry
+            .fiendish_sliver
+            .as_ref()
+            .and_then(|fiendish| fiendish.prepared.get());
+        let loot_table = if let Some(retained) = retained_fiendish_loot {
+            retained.clone()
+        } else {
+            let mut loot_table = row.loot_table.clone();
+            if let Some(race) = &row.race {
+                let bonus = entry
+                    .talisman
+                    .get()
+                    .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
+                apply_talisman_loot_bonus(&mut loot_table, bonus);
             }
-        }
-        super::quest_death_loot::append(&mut loot_table, &entry);
+            if entry.boss_reward.is_none() {
+                let bonus = entry
+                    .boss_slot_bonuses
+                    .get()
+                    .and_then(|v| {
+                        v.iter()
+                            .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
+                    })
+                    .map_or(0, |(_, b)| *b);
+                super::boss_encounter::apply_slot_loot_bonus(
+                    &mut loot_table,
+                    bonus,
+                    entry.facts.occurrence,
+                    |key| admission.reward_table().is_daily_boss_equipment(key),
+                );
+            }
+            // The captured reward principal is Global's highest-damage loot owner. Read its live
+            // session value only after the current fence has been requalified; party members' stamina
+            // affects their XP, not ownership of this corpse's loot.
+            let live_stamina = admission
+                .states
+                .spell_states
+                .lock()
+                .await
+                .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
+            let robbery_bag = entry.facts.bank_robbery.and_then(|_| {
+                loot_table
+                    .entries
+                    .iter()
+                    .find(|loot| {
+                        loot.item.production_key
+                            == crate::durability::world_event::bank_robbery::BAG
+                    })
+                    .cloned()
+            });
+            apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+            if loot_table.entries.is_empty()
+                && let Some(bag) = &robbery_bag
+            {
+                loot_table.entries.push(bag.clone());
+            }
+            // SV09: two full rolls for Double Loot; Reward System loot is excluded.
+            if entry.boss_reward.is_none() {
+                apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
+            }
+            if !loot_table.entries.is_empty() {
+                let Ok(active) = admission
+                    .root
+                    .wealth_duplex_active(admission.character, self.fence.character_id)
+                    .await
+                else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
+                if active
+                    && let Ok(base) = admission.reward_table().row(&entry.creature)
+                    && !self
+                        .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
+                        .await
+                {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            }
+            if let Some(bag) = robbery_bag {
+                // The recovery item remains guaranteed under ordinary loot-rate
+                // modifiers. Full additional rolls retain their distinct causes.
+                let bag_key = &bag.item.production_key;
+                for loot in loot_table
+                    .entries
+                    .iter_mut()
+                    .filter(|loot| &loot.item.production_key == bag_key)
+                {
+                    loot.probability_ppm = bag.probability_ppm;
+                    loot.details.rated_probability_ppm = None;
+                }
+            }
+            super::quest_death_loot::append(&mut loot_table, &entry);
+            // Crystal monster.cpp:2526-2540 inserts a selected stack directly into the corpse.
+            if row.corpse_item.is_some()
+                && let Some(fiendish) = &entry.fiendish_sliver
+            {
+                loot_table.entries.push(fiendish.sliver.clone());
+                let _ = fiendish.prepared.set(loot_table.clone());
+            }
+            loot_table
+        };
         // Ordinary stamina/event/duplex transforms must never remove or multiply
         // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
         let Ok((loot_table, tutorial_corruptor)) = admission
@@ -4144,7 +4455,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // The cached first table can contain more ordinary rolls than this
         // retry's live modifiers reserved. Charge only its positive shortfall;
         // the existing take and extras are both released on every requeue/end.
-        if tutorial_corruptor.is_some()
+        if (tutorial_corruptor.is_some() || retained_fiendish_loot.is_some())
             && let Some(reference) = row.loot_table_ref.as_ref()
             && let Ok(plan) =
                 plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &loot_table)
@@ -4167,6 +4478,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             tutorial_corruptor,
+            atomic_source_loot: entry
+                .source_callback_loot
+                .as_ref()
+                .is_some_and(|source| source.selected_item().is_some()),
+            boss_achievement: entry
+                .boss_achievements
+                .as_ref()
+                .filter(|_| party_xp.as_ref().is_none_or(boss_xp_settled))
+                .map(|achievement| achievement.work.clone()),
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
             loot_table,
@@ -4372,7 +4692,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if source_plain_body && outcome.is_ok() {
             admission.states.loop_ground.invalidate();
         }
-        report
+        if outcome.as_ref().is_ok_and(|outcome| {
+            outcome.rewards.loot.is_ok() && boss_xp_settled(&outcome.rewards.xp)
+        }) {
+            record_settled_boss_rewards(&entry, report)
+        } else {
+            report
+        }
     }
 }
 

@@ -24,9 +24,10 @@ def extend(rows, callback, position):
         ((32669,32089,8), (32673,32071,8), (32667,32089,8), 3585, 'druid'),
         ((32673,32085,8), (32670,32071,8), (32673,32083,8), 3349, 'paladin'),
         ((32673,32093,8), (32672,32071,8), (32673,32094,8), 3264, 'knight'),
+        ((32673,32089,8), (32674,32071,8), (32673,32088,8), 50181, 'monk'),
     ]
     rite = callback('desert-dungeon-party-rite', 'desert_dungeon_quest', 'use',
-        'data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84',
+        'data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-89',
         unique=30030, appearance=2772, at=position(32673,32086,8),
         lever=[2772,2773], reversible=True,
         party_transfer=dict(activation_appearance=2772, stations=[
@@ -40,9 +41,9 @@ def extend(rows, callback, position):
     # a reward/access gate; repeated valid source rites remain possible.
     rite['storage'] = [dict(track='oteryn:quest-progress/world-action/desert-dungeon-rite',
                             minimum=-1, maximum=1, set=1)]
-    rite['sources'] = ['canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:'
-        'data-otservbr-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84'
-        '#sha256:72e3bcedf70a9dd7ffe81bb5f71aaa831acdd66110b91bc44aae11ab43acf1ad']
+    rite['sources'] = ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+        'data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-89'
+        '#sha256:c39da1982605cef2febe4cbb8c5f344c71f480f08f8e9c1e7df7501eb9dde49d']
     rows.append(rite)
     import elvenbane_access
     rows.extend(elvenbane_access.callbacks(callback, position))

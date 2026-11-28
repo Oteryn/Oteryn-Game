@@ -1,6 +1,16 @@
 //! Compatibility exports and the shell's chronological command vocabulary.
 use crate::input::StepDir;
 pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat};
+use oteryn_client_runtime::world_interaction::{Selection, Target};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BarFallback {
+    pub(crate) slot: usize,
+    pub(crate) next: usize,
+    pub(crate) scope: u64,
+    pub(crate) edit: u64,
+    pub(crate) cursor: Option<(Target, Selection)>,
+}
 
 /// What the shell asks of the session task.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,6 +43,8 @@ pub enum PlayCommand {
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
     WorldContext(oteryn_client_runtime::world_interaction::Command),
     Combat(CombatCommand),
+    /// Try the spell, then consult the remaining bar actions if the server reports cooldown.
+    BarCast(CombatCommand, Box<BarFallback>),
     /// Stop only the opponent named by a world click or context-menu action.
     StopAttacking(oteryn_session::EntityRef),
     /// Combat command originating from the battle panel.

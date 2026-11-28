@@ -1,4 +1,5 @@
 //! Immutable reset decision and session-fenced durable announcement observations.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
 use super::db::{
@@ -13,6 +14,8 @@ use oteryn_protocol_oteryn::world_event::{
     WorldEventState, decode_world_event_state, encode_world_event_state,
 };
 use sqlx::{Postgres, Row, Transaction};
+
+pub mod bank_robbery;
 
 #[path = "world_event/occurrence.rs"]
 mod occurrence;
@@ -261,7 +264,7 @@ impl DurabilityRoot {
                     events
                 }
             } else if expected_epoch == 0 { Vec::new() } else { return Err(DurabilityError::InvalidStoredState); };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(events)
         })).await
     }
@@ -280,7 +283,7 @@ impl DurabilityRoot {
                 if !event_bound { return Err(DurabilityError::InvalidStoredState); }
                 epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(epoch)
         })).await
     }
@@ -306,6 +309,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            let world = fence.runtime_scope.world_id();
             if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
                 return Ok(Err(error));
             }
@@ -316,7 +320,6 @@ impl DurabilityRoot {
             if !active {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
-            let world = fence.runtime_scope.world_id();
             // PK lookup is bounded. Character/session locks serialize duplicate commands.
             let receipt = sqlx::query("SELECT result,character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AS matches FROM game_world_event_query_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())

@@ -4,7 +4,8 @@
     {
       "npc": "oteryn:npc.ahmet",
       "keywords": [
-        "mission"
+        "mission",
+        "quest"
       ],
       "topic": 0,
       "next_topic": 21,
@@ -23,6 +24,7 @@
     {
       "npc": "oteryn:npc.ahmet",
       "keywords": [
+        "mission",
         "quest"
       ],
       "topic": 0,

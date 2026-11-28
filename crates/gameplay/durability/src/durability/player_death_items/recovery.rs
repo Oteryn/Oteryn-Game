@@ -87,46 +87,70 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| PlayerDeathItemError::AuthorityRejected)?;
-        let root = self.clone();
-        let node = node.clone();
-        let proof = proof.clone();
-        let mut context = permit;
-        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| {
-            Box::pin(async move {
-                let permit = *context;
-                let mut tx = begin_type2_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_admission_relations(&mut tx).await?;
-                // Historical evidence cannot authorize new mutation. This validates
-                // independently lost source ownership, retained full session history,
-                // current origin ownership, and exact death/pending scope and generation.
-                if !validate_departed_activity_death_in_transaction(&mut tx, &root, &node, &proof).await? {
-                    return Ok(Err(PlayerDeathItemError::AuthorityRejected));
-                }
-                match replay(&mut tx, &source, cause, &request, burn).await {
-                    Ok(Some(outcome)) => { tx.commit(deadline).await?; return Ok(Ok(outcome)); }
-                    Ok(None) => {},
-                    Err(PlayerDeathItemError::Unavailable(error)) => return Err(error),
-                    Err(error) => return Ok(Err(error)),
-                }
-                // The same Character root lock serializes custody and content with
-                // live death operations. Its revision is neither read nor changed.
-                let stored = sqlx::query("SELECT content_revision,ruleset_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
-                    .bind(source.character_id.as_bytes().as_slice()).bind(source.runtime_scope.world_id().as_bytes().as_slice())
-                    .fetch_optional(&mut **tx).await?;
-                let Some(stored) = stored else { return Ok(Err(PlayerDeathItemError::AuthorityRejected)); };
-                if stored.try_get::<String, _>("content_revision")? != request.content_revision
-                    || stored.try_get::<String, _>("ruleset_revision")? != request.ruleset_revision {
-                    return Ok(Err(PlayerDeathItemError::StaleState));
-                }
-                let tuple = tx.tuple();
-                match write(&mut tx, permit, &source, cause, &request, burn, tuple).await {
-                    Ok(outcome) => { tx.commit(deadline).await?; Ok(Ok(outcome)) }
-                    Err(PlayerDeathItemError::Unavailable(error)) => Err(error),
-                    Err(error) => Ok(Err(error)),
-                }
-            })
-        }).await?
+        let mut context = (permit, self, node, proof, &recovery, &request);
+        loop {
+            let step = self
+                .try_issue_semantic_pass()?
+                .run_with_context(&mut context, move |holder, deadline, context| {
+                    Box::pin(async move {
+                        let (permit, root, node, proof, recovery, request) = *context;
+                        let mut tx = begin_type2_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        // Historical evidence cannot authorize new mutation. Recheck
+                        // the lost owner, current origin and exact pending death.
+                        if !validate_departed_activity_death_in_transaction(
+                            &mut tx, root, node, proof,
+                        )
+                        .await?
+                        {
+                            return Ok(Err(PlayerDeathItemError::AuthorityRejected));
+                        }
+                        match replay(&mut tx, &source, cause, request, burn).await {
+                            Ok(Some(outcome)) => {
+                                tx.commit(deadline).await?;
+                                return Ok(Ok(DeathItemStep::Complete(outcome)));
+                            }
+                            Ok(None) => {}
+                            Err(PlayerDeathItemError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error)),
+                        }
+                        // The live writer takes the same Character root lock.
+                        let stored = sqlx::query(
+                            "SELECT content_revision,ruleset_revision FROM game_character_roots
+                             WHERE character_id=encode($1,'hex')::uuid
+                               AND world_id=encode($2,'hex')::uuid FOR UPDATE",
+                        )
+                        .bind(source.character_id.as_bytes().as_slice())
+                        .bind(source.runtime_scope.world_id().as_bytes().as_slice())
+                        .fetch_optional(&mut **tx)
+                        .await?;
+                        let Some(stored) = stored else {
+                            return Ok(Err(PlayerDeathItemError::AuthorityRejected));
+                        };
+                        if stored.try_get::<String, _>("content_revision")?
+                            != request.content_revision
+                            || stored.try_get::<String, _>("ruleset_revision")?
+                                != request.ruleset_revision
+                        {
+                            return Ok(Err(PlayerDeathItemError::StaleState));
+                        }
+                        let tuple = tx.tuple();
+                        match write(&mut tx, permit, &source, cause, request, burn, tuple).await {
+                            Ok(outcome) => {
+                                tx.commit(deadline).await?;
+                                Ok(Ok(outcome))
+                            }
+                            Err(PlayerDeathItemError::Unavailable(error)) => Err(error),
+                            Err(error) => Ok(Err(error)),
+                        }
+                    })
+                })
+                .await??;
+            if let DeathItemStep::Complete(outcome) = step {
+                return Ok(outcome);
+            }
+        }
     }
 }
 

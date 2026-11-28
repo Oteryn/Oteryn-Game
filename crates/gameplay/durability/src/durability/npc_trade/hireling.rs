@@ -1,4 +1,5 @@
 //! Hirelings extend the existing NPC trade owner with named-House authority and present contents.
+use crate::durability::db::commit_semantic_read;
 use super::super::item_transfer::{ItemWeightLookup, validate_facts};
 use super::super::npc_trade_audit::OneItemHirelingPackageV1;
 use super::*;
@@ -398,7 +399,7 @@ impl DurabilityRoot {
             let found:Option<Vec<u8>>=sqlx::query_scalar("SELECT p.intent_binding FROM game_hireling_package_receipts p JOIN game_npc_trades t USING(transaction_id) WHERE t.character_id=encode($1,'hex')::uuid AND t.game_session_id=encode($2,'hex')::uuid AND t.command_id=$3::text::numeric")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             let result=match found {None=>Ok(false),Some(binding) if binding==intent_binding=>Ok(true),Some(_)=>Err(NpcTradeError::ConflictingOccurrence)};
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         })).await?
     }
     pub async fn commit_hireling_trade(

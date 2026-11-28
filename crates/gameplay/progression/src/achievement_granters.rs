@@ -1,4 +1,4 @@
-//! P11 counters for successful donor gathering and completed NPC travel.
+//! Counted achievements on committed craft and NPC travel receipts.
 //! Crystal `201189f`: `data-global/scripts/actions/tools/skinning.lua:176-201,317-321`,
 //! `data-global/scripts/actions/other/fishing.lua:290-314`,
 //! `data-global/scripts/actions/other/mechanical_fishing.lua:348-372`, and
@@ -34,6 +34,80 @@ pub const POLISHER: Counted = Counted {
     key: "oteryn:achievement/polisher",
     total: 1000,
 };
+
+/// Only a committed oven recipe counts. TibiaWiki achievement pages
+/// 62798@753222 and 62794@753351 define the plain and chocolate thresholds.
+pub fn baking(recipe: &str) -> Option<Counted> {
+    let (dough, _) = recipe
+        .strip_prefix("oteryn:item-conversion.bake-")?
+        .split_once('-')?;
+    match dough {
+        "6276" => Some(THE_CAKES_THE_TRUTH),
+        "8018" => Some(Counted {
+            key: "oteryn:achievement/sweet_tooth",
+            total: 10,
+        }),
+        _ => None,
+    }
+}
+
+pub const COLD_AS_ICE: Counted = Counted {
+    key: "oteryn:achievement/cold_as_ice",
+    total: 10,
+};
+pub const COOKIE_MONSTER: Counted = Counted {
+    key: "oteryn:achievement/cookie_monster",
+    total: 20,
+};
+pub const HAPPY_FARMER: Counted = Counted {
+    key: "oteryn:achievement/happy_farmer",
+    total: 200,
+};
+pub const HIGH_FLYER: Counted = Counted {
+    key: "oteryn:achievement/high_flyer",
+    total: 1000,
+};
+pub const JINX: Counted = Counted {
+    key: "oteryn:achievement/jinx",
+    total: 500,
+};
+pub const MARBLE_MADNESS: Counted = Counted {
+    key: "oteryn:achievement/marble_madness",
+    total: 5,
+};
+pub const NATURAL_SWEETENER: Counted = Counted {
+    key: "oteryn:achievement/natural_sweetener",
+    total: 50,
+};
+pub const NOTHING_CAN_STOP_ME: Counted = Counted {
+    key: "oteryn:achievement/nothing_can_stop_me",
+    total: 100,
+};
+pub const SANTAS_LIL_HELPER: Counted = Counted {
+    key: "oteryn:achievement/santa_s_li_l_helper",
+    total: 25,
+};
+pub const STEAMPUNKED: Counted = Counted {
+    key: "oteryn:achievement/steampunked",
+    total: 100,
+};
+pub const THE_CAKES_THE_TRUTH: Counted = Counted {
+    key: "oteryn:achievement/the_cake_s_the_truth",
+    total: 30,
+};
+pub const THE_SNOWMAN: Counted = Counted {
+    key: "oteryn:achievement/the_snowman",
+    total: 100,
+};
+
+/// TibiaWiki page 62638, revision 753138: every colour of opened Christmas Bundle counts once.
+pub fn christmas_bundle(key: &str) -> Option<Counted> {
+    matches!(
+        key,
+        "oteryn:item.tibia.i6506" | "oteryn:item.tibia.i6507" | "oteryn:item.tibia.i6508"
+    )
+    .then_some(SANTAS_LIL_HELPER)
+}
 
 /// Classify a successful, owner-validated gathering outcome. The existing gathering
 /// rules own the permitted tool/target pairs and their yield; this is not a second
@@ -105,6 +179,18 @@ mod tests {
             (ASHES_TO_DUST, "Ashes to Dust", 500),
             (SHIPS_KOBOLD, "Ship's Kobold", 1250),
             (POLISHER, "Polisher", 1000),
+            (COLD_AS_ICE, "Cold as Ice", 10),
+            (COOKIE_MONSTER, "Cookie Monster", 20),
+            (HAPPY_FARMER, "Happy Farmer", 200),
+            (HIGH_FLYER, "High-Flyer", 1000),
+            (JINX, "Jinx", 500),
+            (MARBLE_MADNESS, "Marble Madness", 5),
+            (NATURAL_SWEETENER, "Natural Sweetener", 50),
+            (NOTHING_CAN_STOP_ME, "Nothing Can Stop Me", 100),
+            (SANTAS_LIL_HELPER, "Santa's Li'l Helper", 25),
+            (STEAMPUNKED, "Steampunked", 100),
+            (THE_CAKES_THE_TRUTH, "The Cake's the Truth", 30),
+            (THE_SNOWMAN, "The Snowman", 100),
         ] {
             assert_eq!(rule.total, total);
             assert!(

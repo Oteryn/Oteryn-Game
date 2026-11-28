@@ -1,9 +1,11 @@
-//! Chosen Nomads Land s4: a physical check, not a personal progress flag.
+//! Chosen Nomads Land s4: the two-stack arrangement proves personal progress.
 //! TibiaWiki BR Arito's Task Quest:115-117 supplies the two-crate/amphora variant.
 //! Crystal 201189f data/items/items.xml:5020-5024,6245-6247 identifies both Items.
 use super::{Callback, GroundStackItem, Position, WorldRequirement};
 
 pub(super) const KEY: &str = "oteryn:quest-callback/m02/nomads-land/window";
+const QUEST: &str = "oteryn:quest.authored.nomads_land_quest";
+const PROOF: &str = "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured";
 const WINDOW: Position = Position {
     x: 33216,
     y: 32855,
@@ -43,11 +45,13 @@ pub(super) fn callback() -> Result<Callback, String> {
     // the committed z09/x129/y128 region has this sandstone window at ordinal 1,
     // and the two cells immediately north/north-west are clear sandstone floor.
     serde_json::from_value(serde_json::json!({
-        "key":KEY, "quest":"oteryn:quest.authored.nomads_land_quest", "trigger":"use",
+        "key":KEY, "quest":QUEST, "trigger":"use",
         "selector":{"position":WINDOW,"appearance":1744,"unique":null,"action":null,
                     "native":{"position":WINDOW,"appearance":1744,"ordinal":1}},
         "lever":null,"reversible":false,"passages":[],"teleport":null,
-        "storage":[],"offerings":[],"item_on_target":null,"world_requirements":requirements(),
+        "storage":[{"track":PROOF,"minimum":-1,"maximum":0,"set":1}],
+        "requires_world_admission":true,
+        "offerings":[],"item_on_target":null,"world_requirements":requirements(),
         "return_on_failure":false,
         "failure_message":"The crates and amphorae do not block this window.",
         "success_message":"The arranged crates and amphorae block this window.",
@@ -64,11 +68,25 @@ pub(super) fn exact(callback_: &Callback) -> bool {
     callback().is_ok_and(|canonical| callback_ == &canonical)
 }
 
+/// Both strictly admitted arrangements earn the same window completion proof.
+pub fn alternate_completion_receipt(
+    quest: &str,
+    transition: &str,
+    track: &str,
+    value: i64,
+) -> Option<&'static str> {
+    (quest == QUEST
+        && transition == "oteryn:quest-callback/engenc2/nomads-land-window"
+        && track == PROOF
+        && value == 1)
+        .then_some(KEY)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn m02_nomads_window_is_registered_stateless_and_cannot_change_its_source_readset()
+    fn m02_nomads_window_records_the_shared_proof_and_preserves_its_source_readset()
     -> Result<(), String> {
         let callbacks = super::super::load()?;
         let window = callbacks
@@ -76,7 +94,16 @@ mod tests {
             .find(|c| c.key == KEY)
             .ok_or("registered Nomads window")?;
         assert_eq!(window, &callback()?);
-        assert!(!window.has_personal_state());
+        assert!(window.has_personal_state());
+        assert!(window.requires_world_admission);
+        let [proof] = window.storage.as_slice() else {
+            return Err("one window completion track".into());
+        };
+        assert_eq!(
+            proof.track,
+            "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured"
+        );
+        assert_eq!((proof.minimum, proof.maximum, proof.set), (-1, 0, 1));
         assert_eq!(window.world_requirements.len(), 2);
         for case in 0..5 {
             let mut bad = window.clone();

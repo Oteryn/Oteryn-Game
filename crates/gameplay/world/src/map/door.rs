@@ -40,12 +40,22 @@ pub enum PaletteDoor {
     /// A qualified closed or locked door and the facts of its open item.
     Pair {
         open: EntryFacts,
+        closed_solid: bool,
         open_solid: bool,
         key_door: bool,
         key_forms: Option<[EntryFacts; 2]>,
         locked: bool,
-        authored_closed: Option<EntryFacts>,
+        close_pose: Option<EntryFacts>,
+        starts_open: bool,
     },
+}
+
+/// A per-player prerequisite supplied by an open source door.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DoorEntryRequirement {
+    MissingAction,
+    Level(u32),
+    Storage(u16),
 }
 
 #[derive(Debug)]
@@ -53,7 +63,7 @@ struct Door {
     /// The bundle placement key of the closed door entry.
     key: u64,
     key_forms: Option<[EntryFacts; 2]>,
-    authored_closed: Option<EntryFacts>,
+    close_pose: Option<EntryFacts>,
     /// Crystal action id carried by the placed door; key items must match it exactly.
     action: Option<u16>,
     required_level: Option<u32>,
@@ -68,6 +78,11 @@ struct Door {
 }
 
 impl Door {
+    fn meets_level(&self, actor_level: u32) -> bool {
+        self.required_level
+            .is_none_or(|required| actor_level >= required)
+    }
+
     fn solid(&self) -> bool {
         if self.state.load(Ordering::Acquire) & 3 == 1 {
             self.open_solid
@@ -133,7 +148,7 @@ impl DoorBook {
             result.doors.push(Door {
                 key: door.key,
                 key_forms: door.key_forms,
-                authored_closed: door.authored_closed,
+                close_pose: door.close_pose,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -156,7 +171,7 @@ impl DoorBook {
             .map(|door| Door {
                 key: door.key,
                 key_forms: door.key_forms,
-                authored_closed: door.authored_closed,
+                close_pose: door.close_pose,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -187,7 +202,7 @@ impl DoorBook {
         self.doors.push(Door {
             key,
             key_forms: None,
-            authored_closed: None,
+            close_pose: None,
             action,
             required_level,
             required_storage,
@@ -206,11 +221,10 @@ impl DoorBook {
         }
     }
 
-    pub(super) fn set_authored_open(&mut self, closed: Option<EntryFacts>) {
+    pub(super) fn set_close_pose(&mut self, closed: Option<EntryFacts>, starts_open: bool) {
         if let Some(door) = self.doors.last_mut() {
-            door.authored_closed = closed;
-            if closed.is_some() {
-                door.closed_solid = true;
+            door.close_pose = closed;
+            if starts_open {
                 door.initial_state = 1;
                 door.state = AtomicU64::new(1);
             }
@@ -295,6 +309,17 @@ impl DoorBook {
         self.find(key).is_some()
     }
 
+    /// The prerequisite of a closed door whose source USE also enters the doorway.
+    pub fn opening_requirement(&self, key: u64) -> Option<DoorEntryRequirement> {
+        let (door, state) = self.state(key, None)?;
+        if state & 3 != 0 {
+            return None;
+        }
+        door.required_level
+            .map(DoorEntryRequirement::Level)
+            .or_else(|| door.required_storage.map(DoorEntryRequirement::Storage))
+    }
+
     /// The object revision of placement `key`: 0 for every entry that is no door.
     pub fn revision(&self, key: u64) -> u64 {
         self.revision_in(key, None)
@@ -313,10 +338,13 @@ impl DoorBook {
                 let face = if state & 3 == 1 {
                     door.open
                 } else {
+                    let closed = if state >> 2 == 0 {
+                        entry
+                    } else {
+                        door.close_pose.unwrap_or(entry)
+                    };
                     door.key_forms
-                        .map_or(door.authored_closed.unwrap_or(entry), |forms| {
-                            forms[usize::from(state & 3 == 2)]
-                        })
+                        .map_or(closed, |forms| forms[usize::from(state & 3 == 2)])
                 };
                 EntryFacts {
                     definition: face.definition,
@@ -330,16 +358,26 @@ impl DoorBook {
         }
     }
 
+    pub(super) fn open_at(&self, key: u64) -> bool {
+        self.state(key, None)
+            .is_some_and(|(_, state)| state & 3 == 1)
+    }
+
     /// Whether a door entry of `pos` is solid in its current state.
     pub fn blocks(&self, pos: TilePos) -> bool {
         self.blocks_except(pos, None)
     }
 
     pub(super) fn blocks_except(&self, pos: TilePos, except: Option<u64>) -> bool {
-        self.blocks_unless(pos, |key| Some(key) == except)
+        self.blocks_unless(pos, u32::MAX, |key| Some(key) == except)
     }
 
-    pub(super) fn blocks_unless(&self, pos: TilePos, projected: impl Fn(u64) -> bool) -> bool {
+    pub(super) fn blocks_unless(
+        &self,
+        pos: TilePos,
+        actor_level: u32,
+        projected: impl Fn(u64) -> bool,
+    ) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -347,7 +385,7 @@ impl DoorBook {
         self.doors[start..]
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
-            .any(|door| !projected(door.key) && door.solid())
+            .any(|door| !projected(door.key) && (door.solid() || !door.meets_level(actor_level)))
     }
 
     /// Classifies the original placement, independently of channel toggles.
@@ -409,10 +447,7 @@ impl DoorBook {
         {
             return Some(DoorUse::Locked);
         }
-        if door
-            .required_level
-            .is_some_and(|required| actor_level < required)
-        {
+        if !door.meets_level(actor_level) {
             return Some(DoorUse::Locked);
         }
         if door.required_storage.is_some() && !quest_storage_met {
@@ -963,6 +998,255 @@ mod authored_open_tests {
     use super::*;
     use crate::map::facts::{BundleFacts, ItemDefinition};
     use crate::map::view::MapFacts;
+
+    #[test]
+    fn crystal_door_poses_load_with_collision_and_toggle_through_the_door_book()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = crate::foundation::WorldId::decode(&[
+            1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1,
+        ])
+        .map_err(|e| format!("{e:?}"))?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|a| a.native_gameplay())
+            .ok_or("native")?;
+        let coin = "oteryn:item.tibia.i1000";
+        let palette_id = |key: &str| {
+            crate::map::boot::native_item_definition(Some(native), key)
+                .map(|definition| definition.reference.get() - 1)
+                .ok_or_else(|| format!("Item identity {key}"))
+        };
+        let at = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let load = |appearance, action| {
+            let key = format!("oteryn:item.tibia.i{appearance}");
+            let id = palette_id(&key)?;
+            let (bytes, _) = crate::map::boot::tests::bundle_with_item_ids(
+                (&key, id),
+                (coin, palette_id(coin)?),
+            );
+            let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+            for tile in data.sectors.iter_mut().flat_map(|sector| &mut sector.tiles) {
+                if tile.x == 6 {
+                    tile.items.last_mut().ok_or("door")?.attrs.action = action;
+                }
+            }
+            let mut facts = BundleFacts::palette(&data.manifest, |key| {
+                crate::map::boot::native_item_definition(Some(native), key)
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut blocked = Default::default();
+            for sector in &data.sectors {
+                facts.push(&data.manifest, sector, &mut blocked);
+            }
+            facts.finish();
+            Ok::<_, Box<dyn std::error::Error>>((facts, id, blocked.contains(&at)))
+        };
+        let placement = crate::map::view::placement_key(at, 1).ok_or("placement")?;
+        // These open appearances are registered to the level-door action.
+        for (open, closed) in [
+            (30035, 30049),
+            (30036, 30050),
+            (30039, 30051),
+            (30040, 30052),
+        ] {
+            let (facts, id, statically_blocked) = load(open, None)?;
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                None,
+                "open level-door pose {open}"
+            );
+            assert_eq!(
+                facts
+                    .base_entry(at, 1, id)
+                    .ok_or("open level-door pose")?
+                    .appearance_id,
+                open
+            );
+            assert!(
+                !statically_blocked && !facts.doors().blocks(at),
+                "open level door {open} must keep its physical collision"
+            );
+            assert!(
+                facts.blocks_player_entry(at, |requirement| {
+                    assert_eq!(requirement, DoorEntryRequirement::MissingAction);
+                    false
+                }),
+                "open level door {open} without action must refuse player entry"
+            );
+            let (facts, id, _) = load(closed, None)?;
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                None,
+                "disabled ordinary-door pose {closed}"
+            );
+            assert_eq!(
+                facts
+                    .base_entry(at, 1, id)
+                    .ok_or("disabled door pose")?
+                    .appearance_id,
+                closed
+            );
+        }
+        for (closed, open, locked) in [
+            (8255, 8256, false),
+            (8257, 8258, false),
+            (8357, 8358, false),
+            (8359, 8360, false),
+            (11705, 11708, false),
+            (11714, 11716, false),
+            (18025, 18026, false),
+            (22502, 22503, false),
+            (22504, 22505, false),
+            (24903, 28520, false),
+            (30833, 30837, false),
+            (30834, 30837, false),
+            (30835, 30838, false),
+            (30836, 30838, false),
+            (30849, 30853, false),
+            (30850, 30854, false),
+            (30851, 30855, false),
+            (30852, 30856, false),
+            (31494, 31496, false),
+            (31495, 31497, false),
+            (39660, 39666, false),
+            (39661, 39667, false),
+            (48495, 48497, false),
+            (48496, 48498, false),
+            (48499, 48501, false),
+            (48500, 48502, false),
+            (48520, 48524, false),
+            (48522, 48526, false),
+            (48528, 48530, false),
+            (48529, 48531, false),
+            (49678, 49682, false),
+            (49679, 49682, false),
+            (49680, 49683, false),
+            (49681, 49683, false),
+            (49684, 49688, false),
+            (49685, 49688, false),
+            (49686, 49689, false),
+            (49687, 49689, false),
+            (33632, 33636, false),
+            (33633, 33636, true),
+            (33634, 33637, false),
+            (33635, 33637, true),
+            (39934, 39938, false),
+            (39935, 39938, true),
+            (39936, 39939, false),
+            (39937, 39939, true),
+            (49732, 49735, false),
+            (49731, 49735, true),
+            (49734, 49736, false),
+            (49733, 49736, true),
+        ] {
+            let (facts, id, _) = load(closed, locked.then_some(4321))?;
+            assert!(facts.doors().contains(placement), "closed {closed}");
+            assert_eq!(facts.doors().blocks(at), closed != 18025, "closed {closed}");
+            let projectile = !matches!(closed, 18025 | 39934..=39937 | 49684..=49686);
+            let entry = facts.base_entry(at, 1, id).ok_or("closed pose")?;
+            assert_eq!(entry.appearance_id, closed);
+            assert_eq!(entry.blocks_projectile, projectile, "closed {closed}");
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                Some(if locked {
+                    DoorUse::Locked
+                } else {
+                    DoorUse::Toggled {
+                        revision: 1,
+                        open: true,
+                    }
+                }),
+                "closed {closed}"
+            );
+            if locked {
+                assert_eq!(
+                    facts.doors().use_key(placement, 0, 1234),
+                    Some(DoorUse::Locked)
+                );
+                assert_eq!(
+                    facts.doors().use_key(placement, 0, 4321),
+                    Some(DoorUse::Toggled {
+                        revision: 1,
+                        open: true
+                    })
+                );
+                assert_eq!(
+                    facts
+                        .base_entry(at, 1, id)
+                        .ok_or("key opened pose")?
+                        .appearance_id,
+                    open
+                );
+            } else {
+                let entry = facts.base_entry(at, 1, id).ok_or("open pose")?;
+                assert_eq!(entry.appearance_id, open);
+                assert!(!entry.blocks_projectile);
+                assert!(!facts.doors().blocks(at));
+                assert_eq!(
+                    facts.doors().toggle(placement, 1, false, 100, true),
+                    Some(DoorUse::Toggled {
+                        revision: 2,
+                        open: false
+                    })
+                );
+                let expected = match closed {
+                    30834 => 30833,
+                    30836 => 30835,
+                    49679 => 49678,
+                    49681 => 49680,
+                    49685 => 49684,
+                    49687 => 49686,
+                    _ => closed,
+                };
+                let closed_again = facts.base_entry(at, 1, id).ok_or("closed again")?;
+                assert_eq!(closed_again.appearance_id, expected);
+                assert_eq!(
+                    closed_again.blocks_projectile,
+                    !matches!(expected, 18025 | 39934..=39937 | 49684..=49686),
+                    "closed after use {closed}",
+                );
+            }
+        }
+        // An authored open pose has no prior closed state. Use the first Crystal
+        // custom pair when the placement has no action.
+        for (open, closed) in [
+            (18026, 18025),
+            (28520, 24903),
+            (30837, 30833),
+            (30838, 30835),
+            (48524, 48520),
+            (49682, 49678),
+            (49683, 49680),
+            (49688, 49684),
+            (49689, 49686),
+        ] {
+            let (facts, id, _) = load(open, None)?;
+            assert!(!facts.doors().blocks(at), "open {open}");
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: false
+                }),
+                "open {open}"
+            );
+            assert_eq!(
+                facts
+                    .base_entry(at, 1, id)
+                    .ok_or("closed pose")?
+                    .appearance_id,
+                closed
+            );
+            assert_eq!(facts.doors().blocks(at), closed != 18025, "closed {closed}");
+        }
+        Ok(())
+    }
 
     #[test]
     fn authored_open_doors_boot_open_and_close_to_registered_pose()

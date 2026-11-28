@@ -4,7 +4,12 @@ use super::*;
 fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
     let callbacks = load()?;
     assert!(callbacks.len() > MAX_CALLBACKS);
-    assert!(callbacks.len() <= MAX_RUNTIME_CALLBACKS);
+    let coffin_variants = callbacks
+        .iter()
+        .filter(|callback| callback.vampire_coffin_fallback().is_some())
+        .count();
+    assert_eq!(coffin_variants, 2);
+    assert!(callbacks.len() - coffin_variants <= MAX_RUNTIME_CALLBACKS);
     let smith = callbacks
         .iter()
         .filter(|callback| {
@@ -13,19 +18,25 @@ fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
                 .starts_with("oteryn:quest-callback/authored-smith-cache")
         })
         .collect::<Vec<_>>();
-    assert_eq!(smith.len(), 2);
-    let reward = smith
-        .iter()
-        .find(|callback| callback.key.ends_with("-reward"))
-        .ok_or("native smith reward")?;
-    assert_eq!(
-        reward.selector.position,
-        Some(Position {
-            x: 32777,
-            y: 32254,
-            floor: -8
-        })
-    );
+    assert_eq!(smith.len(), 7);
+    for (reward, x) in [("talon", 32774), ("hammer", 32776), ("gold", 32778)] {
+        for suffix in ["", "-last"] {
+            let key = format!("oteryn:quest-callback/authored-smith-cache-reward-{reward}{suffix}");
+            let callback = smith
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(&key)?;
+            assert_eq!(
+                callback.selector.position,
+                Some(Position {
+                    x,
+                    y: 32253,
+                    floor: -8
+                })
+            );
+            assert_eq!(callback.completes, suffix == "-last");
+        }
+    }
     let source = callbacks.first().ok_or("callback")?;
     let mut bounded = Vec::new();
     for index in 0..MAX_RUNTIME_CALLBACKS {

@@ -16,6 +16,56 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[3]
 
 
+# Completing these existing personal boss tables admits the outfit tokens.
+# Every co-drop must have native custody for the table to settle.
+OUTFIT_BOSS_LOOT = {
+    12543, 31577, 31578, 31579, 31580, 31581, 31582, 31583,
+    39147, 39148, 39149, 39150, 39151, 39152, 39153, 39154, 39177,
+    39179, 39180, 39182, 39183, 39185, 39186, 39188, 39543, 39544,
+    39545, 50147, 50149, 50188, 50260,
+}
+MAGMA_BUBBLE_CORPSE = 36847
+
+
+def refresh_outfit_boss_loot(root, generated, profile_path, manifest_path, canonical):
+    """Apply the outfit boss closure while preserving other producers' loot facts."""
+    from build_full_spell_artifact import item_facts, native_corpse_capacity
+
+    path = 'tools/content-schema/native-gameplay/loot-tables.json'
+    document = json.loads(generated.get(path, (root / path).read_bytes()))
+    profiles = {
+        row['production_definition']['production_key']: row
+        for row in json.loads(generated[profile_path])['records']
+    }
+    selected_keys = {f'oteryn:item.tibia.i{item}' for item in OUTFIT_BOSS_LOOT}
+    corpse_key = f'oteryn:item.tibia.i{MAGMA_BUBBLE_CORPSE}'
+    selected_keys.add(corpse_key)
+    facts = {row['item']['key']: row for row in document['items'] if row['item']['key'] in selected_keys}
+    if facts.keys() != selected_keys:
+        raise ValueError('OUTFIT_BOSS_LOOT_CLOSURE_MISSING')
+    canonical_facts = item_facts(root / 'content/items/definitions')
+    for key, row in facts.items():
+        if key == corpse_key:
+            capacity = native_corpse_capacity(row['item'], profiles[key], reward_boss=True)
+            if capacity != 25:
+                raise ValueError('MAGMA_BUBBLE_CORPSE_CAPACITY_DRIFT')
+            row.update(materializable=True, container_capacity=capacity)
+        else:
+            qualified = canonical_facts[key]
+            admission = profiles[key]['admission']
+            if (qualified['item'] != row['item']
+                    or not qualified['materializable']
+                    or not admission['materializable']
+                    or not {'CharacterInventory', 'Ground'} <= set(admission['legal_destinations'])):
+                raise ValueError('OUTFIT_BOSS_LOOT_YIELD_NOT_ADMITTED:' + key)
+            row.update(qualified)
+    raw = canonical(document)
+    generated[path] = raw
+    manifest = json.loads(generated[manifest_path])
+    manifest['loot_tables']['sha256'] = hashlib.sha256(raw).hexdigest()
+    generated[manifest_path] = canonical(manifest)
+
+
 def importer(root):
     sys.path.insert(0, str(root / 'tools/content-migration'))
     import encounter_loot_item_admissions
@@ -23,9 +73,10 @@ def importer(root):
 
 
 def selected(root=ROOT, creatures=None):
-    if creatures is None:
-        goals = json.loads((root / 'tools/content-schema/quest-authoring/samples/native-kill-goals.json').read_bytes())
-        creatures = {o['creature'] for g in goals['goals'] for o in g['origins']}
+    default = creatures is None
+    if default:
+        from native_goal_corpse_items import covered_creatures
+        creatures = covered_creatures(root)
     document = json.loads((root / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
     tables = {r['identity']['key']: r for r in document['tables']}
     keys, found = set(), set()
@@ -49,7 +100,7 @@ def selected(root=ROOT, creatures=None):
             visit(table['entries'])
     if found != creatures or not 1 <= len(keys) <= 512:
         raise ValueError('NATIVE_GOAL_LOOT_BOUND')
-    return keys
+    return keys | OUTFIT_BOSS_LOOT if default else keys
 
 
 def alternate_xml(root):
@@ -85,6 +136,7 @@ def apply_admissions(definitions, root=ROOT):
         planned = copy.deepcopy(pending)
         source = importer(root)
         import grizzly_shop_profiles as shop
+        from quest_reward_item_semantics import NATIVE_FULL_CHARGE_DEFAULTS
         # Shop custody is already source-qualified. Reuse its admission without
         # rewriting the separate frozen charge and temporal SOURCE witnesses.
         shop_keys = {r['production_definition']['production_key'] for r in
@@ -98,6 +150,11 @@ def apply_admissions(definitions, root=ROOT):
                     source.apply_admissions(group, root, ids, source_core=source_core,
                         xml_override=alternate_xml(root) if alternate else None)
         for definition, replacement in zip(pending, planned):
+            # The reward owner qualified the exact charge count for these
+            # Items. A loot admission does not fill its unowned timer state.
+            if (definition['identity']['key'] in NATIVE_FULL_CHARGE_DEFAULTS
+                    and replacement['semantics']['temporal']['state'] == 'NOT_APPLICABLE'):
+                replacement['semantics']['temporal'] = definition['semantics']['temporal']
             definition.clear()
             definition.update(replacement)
 

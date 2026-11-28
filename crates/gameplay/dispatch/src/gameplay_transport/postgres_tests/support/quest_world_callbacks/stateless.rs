@@ -148,6 +148,17 @@ pub(super) async fn exercise(
             (crate::map::overlay::TilePos { x, y, floor }, 54)
         );
     }
+    if callback.key.contains("/the_cursed_crystal/crystal-stairs-") {
+        let at = crate::map::overlay::TilePos {
+            x: expected_destination.x,
+            y: expected_destination.y,
+            floor: expected_destination.floor,
+        };
+        let map = owner.bundle_map().ok_or("map")?;
+        let effects = map.facts.movement_effects_since(0);
+        assert_eq!(effects.len(), 1, "one teleport effect at the landing");
+        assert_eq!((effects[0].1, effects[0].2), (at, 11));
+    }
     if callback.key.starts_with("oteryn:quest-callback/waterfall-") {
         let map = owner.bundle_map().ok_or("map")?;
         let effects = map.facts.movement_effects_since(0);
