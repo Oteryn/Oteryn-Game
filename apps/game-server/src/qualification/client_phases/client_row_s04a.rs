@@ -30,6 +30,14 @@ fn only_entry(view: &serde_json::Value) -> TestResult<&serde_json::Value> {
     }
 }
 
+fn custom_group_id(id: u64) -> bool {
+    (4..=8).contains(&id)
+}
+
+fn group_receipt_matches(actual: u64, expected: u64) -> bool {
+    custom_group_id(actual) && actual == expected
+}
+
 fn require_next_revision(step: &str, before: u64, after: u64) -> TestResult {
     if before.checked_add(1) != Some(after) {
         return Err(format!("S04a {step} revision did not advance by one: {before} -> {after}").into());
@@ -104,7 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     require_next_revision("Add", initial.revision, added.revision)?;
     capture("s04a-added.bin", &added_bytes)?;
     let entry = added.number;
-    let (_, after_add, _) = raw(&mut watcher, &query).await?;
+    let (after_add_bytes, after_add, after_add_sequence) = raw(&mut watcher, &query).await?;
     let added_view: serde_json::Value = serde_json::from_str(&after_add.view)?;
     let new_entry = only_entry(&added_view)?;
     if after_add.code != 1 || after_add.revision != added.revision
@@ -118,16 +126,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("S04a client Add did not create the expected unedited entry".into());
     }
-    let (_, group, _) = raw(
+    let (group_bytes, group, group_sequence) = raw(
         &mut watcher,
         &request(wire::Operation::GroupAdd, 0, "Raid Friends"),
     )
     .await?;
-    if group.code != 1 || group.number == 0 {
+    if group.code != 1 || !custom_group_id(group.number) {
         return Err(format!("GroupAdd reply mismatch: {group:?}").into());
     }
     require_next_revision("GroupAdd", after_add.revision, group.revision)?;
-    let (_, after_group, _) = raw(&mut watcher, &query).await?;
+    let (after_group_bytes, after_group, after_group_sequence) = raw(&mut watcher, &query).await?;
     let group_view: serde_json::Value = serde_json::from_str(&after_group.view)?;
     if after_group.code != 1 || after_group.revision != group.revision
         || !group_add_view_matches(&group_view, &added_view, group.number)
@@ -135,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("S04a client GroupAdd did not create the expected group".into());
     }
     let group_number = u8::try_from(group.number)?;
-    let (_, edited, _) = raw(
+    let (edited_bytes, edited, edited_sequence) = raw(
         &mut watcher,
         &wire::Request {
             operation: wire::Operation::Edit,
@@ -148,7 +156,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     require_next_revision("Edit", after_group.revision, edited.revision)?;
-    let (_, after_edit, _) = raw(&mut watcher, &query).await?;
+    let (after_edit_bytes, after_edit, after_edit_sequence) = raw(&mut watcher, &query).await?;
     let edit_view: serde_json::Value = serde_json::from_str(&after_edit.view)?;
     let edited_entry = only_entry(&edit_view)?;
     if after_edit.code != 1 || after_edit.revision != edited.revision
@@ -162,12 +170,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("S04a client Edit did not persist the expected metadata".into());
     }
-    let (_, renamed, _) = raw(
+    let (renamed_bytes, renamed, renamed_sequence) = raw(
         &mut watcher,
         &request(wire::Operation::GroupRename, group.number, "Raid Team"),
     )
     .await?;
-    if edited.code != 1 || renamed.code != 1 {
+    if edited.code != 1 || renamed.code != 1 || !group_receipt_matches(renamed.number, group.number) {
         return Err(format!("Edit/GroupRename mismatch: {edited:?} {renamed:?}").into());
     }
     require_next_revision("GroupRename", after_edit.revision, renamed.revision)?;
@@ -211,6 +219,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         group.number, listed.revision, added.revision, duplicate.code
     );
     use std::fmt::Write;
+    let refresh_captures = [
+        ("after-add", &after_add_bytes, after_add_sequence),
+        ("group", &group_bytes, group_sequence),
+        ("after-group", &after_group_bytes, after_group_sequence),
+        ("edited", &edited_bytes, edited_sequence),
+        ("after-edit", &after_edit_bytes, after_edit_sequence),
+        ("renamed", &renamed_bytes, renamed_sequence),
+    ];
+    let mut prior = added_sequence;
+    for (label, bytes, sequence) in refresh_captures {
+        if sequence <= prior || sequence >= listed_sequence {
+            return Err("VIP mutation and refresh capture sequences are out of order".into());
+        }
+        capture(&format!("s04a-{label}.bin"), bytes)?;
+        writeln!(expected, "{label}_sequence={sequence}")?;
+        writeln!(expected, "{label}_sha256={}", payload_digest(bytes))?;
+        prior = sequence;
+    }
     for (label, bytes) in [
         ("added", &added_bytes),
         ("listed", &listed_bytes),
@@ -296,4 +322,15 @@ fn s04a_group_add_rejects_invalid_continuation_cursor() {
         view["next_entry"] = invalid_cursor;
         assert!(!group_add_view_matches(&view, &before, 4));
     }
+}
+
+#[test]
+fn s04a_group_receipts_reject_reserved_out_of_range_and_wrong_group_ids() {
+    assert!(group_receipt_matches(4, 4));
+    assert!(group_receipt_matches(8, 8));
+    for invalid in [0, 3, 9, 255] {
+        assert!(!custom_group_id(invalid));
+        assert!(!group_receipt_matches(invalid, invalid));
+    }
+    assert!(!group_receipt_matches(5, 4));
 }

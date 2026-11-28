@@ -135,7 +135,7 @@ pub(super) fn activate(
                 groups: contact.as_ref().and_then(|entry| entry.groups.clone()),
                 contact,
                 group: None,
-                catalog: snapshot.groups,
+                catalog: snapshot.group_catalog(),
                 feedback: String::new(),
             });
         }

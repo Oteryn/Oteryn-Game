@@ -39,6 +39,9 @@ pub mod spell;
 mod support_delivery;
 pub mod traffic;
 pub mod updater;
+#[cfg(any(test, bevy_shell))]
+#[path = "bevy_shell/game_ui/hud/vip/model.rs"]
+mod vip_sidebar_model;
 #[path = "features/local-web-links/mod.rs"]
 pub mod web_links;
 #[cfg(windows)]

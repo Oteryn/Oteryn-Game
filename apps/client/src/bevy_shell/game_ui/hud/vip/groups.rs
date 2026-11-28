@@ -75,7 +75,11 @@ pub(super) fn project(
     let generation = owner.generation();
     let panel = owner.play.as_ref().map(|play| play.link.vip_panel());
     let snapshot = panel.as_ref().and_then(|panel| Snapshot::read(panel).ok());
-    let groups = snapshot.as_ref().and_then(catalog).unwrap_or(&[]);
+    let groups = snapshot
+        .as_ref()
+        .filter(|snapshot| catalog(snapshot).is_some())
+        .map(Snapshot::group_catalog)
+        .unwrap_or_default();
     let mut retained = std::collections::HashSet::new();
     let mut retired = std::collections::HashSet::new();
     for (entity, row) in &rows {
@@ -91,18 +95,25 @@ pub(super) fn project(
             .iter()
             .filter(|group| !retained.contains(&group.group))
         {
-            let row = button(
-                &mut commands,
-                &skins,
-                Control {
-                    generation,
-                    revision: panel.as_ref().map_or(0, |panel| panel.revision),
-                    command: Action::GroupRename(group.group),
-                },
-                &group.name,
-                130.,
-                "vip.groups.row",
-            );
+            let row = if snapshot
+                .as_ref()
+                .is_some_and(|snapshot| snapshot.groups.contains(group))
+            {
+                button(
+                    &mut commands,
+                    &skins,
+                    Control {
+                        generation,
+                        revision: panel.as_ref().map_or(0, |panel| panel.revision),
+                        command: Action::GroupRename(group.group),
+                    },
+                    &group.name,
+                    130.,
+                    "vip.groups.row",
+                )
+            } else {
+                commands.spawn(Text::new(group.name.clone())).id()
+            };
             commands.entity(row).insert((
                 GroupRow {
                     generation,

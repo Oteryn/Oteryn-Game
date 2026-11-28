@@ -1916,8 +1916,8 @@ s04a_client_replay() {
     return 1
   fi
   if ! OTERYN_S04A_CAPTURE_REQUIRED=1 OTERYN_S04A_LIVE_MANIFEST="$expected" \
-    cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
-    vip::e2e_s04a::vip_replay_add_edit_query_and_duplicate_refusal -- --exact --nocapture > "$replay_log" 2>&1 ||
+    cargo +1.100.0 test --locked -p oteryn-client --lib \
+    play::vip_s04a_replay::vip_replay_add_edit_query_and_duplicate_refusal -- --exact --nocapture > "$replay_log" 2>&1 ||
     [[ $(grep -Ec '^test .*::vip_replay_add_edit_query_and_duplicate_refusal \.\.\. ok$' "$replay_log") != 1 ]]; then
     cat "$replay_log"
     echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=FAIL evidence=live-replay-failed"

@@ -24,8 +24,7 @@ mod groups;
 mod groups_tests;
 #[path = "vip/input.rs"]
 mod input;
-#[path = "vip/model.rs"]
-mod model;
+use crate::vip_sidebar_model as model;
 #[path = "vip/presentation.rs"]
 mod presentation;
 #[cfg(test)]

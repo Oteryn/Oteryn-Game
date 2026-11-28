@@ -1,9 +1,15 @@
-//! S04a replay: the VIP list replies for Add, the edited/grouped Query and the duplicate-Add
-//! refusal applied through the production `request`, `apply_result` and `panel_text`. The reply
-//! bytes are decoded by `vip::decode_result`, exactly as the runtime `send` does.
-use super::*;
+//! S04a replay through the native VIP command, refresh and sidebar paths.
+use crate::combat_input::{CombatCommand, CombatReport};
+use crate::play::{Stepper, feature_0043_vip::protocol::send_vip, play_channel};
+use crate::vip_sidebar_model::Snapshot;
 use oteryn_client_runtime::vip::CommandStatus;
+use oteryn_client_ui::vip::{
+    Intent, VipCommand, VipPanel, VipResponse, apply_result, panel_text, request, vip,
+};
+use oteryn_session::{LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome};
 use sha2::{Digest, Sha256};
+use std::collections::VecDeque;
+use std::time::Duration;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -12,6 +18,7 @@ struct Replay {
     listed: Vec<u8>,
     duplicate: Vec<u8>,
     expected: String,
+    refresh: Option<[Vec<u8>; 6]>,
 }
 
 fn payload_digest(bytes: &[u8]) -> String {
@@ -53,6 +60,14 @@ fn load() -> Result<Replay, Error> {
             added: read("added")?,
             listed: read("listed")?,
             duplicate: read("duplicate")?,
+            refresh: Some([
+                read("after-add")?,
+                read("group")?,
+                read("after-group")?,
+                read("edited")?,
+                read("after-edit")?,
+                read("renamed")?,
+            ]),
             expected,
         });
     }
@@ -64,6 +79,7 @@ fn load() -> Result<Replay, Error> {
         vip::encode_result(code, revision, number, 0, view).map_err(|e| format!("{e:?}"))
     };
     Ok(Replay {
+        refresh: None,
         added: encode(1, 5, 4, "")?,
         listed: encode(1, 8, 0, view)?,
         duplicate: encode(3, 9, 0, "")?,
@@ -109,6 +125,195 @@ fn check_group_encoder(intent: Intent, expected: vip::Request) -> Result<(), Err
     Ok(())
 }
 
+struct CapturePeer {
+    exchanges: VecDeque<(VipCommand, VipResponse)>,
+}
+
+impl Stepper for CapturePeer {
+    async fn vip(&mut self, command: &VipCommand) -> Result<VipResponse, SessionError> {
+        let (expected, response) = self
+            .exchanges
+            .pop_front()
+            .ok_or(SessionError::SessionUnusable)?;
+        if command.kind != expected.kind || command.payload != expected.payload {
+            return Err(SessionError::SessionUnusable);
+        }
+        Ok(response)
+    }
+    async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+    fn drain(&mut self) -> Vec<SessionEvent> {
+        vec![]
+    }
+    async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+    async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+        Err(SessionError::SessionUnusable)
+    }
+}
+
+fn wire_command(operation: vip::Operation, number: u64, text: &str) -> Result<VipCommand, Error> {
+    VipCommand::new(&vip::Request {
+        operation,
+        number,
+        text: text.into(),
+        icon: 0,
+        notify: false,
+        groups: vec![],
+    })
+    .ok_or_else(|| "expected VIP request did not encode".into())
+}
+
+fn checked_sidebar(panel: &VipPanel) -> Result<Snapshot, Error> {
+    let snapshot = Snapshot::read(panel)?;
+    let raw: serde_json::Value =
+        serde_json::from_str(panel.view.as_deref().ok_or("VIP view absent")?)?;
+    if snapshot.shown != Some(true)
+        || !snapshot.consents.is_empty()
+        || raw["consents"].as_array().is_none()
+        || snapshot
+            .groups
+            .iter()
+            .any(|group| !(4..=8).contains(&group.group))
+        || snapshot.next_entry != Some(0)
+    {
+        return Err("unexpected S04a sidebar visibility, consents, or cursor".into());
+    }
+    Ok(snapshot)
+}
+
+fn check_refresh_view(panel: &VipPanel, expected: &VipResponse) -> Result<(), Error> {
+    if panel.revision != expected.result.revision
+        || panel.view.as_deref() != Some(expected.result.view.as_str())
+    {
+        return Err("native VIP mutation did not publish its captured refresh".into());
+    }
+    Ok(())
+}
+
+fn check_catalog(
+    catalog: &[crate::vip_sidebar_model::Group],
+    custom: Option<(u8, &str)>,
+) -> Result<(), Error> {
+    let expected = [(1, "Enemies"), (2, "Friends"), (3, "Trading Partners")]
+        .into_iter()
+        .chain(custom);
+    if !catalog
+        .iter()
+        .map(|group| (group.group, group.name.as_str()))
+        .eq(expected)
+    {
+        return Err(
+            "native VIP catalog differs from the exact predefined and custom groups".into(),
+        );
+    }
+    Ok(())
+}
+
+async fn replay_native_refresh(
+    replay: &Replay,
+    refresh: &[Vec<u8>; 6],
+    name: &str,
+    entry: u64,
+    group: u8,
+) -> Result<(), Error> {
+    use vip::Operation;
+    let [
+        after_add,
+        group_added,
+        after_group,
+        edited,
+        after_edit,
+        renamed,
+    ] = refresh;
+    let edit = VipCommand::new(&vip::Request {
+        operation: Operation::Edit,
+        number: entry,
+        text: "node-boot friend".into(),
+        icon: 7,
+        notify: true,
+        groups: vec![group],
+    })
+    .ok_or("expected Edit did not encode")?;
+    let page = || wire_command(Operation::Query, 0, "");
+    let mut peer = CapturePeer {
+        exchanges: VecDeque::from([
+            (
+                wire_command(Operation::Add, 0, name)?,
+                response(&replay.added)?,
+            ),
+            (page()?, response(after_add)?),
+            (
+                wire_command(Operation::GroupAdd, 0, "Raid Friends")?,
+                response(group_added)?,
+            ),
+            (page()?, response(after_group)?),
+            (edit, response(edited)?),
+            (page()?, response(after_edit)?),
+            (
+                wire_command(Operation::GroupRename, u64::from(group), "Raid Team")?,
+                response(renamed)?,
+            ),
+            (page()?, response(&replay.listed)?),
+            (
+                wire_command(Operation::Add, 0, name)?,
+                response(&replay.duplicate)?,
+            ),
+        ]),
+    };
+    let (link, _, outbox) = play_channel();
+    outbox.vip_initialize(true);
+    let readbacks = [after_add, after_group, after_edit, &replay.listed];
+    let mut panel = link.vip_panel();
+    for ((intent, readback), custom) in [
+        Intent::Add(name.into()),
+        Intent::GroupAdd("Raid Friends".into()),
+        Intent::Edit {
+            number: entry,
+            text: "node-boot friend".into(),
+            icon: 7,
+            notify: true,
+            groups: vec![group],
+        },
+        Intent::GroupRename(u64::from(group), "Raid Team".into()),
+    ]
+    .into_iter()
+    .zip(readbacks)
+    .zip([
+        None,
+        Some("Raid Friends"),
+        Some("Raid Friends"),
+        Some("Raid Team"),
+    ]) {
+        let command = request(&mut panel, intent).ok_or("native VIP mutation did not encode")?;
+        send_vip(&mut peer, &outbox, &command).await?;
+        panel = link.vip_panel();
+        check_refresh_view(&panel, &response(readback)?)?;
+        let snapshot = checked_sidebar(&panel)?;
+        check_catalog(&snapshot.group_catalog(), custom.map(|name| (group, name)))?;
+    }
+    let listed = panel.view.clone();
+    let command =
+        request(&mut panel, Intent::Add(name.into())).ok_or("duplicate Add did not encode")?;
+    send_vip(&mut peer, &outbox, &command).await?;
+    let refused = link.vip_panel();
+    assert_eq!(
+        refused.feedback.as_deref(),
+        Some("Character is already listed")
+    );
+    assert_eq!(refused.view, listed);
+    assert!(
+        peer.exchanges.is_empty(),
+        "VIP refresh did not consume the captured exchanges"
+    );
+    Ok(())
+}
+
 #[test]
 fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     let replay = load()?;
@@ -118,6 +323,17 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     let revision: u64 = value(&replay.expected, "revision")?.parse()?;
     let added_revision: u64 = value(&replay.expected, "added_revision")?.parse()?;
     let group_number = u8::try_from(group)?;
+    if let Some(refresh) = &replay.refresh {
+        assert!((4..=8).contains(&group_number), "invalid custom VIP group");
+        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+        runtime.block_on(replay_native_refresh(
+            &replay,
+            refresh,
+            name,
+            entry,
+            group_number,
+        ))??;
+    }
     for (intent, operation, number, text) in [
         (
             Intent::GroupAdd("Raid Friends".into()),
@@ -310,4 +526,56 @@ fn rejects_add_revision_as_query_cursor() -> Result<(), Error> {
     let first_page =
         request(&mut panel, Intent::Query(0)).ok_or("first-page Query did not encode")?;
     check_first_page_query(&first_page)
+}
+
+#[test]
+fn native_sidebar_rejects_malformed_visibility_and_consents() {
+    for (field, value) in [
+        ("shown", serde_json::json!("true")),
+        ("consents", serde_json::json!({})),
+    ] {
+        let mut view = serde_json::json!({"entries": [], "groups": [], "next_entry": 0, "shown": true, "consents": []});
+        view[field] = value;
+        let panel = VipPanel {
+            view: Some(view.to_string()),
+            ..VipPanel::default()
+        };
+        assert!(checked_sidebar(&panel).is_err());
+    }
+}
+
+#[tokio::test]
+async fn native_refresh_transport_rejects_wrong_cursor() -> Result<(), Box<dyn std::error::Error>> {
+    let payload = vip::encode_result(1, 1, 0, 0, "").map_err(|err| format!("{err:?}"))?;
+    let mut peer = CapturePeer {
+        exchanges: VecDeque::from([(
+            wire_command(vip::Operation::Query, 0, "")?,
+            response(&payload)?,
+        )]),
+    };
+    assert!(
+        peer.vip(&wire_command(vip::Operation::Query, 1, "")?)
+            .await
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn native_replay_rejects_missing_refresh_and_predefined_group() -> Result<(), Error> {
+    let page = r#"{"entries":[],"groups":[],"next_entry":0,"shown":true,"consents":[]}"#;
+    let payload = vip::encode_result(1, 1, 0, 0, page).map_err(|err| format!("{err:?}"))?;
+    let expected = response(&payload)?;
+    let mut panel = VipPanel {
+        revision: 1,
+        ..VipPanel::default()
+    };
+    assert!(check_refresh_view(&panel, &expected).is_err());
+    panel.view = Some(page.into());
+    check_refresh_view(&panel, &expected)?;
+    let mut catalog = checked_sidebar(&panel)?.group_catalog();
+    check_catalog(&catalog, None)?;
+    catalog.remove(1);
+    assert!(check_catalog(&catalog, None).is_err());
+    Ok(())
 }

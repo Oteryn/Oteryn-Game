@@ -133,6 +133,10 @@ pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
+#[cfg(test)]
+#[path = "features/0043-vip/tests/e2e_s04a.rs"]
+mod vip_s04a_replay;
+
 mod preferences;
 pub use preferences::*;
 

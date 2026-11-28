@@ -228,21 +228,23 @@ pub(super) fn project(
             text.0.clone_from(&message);
         }
     }
+    let groups = snapshot
+        .as_ref()
+        .ok()
+        .filter(|_| presentation.grouped)
+        .map(Snapshot::group_catalog)
+        .unwrap_or_default();
     let mut projected = Vec::new();
     for entry in entries {
         let mut added = false;
-        if presentation.grouped
-            && let Ok(snapshot) = &snapshot
-        {
-            for group in &snapshot.groups {
-                if entry
-                    .groups
-                    .as_ref()
-                    .is_some_and(|groups| groups.contains(&group.group))
-                {
-                    projected.push((entry, Some(group.group)));
-                    added = true;
-                }
+        for group in &groups {
+            if entry
+                .groups
+                .as_ref()
+                .is_some_and(|groups| groups.contains(&group.group))
+            {
+                projected.push((entry, Some(group.group)));
+                added = true;
             }
         }
         if !added {

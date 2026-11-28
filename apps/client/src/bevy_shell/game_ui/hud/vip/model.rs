@@ -1,7 +1,7 @@
 //! Immutable projection of the canonical VIP response; absent metadata stays absent.
 use serde::Deserialize;
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub(super) struct Contact {
+pub(crate) struct Contact {
     pub entry: u64,
     pub name: String,
     pub description: Option<String>,
@@ -10,6 +10,7 @@ pub(super) struct Contact {
     pub groups: Option<Vec<u8>>,
 }
 impl Contact {
+    #[cfg(bevy_shell)]
     pub fn editable(&self) -> bool {
         self.description.is_some()
             && self.icon.is_some_and(|icon| icon <= 19)
@@ -18,19 +19,19 @@ impl Contact {
     }
 }
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub(super) struct Group {
+pub(crate) struct Group {
     pub group: u8,
     pub name: String,
 }
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub(super) struct Consent {
+pub(crate) struct Consent {
     pub handle: u64,
     pub name: String,
     pub accepted: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub(super) struct Snapshot {
+pub(crate) struct Snapshot {
     pub entries: Vec<Contact>,
     pub groups: Vec<Group>,
     pub next_entry: Option<u64>,
@@ -39,6 +40,19 @@ pub(super) struct Snapshot {
     pub shown: Option<bool>,
 }
 impl Snapshot {
+    pub fn group_catalog(&self) -> Vec<Group> {
+        let fixed = [(1, "Enemies"), (2, "Friends"), (3, "Trading Partners")];
+        fixed
+            .into_iter()
+            .filter(|(id, _)| self.groups.iter().all(|group| group.group != *id))
+            .map(|(group, name)| Group {
+                group,
+                name: name.to_owned(),
+            })
+            .chain(self.groups.iter().cloned())
+            .collect()
+    }
+
     pub fn read(panel: &oteryn_client_ui::vip::VipPanel) -> Result<Self, &'static str> {
         let raw = panel.view.as_deref().ok_or("Loading VIP list…")?;
         let value: Self =
