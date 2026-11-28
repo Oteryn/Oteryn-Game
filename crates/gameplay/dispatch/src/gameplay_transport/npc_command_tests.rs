@@ -119,6 +119,140 @@ fn native_focus_without_literal_greeting_is_wire_encodable() {
     oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&answer).expect("normal reply");
 }
 
+fn authored_merchant_model() -> crate::content::NpcServiceModel {
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .expect("committed NPC catalogue");
+    catalogue
+        .service_model_for_project()
+        .expect("service model")
+}
+
+#[test]
+fn all_authored_merchants_with_dialogue_are_in_the_live_talk_book() {
+    let model = authored_merchant_model();
+    use oteryn_gameplay_quests::quest::{authored_bindings, npc_rules, reward_callbacks};
+    let programs = npc_rules::NpcRuleCatalog::runtime().expect("native NPC programs");
+    let authored = authored_bindings::native_dialogue_npcs().expect("authored NPC bindings");
+    let rewards = reward_callbacks::load().expect("native NPC rewards");
+    let native = programs
+        .programs()
+        .iter()
+        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(
+            rewards
+                .iter()
+                .filter(|reward| reward.carried_item.is_none())
+                .map(|reward| reward.npc.as_str()),
+        )
+        .chain(std::iter::once("oteryn:npc.viola"))
+        .chain(authored.iter().map(String::as_str))
+        .collect::<std::collections::BTreeSet<_>>();
+    let book =
+        NpcTalkBook::from_model_with_native_quests(&model, &native.into_iter().collect::<Vec<_>>());
+    let missing: Vec<_> = model
+        .npcs()
+        .iter()
+        .filter(|(reference, npc)| {
+            book.get(&reference.key).is_none()
+                && npc.dialogue.is_some()
+                && npc.services.iter().any(|service| {
+                    model.services().get(service).is_some_and(|entry| {
+                        !entry.offers.is_empty() || !entry.held_offers.is_empty()
+                    })
+                })
+        })
+        .map(|(reference, _)| reference.key.as_str())
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "missing authored merchants ({}): {missing:?}",
+        missing.len()
+    );
+    assert!(
+        !book
+            .get("oteryn:npc.blind_orc")
+            .expect("Blind Orc catalogue entry")
+            .matches_greeting("hi"),
+        "standard greetings must not bypass the Blind Orc's Orcish negotiation"
+    );
+}
+
+#[test]
+fn xodet_authored_greeting_opens_focus_and_item_266_trade() {
+    const XODET: &str = "oteryn:npc.xodet";
+    const POTION: &str = "oteryn:item.tibia.i266";
+    let model = authored_merchant_model();
+    let book = Arc::new(NpcTalkBook::from_model(&model));
+    let (runtime, actor, session, npc) = fixture_for(2, XODET);
+    let chat = chat_with(session, Arc::clone(&book));
+    let conversations = NpcConversations::default();
+    let greeting = conversations.converse(&chat, &runtime, actor, session, &intent(npc, "hi"));
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    let greeting = greeting.conversation.expect("Xodet greeting");
+    assert_eq!(greeting.open, Some((npc, NpcConversationState::Open)));
+    let source = model
+        .npcs()
+        .iter()
+        .find(|(reference, _)| reference.key == XODET)
+        .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
+        .expect("authored Xodet dialogue");
+    assert_eq!(greeting.lines, source.greet);
+    let potion = book
+        .get(XODET)
+        .expect("Xodet talk entry")
+        .offers()
+        .iter()
+        .find(|offer| {
+            offer.item.key == POTION
+                && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+        })
+        .expect("authored potion sale");
+    let index = ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": crate::content::item_ref::ITEM_KEYS_SCHEMA,
+            "records": [[POTION, potion.item.revision]],
+        }))
+        .expect("item index JSON"),
+    )
+    .expect("item index");
+    let trade = conversations.talk_in(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "trade"),
+        at(BASE),
+        Some(&index),
+    );
+    assert_eq!(trade.disposition, NpcIntentDisposition::Ok);
+    assert_eq!(
+        trade.conversation.expect("Xodet trade reply").lines,
+        source.send_trade
+    );
+    let window = trade.window.expect("Xodet trade window");
+    let (seller, catalogue_revision) = window.open.expect("open trade window");
+    assert_eq!(seller, npc);
+    let buy = &NpcTradeIntent {
+        npc_actor: npc,
+        catalogue_revision,
+        offer_index: 0,
+        side: NpcTradeSide::Buy,
+        quantity: 1,
+        expected_unit_price: u32::try_from(potion.unit_price).expect("wire price"),
+    };
+    assert_eq!(
+        conversations
+            .trade_in(&chat, &runtime, actor, session, buy, Some(&index))
+            .unwrap_or_else(|_| panic!("Xodet must accept the item 266 purchase quote"))
+            .item_key,
+        POTION
+    );
+}
+
 #[test]
 fn a_conversation_opens_answers_and_closes() {
     let (runtime, actor, session, npc) = fixture(2);

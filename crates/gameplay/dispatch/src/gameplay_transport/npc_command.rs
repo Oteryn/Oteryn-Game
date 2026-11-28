@@ -381,13 +381,25 @@ impl NpcConversations {
             {
                 return None;
             }
-            if let Some(category) = category {
+            let window =
+                self.open_window(chat, runtime, session, intent.npc_actor, items, category);
+            let reply = category.map(|category| category.reply()).or_else(|| {
+                if !focused
+                    || outcome.conversation.is_some()
+                    || window.as_ref().is_none_or(|window| window.open.is_none())
+                {
+                    return None;
+                }
+                let book = chat.npc_talk()?;
+                book.get(&npc.key)?.shop_reply().map(str::to_owned)
+            });
+            if let Some(reply) = reply {
                 outcome.conversation = Some(NpcConversation {
                     open: Some((intent.npc_actor, NpcConversationState::Open)),
-                    lines: vec![category.reply()],
+                    lines: vec![reply],
                 });
             }
-            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+            window
         })
         .flatten();
         outcome.window = match opened {
@@ -669,7 +681,7 @@ impl NpcConversations {
                 .then_some(&hireling_bank)
             })
         }) else {
-            // A placed NPC with no talk entry (a Dialogue-backed NPC) is silent.
+            // A placed NPC without an admitted talk entry is silent.
             return NpcTalkOutcome::only(Disposition::NoConversation);
         };
         if at
@@ -686,7 +698,9 @@ impl NpcConversations {
                 conversation: end(chat, session, intent).map(|mut closed| {
                     let line = oteryn_gameplay_npc::quest_greetings::walkaway(&npc.key)
                         .unwrap_or(entry.walkaway());
-                    if let Some(name) = chat.speaker_name(session) {
+                    if !line.is_empty()
+                        && let Some(name) = chat.speaker_name(session)
+                    {
                         closed.lines.push(
                             oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name),
                         );

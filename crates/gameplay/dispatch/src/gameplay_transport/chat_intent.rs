@@ -552,7 +552,7 @@ impl ChatRuntime {
         match sessions.get_mut(&session) {
             Some(entry) if entry.engaged == Some(npc) => {
                 entry.engaged = None;
-                if let Some(line) = line {
+                if let Some(line) = line.filter(|line| !line.is_empty()) {
                     let rendered = oteryn_gameplay_npc::quest_greetings::render_player_name(
                         &line,
                         &entry.name,
