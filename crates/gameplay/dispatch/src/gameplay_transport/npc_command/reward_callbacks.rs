@@ -137,6 +137,63 @@ pub(super) async fn prefer_source_start(
     }
 }
 
+/// Complete a greeting accepted by local chat using the addressed dialogue writer.
+pub(in crate::gameplay_transport) async fn local_iriana_greeting(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command_id: u64,
+    joined: u64,
+    intent: NpcTalkIntent,
+) -> Result<Option<Vec<String>>, ()> {
+    let mut command = UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: None,
+    };
+    let step = {
+        let runtime = admission.runtime.lock().await;
+        let conversations = &admission.states.npc_conversations;
+        let context = conversations
+            .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            .ok_or(())?;
+        if context.1 != joined || context.2 != "oteryn:npc.iriana" {
+            return Err(());
+        }
+        // A local greeting can be the session's first NPC interaction.
+        conversations
+            .sessions
+            .lock()
+            .map_err(|_| ())?
+            .entry(session)
+            .or_default();
+        prepare(
+            admission,
+            actor,
+            command,
+            &intent,
+            &runtime,
+            None,
+            Phase::Rewards { skip_opening: None },
+        )
+    };
+    let Some(step) = step else {
+        return Ok(None);
+    };
+    command.item_fence = Some(
+        admission
+            .current_quest_fence(session)
+            .await?
+            .ok_or(())?
+            .item_fence(),
+    );
+    let outcome = quest_dialogue::apply(admission, actor, command, intent, step).await;
+    if outcome.unknown || outcome.disposition != NpcIntentDisposition::Ok {
+        return Err(());
+    }
+    Ok(Some(outcome.conversation.ok_or(())?.lines))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

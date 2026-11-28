@@ -147,7 +147,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
         .execute(&h.pool)
         .await?;
-    super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 2000, 80).await?;
+    super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 3000, 80).await?;
     owner.refresh_quest_session(session, true).await;
     use oteryn_gameplay_quests::quest::world_callbacks::Position;
     let [captain, petros, tiberius, sharon] = super::classic_quests_fixtures::install_positions(
@@ -224,7 +224,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
                 .iter()
                 .any(|line| line.contains("offer has expired"))
         ),
-        (0, false, 2000, true),
+        (0, false, 3000, true),
         "travel quote must replace ticket topic {armed}: {expired:?}"
     );
     talk(&mut owner, &deps.admitted, captain, 5, "bye").await?;
@@ -248,7 +248,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     ).bind(TRACK).fetch_one(&h.pool).await?;
     assert_eq!(
         (purchased, balance),
-        (false, 2000),
+        (false, 3000),
         "declined ticket must stay cancelled"
     );
     talk(&mut owner, &deps.admitted, petros, 10, "ticket").await?;
@@ -257,7 +257,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT balance FROM game_account_bank_balances)"
     ).bind(TRACK).fetch_one(&h.pool).await?;
     assert!(stamp >= now, "ticket records the database clock");
-    assert_eq!(balance, 1000);
+    assert_eq!(balance, 2000);
     let fence = owner
         .current_quest_fence(session)
         .await
@@ -270,6 +270,10 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .map_err(debug)?,
         Ok(0)
     );
+
+    let offer = talk(&mut owner, &deps.admitted, petros, 12, "travora").await?;
+    assert!(offer.iter().any(|line| line.contains("for 0 gold")));
+    talk(&mut owner, &deps.admitted, petros, 13, "no").await?;
 
     let mut passage = request(&owner, &deps, 48101, "petros").await?;
     passage.route = inbound.clone();
@@ -296,20 +300,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     complete(&owner, &deps, passage.arrival.occurrence).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'")
         .execute(&h.pool).await?;
-    // Age the purchased ticket in the fixture without changing the production clock.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    let aged = sqlx::query(
-        "UPDATE game_character_quest_tracks SET value=value-86400 WHERE track_key=$1 AND value=$2",
-    )
-    .bind(TRACK)
-    .bind(stamp)
-    .execute(&mut *tx)
-    .await?;
-    assert_eq!(aged.rows_affected(), 1);
-    tx.commit().await?;
+    expire_ticket(h, stamp).await?;
 
     let fence = owner
         .current_quest_fence(session)
@@ -345,21 +336,14 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(debug)?
         .position();
     assert_eq!((returned.x, returned.y, returned.floor), (33289, 32480, 6));
+    let renewed = assert_renewal(h, 48104, 1000, stamp).await?;
+    expire_ticket(h, renewed).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
-    assert!(offer.iter().any(|line| line.contains("for 0 gold")));
+    assert!(offer.iter().any(|line| line.contains("for 1000 gold")));
     talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
-    let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
-        "SELECT (SELECT balance FROM game_account_bank_balances),
-                (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
-                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=48104)",
-    )
-    .bind(TRACK)
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!((balance, paid), (0, 1000));
-    assert!(renewed >= stamp);
+    assert_renewal(h, 48107, 0, renewed).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, sharon, 48108, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, sharon, 48109, "check").await?;
@@ -390,4 +374,41 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .position();
     assert_eq!((placed.x, placed.y, placed.floor), (32062, 32367, 5));
     Ok(())
+}
+
+async fn expire_ticket(h: &Harness, stamp: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let aged = sqlx::query(
+        "UPDATE game_character_quest_tracks SET value=value-86400 WHERE track_key=$1 AND value=$2",
+    )
+    .bind(TRACK)
+    .bind(stamp)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(aged.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn assert_renewal(
+    h: &Harness,
+    command: i64,
+    expected_balance: i64,
+    previous: i64,
+) -> TestResult<i64> {
+    let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT balance FROM game_account_bank_balances),
+                (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=$2::bigint AND arrived_at IS NOT NULL)",
+    )
+    .bind(TRACK)
+    .bind(command)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((balance, paid), (expected_balance, 1000));
+    assert!(renewed >= previous);
+    Ok(renewed)
 }

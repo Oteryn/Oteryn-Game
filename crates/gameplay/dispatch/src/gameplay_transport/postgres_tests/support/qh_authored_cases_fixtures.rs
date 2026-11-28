@@ -402,7 +402,7 @@ async fn prepare_city(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.extend([3, 4, 6, 11, 15, 18]);
+    selected.extend([3, 4, 6, 7, 11, 15, 18]);
     selected.sort_unstable();
     selected.dedup();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -451,10 +451,11 @@ async fn start_city(
     Ok(())
 }
 
+// A local Say selects its NPC by proximity.
 async fn framed_talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    npc_actor: EntityRef,
+    npc_actor: impl Into<Option<EntityRef>>,
     text: &str,
     expected_disposition: NpcIntentDisposition,
     expected_line: Option<&str>,
@@ -462,6 +463,7 @@ async fn framed_talk(
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    use oteryn_protocol_oteryn::chat;
     use oteryn_protocol_oteryn::npc_service::{
         COMMAND_TYPE_NPC_TALK_INTENT, NpcTalkIntent, STATE_DOMAIN_NPC_CONVERSATION,
         decode_npc_conversation, decode_npc_intent_result, encode_npc_talk_intent,
@@ -472,6 +474,7 @@ async fn framed_talk(
     };
     use tokio::io::AsyncWriteExt;
 
+    let npc_actor = npc_actor.into();
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -491,19 +494,30 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        let greeting = (!matches!(text, "hi" | "hello Jimmy")).then_some("hi");
+        let greeting = (npc_actor.is_some() && !matches!(text, "hi" | "Hi, Iriana!" | "hello Jimmy"))
+            .then_some("hi");
         for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
             let command_id = first + u64::try_from(offset)?;
-            let payload = encode_npc_talk_intent(&NpcTalkIntent {
-                npc_actor,
-                text: words.into(),
-            })
-            .map_err(debug)?;
+            let (command_type, payload) = if let Some(npc_actor) = npc_actor {
+                let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                    npc_actor,
+                    text: words.into(),
+                })
+                .map_err(debug)?;
+                (COMMAND_TYPE_NPC_TALK_INTENT, payload)
+            } else {
+                let payload = chat::encode_chat_intent(&chat::ChatIntent::Say {
+                    mode: chat::ChatSpeechMode::Say,
+                    text: words.into(),
+                })
+                .map_err(debug)?;
+                (chat::COMMAND_TYPE_CHAT_INTENT, payload)
+            };
             let frame = encode_client_command(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id,
-                    command_type: COMMAND_TYPE_NPC_TALK_INTENT,
+                    command_type,
                     payload: &payload,
                 },
             )
@@ -530,15 +544,29 @@ async fn framed_talk(
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, command_id);
                     assert_eq!(result.status, status, "{words}");
-                    assert_eq!(
-                        decode_npc_intent_result(result.payload).map_err(debug)?,
-                        disposition,
-                        "{words}"
-                    );
+                    if npc_actor.is_some() {
+                        assert_eq!(
+                            decode_npc_intent_result(result.payload).map_err(debug)?,
+                            disposition,
+                            "{words}"
+                        );
+                    } else {
+                        let reply = chat::decode_chat_intent_result(result.payload).map_err(debug)?;
+                        assert_eq!(reply.disposition, chat::ChatDisposition::Ok);
+                    }
                     acknowledged = true;
                 } else if envelope.message_type() == MessageType::StateDelta {
                     let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
-                    if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION
+                    if npc_actor.is_none()
+                        && delta.domain_id == chat::STATE_DOMAIN_CHAT
+                        && delta.delta_type == chat::DELTA_TYPE_CHAT_LINE_V1
+                        && let chat::ChatLine::Local { text, speaker_name, .. } =
+                            chat::decode_chat_line(delta.payload).map_err(debug)?
+                    {
+                        found_line |= speaker_name == "Iriana" && Some(text.as_str()) == expected;
+                    }
+                    if npc_actor.is_some()
+                        && delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION
                         && let Some(line) = expected
                     {
                         let dialogue = decode_npc_conversation(delta.payload).map_err(debug)?;
@@ -735,15 +763,27 @@ async fn top_of_the_city(
     );
 
     relocate_city(owner, admitted, city_start()).await?;
+    let restart = "What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more.";
     framed_talk(
         owner,
         admitted,
         iriana,
         "Hi, Iriana!",
         NpcIntentDisposition::Ok,
-        Some("What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."),
+        Some(restart),
     )
     .await?;
+    assert_eq!(track(h, PURSUIT).await?, 0);
+    for greeting in ["hi", "Hi, Iriana!"] {
+        city_route::lose_trail(owner, admitted, deadline).await?;
+        assert_eq!(track(h, PURSUIT).await?, PURSUIT_COMPLETE + 1);
+        relocate_city(owner, admitted, city_start()).await?;
+        framed_talk(
+            owner, admitted, None, greeting, NpcIntentDisposition::Ok, Some(restart),
+        )
+        .await?;
+        assert_eq!(track(h, PURSUIT).await?, 0);
+    }
     city_route::roof_to_door(owner, admitted, deadline).await?;
     assert_eq!(
         track(h, PURSUIT).await?,

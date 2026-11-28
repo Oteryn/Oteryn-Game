@@ -812,6 +812,7 @@ pub fn chat_in_premium_channel(
         intent,
         now,
         None,
+        None,
         |_| None,
     )
 }
@@ -831,6 +832,7 @@ fn chat_with_quest_greetings<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     intent: &ChatIntent,
     now: SemanticTimeMicros,
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    iriana: Option<&mut Option<IrianaGreeting>>,
     jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, NpcIntentDisposition>>,
 ) -> ChatIntentResult {
     let ChatIntent::Say { mode, text } = intent else {
@@ -919,6 +921,7 @@ fn chat_with_quest_greetings<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
             &text,
             &listeners,
             quest_tracks,
+            iriana,
             jimmy_greeting,
         );
     }
@@ -980,6 +983,7 @@ fn npc_answer<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     text: &ChatText,
     listeners: &[(GameSessionId, ChatPosition)],
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    iriana: Option<&mut Option<IrianaGreeting>>,
     jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, NpcIntentDisposition>>,
 ) {
     let visible = runtime.visible_entities();
@@ -1072,22 +1076,78 @@ fn npc_answer<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
         identity: actor.placement_identity(),
         generation: *generation,
     };
-    for raw in reply.into_lines() {
-        let rendered = oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name);
+    if let Some(iriana) = iriana
+        && prior != Some(reply.id)
+        && let Some(speaking) = sessions.get(&session)
+        && speaking.engaged == Some(reply.id)
+        && runtime.npc_key(reply.id) == Some("oteryn:npc.iriana")
+    {
+        *iriana = Some(IrianaGreeting {
+            joined: speaking.joined,
+            intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
+                npc_actor: oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                    identity: npc_speaker.identity,
+                    generation: generation.get(),
+                },
+                text: text.as_str().into(),
+            },
+            speaker: npc_speaker,
+            npc_name: entry.name.clone(),
+            position: *position,
+            listeners: listeners.to_vec(),
+            ordinary: reply
+                .into_lines()
+                .map(|line| oteryn_gameplay_npc::quest_greetings::render_player_name(&line, &name))
+                .collect(),
+        });
+        return;
+    }
+    let lines = reply
+        .into_lines()
+        .map(|raw| oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name));
+    deliver_npc_lines(
+        sessions,
+        npc_speaker,
+        &entry.name,
+        *position,
+        listeners,
+        lines,
+    );
+}
+
+struct IrianaGreeting {
+    joined: u64,
+    intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
+    speaker: ChatSpeaker,
+    npc_name: String,
+    position: ChatPosition,
+    listeners: Vec<(GameSessionId, ChatPosition)>,
+    ordinary: Vec<String>,
+}
+
+fn deliver_npc_lines(
+    sessions: &mut HashMap<GameSessionId, ChatSession>,
+    npc_speaker: ChatSpeaker,
+    npc_name: &str,
+    position: ChatPosition,
+    listeners: &[(GameSessionId, ChatPosition)],
+    lines: impl IntoIterator<Item = String>,
+) {
+    for rendered in lines {
         for chunk in npc_chat_chunks(&rendered) {
             let Ok(line) = ChatText::parse(chunk) else {
                 continue;
             };
             for (listener, heard) in
-                local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+                local_listeners(SpeechMode::Say, position, listeners.iter().copied())
             {
                 if let Some(entry_of) = sessions.get_mut(&listener) {
                     entry_of.egress.push(local_line(
                         npc_speaker,
-                        &entry.name,
+                        npc_name,
                         SpeechMode::Say,
                         &line,
-                        *position,
+                        position,
                         heard,
                     ));
                 }
@@ -1242,7 +1302,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<BTreeMap<_, _>>(),
             )
         });
-        chat_with_quest_greetings(
+        let mut iriana = None;
+        let outcome = chat_with_quest_greetings(
             &self.states.chat,
             &mut *runtime,
             &states,
@@ -1251,11 +1312,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             now,
             quest_tracks.as_ref(),
+            Some(&mut iriana),
             |runtime| {
                 jimmy_remaining
                     .map(|remaining| super::npc_command::jimmy::greet(self, runtime, remaining))
             },
+        );
+        let Some(greeting) = iriana else {
+            return outcome;
+        };
+        drop(states);
+        drop(runtime);
+        let lines = match super::npc_command::reward_callbacks::local_iriana_greeting(
+            self,
+            actor,
+            session,
+            command_id,
+            greeting.joined,
+            greeting.intent,
         )
+        .await
+        {
+            Ok(Some(lines)) => lines,
+            Ok(None) => greeting.ordinary,
+            Err(()) => {
+                if let Ok(mut sessions) = self.states.chat.sessions.lock()
+                    && let Some(speaking) = sessions.get_mut(&session)
+                    && speaking.joined == greeting.joined
+                {
+                    speaking.engaged = None;
+                }
+                return result(ChatDisposition::ChatUnavailable);
+            }
+        };
+        let Ok(mut sessions) = self.states.chat.sessions.lock() else {
+            return result(ChatDisposition::ChatUnavailable);
+        };
+        deliver_npc_lines(
+            &mut sessions,
+            greeting.speaker,
+            &greeting.npc_name,
+            greeting.position,
+            &greeting.listeners,
+            lines,
+        );
+        outcome
     }
 
     /// A private or room line that passed the gate: the sender's level (and vocation, for
@@ -2202,6 +2303,7 @@ mod tests {
                 &say("hi"),
                 BASE,
                 tracks.as_ref(),
+                None,
                 |_| None,
             );
             assert_eq!(outcome, result(ChatDisposition::Ok));
