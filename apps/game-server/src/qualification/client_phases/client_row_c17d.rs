@@ -66,8 +66,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .max(entry.position.y.abs_diff(caster.world_spatial().actor_position.y)) <= 1
     })).map(|entry| entry.entity).ok_or("adjacent rat absent")?;
     let caster_ref = own(&caster)?;
+    let victim_ref = own(&victim)?;
+    if !victim.take_events().into_iter().any(|event| {
+        matches!(event, SessionEvent::Presentation(delta) if delta.value.iter().any(|event| {
+            matches!(event.kind, PresentationEventKind::ValueText {
+                attacker: Some(source), target, primary,
+                kind: oteryn_protocol_oteryn::presentation::PresentationValueKind::DamageReceived,
+                ..
+            } if source == rat && target == victim_ref && primary.value > 0)
+        }))
+    }) {
+        return Err("Challenge pre-state lacks damage from the same rat to the victim".into());
+    }
     caster.take_events();
-    victim.take_events();
     let book = spell_book()?;
     let before = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
     let cast = caster.cast_spell(challenge_index(&book)?, SpellTarget::None, false).await?;
@@ -75,6 +86,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("Challenge refused: {cast:?}").into());
     }
     let paid = cast.actor_vitals_delta.as_ref().ok_or("Challenge omitted vitals delta")?.value;
+    if before.mana.checked_sub(40) != Some(paid.mana) {
+        return Err(format!("Challenge must debit 40 mana: before={} after={}", before.mana, paid.mana).into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let mut captured = None;
     while tokio::time::Instant::now() < deadline && captured.is_none() {
