@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P23c\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -92,6 +92,31 @@ replay_loyalty_capture() {
     return 0
   fi
   printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
+selected_p23c_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-}
+  [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
+  local first=$((10#${BASH_REMATCH[1]})) length=$((10#${BASH_REMATCH[2]}))
+  (( first <= 178 && 178 < first + length ))
+}
+
+replay_p23c_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3
+  local test=task_board::e2e_p23c::e2e_p23c_replays_hunting_task_query_and_select
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P23c\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if [[ $(grep -Fxc "SEAM_EVIDENCE e2e_capture scenario=P23c.client status=CAPTURED run=${capture_dir##*/}" "$log") == 1 ]] &&
+    OTERYN_P23C_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact --nocapture >"$replay_log" 2>&1 &&
+    grep -Fqx "P23C_REPLAY verified run=${capture_dir##*/}" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P23c.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P23c.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
   return 1
 }
 
@@ -148,7 +173,12 @@ for group in "$@"; do
   if selected_loyalty_replay "$group"; then
     capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
   fi
+  p23c_capture_dir=
+  if selected_p23c_replay "$group"; then
+    p23c_capture_dir=$(mktemp -d "$work_dir/$index-p23c.XXXXXX") || blocked work_dir_unavailable
+  fi
   (
+    [[ -z "$p23c_capture_dir" ]] || export OTERYN_P23C_CAPTURE_DIR="$p23c_capture_dir"
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
     export NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group"
     exec bash tools/qualification/node_boot/run.sh
@@ -157,6 +187,9 @@ for group in "$@"; do
   wait "$child_pid" || status=$?
   child_pid=
   if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
+  if [[ -n "$p23c_capture_dir" ]] && ! replay_p23c_capture "$log" "$p23c_capture_dir" "$work_dir/$index-p23c.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

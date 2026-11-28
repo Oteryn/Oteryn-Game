@@ -1,77 +1,123 @@
-//! P23c client replay capture: the real legacy TASK_BOARD replies for the Query and for selecting
-//! the first offered hunting task. The consumer is `apply_result` and `panel_text` in
-//! `crates/client-ui/src/features/0072-task-board`.
+//! Capture modern Weekly and Bounty replies for the production client consumer.
 use super::*;
-use oteryn_protocol_oteryn::task_board::{
-    CAPABILITY_TASK_BOARD_V1, COMMAND_TYPE_TASK_BOARD, TaskBoardReply, TaskBoardRequest,
-    decode_task_board_reply, encode_task_board_request,
-};
+use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::{logout::LogoutResult, task_board as wire};
+use serde_json::{Value, json};
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P23C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
-}
-
-async fn send(
-    client: &mut oteryn_dev_client::DevClientSession,
+pub(super) async fn exchange(
+    client: &mut DevClientSession,
     action: u8,
-    task: u8,
-) -> TestResult<(Vec<u8>, TaskBoardReply)> {
-    let payload = encode_task_board_request(&TaskBoardRequest { action, task })
-        .map_err(|error| format!("request encoder: {error:?}"))?;
+    selection: u16,
+) -> TestResult<(wire::full::Reply, Value)> {
+    let request = wire::full::encode_request(&wire::full::Request {
+        action,
+        selection,
+        race: String::new(),
+    })
+    .map_err(|error| format!("Task Board request: {error:?}"))?;
     let result = client
         .session_mut()
-        .gated_command(CAPABILITY_TASK_BOARD_V1, COMMAND_TYPE_TASK_BOARD, &payload)
+        .gated_command(
+            wire::CAPABILITY_TASK_BOARD_V1,
+            wire::COMMAND_TYPE_TASK_BOARD,
+            &request,
+        )
         .await?;
     if result.status != CommandStatus::Accepted {
-        return Err(format!("task-board action={action} status={:?}", result.status).into());
+        return Err(format!("Task Board action={action} result={:?}", result.status).into());
     }
-    let reply = decode_task_board_reply(&result.payload)
-        .map_err(|error| format!("reply decode: {error:?}"))?;
-    Ok((result.payload, reply))
+    let reply = wire::full::decode_reply(&result.payload)
+        .map_err(|error| format!("Task Board action={action} reply={error:?}"))?;
+    let capture = json!({
+        "request": request,
+        "command": result.command_id,
+        "sequence": result.server_sequence,
+        "payload": result.payload,
+    });
+    Ok((reply, capture))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let directory = Path::new(&required("OTERYN_P23C_CAPTURE_DIR")?).to_path_buf();
+    let run = directory
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or("invalid capture directory")?;
     let mut client = connect_character(clients, 0x45, 1).await?;
-    let (query_bytes, query) = send(&mut client, 0, 0).await?;
-    if query.refused || query.tasks.is_empty() {
-        return Err(format!("query refused or without tasks: {query:?}").into());
+    let session = format!("{:?}", client.join_snapshot().game_session_id);
+    let (initial, query) = exchange(&mut client, 4, 0).await?;
+    let (weekly, start) = exchange(&mut client, 5, 0).await?;
+    if initial.weekly.started
+        || weekly.refusal != 0
+        || !weekly.weekly.started
+        || weekly.weekly.difficulty != 0
+        || weekly.weekly.kills.is_empty()
+        || weekly.weekly.pending_points != 0
+        || weekly.points != initial.points
+    {
+        return Err(format!("step=weekly-start observed={weekly:?}").into());
     }
-    capture("p23c-query.bin", &query_bytes);
-    let (select_bytes, select) = send(&mut client, 1, 1).await?;
-    capture("p23c-select.bin", &select_bytes);
-    let mut expected = format!(
-        "points={}\nbounty_points={}\ntask_count={}\n",
-        query.points,
-        query.bounty_points,
-        query.tasks.len()
-    );
-    for (index, task) in query.tasks.iter().enumerate() {
-        expected.push_str(&format!(
-            "task_{}={},{},{}\n",
-            index + 1,
-            task.race,
-            task.required,
-            task.claimed_at_unix
-        ));
+    let (opened, open) = exchange(&mut client, 7, 0).await?;
+    let offer = opened.bounty.offers.first().ok_or_else(|| {
+        format!(
+            "step=bounty-open refusal={} state={} offers=0",
+            opened.refusal, opened.bounty.state
+        )
+    })?;
+    let (selected, select) = exchange(&mut client, 8, 0).await?;
+    if initial.refusal != 0
+        || initial.bounty.active.is_some()
+        || opened.refusal != 0
+        || opened.bounty.state != 1
+        || opened.bounty.active.is_some()
+        || offer.required == 0
+        || offer.points == 0
+        || selected.refusal != 0
+        || selected.bounty.state != 2
+        || selected.bounty.selected != 1
+        || selected.bounty.current != 0
+        || selected.bounty.active.as_ref() != Some(offer)
+        || selected.weekly != weekly.weekly
+        || selected.points != initial.points
+        || selected.bounty_points != initial.bounty_points
+    {
+        return Err("step=bounty-select did not activate exactly the first live offer".into());
     }
-    expected.push_str(&format!(
-        "select_refused={}\nselect_selected={}\nselect_kills={}\nselect_points={}\n",
-        select.refused, select.selected, select.kills, select.points
-    ));
-    capture("p23c-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";").replace(' ', "_"))
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step=client-logout observed={logout:?}").into());
+    }
+    let mut relog = connect_character(clients, 0x46, 1).await?;
+    let (persisted, _) = exchange(&mut relog, 4, 0).await?;
+    let relog_session = format!("{:?}", relog.join_snapshot().game_session_id);
+    if session == relog_session || persisted != selected {
+        return Err(format!("step=client-relog observed={persisted:?}").into());
+    }
+    let logout = relog.session_mut().logout().await?;
+    if logout.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step=client-relog-logout observed={logout:?}").into());
+    }
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("p23c.json"))?;
+    serde_json::to_writer(
+        file,
+        &json!({
+            "run": run,
+            "session": session,
+            "commands": [query, start, open, select],
+        }),
+    )?;
+    Ok(run.to_owned())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
-        Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=P23c.client status=CAPTURED evidence={expected}"
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+        .await
+    {
+        Ok(Ok(run)) => evidence(&format!(
+            "e2e_capture scenario=P23c.client status=CAPTURED run={run}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P23c.client status=FAIL evidence={error}"

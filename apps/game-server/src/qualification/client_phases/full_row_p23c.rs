@@ -1,5 +1,4 @@
-//! P23c: qualify task selection, real kill credit, claim and relog when served.
-//! A retired board must refuse both mutations without changing any balance.
+//! P23c: modern Task Board reward progress plus retired legacy negative controls.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, client_runtime::task_board};
@@ -47,102 +46,58 @@ async fn command(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    use super::client_row_p23c::exchange;
     let mut client = connect_character(clients, 0xc3, 1).await?;
-    if !client
-        .selected_capabilities()
-        .contains(&wire::CAPABILITY_TASK_BOARD_V1)
+    let legacy = command(&mut client, 0, 0).await?;
+    if legacy.status != CommandStatus::Accepted
+        || legacy.reply.refused
+        || !legacy.reply.tasks.is_empty()
     {
-        return Err("step-1 capability-72-not-selected;need=hunting-task-command-owner".into());
+        return Err(format!("step=legacy-query observed={legacy:?}").into());
     }
-
-    let initial = command(&mut client, 0, 0).await?;
-    if initial.status != CommandStatus::Accepted || initial.reply.refused {
-        return Err(
-            format!("step=hunting-task-query observed={initial:?} need=accepted-board").into(),
-        );
+    let (initial, _) = exchange(&mut client, 4, 0).await?;
+    if initial.refusal != 0 || initial.weekly.started || initial.bounty.active.is_some() {
+        return Err(format!("step=modern-query observed={initial:?}").into());
     }
-    let retired = initial.reply.tasks.is_empty();
-    let expected = if retired {
-        // Legacy task IDs are one-based even when the retired list is empty.
-        for (action, name) in [(1, "select"), (2, "claim")] {
-            let reply = command(&mut client, action, 1).await?;
-            check_refusal(name, &initial.reply, &reply)?;
+    for action in [1, 2] {
+        let refused = command(&mut client, action, 1).await?;
+        if refused.status != CommandStatus::Accepted
+            || refused.reply
+                != (wire::TaskBoardReply {
+                    refused: true,
+                    ..legacy.reply.clone()
+                })
+            || exchange(&mut client, 4, 0).await?.0 != initial
+        {
+            return Err(format!(
+                "step=legacy-negative-control action={action} observed={refused:?}"
+            )
+            .into());
         }
-        initial.reply
-    } else {
-        complete_task(&mut client, clients, &initial.reply).await?
-    };
-
-    let session = client.join_snapshot().game_session_id;
-    logout(&mut client).await?;
-    drop(client);
-    let mut fresh = connect_character(clients, 0xc4, 1).await?;
-    let persisted = command(&mut fresh, 0, 0).await?;
-    logout(&mut fresh).await?;
-    if fresh.join_snapshot().game_session_id == session
-        || persisted.status != CommandStatus::Accepted
-        || persisted.reply.refused
-        || !same_durable_view(&expected, &persisted.reply)
-    {
-        return Err(format!(
-            "step=hunting-task-durability observed={persisted:?} expected={expected:?}"
-        )
-        .into());
     }
 
-    if retired {
-        return Err("step=hunting-task-reward observed=options-0,select-refused,claim-refused need=Prey-Hunting-Task-options-kill-credit-and-reward-claim; source:crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:82".into());
-    }
-    Ok(())
-}
-
-fn check_refusal(
-    name: &str,
-    expected: &wire::TaskBoardReply,
-    reply: &task_board::TaskBoardResponse,
-) -> TestResult {
-    if reply.status != CommandStatus::Accepted
-        || !reply.reply.refused
-        || !same_durable_view(expected, &reply.reply)
-    {
-        return Err(
-            format!("step=hunting-task-{name} need=inert-refusal observed={reply:?}").into(),
-        );
-    }
-    Ok(())
-}
-
-async fn complete_task(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    initial: &wire::TaskBoardReply,
-) -> TestResult<wire::TaskBoardReply> {
-    let (index, task) = initial
-        .tasks
+    let (weekly, _) = exchange(&mut client, 5, 0).await?;
+    let task = weekly
+        .weekly
+        .kills
         .iter()
-        .enumerate()
-        .find(|(_, task)| task.claimed_at_unix == 0 && task.required > 0)
-        .ok_or("step=hunting-task-select need=offered-unclaimed-task")?;
-    if initial.selected != 0 || initial.kills != 0 {
-        return Err("step=hunting-task-select need=idle-task-board".into());
-    }
-    let slot = u8::try_from(index + 1)?;
-    let selected = command(client, 1, slot).await?;
-    let expected_selection = wire::TaskBoardReply {
-        selected: slot,
-        ..initial.clone()
-    };
-    if selected.status != CommandStatus::Accepted
-        || selected.reply.refused
-        || !same_durable_view(&expected_selection, &selected.reply)
+        .find(|task| !task.race.is_empty())
+        .ok_or_else(|| {
+            format!(
+                "step=weekly-start refusal={} kill-tasks={:?}",
+                weekly.refusal, weekly.weekly.kills
+            )
+        })?;
+    if weekly.refusal != 0
+        || !weekly.weekly.started
+        || weekly.weekly.difficulty != 0
+        || weekly.weekly.pending_points != 0
+        || weekly.points != initial.points
+        || task.current != 0
+        || task.required == 0
     {
-        return Err(format!(
-            "step=hunting-task-select observed={selected:?} expected={expected_selection:?}"
-        )
-        .into());
+        return Err(format!("step=weekly-start observed={weekly:?}").into());
     }
-    let early = command(client, 2, slot).await?;
-    check_refusal("premature-claim", &expected_selection, &early)?;
 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -153,80 +108,145 @@ async fn complete_task(
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
-    for kills in 1..=task.required {
-        let hunt = async {
-            travel_to_spawn(client, world, &metadata.spawns, &task.race).await?;
-            client_hunt::hunt(client).await
-        };
-        tokio::time::timeout_at(deadline, hunt)
-            .await
-            .map_err(|_| {
-                format!(
-                    "step=hunting-task-credit race={} needed={} credited={}",
-                    task.race,
-                    task.required,
-                    kills - 1
-                )
-            })??;
-        let updated = command(client, 0, 0).await?;
-        let expected = wire::TaskBoardReply {
-            kills,
-            ..expected_selection.clone()
-        };
-        if updated.status != CommandStatus::Accepted
-            || updated.reply.refused
-            || !same_durable_view(&expected, &updated.reply)
+    for current in 1..=task.required {
+        travel_to_spawn(&mut client, world, &metadata.spawns, &task.race).await?;
+        client_hunt::hunt(&mut client).await?;
+        let (progress, _) = exchange(&mut client, 4, 0).await?;
+        let expected_pending = if current == task.required { 25 } else { 0 };
+        if progress.refusal != 0
+            || progress.points != initial.points
+            || progress.weekly.pending_points != expected_pending
+            || !progress.weekly.kills.iter().any(|observed| {
+                observed.race == task.race
+                    && observed.required == task.required
+                    && observed.current == current
+            })
         {
-            return Err(format!(
-                "step=hunting-task-credit race={} expected-kills={kills} observed={updated:?}",
-                task.race
-            )
-            .into());
+            return Err(format!("step=weekly-credit expected={current} pending={expected_pending} observed={progress:?}").into());
         }
     }
-    let before_claim = wire::TaskBoardReply {
-        kills: task.required,
-        ..expected_selection
-    };
-    let claimed = command(client, 2, slot).await?;
-    if claimed.status != CommandStatus::Accepted
-        || !claim_applied(&before_claim, &claimed.reply, index)
+
+    let (opened, _) = exchange(&mut client, 7, 0).await?;
+    let offer = opened
+        .bounty
+        .offers
+        .first()
+        .ok_or_else(|| format!("step=bounty-open refusal={} offers=0", opened.refusal))?;
+    let (selection, _) = exchange(&mut client, 8, 0).await?;
+    if opened.refusal != 0
+        || opened.bounty.state != 1
+        || opened.bounty.active.is_some()
+        || selection.refusal != 0
+        || selection.bounty.state != 2
+        || selection.bounty.selected != 1
+        || selection.bounty.current != 0
+        || selection.bounty.active.as_ref() != Some(offer)
+        || offer.required == 0
+        || offer.points == 0
     {
-        return Err(format!("step=hunting-task-claim expected=cleared-selection-and-task-points observed={claimed:?}").into());
+        return Err(format!("step=bounty-select observed={selection:?}").into());
     }
-    let duplicate = command(client, 2, slot).await?;
-    check_refusal("duplicate-claim", &claimed.reply, &duplicate)?;
-    Ok(claimed.reply)
+    let (early, _) = exchange(&mut client, 9, 0).await?;
+    if early
+        != (wire::full::Reply {
+            refusal: 2,
+            ..selection.clone()
+        })
+    {
+        return Err(format!("step=bounty-early-claim observed={early:?}").into());
+    }
+    for current in 1..=offer.required {
+        travel_to_spawn(&mut client, world, &metadata.spawns, &offer.race).await?;
+        client_hunt::hunt(&mut client).await?;
+        let (progress, _) = exchange(&mut client, 4, 0).await?;
+        let state = if current == offer.required { 3 } else { 2 };
+        if progress.refusal != 0
+            || progress.bounty.state != state
+            || progress.bounty.current != current
+            || progress.bounty.active.as_ref() != Some(offer)
+            || progress.bounty_points != initial.bounty_points
+        {
+            return Err(
+                format!("step=bounty-credit expected={current} observed={progress:?}").into(),
+            );
+        }
+    }
+    let (claimed, _) = exchange(&mut client, 9, 0).await?;
+    let expected_points = initial
+        .bounty_points
+        .checked_add(u64::from(offer.points))
+        .ok_or("bounty balance overflow")?;
+    if claimed.refusal != 0
+        || claimed.bounty.state != 1
+        || claimed.bounty.active.is_some()
+        || claimed.bounty.current != 0
+        || claimed.bounty_points != expected_points
+        || claimed.points != initial.points
+        || claimed.weekly.pending_points < 25
+    {
+        return Err(format!(
+            "step=bounty-claim expected-bounty-points={expected_points} observed={claimed:?}"
+        )
+        .into());
+    }
+    let (duplicate, _) = exchange(&mut client, 9, 0).await?;
+    if duplicate
+        != (wire::full::Reply {
+            refusal: 2,
+            ..claimed.clone()
+        })
+    {
+        return Err(format!("step=bounty-duplicate-claim observed={duplicate:?}").into());
+    }
+    let session = client.join_snapshot().game_session_id;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    verdict::Harness::global().bounded_wait(deadline, "task-board-combat-lock");
+    while tokio::time::Instant::now() < deadline {
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    }
+    logout(&mut client).await?;
+    let mut relog = connect_character(clients, 0xc4, 1).await?;
+    let (persisted, _) = exchange(&mut relog, 4, 0).await?;
+    logout(&mut relog).await?;
+    if relog.join_snapshot().game_session_id == session {
+        return Err("step=task-board-relog reused the previous game session".into());
+    }
+    verify_settlement(&claimed, &persisted)
+}
+
+fn verify_settlement(before: &wire::full::Reply, after: &wire::full::Reply) -> TestResult {
+    if after.period <= before.period {
+        return Err(format!(
+            "step=weekly-settlement observed-period={} need=committed-reset-after-{} pending-points={}",
+            after.period, before.period, before.weekly.pending_points
+        ).into());
+    }
+    let expected = before
+        .points
+        .checked_add(before.weekly.pending_points)
+        .ok_or("weekly balance overflow")?;
+    if before.weekly.pending_points == 0
+        || after.refusal != 0
+        || after.points != expected
+        || after.bounty_points != before.bounty_points
+        || after.weekly.started
+        || after.weekly.pending_points != 0
+    {
+        return Err(format!(
+            "step=weekly-settlement expected-points={expected} observed={after:?}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    verdict::Harness::global().bounded_wait(deadline, "hunting-task-logout");
-    loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(LogoutResult::Accepted) => return Ok(()),
-            Some(LogoutResult::Busy | LogoutResult::InFight { .. })
-                if tokio::time::Instant::now() < deadline =>
-            {
-                client.service_liveness(Duration::from_millis(100)).await?;
-                client.take_events();
-            }
-            _ => return Err(format!("logout-refused;observed={reply:?}").into()),
-        }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step=task-board-logout observed={reply:?}").into());
     }
-}
-
-fn same_durable_view(left: &wire::TaskBoardReply, right: &wire::TaskBoardReply) -> bool {
-    left.selected == right.selected
-        && left.kills == right.kills
-        && left.points == right.points
-        && left.bounty_points == right.bounty_points
-        && left.talisman_levels == right.talisman_levels
-        && left.talisman_bonuses == right.talisman_bonuses
-        && left.talisman_next_costs == right.talisman_next_costs
-        && left.tasks == right.tasks
+    Ok(())
 }
 
 fn token(value: &str) -> String {
@@ -240,99 +260,4 @@ fn token(value: &str) -> String {
             }
         })
         .collect()
-}
-
-fn claim_applied(
-    before: &wire::TaskBoardReply,
-    after: &wire::TaskBoardReply,
-    index: usize,
-) -> bool {
-    let (Some(task), Some(claimed)) = (before.tasks.get(index), after.tasks.get(index)) else {
-        return false;
-    };
-    if after.refused
-        || usize::from(before.selected) != index + 1
-        || before.kills < task.required
-        || claimed.claimed_at_unix <= task.claimed_at_unix
-    {
-        return false;
-    }
-    let Some(points) = before
-        .points
-        .checked_add(oteryn_gameplay_quests::quest::task_board::TASK_POINTS)
-    else {
-        return false;
-    };
-    let mut expected = wire::TaskBoardReply {
-        selected: 0,
-        kills: 0,
-        points,
-        ..before.clone()
-    };
-    expected.tasks[index].claimed_at_unix = claimed.claimed_at_unix;
-    same_durable_view(&expected, after)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn completed_claim_credits_points_once_and_clears_selection() {
-        let ready = wire::TaskBoardReply {
-            refused: false,
-            selected: 1,
-            kills: 2,
-            points: 10,
-            bounty_points: 0,
-            talisman_levels: [0; 4],
-            talisman_bonuses: [0; 4],
-            talisman_next_costs: [5; 4],
-            tasks: vec![wire::TaskBoardTask {
-                race: "oteryn:creature.rat".into(),
-                required: 2,
-                claimed_at_unix: 0,
-            }],
-        };
-        let mut claimed = ready.clone();
-        claimed.selected = 0;
-        claimed.kills = 0;
-        claimed.tasks[0].claimed_at_unix = 1;
-        claimed.points += 25;
-        assert!(claim_applied(&ready, &claimed, 0));
-        assert!(!claim_applied(&claimed, &claimed, 0));
-        claimed.points += 1;
-        assert!(!claim_applied(&ready, &claimed, 0));
-    }
-
-    use super::*;
-
-    #[test]
-    fn retired_action_cannot_change_either_currency_or_talisman_state() {
-        let initial = wire::TaskBoardReply {
-            refused: false,
-            selected: 0,
-            kills: 0,
-            points: 25,
-            bounty_points: 10,
-            talisman_levels: [0; 4],
-            talisman_bonuses: [0; 4],
-            talisman_next_costs: [5; 4],
-            tasks: Vec::new(),
-        };
-        let mut refused = initial.clone();
-        refused.refused = true;
-        assert!(same_durable_view(&initial, &refused));
-        refused.bounty_points += 1;
-        assert!(!same_durable_view(&initial, &refused));
-        refused.bounty_points = initial.bounty_points;
-        refused.talisman_levels[0] += 1;
-        assert!(!same_durable_view(&initial, &refused));
-    }
-
-    #[test]
-    fn evidence_token_has_no_whitespace() {
-        assert_eq!(
-            token("step 2: Rejected { x: 1 }"),
-            "step_2:_Rejected___x:_1__"
-        );
-    }
 }
