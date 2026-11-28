@@ -1,6 +1,8 @@
 use super::*;
 use crate::play::{PlayLink, play_channel};
 use oteryn_session::{AppliedDelta, CharacterInventory, SessionEvent};
+mod i18b;
+
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 pub(super) fn entry(handle: u64, count: u32) -> Result<ItemEntry, Box<dyn std::error::Error>> {
     Ok(ItemEntry {

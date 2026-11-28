@@ -365,6 +365,128 @@ fn capture_view(
     Ok(())
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct RefusalState {
+    inventory: oteryn_dev_client::native_session::CharacterInventory,
+    views: tree::ContainerViews,
+}
+
+impl RefusalState {
+    fn read(client: &mut DevClientSession) -> TestResult<Self> {
+        Ok(Self {
+            inventory: client
+                .inventory()
+                .cloned()
+                .ok_or("refusal inventory absent")?,
+            views: client
+                .session_mut()
+                .container_views()
+                .cloned()
+                .ok_or("refusal views absent")?,
+        })
+    }
+
+    fn verify(&self, after: &Self, events: Vec<SessionEvent>) -> TestResult {
+        if self != after
+            || events.into_iter().any(|event| match event {
+                SessionEvent::Inventory(delta) => delta.value != self.inventory,
+                SessionEvent::ContainerViews(delta) => delta.value != self.views,
+                SessionEvent::GatedSnapshotReplaced(delta) => matches!(
+                    delta.value.domain_id,
+                    tree::STATE_DOMAIN_CONTAINER_VIEWS
+                        | oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                ),
+                _ => false,
+            })
+        {
+            return Err("step=locked-browse-refusal observed=state-changed".into());
+        }
+        Ok(())
+    }
+}
+
+async fn refuse_field_move(
+    client: &mut DevClientSession,
+    entry: ItemEntry,
+    destination: ItemMoveDestination,
+) -> TestResult {
+    use oteryn_protocol_oteryn::item_look as look;
+
+    let before = RefusalState::read(client)?;
+    client.take_events();
+    move_rope(client, entry, destination, ItemMoveOutcome::NotSupported).await?;
+    // A subsequent read-only command consumes queued pushes from the refused move.
+    let payload = look::encode_item_look_intent(look::ItemLookIntent {
+        target: look::ItemLookTarget::Item(entry.handle),
+    })
+    .map_err(|error| format!("refusal Look request: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            look::ITEM_LOOK_CAPABILITY_ID.ok_or("Look capability absent")?,
+            look::ITEM_LOOK_COMMAND_ID.ok_or("Look command absent")?,
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || !matches!(
+            look::decode_item_look_result(&reply.payload),
+            Ok(look::ItemLookResult::Text(_))
+        )
+    {
+        return Err(format!("refusal Look barrier failed: {:?}", reply.status).into());
+    }
+    before.verify(&RefusalState::read(client)?, client.take_events())
+}
+
+fn reorder_destination(
+    view: &tree::ContainerView,
+    rope: ItemEntry,
+    other: ItemEntry,
+) -> TestResult<ItemMoveDestination> {
+    let source = view
+        .entries
+        .iter()
+        .position(|entry| *entry == rope)
+        .ok_or("reorder source absent")?;
+    let target = view
+        .entries
+        .iter()
+        .position(|entry| *entry == other)
+        .ok_or("occupied reorder target absent")?;
+    if source == target {
+        return Err("reorder destination is the source index".into());
+    }
+    Ok(ItemMoveDestination::Container(
+        view.container_handle,
+        Some(u32::try_from(target)?),
+    ))
+}
+
+fn capture_drag_inventory(client: &DevClientSession, delta: &ViewsDelta) -> TestResult {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        use std::io::Write;
+        let inventory = client.inventory().ok_or("capture inventory absent")?;
+        let bytes = oteryn_protocol_oteryn::item_view::encode_character_inventory_with_appearances(
+            inventory, true, true,
+        )
+        .map_err(|error| format!("capture inventory encoding: {error:?}"))?;
+        let root = Path::new(&root);
+        let run = root
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or("capture run name")?;
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join("i18b-drag-inventory.bin"))?;
+        writeln!(file, "{run} {session} {}", delta.server_sequence)?;
+        file.write_all(&bytes)?;
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let rope = provisioning::item_reference(&provisioning::item_index()?, 3003)?;
     let mut client = connect_world(clients, 0xf2).await?;
@@ -382,23 +504,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Global: https://tibia.fandom.com/wiki/Browse_Field (drag out only).
     // The physical tile remains the deposit target.
     let entry = carried_rope(&client, rope)?;
-    move_rope(
+    refuse_field_move(
         &mut client,
         entry,
         ItemMoveDestination::Container(field.container_handle, None),
-        ItemMoveOutcome::NotSupported,
     )
     .await?;
-    if carried_rope(&client, rope)? != entry
-        || !client
-            .session_mut()
-            .container_views()
-            .is_some_and(|views| views.views.iter().any(|view| view == &field))
-    {
-        return Err("step=locked-browse-refusal observed=state-changed".into());
-    }
     let (dropped, drop_delta) = drop_rope(&mut client, &field, at, rope).await?;
     capture_view(&mut client, "after-drop", &drop_delta, field.view_id, rope)?;
+    capture_drag_inventory(&client, &drop_delta)?;
     let pickup_delta = pick_up_rope(&mut client, &field, at, rope, dropped).await?;
     capture_view(
         &mut client,
@@ -427,7 +541,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let (field, _) = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
-    drop_rope(&mut client, &field, at, rope).await?;
+    let (_, rope_on_ground) = drop_rope(&mut client, &field, at, rope).await?;
+    let shovel = provisioning::item_reference(&provisioning::item_index()?, 3457)?;
+    let one_item = rope_on_ground
+        .value
+        .views
+        .iter()
+        .find(|view| view.view_id == field.view_id)
+        .ok_or("pre-reorder field absent")?;
+    rope_on_tile(one_item, at, shovel, 0)?;
+    let (shovel_on_tile, two_items) = drop_rope(&mut client, &field, at, shovel).await?;
+    let populated = two_items
+        .value
+        .views
+        .iter()
+        .find(|view| view.view_id == field.view_id)
+        .ok_or("reorder field absent")?;
+    if !client.selected_capabilities().contains(&510) {
+        return Err("I18b reorder requires explicit slot capability".into());
+    }
+    let current_rope = rope_on_tile(populated, at, rope, 1)?.ok_or("reorder rope absent")?;
+    let destination = reorder_destination(populated, current_rope, shovel_on_tile)?;
+    refuse_field_move(&mut client, current_rope, destination).await?;
+    pick_up_rope(&mut client, populated, at, shovel, shovel_on_tile).await?;
     logout(&mut client).await?;
     drop(client);
 
@@ -453,13 +589,69 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (field, _) = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
     logout(&mut client).await?;
-    Ok("starter-rope;ground-drop=2;browse-pickup=2;virtual-destination-refused;ground-relog=backpack-0,tile-1;pickup-relog=backpack-1,tile-0".to_owned())
+    Ok("starter-rope;ground-drop=2;browse-pickup=2;virtual-deposit-refused;occupied-slot-reorder-refused;refusals-preserve-full-inventory-and-views;ground-relog=backpack-0,tile-1;pickup-relog=backpack-1,tile-0".to_owned())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use oteryn_dev_client::native_session::{AppliedDelta, GatedSnapshot};
+
+    #[test]
+    fn i18b_refusal_rejects_collateral_inventory_and_view_changes() -> TestResult {
+        let rope = ItemEntry {
+            appearance_id: 0,
+            handle: 1.try_into()?,
+            item_definition_ref: 1.try_into()?,
+            count: 1.try_into()?,
+            sub_type: 0,
+        };
+        let other = ItemEntry {
+            handle: 2.try_into()?,
+            item_definition_ref: 2.try_into()?,
+            ..rope
+        };
+        let view = tree::ContainerView {
+            view_id: 1,
+            container_handle: 3.try_into()?,
+            parent_handle: None,
+            capacity: 30,
+            entries: vec![rope, other],
+            browse: None,
+        };
+        let before = RefusalState {
+            inventory: oteryn_dev_client::native_session::CharacterInventory {
+                entries: vec![rope, other],
+                ..Default::default()
+            },
+            views: tree::ContainerViews {
+                views: vec![view.clone()],
+            },
+        };
+        assert_eq!(
+            reorder_destination(&view, rope, other)?,
+            ItemMoveDestination::Container(view.container_handle, Some(1))
+        );
+        assert!(reorder_destination(&view, rope, rope).is_err());
+        before.verify(&before, Vec::new())?;
+        let mut changed_inventory = before.inventory.clone();
+        changed_inventory.entries.remove(1);
+        let restored = SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 20,
+            base_revision: 1,
+            new_revision: 2,
+            value: changed_inventory,
+        });
+        assert!(before.verify(&before, vec![restored]).is_err());
+        let mut changed_views = before.views.clone();
+        changed_views.views[0].entries.swap(0, 1);
+        let after = RefusalState {
+            inventory: before.inventory.clone(),
+            views: changed_views,
+        };
+        assert!(before.verify(&after, Vec::new()).is_err());
+        Ok(())
+    }
 
     #[test]
     fn i18b_replacement_with_matching_typed_projection_is_rejected() -> TestResult {
