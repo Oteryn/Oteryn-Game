@@ -2075,11 +2075,169 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-illuminated-basic",
+      "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requirements": {
+        "min_level": 1000,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54640",
+          "count": 2500
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.illuminated_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Your Illuminated Warrior commission is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:2651cbcf9f4e77cd7c35a1e970bcb0bcb5fc55618c21e9780942e73511e22fa5",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "wiki:111141:1196354"
+      ],
+      "forbids_outfits": [
+        "oteryn:outfit.illuminated_warrior"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-illuminated-halo",
+      "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requirements": {
+        "min_level": 1000,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54640",
+          "count": 1250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.illuminated_warrior",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Your Illuminated Warrior commission is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:2651cbcf9f4e77cd7c35a1e970bcb0bcb5fc55618c21e9780942e73511e22fa5",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "wiki:111141:1196354"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.illuminated_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.illuminated_warrior",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.illuminated_warrior",
+          "addons": 1
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-illuminated-insignia",
+      "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requirements": {
+        "min_level": 1000,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i54640",
+          "count": 1250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.illuminated_warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Your Illuminated Warrior commission is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:2651cbcf9f4e77cd7c35a1e970bcb0bcb5fc55618c21e9780942e73511e22fa5",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "wiki:111141:1196354"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.illuminated_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.illuminated_warrior",
+          "addons": 1
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-illuminated-intro",
       "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
-        "illuminated commission"
+        "illuminated commission",
+        "outfit"
       ],
       "topic": 0,
       "next_topic": 0,
@@ -2094,16 +2252,15 @@
       "requirements": {
         "min_level": 1000,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
+        "completed_quests": []
       },
       "take": [],
       "give": null,
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Collect 2500 radiant attire scraps for the basic outfit."
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?"
       ],
       "sources": [
         "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:2651cbcf9f4e77cd7c35a1e970bcb0bcb5fc55618c21e9780942e73511e22fa5",

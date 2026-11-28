@@ -278,7 +278,10 @@ pub use seam_rooms::SeamRooms;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
-pub use store::{StorePurchaseMode, with_store_offer};
+pub use store::{
+    StorePurchaseMode, run_retained_store_reconciliation, run_store_receipt_outbox,
+    with_store_offer,
+};
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;

@@ -282,14 +282,10 @@ impl std::fmt::Display for NpcTradeError {
     }
 }
 
-const ALBINIUS: &str = "oteryn:npc.albinius";
-const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
-const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
-const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+use oteryn_gameplay_content::content::npc_catalogue::quest_shops::{
+    ALBINIUS, BLANK_IMBUEMENT_SCROLL, FORGOTTEN_KNOWLEDGE, HEAVY_OLD_TOME,
+};
 
-/// The one catalogue offer whose access is owned jointly by the NPC and quest owners. Keeping
-/// this recognition beside the durable commit prevents a forged catalogue request from opting
-/// out of the gate and makes retries observe either the complete purchase or no purchase.
 fn is_albinius_blank_scroll(request: &NpcTradeRequest) -> bool {
     request.cause.npc_key == ALBINIUS
         && request.cause.side == NpcTradeSide::Buy
@@ -1123,13 +1119,15 @@ impl DurabilityRoot {
                     let backpack_id = uuid_text(
                         &backpack.try_get::<String, _>("item_instance_id")?,
                     )?;
-                    if is_albinius_blank_scroll(&request)
-                        && !albinius_blank_scroll_gate(
-                            &mut tx,
-                            fence.character_id,
-                            &backpack_id,
-                        )
-                        .await?
+                    if request.cause.npc_key == ALBINIUS
+                        && request.item.definition.production_key == BLANK_IMBUEMENT_SCROLL
+                        && (!is_albinius_blank_scroll(&request)
+                            || !albinius_blank_scroll_gate(
+                                &mut tx,
+                                fence.character_id,
+                                &backpack_id,
+                            )
+                            .await?)
                     {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }

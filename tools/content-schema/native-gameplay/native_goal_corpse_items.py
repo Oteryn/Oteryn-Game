@@ -27,14 +27,24 @@ def module(name, root):
     return result
 
 
-def policies(root=ROOT):
-    creatures = {o['creature'] for g in json.loads((root / GOALS).read_bytes())['goals'] for o in g['origins']}
+def bank_robbery_creatures(root):
+    robbery = json.loads((root / 'content/encounters/mini-world-changes/index.json').read_bytes())['bank_robbery']
+    return {city['robber'] for city in robbery['cities']}
+
+
+def covered_creatures(root):
+    goals = json.loads((root / GOALS).read_bytes())['goals']
+    return {o['creature'] for g in goals for o in g['origins']} | bank_robbery_creatures(root)
+
+
+def policies(root=ROOT, *, creatures=None):
+    # Crystal201189f action_boss.lua:4 requires the fresh Koshei corpse.
+    roots = {7535} if creatures is None else set()
+    creatures = covered_creatures(root) if creatures is None else creatures
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
         raise ValueError('NATIVE_GOAL_CREATURE_PROFILE_PIN')
-    # Crystal201189f action_boss.lua:4 requires the fresh Koshei corpse.
-    roots = {7535}
     for creature in creatures:
         rows = [r['profile'] for r in json.loads(raw)['records'] if r['profile']['target']['key'] == creature]
         if len(rows) != 1:

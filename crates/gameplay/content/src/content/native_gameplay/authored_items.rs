@@ -181,6 +181,15 @@ mod tests {
         supplied.item_profiles = Some(pinned(raw));
         compile_native_gameplay(baseline.compiled(), &supplied)
             .expect("declared constructor profiles");
+        supplied.item_profiles = item_profile_updates::merge(
+            Some(pinned(raw)),
+            Some(pinned(include_bytes!(
+                "../../../../../../content/items/definitions/srx1-item-updates.json"
+            ))),
+        )
+        .expect("compose declared constructor profiles");
+        compile_native_gameplay(baseline.compiled(), &supplied)
+            .expect("composed constructor admissions match their exact rows");
         for index in indexes {
             for case in 0..5 {
                 let mut changed = original.clone();

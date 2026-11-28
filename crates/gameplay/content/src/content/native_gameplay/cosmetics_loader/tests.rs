@@ -569,3 +569,63 @@ fn marriage_grant_survives_sex_qualified_selection_without_bypassing_authored_se
     }
     Ok(())
 }
+
+#[test]
+fn every_catalog_mount_has_a_classified_source() -> TestResult {
+    let root = repository();
+    let index: Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/cosmetics/mounts/index.json"),
+    )?)?;
+    let mut expected = BTreeSet::new();
+    for path in index["shards"].as_array().ok_or("mount shards")? {
+        let path = path.as_str().ok_or("mount shard path")?;
+        let shard: Value = serde_json::from_slice(&std::fs::read(root.join(path))?)?;
+        for record in shard["records"].as_array().ok_or("mount records")? {
+            let key = record["declaration"]["identity"]["key"]
+                .as_str()
+                .ok_or("mount key")?;
+            assert!(
+                expected.insert(key.to_owned()),
+                "duplicate catalogue key {key}"
+            );
+        }
+    }
+    assert!(!expected.is_empty(), "empty World mount catalogue");
+    let report = match std::fs::read_to_string(
+        root.join("docs/reference/content-prep/S06-mount-sources-2026-11-25.md"),
+    ) {
+        Ok(report) => report,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(error) => return Err(error.into()),
+    };
+    let mut classified = BTreeSet::new();
+    for line in report
+        .lines()
+        .filter(|line| line.starts_with("| `oteryn:content.mount."))
+    {
+        let columns: Vec<_> = line.trim_matches('|').split('|').map(str::trim).collect();
+        let [key, class, evidence] = columns.as_slice() else {
+            return Err(format!("invalid mount source row: {line}").into());
+        };
+        assert!(
+            matches!(*class, "World" | "Store / event" | "No donor source"),
+            "{line}"
+        );
+        assert!(!evidence.is_empty(), "{line}");
+        assert!(
+            classified.insert(key.trim_matches('`').to_owned()),
+            "duplicate {key}"
+        );
+    }
+    let missing: Vec<_> = expected.difference(&classified).collect();
+    let extra: Vec<_> = classified.difference(&expected).collect();
+    assert!(
+        missing.is_empty() && extra.is_empty(),
+        "{} mount keys missing classifications, {} unknown keys. First missing: {:?}, first unknown: {:?}",
+        missing.len(),
+        extra.len(),
+        missing.first(),
+        extra.first(),
+    );
+    Ok(())
+}

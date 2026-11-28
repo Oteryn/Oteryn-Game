@@ -1,4 +1,5 @@
-//! World callbacks that retain an existing per-character RewardClaim identity.
+//! Source World callbacks retain their existing per-character RewardClaim identities.
+//! This resolves immutable source pairs, never an alias supplied by a caller.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::reward_callbacks::{ItemReward, NativeClaimBinding};
 use serde_json::{Value, json};
@@ -23,6 +24,15 @@ const SERPENTINE_CLAIMS: &str = include_str!(concat!(
 ));
 pub const SERPENTINE_PEARL_CLAIM: &str =
     "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
+const TIBIA_TALES: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/world-callbacks/tibia-tales.json"
+));
+const TIBIA_TALES_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+pub const OUTFOX_CACHE: &str = "oteryn:quest-callback/tibia-tales/outfox-helmet";
 const PAIRS: &[(&str, &str)] = &[
     (
         "l2-tome-children-1",
@@ -65,6 +75,38 @@ struct Binding {
     source_unique: u16,
 }
 
+struct ClaimSource {
+    claim_prefix: &'static str,
+    reward_item: &'static str,
+    appearances: &'static [u16],
+    quest_alias: Option<&'static str>,
+    explicit_uid: Option<u16>,
+}
+
+const SOURCE_BOOKS: ClaimSource = ClaimSource {
+    claim_prefix: "oteryn:reward-claim.quest.u8_54.",
+    reward_item: "oteryn:item.tibia.i10217",
+    appearances: &[2472, 2480],
+    quest_alias: None,
+    explicit_uid: None,
+};
+
+const OUTFOX: ClaimSource = ClaimSource {
+    claim_prefix: "oteryn:reward-claim.quest.u8_1.",
+    reward_item: "oteryn:item.tibia.i139",
+    appearances: &[2469],
+    quest_alias: Some("to_outfox_a_fox_quest"),
+    explicit_uid: Some(6257),
+};
+
+const SERPENTINE: ClaimSource = ClaimSource {
+    claim_prefix: SERPENTINE_PEARL_CLAIM,
+    reward_item: "oteryn:item.tibia.i3026",
+    appearances: &[2472, 2480],
+    quest_alias: None,
+    explicit_uid: None,
+};
+
 fn only(value: &Value, fields: &[&str]) -> bool {
     value
         .as_object()
@@ -74,9 +116,8 @@ fn only(value: &Value, fields: &[&str]) -> bool {
 fn bind(
     callbacks: &[Callback],
     claims: &str,
-    prefix: &str,
     pairs: &[(&str, &str)],
-    reward_item: &str,
+    group: &ClaimSource,
 ) -> Result<Vec<Binding>, String> {
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
@@ -88,7 +129,7 @@ fn bind(
     let mut bindings = Vec::new();
     let mut positions = BTreeSet::new();
     let reward: ItemReward = serde_json::from_value(json!({
-        "item": reward_item, "count": 1, "contents": [],
+        "item": group.reward_item, "count": 1, "contents": [],
     }))
     .map_err(|error| error.to_string())?;
     for (callback_suffix, claim_suffix) in pairs {
@@ -97,7 +138,7 @@ fn bind(
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!("{prefix}{claim_suffix}");
+        let claim_key = format!("{}{claim_suffix}", group.claim_prefix);
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -135,10 +176,11 @@ fn bind(
             .as_u64()
             .filter(|uid| (1..=u64::from(u16::MAX)).contains(uid))
             .ok_or("legacy World source id")?;
-        let source_quest = callback
+        let world_quest = callback
             .quest
             .strip_prefix("oteryn:quest.")
             .ok_or("legacy World quest identity")?;
+        let source_quest = group.quest_alias.unwrap_or(world_quest);
         if !positions.insert(position)
             || !only(
                 definition,
@@ -163,7 +205,7 @@ fn bind(
             || placement["appearance_tibia_id"] != appearance
             || placement["reward"]
                 != json!({"items": [{"item": {
-                "family": "Item", "key": reward_item, "revision": "definition-r1"
+                "family": "Item", "key": group.reward_item, "revision": "definition-r1"
             }, "count": 1}]})
             || !only(source, &["legacy_unique_ids", "project_position"])
             || source["project_position"]
@@ -175,8 +217,11 @@ fn bind(
                 ])
             || callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
-            || !matches!(appearance, 2472 | 2480)
-            || callback.selector.unique.is_some()
+            || !group.appearances.contains(&appearance)
+            || callback.selector.unique != group.explicit_uid
+            || group
+                .explicit_uid
+                .is_some_and(|expected| uid != u64::from(expected))
             || callback.selector.action.is_some()
             || callback.selector.native.is_some()
             || callback.effects.item_reward.as_ref() != Some(&reward)
@@ -211,25 +256,27 @@ fn bind(
 }
 
 fn bind_tomes(claims: &str) -> Result<Vec<Binding>, String> {
-    bind(
-        &super::parse(CALLBACKS)?,
-        claims,
-        "oteryn:reward-claim.quest.u8_54.",
-        PAIRS,
-        "oteryn:item.tibia.i10217",
-    )
+    bind(&super::parse(CALLBACKS)?, claims, PAIRS, &SOURCE_BOOKS)
 }
 
-fn load() -> Result<Vec<Binding>, String> {
+fn bind_all() -> Result<Vec<Binding>, String> {
     let mut bindings = bind_tomes(CLAIMS)?;
     let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
     let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
     bindings.extend(bind(
         &tower_callbacks,
         SERPENTINE_CLAIMS,
-        SERPENTINE_PEARL_CLAIM,
         &[("authored-serpentine-tower-pearl", "")],
-        "oteryn:item.tibia.i3026",
+        &SERPENTINE,
+    )?);
+    bindings.extend(bind(
+        &super::parse(TIBIA_TALES)?,
+        TIBIA_TALES_CLAIMS,
+        &[(
+            "tibia-tales/outfox-helmet",
+            "to_outfox_afox_quest.mining_helmet",
+        )],
+        &OUTFOX,
     )?);
     Ok(bindings)
 }
@@ -250,7 +297,10 @@ pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, St
 
 fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
-    let bindings = BINDINGS.get_or_init(load).as_ref().map_err(Clone::clone)?;
+    let bindings = BINDINGS
+        .get_or_init(bind_all)
+        .as_ref()
+        .map_err(Clone::clone)?;
     let bound =
         bindings.iter().find(|binding| {
             callback.key == binding.callback.key
@@ -328,7 +378,7 @@ mod tests {
 
     #[test]
     fn a_changed_callback_cannot_borrow_or_escape_the_legacy_identity() -> Result<(), String> {
-        let bindings = bind_tomes(CLAIMS)?;
+        let bindings = bind_all()?;
         for binding in bindings {
             for mutation in 0..9 {
                 let mut changed = binding.callback.clone();

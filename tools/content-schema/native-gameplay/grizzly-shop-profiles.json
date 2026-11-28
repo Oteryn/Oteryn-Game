@@ -39,7 +39,7 @@
     },
     {
       "path": "content/items/definitions/items-07000-07499.json",
-      "sha256": "7d9eac43ea83f4950a53fc5d1188ca322700f32b8cbf87921bfbd789379ffc9d"
+      "sha256": "b60866e2ea8df5bf4394fce79d4e8956d99fb78a6e3e4ea4d0f3532c11049725"
     },
     {
       "path": "content/items/definitions/items-08000-08499.json",
@@ -59,7 +59,7 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "1cfdef6ac1b8fc1911f12009a281bd970237c9f9a9d0d8b484ce0e52fccf3e61"
+      "sha256": "f7634b412c7335487a107ba2f23b600780eb2c6a0ffbf4ad56e95541a3ed164c"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",

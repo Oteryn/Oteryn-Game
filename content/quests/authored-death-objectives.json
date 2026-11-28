@@ -533,6 +533,190 @@
       ]
     },
     {
+      "key": "oteryn:quest-death/newhaven-muglex-assassin-north-east",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32575,
+        "y": 32404,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32639,
+        "y": 32468,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-assassin-north-west",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32510,
+        "y": 32404,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32574,
+        "y": 32468,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-assassin-south-east",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32575,
+        "y": 32469,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32639,
+        "y": 32515,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-assassin-south-west",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_assassin",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32510,
+        "y": 32469,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32574,
+        "y": 32515,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-footman-north-east",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32575,
+        "y": 32404,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32639,
+        "y": 32468,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-footman-north-west",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32510,
+        "y": 32404,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32574,
+        "y": 32468,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-footman-south-east",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32575,
+        "y": 32469,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32639,
+        "y": 32515,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/newhaven-muglex-footman-south-west",
+      "quest": "oteryn:quest.newhaven_quest",
+      "creature": "oteryn:creature.muglex_clan_footman",
+      "stage": "oteryn:quest-progress/newhaven/protect-the-village",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "required": 20,
+      "minimum": {
+        "x": 32510,
+        "y": 32469,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32574,
+        "y": 32515,
+        "floor": -7
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99",
+        "Newhaven surface spawn bounds from content/world/spawns/spawns-12000-13999.json."
+      ]
+    },
+    {
       "key": "oteryn:quest-death/wrath-magistratus",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "creature": "oteryn:creature.lizard_magistratus",

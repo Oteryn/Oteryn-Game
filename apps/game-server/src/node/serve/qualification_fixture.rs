@@ -735,7 +735,10 @@ async fn prepare_build(
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
     let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
-    let current = if qualification_build::STRICT_W20B_SEED.try_with(|()| ()).is_ok() {
+    let current = if qualification_build::STRICT_W20B_SEED
+        .try_with(|()| ())
+        .is_ok()
+    {
         let mut waiting = None;
         let mut attempt = 1;
         loop {
@@ -747,7 +750,10 @@ async fn prepare_build(
                 break outcome;
             }
             waiting.get_or_insert_with(|| (root.foreground_demand().ok(), root.holder_waiter()));
-            if !root.wait_holder_turn(tokio::time::Instant::now(), deadline).await {
+            if !root
+                .wait_holder_turn(tokio::time::Instant::now(), deadline)
+                .await
+            {
                 match tokio::time::timeout_at(deadline, root.await_ready()).await {
                     Ok(Ok(())) => {}
                     Ok(Err(error)) => break Err(error),
@@ -758,7 +764,9 @@ async fn prepare_build(
                 break outcome;
             }
             attempt += 1;
-            eprintln!("FIXTURE_RETRY row=W20b step=prepare_build cause=RootUnavailable attempt={attempt}");
+            eprintln!(
+                "FIXTURE_RETRY row=W20b step=prepare_build cause=RootUnavailable attempt={attempt}"
+            );
         }
     } else {
         qualification_build::retry_holder(

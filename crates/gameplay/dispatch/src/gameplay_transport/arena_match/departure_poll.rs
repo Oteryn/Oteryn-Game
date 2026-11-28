@@ -3,7 +3,6 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Called while the arena command gate is held, before the spell lane.
     pub(super) async fn settle_arena_departure(
         &self,
         session: GameSessionId,
@@ -43,13 +42,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return None;
         }
-        let _permit = self.spell_lane_permit().await?;
+        let fence = self.current_quest_fence(session).await.ok()??;
+        let origin = durable::NativeArenaOrigin::Departure(cause);
+        let read = self
+            .root
+            .read_arena_native_origin(self.character, self.holder, fence, &origin)
+            .await
+            .ok()?;
+        let permit = self.spell_lane_permit().await?;
         let mut fence = self.current_quest_fence(session).await.ok()??;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
         {
             let runtime = self.runtime.lock().await;
-            if runtime.owner_fence().is_err()
+            if !self.arena_poll_current(&runtime, live.actor, fence)
                 || runtime.read_actor_position(live.actor) != Ok(entered)
                 || runtime
                     .player_control_facts(live.actor, session)
@@ -62,30 +68,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .try_lock()
                     .ok()?
                     .is_dead(live.actor)
-                || !runtime
-                    .bound_attacker_lease(live.actor, session)
-                    .is_ok_and(|lease| {
-                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                            && lease.generation() == fence.character_lease_generation
-                    })
             {
                 return None;
             }
         }
-        let origin = durable::NativeArenaOrigin::Departure(cause);
-        let read = self
-            .root
-            .read_arena_native_origin(self.character, self.holder, fence, &origin)
-            .await
-            .ok()?;
         if read.dead {
             return None;
         }
         if read.replay.is_some() || read.state != live.state {
             // Reconcile a lost reset acknowledgement from the committed state.
-            if read.state.rank == 0 {
+            if read.state.rank == 0
+                && self.root.arena_projection_current(self.character, self.holder, fence, &read.state)
+                    .await.ok()?
+            {
                 return self
-                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms)
+                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms, &permit, fence)
                     .await;
             }
             return None;
@@ -115,7 +112,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if wire::decode_match_result(&bytes).ok()?.disposition != D::Applied {
             return None;
         }
-        self.restore_arena_projection(live.actor, session, &after, read.now_ms)
-            .await
+        self.restore_arena_projection(live.actor, session, &after, read.now_ms, &permit, fence)
+            .await?;
+        let _ = self.root.acknowledge_arena_relocation(self.character, self.holder, fence, &after).await;
+        Some(())
     }
 }

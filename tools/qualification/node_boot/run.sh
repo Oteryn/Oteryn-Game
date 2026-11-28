@@ -185,6 +185,7 @@ readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
   NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"

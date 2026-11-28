@@ -29,6 +29,11 @@ class NativePlacementOverrides(unittest.TestCase):
         self.assertIn("4" * 40, evidence[0]["url"])
         self.assertEqual(producer.apply_placement_overrides(candidates, {"npcs": [key]}), original)
 
+    def test_pinned_cell_can_supply_the_placement_of_an_admitted_definition(self):
+        key, _, scope = self.fixture()
+        actual = producer.apply_placement_overrides({}, scope, {key})
+        self.assertEqual(actual[key]["placements"], scope["placement_overrides"][key]["placements"])
+
     def test_refuses_unbounded_ambiguous_or_unpinned_overrides(self):
         for case in range(9):
             key, candidates, scope = self.fixture()

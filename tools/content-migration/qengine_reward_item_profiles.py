@@ -34,6 +34,12 @@ IDS |= {3460, 12171, 12173}
 IDS |= {12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# Black Bert sells the source-priced portable Dust of Arthei.
+IDS |= {8720}
+# Storkus takes stackable lord tokens and grants a portable Vampire Doll.
+IDS |= {8191, 8192}
+# The Pale Count's reward table closes as a whole, including its other yields.
+IDS |= {18935, 18936, 19373, 19374}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
 IDS |= {17669, 17670, 17672, 17673, 17674, 17675, 7253}
 # M13: native Slug corpse closure; Ground-only source durations remain authoritative.
@@ -47,6 +53,8 @@ IDS |= {14021, 14022, 14023}
 IDS |= {12785}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505, 21506, 21507, 9106}
+# Padreia's vermin poison and Boozer's empty and filled quest bottles.
+IDS |= {135, 136, 138}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
@@ -59,6 +67,9 @@ IDS |= {21466, 21389}
 IDS |= {14682, 7785}
 # M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
 IDS |= {5467}
+# Tower Defence delivers the Watchtower parcel; Troll Sabotage exchanges Jerom's
+# family necklace for the Elvenhair Rope through the existing NPC custody owner.
+IDS |= {140, 646, 7754}
 # M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
 IDS |= {36543, 36544, 36545}
 # ENGNPC2: the registered Goblin Merchant Slug and Rotworm exchanges consume

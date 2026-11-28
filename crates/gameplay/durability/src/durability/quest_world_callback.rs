@@ -10,6 +10,7 @@ pub(crate) mod ground_stack;
 mod npc_input;
 mod selected_tool;
 mod tool_reads;
+mod vampire_coffin;
 pub use selected_tool::QuestWorldToolContext;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
@@ -33,7 +34,7 @@ use super::{
     spell_owner_commit::SpellLanePermit,
 };
 use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, VampireCoffinKind};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
@@ -624,16 +625,32 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    let coffin = VampireCoffinKind::for_callback(&callback.key);
+    if coffin == Some(VampireCoffinKind::Weakened)
+        && changes.iter().any(|change| {
+            change.track == oteryn_gameplay_quests::quest::world_callbacks::VAMPIRE_COFFIN_QUESTLINE
+                && change.before == change.after
+        })
+    {
+        return Ok(vampire_coffin::pending_encounter(tx, fence.character_id).await? == coffin);
+    }
+    if coffin == Some(VampireCoffinKind::Ordinary) {
+        return vampire_coffin::record_encounter(tx, fence.character_id).await;
+    }
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
     {
         return Ok(true);
     }
-    consume_inputs(
+    let consumed = consume_inputs(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
-    .await
+    .await?;
+    if consumed && coffin == Some(VampireCoffinKind::Weakened) {
+        return vampire_coffin::record_encounter(tx, fence.character_id).await;
+    }
+    Ok(consumed)
 }
 
 /// Shared current map/content/reset proof for source-qualified quest world actions.

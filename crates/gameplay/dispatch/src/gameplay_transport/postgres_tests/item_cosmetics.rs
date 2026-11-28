@@ -17,6 +17,15 @@ fn item_cosmetics_unavailable_never_spends_the_source() -> TestResult {
 }
 
 #[test]
+fn pegasus_feather_use_consumes_one_and_grants_mount_without_premium() -> TestResult {
+    run_all(
+        false,
+        false,
+        Some(super::item_cosmetics_fixtures::positive::Case::Pegasus),
+    )
+}
+
+#[test]
 fn item_cosmetics_ground_unavailable_preserves_actual_ground_source() -> TestResult {
     run_case(true, false)
 }

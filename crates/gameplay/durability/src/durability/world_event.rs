@@ -14,6 +14,8 @@ use oteryn_protocol_oteryn::world_event::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
+pub mod bank_robbery;
+
 #[path = "world_event/occurrence.rs"]
 mod occurrence;
 
@@ -306,6 +308,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            let world = fence.runtime_scope.world_id();
             if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
                 return Ok(Err(error));
             }
@@ -316,7 +319,6 @@ impl DurabilityRoot {
             if !active {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
-            let world = fence.runtime_scope.world_id();
             // PK lookup is bounded. Character/session locks serialize duplicate commands.
             let receipt = sqlx::query("SELECT result,character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid AS matches FROM game_world_event_query_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())

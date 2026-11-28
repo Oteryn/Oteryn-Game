@@ -16,6 +16,8 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 mod dispenser;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use dispenser::DISPENSER_ACK_BARRIER;
 pub(super) mod enchanting;
 mod harvest;
 mod planting;

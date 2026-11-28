@@ -1,3 +1,6 @@
+#[path = "qengine_rewards/cq29_quest_contacts.rs"]
+pub(super) mod cq29_quest_contacts;
+
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::TestResult;
 
@@ -33,8 +36,16 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         super::quest_world_callbacks_fixtures::scenario(
             name,
-            if name.starts_with("qengine-rewards-qworld-phase-") {
+            if name == super::tower_defence_journey_fixtures::NAME {
+                super::tower_defence_journey_fixtures::START
+            } else if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == cq29_quest_contacts::THIEVES {
+                cq29_quest_contacts::VASE
+            } else if name == super::newhaven_gustavo_fixtures::NAME {
+                super::newhaven_gustavo_fixtures::START
+            } else if matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy") {
+                EROTH_CRYSTAL
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -91,6 +102,18 @@ pub(super) async fn talk(
     id: u64,
     text: &str,
 ) -> TestResult<NpcIntentDisposition> {
+    Ok(talk_outcome(owner, admitted, npc, id, text)
+        .await?
+        .disposition)
+}
+
+pub(super) async fn talk_outcome(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    id: u64,
+    text: &str,
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -115,7 +138,7 @@ pub(super) async fn talk(
         )
         .await;
     assert!(!outcome.unknown, "NPC command must have a known outcome");
-    Ok(outcome.disposition)
+    Ok(outcome)
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
@@ -389,7 +412,11 @@ pub(super) async fn wire_reward_with_prefix_refusal(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
-    let words: Vec<_> = std::iter::once("hi")
+    let greeting = match callback.npc.as_str() {
+        "oteryn:npc.alesar" | "oteryn:npc.baa_leal" | "oteryn:npc.gabel" | "oteryn:npc.malor" => "djanni'hah",
+        _ => "hi",
+    };
+    let words: Vec<_> = std::iter::once(greeting)
         .chain(offer_words(&callback.key).iter().copied())
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
@@ -882,6 +909,18 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-black-bert-arthei" {
+        return Box::pin(questl2_djinn_journeys::black_bert(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-storkus-dust" {
+        return Box::pin(super::vampire_hunter_journey::dust(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-vampire-hunter" {
+        return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-vampire-hunter-loot" {
+        return Box::pin(super::vampire_hunter_journey::loot(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion_fixtures::exercise(
             owner, admitted, h, name,
@@ -896,6 +935,12 @@ pub(super) async fn exercise(
             owner, admitted, h, name,
         ))
         .await;
+    }
+    if name == cq29_quest_contacts::THIEVES || name == cq29_quest_contacts::SENTRY {
+        return Box::pin(cq29_quest_contacts::exercise(owner, admitted, h, name)).await;
+    }
+    if name == super::newhaven_gustavo_fixtures::NAME {
+        return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;
@@ -1162,6 +1207,43 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-eroth-legacy" {
+        return Box::pin(eroth_legacy_save(owner, admitted, h, authority)).await;
+    }
+    if name == "qengine-rewards-eroth-start" || name == "qengine-rewards-joe-start" {
+        let (npc, words, track, value) = if name.ends_with("eroth-start") {
+            (
+                "oteryn:npc.eroth",
+                &["hi", "mission", "yes"][..],
+                "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+                1,
+            )
+        } else {
+            (
+                "oteryn:npc.one_eyed_joe",
+                &["hi", "mission", "yes", "yes"][..],
+                "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+                0,
+            )
+        };
+        let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc]).await?;
+        let first = admitted.continuity.next_command_id;
+        for (offset, word) in words.iter().enumerate() {
+            assert_eq!(
+                talk(owner, admitted, npc, first + u64::try_from(offset)?, word).await?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
+        assert_eq!(
+            super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+            value,
+        );
+        if name.ends_with("eroth-start") {
+            eroth_crystal(owner, admitted, h, authority, track).await?;
+        }
+        return Ok(());
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
@@ -1215,8 +1297,25 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    seed(owner, admitted, &setup, 9000).await?;
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
+    let (npc, amanda) = if key == "hallowed-holy-water" {
+        // The grave callbacks protect this track against generic quest writes.
+        // Enter Costello's exchange through Amanda's actual acceptance.
+        let [costello, amanda] = super::classic_quests_fixtures::install(
+            owner,
+            admitted,
+            [callback.npc.as_str(), "oteryn:npc.amanda"],
+        )
+        .await?;
+        (costello, Some(amanda))
+    } else {
+        if key != "outfox-helmet" {
+            seed(owner, admitted, &setup, 9000).await?;
+        }
+        let [npc] =
+            super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()])
+                .await?;
+        (npc, None)
+    };
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -1235,12 +1334,48 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(3));
     assert!(admitted.continuity.selected_capabilities.contains(6));
     assert!(admitted.continuity.selected_capabilities.contains(25));
+    if let Some(amanda) = amanda {
+        let acceptance = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .into_iter()
+            .find(|row| row.key == "oteryn:quest-reward/tibia-tales/hallowed-accept")
+            .ok_or("Amanda's Hallowed Ground acceptance")?;
+        assert_eq!(
+            wire_conversation(
+                owner,
+                admitted,
+                amanda,
+                &acceptance,
+                false,
+                vec!["hi", "mission", "yes", "bye"],
+            )
+            .await?
+            .0,
+            NpcIntentDisposition::Ok,
+        );
+        for state in &callback.storage {
+            assert_eq!(
+                super::classic_quests_fixtures::progress(owner, admitted, authority, &state.track)
+                    .await?,
+                state.minimum,
+            );
+        }
+    }
     let first = admitted.continuity.next_command_id;
     assert_eq!(
         talk(owner, admitted, npc, first, "hi").await?,
         NpcIntentDisposition::Ok
     );
     let mut command = admitted.continuity.next_command_id;
+    if key == "outfox-helmet" {
+        for word in ["mission", "yes"] {
+            assert_eq!(talk(owner, admitted, npc, command, word).await?, NpcIntentDisposition::Ok);
+            command += 1;
+        }
+        let sessions = owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?;
+        let copy = sessions.get(&admitted.game_session_id)
+            .and_then(|state| state.copy.as_ref()).ok_or("quest copy")?;
+        assert!(copy.meets_door_storage(41492), "Budrik opens the real Mining Helmet door");
+    }
     let offers = offer_words(key);
     for offer in offers {
         assert_eq!(
@@ -1261,7 +1396,7 @@ pub(super) async fn exercise(
         for s in &callback.storage {
             assert_eq!(
                 super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track).await?,
-                s.minimum
+                if key == "outfox-helmet" { 1 } else { s.minimum }
             );
         }
     }
@@ -1454,6 +1589,19 @@ pub(super) async fn exercise(
             1
         );
     }
+    let yalahari_achievement = match key {
+        "l1-yalaharian-sage" => Some("oteryn:achievement/yalahari_of_wisdom"),
+        "l1-yalaharian-villain" => Some("oteryn:achievement/yalahari_of_power"),
+        _ => None,
+    };
+    if let Some(expected) = yalahari_achievement {
+        let granted: Vec<String> = sqlx::query_scalar(
+            "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ('oteryn:achievement/yalahari_of_wisdom','oteryn:achievement/yalahari_of_power')",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(granted, [expected]);
+    }
     // Literal transport replay cannot take items or repeat either value grant.
     assert_eq!(
         oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(
@@ -1601,6 +1749,99 @@ pub(super) async fn exercise(
             );
         }
     }
+    Ok(())
+}
+
+const EROTH_CRYSTAL: Position = Position {
+    x: 32592,
+    y: 31645,
+    floor: -2,
+};
+
+async fn eroth_legacy_save(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let track = "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline";
+    for key in [
+        "oteryn:quest-callback/elvenbane-mirror-crystal",
+        "oteryn:quest-callback/to-blind-the-enemy/mirror",
+    ] {
+        assert!(owner.callback_content().iter().any(|callback| callback.key == key));
+    }
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(track.into(), 1)], 0xa5,
+    )
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Eroth item fence")?;
+    super::quest_world_callbacks_fixtures::input_item(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: EROTH_CRYSTAL,
+            item: "oteryn:item.tibia.i3463".into(),
+            count: 1,
+        },
+        7040,
+        true,
+    )
+    .await?;
+    eroth_crystal(owner, admitted, h, authority, track).await?;
+    assert_eq!(
+        super::classic_quests_fixtures::progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/to-blind-the-enemy/mission",
+        )
+        .await?,
+        0,
+        "the legacy crystal does not advance the authored mission"
+    );
+    Ok(())
+}
+
+async fn eroth_crystal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    track: &str,
+) -> TestResult {
+    use crate::map::view::MapFacts as _;
+
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3, 4, 6, 11, 15, 18],
+        )
+        .ok_or("mirror USE capabilities")?;
+    assert_eq!(
+        super::tibia_tales_fixtures::use_tool_at(owner, admitted, EROTH_CRYSTAL, 2, 3463).await?,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+    );
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 0);
+    assert_eq!(
+        super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+        2,
+    );
+    let map = owner.bundle_map().ok_or("Elvenbane map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(
+        EROTH_CRYSTAL.floor, EROTH_CRYSTAL.x, EROTH_CRYSTAL.y, 2,
+    )
+    .ok_or("crystal placement")?;
+    assert!(map.facts.base_hidden(key));
+    let reset = map.facts.next_movement_decay_time().ok_or("crystal reset")?;
+    assert_eq!(map.facts.expire_movement_items(reset - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(reset), 1);
+    assert!(!map.facts.base_hidden(key));
     Ok(())
 }
 

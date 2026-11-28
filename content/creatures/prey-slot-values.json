@@ -477,7 +477,7 @@
     },
     "oteryn:creature.clomp": {
       "kills_per_hour_micros": 121008403,
-      "loot_per_kill_micros": 78569850,
+      "loot_per_kill_micros": 77309300,
       "tier": 2
     },
     "oteryn:creature.cobra": {
@@ -3886,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "9495bc8fbf397f0aff20daaa5d2690f379539a2c52add181c0942acbfcef0c9f",
+  "model_input_sha256": "ce7d3e2d4b716bf69b9e6c964b9cfde98e58f837ec59b62a0b4db67b4fd5e84a",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,

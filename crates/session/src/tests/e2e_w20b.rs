@@ -7,8 +7,7 @@ use super::*;
 use crate::tests::{BoxError, join_peer_with};
 use oteryn_protocol_oteryn::encode_state_delta;
 use oteryn_protocol_oteryn::world_spatial_entities::{
-    EntityFields, EntityLights,
-    encode_world_spatial_entities_snapshot_with_fields,
+    EntityFields, EntityLights, encode_world_spatial_entities_snapshot_with_fields,
 };
 
 struct Capture {
@@ -17,7 +16,8 @@ struct Capture {
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W20b capture directory is required")?;
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W20b capture directory is required")?;
     let run_id = std::env::var("OTERYN_W20B_CAPTURE_ID")?;
     let path = std::path::Path::new(&root);
     let expected = std::fs::read_to_string(path.join("w20b-expected.txt"))?;
@@ -29,7 +29,8 @@ fn fixture() -> Result<Capture, BoxError> {
 }
 
 fn validate_capture(expected: &str, run_id: &str) -> Result<(), BoxError> {
-    if run_id.len() != 32 || !run_id.bytes().all(|byte| byte.is_ascii_hexdigit())
+    if run_id.len() != 32
+        || !run_id.bytes().all(|byte| byte.is_ascii_hexdigit())
         || value(expected, "run_id")? != run_id
         || value(expected, "words")? != "utevo lux"
         || value(expected, "light")? != "6:215"

@@ -26,10 +26,22 @@ review is requested on a head, the head has:
   while it is red on `main` for an unrelated reason, the same rows compared
   against `main`. A PG case counts only with proof it ran against PostgreSQL
   (a route-less case returns `Ok(())` without running). Where the session
-  cannot run it (no PostgreSQL route), say so and leave it to CI;
-- the head that will merge: a package PR is reviewed on its integrated
-  package head, and a member folded into a package gets no review of its own.
-  A PR that will merge on its own is reviewed after its first push (§5).
+  cannot run it (no PostgreSQL route), say so: the coordinator runs it when it
+  has a route, otherwise CI (`heavy-tests`) does;
+- the head that will merge: a train PR is reviewed on its integrated train
+  head, and a unit that lands only through the train PR gets no review of its own. A
+  PR that merges on its own, a train unit merged through its own PR included,
+  is reviewed after its first push (§5);
+- the author's self-review at effort high (owner decision 2026-11-25): the
+  whole diff against `docs/agents/review/CODEX-CHECKLIST.md` and, when it
+  touches a subsystem, that subsystem's invariant file
+  (`docs/architecture/subsystems/<id>.md`, consumers and guard tests
+  included; until a lane's file exists, the lane's owning contracts in
+  `docs/contracts/` and its guard tests), with the consumer map of the packet checked against the diff;
+- the pre-push list of `oteryn-coding` (*Before you push*): own PostgreSQL
+  cases proven to reach assertions, every changed literal grepped and each
+  real consumer in the owned paths updated (the others named),
+  full tests of changed crates after any main-merge.
 
 A head that fails the gate goes back to its author, not to review.
 
@@ -100,8 +112,11 @@ day" limit; `docs/agents/OWNER_FUNDED_AI_POLICY.md` authorizes it): every PR
 gets an independent Codex review before it merges. The review runs in parallel
 with CI and never blocks or delays it.
 
-- When: once per PR, after its first push, over the whole diff against `main`.
-  A second review only when a substantial logic change (server code,
+- When: once per PR, after its first push, over the whole diff against `main`,
+  at effort high. Every content train PR and every PR with code in a risk
+  class (`oteryn-coding`, *Risk classes*) gets this review even with the
+  `heavy-tests` label (owner decision 2026-11-25); only a data-only
+  `heavy-tests` PR keeps the automatic skip. A second review only when a substantial logic change (server code,
   persistence, session fencing, protocol, durable value) lands after the first
   one, and then only over the new diff. At most 2 reviews per PR. If the second
   review still finds a P0/P1, the design of the change is wrong: stop and
@@ -120,17 +135,17 @@ with CI and never blocks or delays it.
   reviewed again. A session without the PC still runs it in Codex Cloud;
   "not reviewed, no PC" is not an accepted result. A Codex lane never reviews its
   own code.
-- How: the review owner starts it in Codex Cloud, read-only, model
-  gpt-6.2-astra, reasoning effort high, or, from a
-  session without the PC, with one native `@codex review` PR comment naming the
-  exact head (it answers again since 2026-11-15). Either way it is one round of parallel lens
-  runs over the same head, each with the
-  diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
-  lines. Each run is told to report every finding, with no cap on lines or
-  count, and every other instance of the same class in the diff. A package
-  PR or a chunked diff also gets the two holistic whole-diff runs
-  (`whole-integration`, `whole-flows`) in the same round; chunk runs alone are
-  not a covered review of a package. Lenses, holistic runs,
+- How: the review owner starts it from its own chat session in Codex Cloud,
+  read-only, model gpt-6.2-sol at reasoning effort high (owner decision
+  2026-11-25, calibration), never through the PC; the gpt-6.2-astra runs at effort high that the
+  run-selection table (`references/batch-review.md` §1) names run on the same head,
+  whose P0/P1 count only after a traced REAL verdict (§6). Never at effort
+  medium. From a session without Codex Cloud, one native `@codex review` PR
+  comment naming the exact head. By default the round is one holistic run
+  over the whole diff and the callers of what it changes, told to report
+  every finding with no cap, every other instance of the same class, a
+  quoted caller for each P0/P1 and a refute attempt before its output; a
+  diff above about 1500 lines is also split into chunks. The holistic run,
   chunking of big diffs, the prompt, the merge, verify and sweep steps and the
   stop rule are in `references/batch-review.md`; read it before you start a
   review or delegate one. Code Codex wrote is
@@ -143,11 +158,12 @@ with CI and never blocks or delays it.
   only the confirmed P0/P1, one per line as `P0|P1 path:line - problem -
   failure path`, to a file and hands
   them, with every instance the pattern sweep found, to one code-writing
-  Codex run, model gpt-6.2-sol at reasoning effort `high` (one run for the whole batch, never
-  one per finding): on the PC
-  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
-  (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
-  the same list. Per finding it writes a red test first, reports `NOT
+  Codex run, model gpt-6.2-sol (one run for the whole batch, never one per
+  finding), at reasoning effort `high` when a P0/P1 is in a risk class and
+  `medium` for any other fix (owner decision 2026-11-25), as one Codex Cloud
+  packet with the same list, launched from the review owner's chat session
+  (owner rule 2026-11-25: never through the PC); when another session holds
+  the branch as its writer, the list goes to that writer instead. Per finding it writes a red test first, reports `NOT
   REPRODUCED` without a code change when the test cannot fail, then makes the
   smallest fix and reruns the test green; it changes no existing assertion,
   timeout or budget and nothing outside the listed findings. Nothing is
@@ -172,6 +188,9 @@ with CI and never blocks or delays it.
   grouped P2/P3 backlog (step 4). Not real or not worth its code: reply with the evidence (the path
   you traced, the test that covers it). A P1 is never left silent.
 - No performative agreement ("great catch"); actions and evidence only.
+- Name the class of every `REAL-P0/P1` (missed caller, data and test
+  coupling, drift after a main-merge, swallowed error, and so on) and check
+  whether a guard test already covers it; if not, the fix adds one (§7).
 - Collect all fixes of one review round into one push.
 
 ## 7. The fix packet
@@ -191,10 +210,12 @@ The fix run (§5) gets one packet for the whole round:
   own commit and names it in the report;
 - a red test first, through the real caller (PG case, dispatch path or node-boot
   row), not a unit test of the patched helper only;
-- a guard for a P0/P1 code class that recurred across PRs, when it is
-  smaller than the next round: one choke-point function and a source-scan or
-  invariant test. Stale data (counts, digests, pins) is guarded by the
-  generator check, not by a refactor;
+- a guard test for the class of every P0/P1 (owner decision 2026-11-25: a
+  recurring P0/P1 class becomes a CI guard test, not a note in a skill): one
+  choke-point function and a source-scan, table or invariant test over every
+  variant. Stale data (counts, digests, pins) is guarded by the generator
+  check, and tests derive expected values from data or regenerated goldens,
+  not from hard-coded counts, coordinates or versions;
 - the forbidden paths: a fix diff outside the packet's owned paths is
   rejected whole. `.github/**`, `tools/repository/**` and
   `.github/repository-policy.json` also need the owner's approval of that

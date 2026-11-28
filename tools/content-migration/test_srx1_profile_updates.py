@@ -6,7 +6,7 @@ from pathlib import Path
 
 import dispenser_item_profiles as dispenser
 import house_decoration_actions as house
-from srx1_profile_updates import coalesce_dispenser_top_order
+from srx1_profile_updates import coalesce_dispenser_top_order, omit_unknown_attributes
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,6 +29,13 @@ class SourceOwnerCoalescing(unittest.TestCase):
         house.apply_top_order([row], self.house)
         document = self.admit(row)
         self.assertEqual(len(document['records']), len(self.source))
+        self.assertIn(self.source[0], document['records'])
+
+    def test_compact_verified_top_metadata_coalesces(self):
+        row = copy.deepcopy(self.source[0])
+        house.apply_top_order([row], self.house)
+        omit_unknown_attributes(row)
+        document = self.admit(row)
         self.assertIn(self.source[0], document['records'])
 
     def test_changed_owner_fact_still_refuses(self):

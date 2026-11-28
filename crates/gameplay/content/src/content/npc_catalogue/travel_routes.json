@@ -531,6 +531,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 120,
     "premium": true,
@@ -543,6 +544,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/krailos",
+    "use_authored_fare_and_premium": true,
     "keyword": "krailos",
     "price": 60,
     "premium": true,
@@ -555,6 +557,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/thais",
+    "use_authored_fare_and_premium": true,
     "keyword": "thais",
     "price": 150,
     "premium": true,
@@ -644,6 +647,7 @@
     "keyword": "calassa",
     "price": 200,
     "premium": true,
+    "premium_override": false,
     "x": 31911,
     "y": 32710,
     "floor": 6,
@@ -672,11 +676,12 @@
     "price": 0,
     "premium": false,
     "x": 32298,
-    "y": 32895,
+    "y": 32896,
     "floor": 6,
     "postman": false,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.captain_pelagia/darashia",
@@ -1216,6 +1221,84 @@
     "carpet": false,
     "native_addition": true,
     "yalahar_town_gate": "port_hope"
+  },
+  {
+    "key": "oteryn:service.travel.chemar/edron",
+    "keyword": "edron",
+    "price": 60,
+    "premium": false,
+    "x": 33193,
+    "y": 31784,
+    "floor": 3,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.chemar/femor_hills",
+    "keyword": "femor hills",
+    "price": 60,
+    "premium": false,
+    "x": 32536,
+    "y": 31837,
+    "floor": 4,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.chemar/issavi",
+    "keyword": "issavi",
+    "price": 100,
+    "premium": false,
+    "x": 33957,
+    "y": 31515,
+    "floor": 0,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.chemar/kazordoon",
+    "keyword": "kazordoon",
+    "price": 80,
+    "premium": false,
+    "x": 32588,
+    "y": 31941,
+    "floor": 0,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.chemar/marapur",
+    "keyword": "marapur",
+    "price": 70,
+    "premium": false,
+    "x": 33805,
+    "y": 32767,
+    "floor": 2,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.chemar/svargrond",
+    "keyword": "svargrond",
+    "price": 60,
+    "premium": false,
+    "x": 32253,
+    "y": 31097,
+    "floor": 4,
+    "postman": true,
+    "carpet": true,
+    "held": true,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.cornell/edron",
@@ -2254,7 +2337,34 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.petros/ankrahmun",
+    "keyword": "ankrahmun",
+    "price": 150,
+    "premium": false,
+    "x": 33092,
+    "y": 32883,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.petros/gray_island",
+    "keyword": "gray island",
+    "price": 160,
+    "premium": false,
+    "x": 33196,
+    "y": 31984,
+    "floor": 7,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.petros/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 130,
     "premium": true,
@@ -2264,6 +2374,58 @@
     "postman": true,
     "held": true,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.petros/krailos",
+    "keyword": "krailos",
+    "price": 200,
+    "premium": false,
+    "x": 33493,
+    "y": 31712,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.petros/liberty_bay",
+    "keyword": "liberty bay",
+    "price": 140,
+    "premium": false,
+    "x": 32285,
+    "y": 32892,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.petros/port_hope",
+    "keyword": "port hope",
+    "price": 50,
+    "premium": false,
+    "x": 32527,
+    "y": 32784,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.petros/venore",
+    "keyword": "venore",
+    "price": 180,
+    "premium": false,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.pino/darama",
@@ -2642,6 +2804,62 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/passage",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/trip",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_sunken/passage",
+    "crystal_callback": true,
+    "keyword": "yalahar",
+    "price": 0,
+    "premium": false,
+    "x": 32916,
+    "y": 31199,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.thorgrin/cormaya",
     "keyword": "cormaya",
     "price": 110,
@@ -2749,6 +2967,26 @@
     "postman": true,
     "held": false,
     "carpet": true
+  },
+  {
+    "key": "oteryn:service.travel.uzon/eclipse",
+    "keyword": "eclipse",
+    "price": 110,
+    "premium": false,
+    "x": 32659,
+    "y": 31915,
+    "floor": 0,
+    "postman": true,
+    "held": false,
+    "carpet": true,
+    "native_addition": true,
+    "quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+        "minimum": 4,
+        "maximum": 5
+      }
+    ]
   },
   {
     "key": "oteryn:service.travel.uzon/edron",

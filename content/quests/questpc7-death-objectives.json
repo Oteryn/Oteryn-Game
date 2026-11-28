@@ -908,7 +908,7 @@
       },
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666",
-        "content/world/placements/region-z09-x129-y125.b3:1:sha256:c1fcb7d5e080ccec3f7b90b7cac20fd12ef72db083ac86a3dbc823b9b092f2c3",
+        "content/world/placements/region-z09-x129-y125.b3:1:sha256:ab9e36320980f97138b022f778bb9021cb83dff2bf732fd15869b726e72a0bbc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
     },

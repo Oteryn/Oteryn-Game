@@ -1,246 +1,625 @@
 """Offline donor identity, schema and deterministic materialization checks."""
+
 import copy
 import json
 import unittest
-from jsonschema import Draft202012Validator
+
 import qengine_rewards as q
 
 
 class QuestPc7QuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.outputs=q.build()
-        cls.callbacks=json.loads(cls.outputs['content/quests/npc-callbacks/questpc7-programmes.json'])
-        cls.shared_callbacks=json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])
-        cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
-        cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
+        cls.outputs = q.build()
+        cls.callbacks = json.loads(
+            cls.outputs["content/quests/npc-callbacks/questpc7-programmes.json"]
+        )
+        cls.shared_callbacks = json.loads(
+            cls.outputs["content/quests/shared-reward-callbacks.json"]
+        )
+        cls.author = json.loads(cls.outputs["content/cosmetics/outfits/authoring.json"])
+        cls.schema = json.loads(
+            (
+                q.ROOT
+                / "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json"
+            ).read_text()
+        )
+
     def test_golden_confirmation_topics_do_not_collide_with_other_king_routes(self):
-        own=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-golden-') and 'fee' in c]
-        others=[c for c in self.callbacks['callbacks'] + self.shared_callbacks['callbacks'] if c['npc']=='oteryn:npc.king_tibianus' and not c['key'].startswith('oteryn:quest-reward/questpc7-golden-')]
-        self.assertEqual({c['topic'] for c in own},{101,102,103})
-        self.assertFalse({c['topic'] for c in own}&{c['topic'] for c in others})
+        own = [
+            c
+            for c in self.callbacks["callbacks"]
+            if c["key"].startswith("oteryn:quest-reward/questpc7-golden-")
+            and "fee" in c
+        ]
+        others = [
+            c
+            for c in self.callbacks["callbacks"] + self.shared_callbacks["callbacks"]
+            if c["npc"] == "oteryn:npc.king_tibianus"
+            and not c["key"].startswith("oteryn:quest-reward/questpc7-golden-")
+        ]
+        self.assertEqual({c["topic"] for c in own}, {101, 102, 103})
+        self.assertFalse({c["topic"] for c in own} & {c["topic"] for c in others})
 
     def test_out_of_order_prayers_have_an_explicit_reply_without_transition(self):
-        offers=json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
-        prayers=[o for o in offers if o['keywords']==['stake prayer']]
-        self.assertEqual(len(prayers),10)
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
+        prayers = [o for o in offers if o["keywords"] == ["stake prayer"]]
+        self.assertEqual(len(prayers), 10)
         for offer in prayers:
-            self.assertEqual((offer['topic'],offer['next_topic']),(0,0))
-            self.assertEqual(len(offer['storage']),1)
-            self.assertTrue(offer['storage'][0]['preserve'])
-            self.assertFalse({'give','take','fee','outfit','transition'}&offer.keys())
+            self.assertEqual((offer["topic"], offer["next_topic"]), (0, 0))
+            self.assertEqual(len(offer["storage"]), 1)
+            self.assertTrue(offer["storage"][0]["preserve"])
+            self.assertFalse(
+                {"give", "take", "fee", "outfit", "transition"} & offer.keys()
+            )
+
+    def test_wayland_outfit_uses_the_full_menu_before_and_after_intro(self):
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row for row in self.callbacks["callbacks"]
+            if row["key"] == "oteryn:quest-reward/questpc7-illuminated-intro"
+        )
+        self.assertIn("outfit", intro["keywords"])
+        for option in ("basic", "insignia", "halo"):
+            self.assertIn(option, " ".join(intro["reply"]))
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        menu = next(row for row in offers if row["npc"] == npc and row["keywords"] == ["outfit"])
+        self.assertEqual(menu["reply"], intro["reply"])
+        self.assertEqual((menu["topic"], menu["next_topic"]), (0, 0))
+        self.assertEqual(menu["storage"], [{
+            **intro["storage"][0], "minimum": 0, "maximum": 3, "preserve": True,
+        }])
 
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
-        worlds=[c for c in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if c['key'].startswith('oteryn:quest-callback/questpc7-formal-')]
-        self.assertEqual(len(worlds),2)
+        worlds = [
+            c
+            for c in json.loads(
+                self.outputs["content/quests/questpc7-world-callbacks.json"]
+            )["callbacks"]
+            if c["key"].startswith("oteryn:quest-callback/questpc7-formal-")
+        ]
+        self.assertEqual(len(worlds), 2)
         for callback in worlds:
-            self.assertEqual(callback['requirements'], {'min_level':20, 'premium':True, 'completed_quests':[]})
-        entry=next(c for c in worlds if c['key'].endswith('-entry'))
-        display=next(c for c in worlds if c['key'].endswith('-display'))
-        self.assertEqual(entry['selector']['position'], {'x':32314,'y':32170,'floor':-6})
-        self.assertEqual(entry['selector']['appearance'],464)
-        self.assertEqual(display['selector']['appearance'],2110)
-        self.assertEqual(display['effects']['outfit_reward'],{'outfit':'oteryn:outfit.formal_dress','addons':0})
-        plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
-        self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
+            self.assertEqual(
+                callback["requirements"],
+                {"min_level": 20, "premium": True, "completed_quests": []},
+            )
+        entry = next(c for c in worlds if c["key"].endswith("-entry"))
+        display = next(c for c in worlds if c["key"].endswith("-display"))
+        self.assertEqual(
+            entry["selector"]["position"], {"x": 32314, "y": 32170, "floor": -6}
+        )
+        self.assertEqual(entry["selector"]["appearance"], 464)
+        self.assertEqual(display["selector"]["appearance"], 2110)
+        self.assertEqual(
+            display["effects"]["outfit_reward"],
+            {"outfit": "oteryn:outfit.formal_dress", "addons": 0},
+        )
+        plume = next(
+            c
+            for c in self.callbacks["callbacks"]
+            if c["key"] == "oteryn:quest-reward/questpc7-formal-plume"
+        )
+        self.assertEqual(
+            plume["requirements"]["owned_cosmetics"],
+            [{"outfit": "oteryn:outfit.formal_dress", "addons": 2}],
+        )
+
     def test_ferumbras_guardians_and_passages_use_native_clear_source_cells(self):
-        codec=q.load_module('questpc7_ferumbras_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        codec = q.load_module(
+            "questpc7_ferumbras_test_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
         import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/native-gameplay'))
+
+        sys.path.insert(0, str(q.ROOT / "tools/content-schema/native-gameplay"))
         import build_source_item_profiles as source
-        client=q.ROOT/'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
-        objects=source.engine_items.load_appearance_objects(client.read_bytes())
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
+
+        client = (
+            q.ROOT
+            / "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat"
+        )
+        objects = source.engine_items.load_appearance_objects(client.read_bytes())
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        cache = {}
+
         def tile(p):
-            path=f'content/world/placements/region-z{-p["floor"]:02}-x{p["x"]//256}-y{p["y"]//256}.b3'
+            path = f"content/world/placements/region-z{-p['floor']:02}-x{p['x'] // 256}-y{p['y'] // 256}.b3"
             if path not in cache:
-                region=codec.decode_region((q.ROOT/path).read_bytes())
-                cache[path]={(x,y):(flags,house,entries) for _,cells in region[3] for x,y,flags,house,_,entries in cells}
-            return cache[path][(p['x'],p['y'])]
-        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
-        self.assertEqual(len(rows),11)
+                region = codec.decode_region((q.ROOT / path).read_bytes())
+                cache[path] = {
+                    (x, y): (flags, house, entries)
+                    for _, cells in region[3]
+                    for x, y, flags, house, _, entries in cells
+                }
+            return cache[path][(p["x"], p["y"])]
+
+        rows = [
+            r
+            for r in json.loads(
+                self.outputs["content/quests/questpc7-world-callbacks.json"]
+            )["callbacks"]
+            if r["quest"] == "oteryn:quest.ferumbras_ascension_quest"
+        ]
+        self.assertEqual(len(rows), 11)
         for row in rows:
-            selector=row['selector'];flags,house,entries=tile(selector['position'])
-            self.assertEqual(house,0)
-            self.assertIn(selector['appearance'],[palette[i]['source_item_id'] for i,depth,_ in entries if depth==0])
-            self.assertLessEqual(len(row['storage']),8)
-        objectives=[r for r in json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
-        self.assertEqual(len(objectives),8)
+            selector = row["selector"]
+            flags, house, entries = tile(selector["position"])
+            self.assertEqual(house, 0)
+            self.assertIn(
+                selector["appearance"],
+                [palette[i]["source_item_id"] for i, depth, _ in entries if depth == 0],
+            )
+            self.assertLessEqual(len(row["storage"]), 8)
+        objectives = [
+            r
+            for r in json.loads(
+                self.outputs["content/quests/questpc7-death-objectives.json"]
+            )["objectives"]
+            if r["quest"] == "oteryn:quest.ferumbras_ascension_quest"
+        ]
+        self.assertEqual(len(objectives), 8)
         for objective in objectives:
-            flags,house,entries=tile(objective['guardian']['position'])
-            self.assertEqual((flags&1,house,len(entries)),(0,0,1))
-            client_flags=objects[palette[entries[0][0]]['source_item_id']]['flags']
-            self.assertTrue(client_flags.get('flags.bank'))
-            self.assertFalse(client_flags.get('flags.unpass',False))
+            flags, house, entries = tile(objective["guardian"]["position"])
+            self.assertEqual((flags & 1, house, len(entries)), (0, 0, 1))
+            client_flags = objects[palette[entries[0][0]]["source_item_id"]]["flags"]
+            self.assertTrue(client_flags.get("flags.bank"))
+            self.assertFalse(client_flags.get("flags.unpass", False))
+
     def test_grave_twelve_sites_and_both_sirs_have_exact_native_bindings(self):
-        programme=q.load_module('questpc7_grave_test_programme','tools/content-schema/quest-authoring/questpc7_grave_programme.py')
-        self.assertEqual(len(programme.GRAVES),12)
-        codec=q.load_module('questpc7_grave_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
-        for name,p,appearance,arrival,_ in programme.GRAVES:
-            path=f'content/world/placements/region-z{-p[2]:02}-x{p[0]//256}-y{p[1]//256}.b3'
+        programme = q.load_module(
+            "questpc7_grave_test_programme",
+            "tools/content-schema/quest-authoring/questpc7_grave_programme.py",
+        )
+        self.assertEqual(len(programme.GRAVES), 12)
+        codec = q.load_module(
+            "questpc7_grave_test_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        cache = {}
+        for name, p, appearance, arrival, _ in programme.GRAVES:
+            path = f"content/world/placements/region-z{-p[2]:02}-x{p[0] // 256}-y{p[1] // 256}.b3"
             if path not in cache:
-                region=codec.decode_region((q.ROOT/path).read_bytes())
-                cache[path]={(x,y):(house,[palette[i]['source_item_id'] for i,d,_ in es if d==0]) for _,cells in region[3] for x,y,_,house,_,es in cells}
-            house,items=cache[path][p[:2]]
-            self.assertEqual(house,0,name)
-            self.assertIn(appearance,items,name)
-            self.assertLessEqual(max(abs(arrival[0]-p[0]),abs(arrival[1]-p[1])),1,name)
-        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']==programme.QUEST]
-        self.assertEqual(len(rows),22)
-        self.assertTrue(all(len(r['storage'])<=8 for r in rows))
-        pair=next(r for r in rows if r['key'].endswith('knight-passage-4'))
-        required={r['track'] for r in pair['storage'] if r.get('preserve') and r['minimum']==1}
-        self.assertTrue({programme.counter(4),programme.counter(5)}<=required)
-        cobra=next(r for r in rows if r['key'].endswith('-cobra'))
-        self.assertEqual(cobra['trigger'],'use')
-        self.assertIn({'track':programme.COBRA,'minimum':1,'maximum':1,'set':1,'preserve':True},cobra['storage'])
+                region = codec.decode_region((q.ROOT / path).read_bytes())
+                cache[path] = {
+                    (x, y): (
+                        house,
+                        [palette[i]["source_item_id"] for i, d, _ in es if d == 0],
+                    )
+                    for _, cells in region[3]
+                    for x, y, _, house, _, es in cells
+                }
+            house, items = cache[path][p[:2]]
+            self.assertEqual(house, 0, name)
+            self.assertIn(appearance, items, name)
+            self.assertLessEqual(
+                max(abs(arrival[0] - p[0]), abs(arrival[1] - p[1])), 1, name
+            )
+        rows = [
+            r
+            for r in json.loads(
+                self.outputs["content/quests/questpc7-world-callbacks.json"]
+            )["callbacks"]
+            if r["quest"] == programme.QUEST
+        ]
+        self.assertEqual(len(rows), 22)
+        self.assertTrue(all(len(r["storage"]) <= 8 for r in rows))
+        pair = next(r for r in rows if r["key"].endswith("knight-passage-4"))
+        required = {
+            r["track"]
+            for r in pair["storage"]
+            if r.get("preserve") and r["minimum"] == 1
+        }
+        self.assertTrue({programme.counter(4), programme.counter(5)} <= required)
+        cobra = next(r for r in rows if r["key"].endswith("-cobra"))
+        self.assertEqual(cobra["trigger"], "use")
+        self.assertIn(
+            {
+                "track": programme.COBRA,
+                "minimum": 1,
+                "maximum": 1,
+                "set": 1,
+                "preserve": True,
+            },
+            cobra["storage"],
+        )
+
     def test_hero_selected_bindings_exist_in_unchanged_source_map(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[r for r in rows if r['quest']=='oteryn:quest.hero_of_rathleton_quest']
-        codec=q.load_module('questpc7_hero_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z14-x131-y124.b3').read_bytes())
-        tiles={(x,y):(flags,house,[palette[p]['source_item_id'] for p,depth,_ in entries if not depth])
-            for _,cells in region[3] for x,y,flags,house,_,entries in cells}
-        self.assertEqual(len(rows),4)
+        rows = json.loads(self.outputs["content/quests/questpc7-world-callbacks.json"])[
+            "callbacks"
+        ]
+        rows = [r for r in rows if r["quest"] == "oteryn:quest.hero_of_rathleton_quest"]
+        codec = q.load_module(
+            "questpc7_hero_test_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        region = codec.decode_region(
+            (q.ROOT / "content/world/placements/region-z14-x131-y124.b3").read_bytes()
+        )
+        tiles = {
+            (x, y): (
+                flags,
+                house,
+                [palette[p]["source_item_id"] for p, depth, _ in entries if not depth],
+            )
+            for _, cells in region[3]
+            for x, y, flags, house, _, entries in cells
+        }
+        self.assertEqual(len(rows), 4)
         for row in rows:
-            selector=row['selector'];position=selector['position']
-            flags,house,appearances=tiles[(position['x'],position['y'])]
-            self.assertEqual((flags,house),(0,0))
-            self.assertIn(selector['appearance'],appearances)
-        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        boss=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-maxxen')
-        construct=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-construct')
-        self.assertEqual((boss['stage'],boss['stage_value']),(construct['counter'],construct['required']))
+            selector = row["selector"]
+            position = selector["position"]
+            flags, house, appearances = tiles[(position["x"], position["y"])]
+            self.assertEqual((flags, house), (0, 0))
+            self.assertIn(selector["appearance"], appearances)
+        objectives = json.loads(
+            self.outputs["content/quests/questpc7-death-objectives.json"]
+        )["objectives"]
+        boss = next(
+            o
+            for o in objectives
+            if o["key"] == "oteryn:quest-death/questpc7-hero-maxxen"
+        )
+        construct = next(
+            o
+            for o in objectives
+            if o["key"] == "oteryn:quest-death/questpc7-hero-construct"
+        )
+        self.assertEqual(
+            (boss["stage"], boss["stage_value"]),
+            (construct["counter"], construct["required"]),
+        )
+
     def test_hidden_native_objectives_share_quota_and_use_admitted_empty_ground(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        rows=[r for r in rows if r['quest']=='oteryn:quest.hidden_threats_quest']
-        self.assertEqual({r['creature'] for r in rows},{'oteryn:creature.corym_'+s for s in ['charlatan','skirmisher','vanguard']})
-        self.assertEqual({r['counter'] for r in rows},{'oteryn:quest-progress/questpc7/hidden/kills'})
-        self.assertTrue(all(r['required']==5 for r in rows))
-        self.assertEqual(sum(r['guardian'] is not None for r in rows),1)
-        codec=q.load_module('questpc7_test_world_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z13-x129-y125.b3').read_bytes())
-        tiles={(x,y):[palette[p]['source_item_id'] for p,depth,_ in entries if not depth]
-               for _,cells in region[3] for x,y,_,_,_,entries in cells}
-        for position in [(33078,32015),(33079,32015),(33080,32015)]:
-            self.assertEqual(tiles[position],[10113],position)
-        self.assertIn(2469,tiles[(33080,32014)],'the reward binds an existing physical chest')
-    def test_hydra_uses_existing_nest_and_personal_native_pickup_instead_of_a_claim(self):
-        worlds=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[r for r in worlds if r['quest']=='oteryn:quest.hydra_egg_quest']
-        self.assertEqual(len(rows),2)
-        nest=next(r for r in rows if r['trigger']=='use')
-        self.assertTrue(nest['completes'])
-        self.assertNotIn('item_reward',nest)
-        self.assertEqual(nest['requirements']['owned_items'],[{'item':'oteryn:item.tibia.i4839','count':1,'map_source':(33004<<32)|(32664<<16)|(3<<8)|2}])
-        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        objective=next(r for r in objectives if r['quest']==nest['quest'])
-        self.assertEqual((objective['creature'],objective['required']),('oteryn:creature.hydra',1))
-        codec=q.load_module('questpc7_hydra_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z03-x128-y127.b3').read_bytes())
-        tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
-            for _,cells in region[3] for x,y,_,_,_,entries in cells}
-        self.assertEqual(tiles[(33004,32664)],[(4402,None),(1063,None),(4839,{'count':0})])
-        self.assertEqual(tiles[(33003,32665)],[(1019,None)])
-        self.assertEqual(tiles[(33005,32665)],[(1019,None)])
+        rows = json.loads(
+            self.outputs["content/quests/questpc7-death-objectives.json"]
+        )["objectives"]
+        rows = [r for r in rows if r["quest"] == "oteryn:quest.hidden_threats_quest"]
+        self.assertEqual(
+            {r["creature"] for r in rows},
+            {
+                "oteryn:creature.corym_" + s
+                for s in ["charlatan", "skirmisher", "vanguard"]
+            },
+        )
+        self.assertEqual(
+            {r["counter"] for r in rows},
+            {"oteryn:quest-progress/questpc7/hidden/kills"},
+        )
+        self.assertTrue(all(r["required"] == 5 for r in rows))
+        self.assertEqual(sum(r["guardian"] is not None for r in rows), 1)
+        codec = q.load_module(
+            "questpc7_test_world_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        region = codec.decode_region(
+            (q.ROOT / "content/world/placements/region-z13-x129-y125.b3").read_bytes()
+        )
+        tiles = {
+            (x, y): [
+                palette[p]["source_item_id"] for p, depth, _ in entries if not depth
+            ]
+            for _, cells in region[3]
+            for x, y, _, _, _, entries in cells
+        }
+        for position in [(33078, 32015), (33079, 32015), (33080, 32015)]:
+            self.assertEqual(tiles[position], [10113], position)
+        self.assertIn(
+            2469, tiles[(33080, 32014)], "the reward binds an existing physical chest"
+        )
+
+    def test_hydra_uses_existing_nest_and_personal_native_pickup_instead_of_a_claim(
+        self,
+    ):
+        worlds = json.loads(
+            self.outputs["content/quests/questpc7-world-callbacks.json"]
+        )["callbacks"]
+        rows = [r for r in worlds if r["quest"] == "oteryn:quest.hydra_egg_quest"]
+        self.assertEqual(len(rows), 2)
+        nest = next(r for r in rows if r["trigger"] == "use")
+        self.assertTrue(nest["completes"])
+        self.assertNotIn("item_reward", nest)
+        self.assertEqual(
+            nest["requirements"]["owned_items"],
+            [
+                {
+                    "item": "oteryn:item.tibia.i4839",
+                    "count": 1,
+                    "map_source": (33004 << 32) | (32664 << 16) | (3 << 8) | 2,
+                }
+            ],
+        )
+        objectives = json.loads(
+            self.outputs["content/quests/questpc7-death-objectives.json"]
+        )["objectives"]
+        objective = next(r for r in objectives if r["quest"] == nest["quest"])
+        self.assertEqual(
+            (objective["creature"], objective["required"]), ("oteryn:creature.hydra", 1)
+        )
+        codec = q.load_module(
+            "questpc7_hydra_test_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        region = codec.decode_region(
+            (q.ROOT / "content/world/placements/region-z03-x128-y127.b3").read_bytes()
+        )
+        tiles = {
+            (x, y): [
+                (palette[p]["source_item_id"], attrs)
+                for p, depth, attrs in entries
+                if not depth
+            ]
+            for _, cells in region[3]
+            for x, y, _, _, _, entries in cells
+        }
+        self.assertEqual(
+            tiles[(33004, 32664)], [(4402, None), (1063, None), (4839, {"count": 0})]
+        )
+        self.assertEqual(tiles[(33003, 32665)], [(1019, None)])
+        self.assertEqual(tiles[(33005, 32665)], [(1019, None)])
+
     def test_hidden_valuables_are_one_exact_once_only_backpack_plan(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        chest=next(r for r in rows if r['key']=='oteryn:quest-callback/questpc7-hidden-valuables')
-        self.assertTrue(chest['completes'])
-        self.assertEqual(chest['trigger'],'use')
-        self.assertEqual(chest['activation'],{'track':chest['storage'][0]['track'],'minimum':1,'maximum':1})
-        self.assertEqual(chest['storage'][1]['minimum'],5)
-        self.assertTrue(chest['storage'][1]['preserve'])
-        self.assertEqual(chest['item_reward'],{'item':'oteryn:item.tibia.i3040','count':2,'contents':[],
-            'backpack_outputs':[{'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3030,3032,3033)]})
+        rows = json.loads(self.outputs["content/quests/questpc7-world-callbacks.json"])[
+            "callbacks"
+        ]
+        chest = next(
+            r
+            for r in rows
+            if r["key"] == "oteryn:quest-callback/questpc7-hidden-valuables"
+        )
+        self.assertTrue(chest["completes"])
+        self.assertEqual(chest["trigger"], "use")
+        self.assertEqual(
+            chest["activation"],
+            {"track": chest["storage"][0]["track"], "minimum": 1, "maximum": 1},
+        )
+        self.assertEqual(chest["storage"][1]["minimum"], 5)
+        self.assertTrue(chest["storage"][1]["preserve"])
+        self.assertEqual(
+            chest["item_reward"],
+            {
+                "item": "oteryn:item.tibia.i3040",
+                "count": 2,
+                "contents": [],
+                "backpack_outputs": [
+                    {"item": f"oteryn:item.tibia.i{i}", "count": 1}
+                    for i in (3030, 3032, 3033)
+                ],
+            },
+        )
+
     def test_selected_jorge_replica_consumes_exact_twenty_and_completes_once(self):
-        rows=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]
-        self.assertEqual(len(rows),3)
-        exchange=next(c for c in rows if c['give'])
-        self.assertEqual(exchange['take'],[{'item':'oteryn:item.tibia.i19083','count':20}])
-        self.assertEqual(exchange['give'],{'item':'oteryn:item.tibia.i19151','count':1,'contents':[]})
-        self.assertEqual(sum(c['completes'] for c in rows),1)
-        self.assertTrue(all(c['npc']=='oteryn:npc.jorge' for c in rows))
-        self.assertEqual([c['storage'][0]['minimum'] for c in rows if c['completes']],[1])
+        rows = [
+            c
+            for c in self.callbacks["callbacks"]
+            if c["key"].startswith("oteryn:quest-reward/questpc7-tokens-")
+        ]
+        self.assertEqual(len(rows), 3)
+        exchange = next(c for c in rows if c["give"])
+        self.assertEqual(
+            exchange["take"], [{"item": "oteryn:item.tibia.i19083", "count": 20}]
+        )
+        self.assertEqual(
+            exchange["give"],
+            {"item": "oteryn:item.tibia.i19151", "count": 1, "contents": []},
+        )
+        self.assertEqual(sum(c["completes"] for c in rows), 1)
+        self.assertTrue(all(c["npc"] == "oteryn:npc.jorge" for c in rows))
+        self.assertEqual(
+            [c["storage"][0]["minimum"] for c in rows if c["completes"]], [1]
+        )
+
     def test_hoist_binds_real_native_objects_without_donor_uids(self):
-        callbacks=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[c for c in callbacks if c['key'].startswith('oteryn:quest-callback/questpc7-hoist-')]
-        self.assertEqual(len(rows),4)
-        self.assertEqual(sum(c.get('completes',False) for c in rows),1)
-        bindings=json.loads(self.outputs['content/quests/native-world-callback-bindings.json'])['bindings']
-        self.assertEqual([b['expected']['unique'] for b in bindings],[3059,3060,3061])
-        codec=q.load_module('questpc7_hoist_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        for floor in [9,10,11]:
-            region=codec.decode_region((q.ROOT/f'content/world/placements/region-z{floor:02}-x125-y121.b3').read_bytes())
-            tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
-                   for _,cells in region[3] for x,y,_,_,_,entries in cells}
-            self.assertEqual(sum(i==5770 for i,_ in tiles[(32157,31125)]),1)
-            self.assertTrue(all(not (attrs or {}).get('unique') for _,attrs in tiles[(32157,31125)]))
+        callbacks = json.loads(
+            self.outputs["content/quests/questpc7-world-callbacks.json"]
+        )["callbacks"]
+        rows = [
+            c
+            for c in callbacks
+            if c["key"].startswith("oteryn:quest-callback/questpc7-hoist-")
+        ]
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(sum(c.get("completes", False) for c in rows), 1)
+        bindings = json.loads(
+            self.outputs["content/quests/native-world-callback-bindings.json"]
+        )["bindings"]
+        self.assertEqual(
+            [b["expected"]["unique"] for b in bindings], [3059, 3060, 3061]
+        )
+        codec = q.load_module(
+            "questpc7_hoist_test_codec",
+            "tools/content-schema/world-authoring/world_region_codec.py",
+        )
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        for floor in [9, 10, 11]:
+            region = codec.decode_region(
+                (
+                    q.ROOT / f"content/world/placements/region-z{floor:02}-x125-y121.b3"
+                ).read_bytes()
+            )
+            tiles = {
+                (x, y): [
+                    (palette[p]["source_item_id"], attrs)
+                    for p, depth, attrs in entries
+                    if not depth
+                ]
+                for _, cells in region[3]
+                for x, y, _, _, _, entries in cells
+            }
+            self.assertEqual(sum(i == 5770 for i, _ in tiles[(32157, 31125)]), 1)
+            self.assertTrue(
+                all(
+                    not (attrs or {}).get("unique")
+                    for _, attrs in tiles[(32157, 31125)]
+                )
+            )
             for callback in rows:
-                position=callback['selector']['position']
-                if position['floor']==-floor:
-                    self.assertIn(callback['selector']['appearance'],[i for i,_ in tiles[(position['x'],position['y'])]])
-        self.assertTrue(all(c['requirements']['completed_quests']==['oteryn:quest.the_ice_islands_quest'] for c in rows))
-    def test_friends_services_preserve_programme_and_have_bounded_distinct_counters(self):
+                position = callback["selector"]["position"]
+                if position["floor"] == -floor:
+                    self.assertIn(
+                        callback["selector"]["appearance"],
+                        [i for i, _ in tiles[(position["x"], position["y"])]],
+                    )
+        self.assertTrue(
+            all(
+                c["requirements"]["completed_quests"]
+                == ["oteryn:quest.the_ice_islands_quest"]
+                for c in rows
+            )
+        )
+
+    def test_friends_services_preserve_programme_and_have_bounded_distinct_counters(
+        self,
+    ):
         from jsonschema import ValidationError
-        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-friends-')]
-        self.assertEqual(len(selected),18)
-        services=[c for c in selected if c.get('counter')]
-        self.assertEqual(len(services),2)
-        self.assertEqual(len({c['counter']['track'] for c in services}),2)
-        self.assertTrue(all(c['counter']['maximum']==1000000000000 and all(s['preserve'] for s in c['storage']) for c in services))
-        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
-        for mutation in ('zero','collision','completion'):
-            bad=copy.deepcopy(self.callbacks)
-            callback=next(c for c in bad['callbacks'] if c['key']==services[0]['key'])
-            if mutation=='zero':callback['counter']['maximum']=0
-            elif mutation=='collision':callback['counter']['track']=callback['storage'][0]['track']
-            else:callback['completes']=True
-            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
+        selected = [
+            c
+            for c in self.callbacks["callbacks"]
+            if c["key"].split("/")[-1].startswith("questpc7-friends-")
+        ]
+        self.assertEqual(len(selected), 18)
+        services = [c for c in selected if c.get("counter")]
+        self.assertEqual(len(services), 2)
+        self.assertEqual(len({c["counter"]["track"] for c in services}), 2)
+        self.assertTrue(
+            all(
+                c["counter"]["maximum"] == 1000000000000
+                and all(s["preserve"] for s in c["storage"])
+                for c in services
+            )
+        )
+        self.assertEqual(sum(c.get("completes", False) for c in selected), 1)
+        for mutation in ("zero", "collision", "completion"):
+            bad = copy.deepcopy(self.callbacks)
+            callback = next(
+                c for c in bad["callbacks"] if c["key"] == services[0]["key"]
+            )
+            if mutation == "zero":
+                callback["counter"]["maximum"] = 0
+            elif mutation == "collision":
+                callback["counter"]["track"] = callback["storage"][0]["track"]
+            else:
+                callback["completes"] = True
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(bad)
+
     def test_selected_reward_requirements_are_bounded_and_use_canonical_parents(self):
         from jsonschema import ValidationError
-        selected={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks'] if c.get('requirements')}
-        self.assertEqual(selected['questpc7-hunter-intro']['requirements'],{'min_level':0,'premium':True,'completed_quests':[]})
-        self.assertEqual(selected['questpc7-illuminated-intro']['requirements'],{'min_level':1000,'premium':True,'completed_quests':['oteryn:quest.authored.make_believe_quest']})
-        for mutation in ('level','duplicate','foreign'):
-            bad=copy.deepcopy(self.callbacks)
-            callback=next(c for c in bad['callbacks'] if c['key']==selected['questpc7-illuminated-intro']['key'])
-            if mutation=='level':callback['requirements']['min_level']=1000001
-            elif mutation=='duplicate':callback['requirements']['completed_quests']*=2
-            else:callback['requirements']['completed_quests']=['unscoped:parent']
-            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
+        selected = {
+            c["key"].split("/")[-1]: c
+            for c in self.callbacks["callbacks"]
+            if c.get("requirements")
+        }
+        self.assertEqual(
+            selected["questpc7-hunter-intro"]["requirements"],
+            {"min_level": 0, "premium": True, "completed_quests": []},
+        )
+        self.assertEqual(
+            selected["questpc7-illuminated-intro"]["requirements"],
+            {
+                "min_level": 1000,
+                "premium": True,
+                "completed_quests": [],
+            },
+        )
+        for mutation in ("level", "duplicate", "foreign"):
+            bad = copy.deepcopy(self.callbacks)
+            callback = next(
+                c
+                for c in bad["callbacks"]
+                if c["key"] == selected["questpc7-illuminated-intro"]["key"]
+            )
+            if mutation == "level":
+                callback["requirements"]["min_level"] = 1000001
+            elif mutation == "duplicate":
+                callback["requirements"]["completed_quests"] = [
+                    "oteryn:quest.authored.make_believe_quest"
+                ] * 2
+            else:
+                callback["requirements"]["completed_quests"] = ["unscoped:parent"]
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(bad)
+
     def test_golden_selected_prices_and_fee_conservation(self):
         from jsonschema import ValidationError
-        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]
-        self.assertEqual(len(selected),5)
-        fees={c['key'].split('-')[-1]:c['fee'] for c in selected if c.get('fee')}
-        self.assertEqual(fees, {name:{'gold':amount,'include_bank':True} for name,amount in [('base',100000),('gloves',50000),('helmet',50000)]})
-        source=next(c for c in selected if c.get('fee'))
-        for mutation in ('zero','double'):
-            bad=copy.deepcopy(self.callbacks)
-            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
-            if mutation=='zero':callback['fee']['gold']=0
-            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':10}]
-            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
-        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
-    def test_selected_consumptive_grants_keep_explicit_pairs_and_real_ownership_guards(self):
+
+        selected = [
+            c
+            for c in self.callbacks["callbacks"]
+            if c["key"].split("/")[-1].startswith("questpc7-golden-")
+        ]
+        self.assertEqual(len(selected), 5)
+        fees = {c["key"].split("-")[-1]: c["fee"] for c in selected if c.get("fee")}
+        self.assertEqual(
+            fees,
+            {
+                name: {"gold": amount, "include_bank": True}
+                for name, amount in [
+                    ("base", 100000),
+                    ("gloves", 50000),
+                    ("helmet", 50000),
+                ]
+            },
+        )
+        source = next(c for c in selected if c.get("fee"))
+        for mutation in ("zero", "double"):
+            bad = copy.deepcopy(self.callbacks)
+            callback = next(c for c in bad["callbacks"] if c["key"] == source["key"])
+            if mutation == "zero":
+                callback["fee"]["gold"] = 0
+            else:
+                callback["take"] = [{"item": "oteryn:item.tibia.i3043", "count": 10}]
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(bad)
+        self.assertEqual(sum(c.get("completes", False) for c in selected), 1)
+
+    def test_selected_consumptive_grants_keep_explicit_pairs_and_real_ownership_guards(
+        self,
+    ):
         from jsonschema import ValidationError
-        document = self.author['document']
-        formal = next(o for o in document['outfits'] if o['key'] == 'oteryn:outfit.formal_dress')
-        self.assertEqual((formal['female']['id'], formal['male']['id'], formal['addon_count']), (1461, 1460, 2))
-        self.assertTrue(formal['premium'])
-        self.assertFalse(formal['starter_female'] or formal['starter_male'])
-        targets = {'oteryn:outfit.formal_dress', 'oteryn:outfit.fiend_slayer', 'oteryn:outfit.hand_of_the_inquisition'}
-        item_aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
-        self.assertEqual(len(item_aliases),202)
-        aliases = [m for m in item_aliases if m['target'].get('outfit_key') in targets]
+
+        document = self.author["document"]
+        formal = next(
+            o for o in document["outfits"] if o["key"] == "oteryn:outfit.formal_dress"
+        )
+        self.assertEqual(
+            (formal["female"]["id"], formal["male"]["id"], formal["addon_count"]),
+            (1461, 1460, 2),
+        )
+        self.assertTrue(formal["premium"])
+        self.assertFalse(formal["starter_female"] or formal["starter_male"])
+        targets = {
+            "oteryn:outfit.formal_dress",
+            "oteryn:outfit.fiend_slayer",
+            "oteryn:outfit.hand_of_the_inquisition",
+        }
+        item_aliases = [
+            m
+            for m in document["grant_mappings"]
+            if m["grant_key"].startswith("oteryn:item-grant.")
+        ]
+        self.assertEqual(len(item_aliases), 210)
+        aliases = [m for m in item_aliases if m["target"].get("outfit_key") in targets]
         self.assertEqual(len(aliases), 9)
         self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
         self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
@@ -258,293 +637,683 @@ class QuestPc7QuestRewards(unittest.TestCase):
             self.assertEqual(callbacks[f'questpc7-{slug}-complete']['requirements']['owned_cosmetics'][0]['addons'], 3)
             self.assertTrue(callbacks[f'questpc7-{slug}-complete']['completes'])
         bad = copy.deepcopy(self.callbacks)
-        callback = next(c for c in bad['callbacks'] if c['key'].endswith('questpc7-fiend-second-token'))
-        callback['requirements']['owned_cosmetics'][0]['addons'] = 4
+        callback = next(
+            c
+            for c in bad["callbacks"]
+            if c["key"].endswith("questpc7-fiend-second-token")
+        )
+        callback["requirements"]["owned_cosmetics"][0]["addons"] = 4
         with self.assertRaises((ValueError, ValidationError)):
             q.validate_callbacks(bad)
+
+
+class WaylandProgramme(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = q.ROOT / "content/quests/npc-callbacks/questpc7-programmes.json"
+        cls.callbacks = json.loads(path.read_text())
+
+    def test_wayland_exchanges_follow_the_authored_order(self):
+        exchanges = {
+            row["key"].rsplit("-", 1)[-1]: row
+            for row in self.callbacks["callbacks"]
+            if row["npc"] == "oteryn:npc.wayland_smythers" and row["take"]
+        }
+        for stage, name in enumerate(("basic", "insignia", "halo")):
+            with self.subTest(exchange=name):
+                exchange = exchanges[name]
+                self.assertEqual(
+                    exchange["storage"],
+                    [
+                        {
+                            "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+                            "minimum": 0,
+                            "maximum": stage,
+                            "set": stage + 1,
+                        }
+                    ],
+                )
+                self.assertEqual(exchange.get("completes", False), name == "halo")
+
+    def test_wayland_commission_can_continue_with_account_owned_parts(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row
+            for row in self.callbacks["callbacks"]
+            if row["npc"] == npc and not row["take"]
+        )
+        start = intro["storage"][0]["set"]
+        for name in ("insignia", "halo"):
+            with self.subTest(exchange=name):
+                confirm = next(
+                    row
+                    for row in self.callbacks["callbacks"]
+                    if row["npc"] == npc and row["key"].endswith("-" + name)
+                )
+                selection = next(
+                    row
+                    for row in offers
+                    if row["npc"] == npc and row["keywords"] == [name]
+                )
+                self.assertTrue(confirm["requires_outfits"])
+                self.assertTrue(confirm["forbids_addons"])
+                if name == "halo":
+                    self.assertTrue(confirm["requires_addons"])
+                for row in (selection, confirm):
+                    stage = row["storage"][0]
+                    self.assertLessEqual(stage["minimum"], start)
+                    self.assertLessEqual(start, stage["maximum"])
+
+    def test_wayland_selection_only_opens_the_confirmation_topic(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        npc = "oteryn:npc.wayland_smythers"
+        for name in ("basic", "insignia", "halo"):
+            with self.subTest(exchange=name):
+                exchange = next(
+                    row
+                    for row in self.callbacks["callbacks"]
+                    if row["npc"] == npc and row["key"].endswith("-" + name)
+                )
+                self.assertEqual(exchange["keywords"], ["yes"])
+                self.assertNotEqual(exchange["topic"], 0)
+                self.assertEqual(exchange["next_topic"], 0)
+                self.assertTrue(
+                    any(
+                        row["npc"] == npc
+                        and row["keywords"] == [name]
+                        and row["topic"] == 0
+                        and row["next_topic"] == exchange["topic"]
+                        for row in offers
+                    )
+                )
+                self.assertTrue(
+                    any(
+                        row["npc"] == npc
+                        and row["keywords"] == ["no"]
+                        and row["topic"] == exchange["topic"]
+                        and row["next_topic"] == 0
+                        for row in offers
+                    )
+                )
 
 
 class GrimvaleProgramme(unittest.TestCase):
     def test_personal_harvesting_and_exact_trap_input_keep_global_event_separate(self):
         import questpc7_grimvale_programme as grim
-        worlds, objectives, contacts=grim.build(q.ROOT)
-        plots=[c for c in worlds if '-nightshade-' in c['key']]
-        self.assertEqual(len(plots),5)
-        self.assertEqual(len({tuple(c['selector']['position'].values()) for c in plots}),5)
-        for i,c in enumerate(plots):
-            self.assertEqual(c['item_reward'],{'item':'oteryn:item.tibia.i22082','count':1,'contents':[]})
-            self.assertEqual(c['activation'],{'track':grim.FLOWERS,'minimum':i,'maximum':i})
-            self.assertTrue(c['requirements']['premium'])
-        trap=next(c for c in worlds if c['key'].endswith('/questpc7-grimvale-deploy-trap'))
-        self.assertEqual(trap['item_on_target'],{'item':'oteryn:item.tibia.i22074','count':1,'replacement':None,'target_replacement':None})
-        afflicted=[o for o in objectives if o['counter'].endswith('/afflicted')]
-        self.assertEqual({o['creature'] for o in afflicted},{'oteryn:creature.'+n for n in ['werewolf','werebear','wereboar']})
-        self.assertTrue(all(o['required']==10 for o in afflicted))
-        self.assertEqual(next(o for o in objectives if o['creature']=='oteryn:creature.werehyaena')['required'],20)
-        self.assertEqual({c['npc'] for c in contacts},{'oteryn:npc.rhargu','oteryn:npc.domizian'})
 
-    def test_real_native_sites_and_once_only_rewards_have_two_earned_travel_directions(self):
-        import questpc7_grimvale_programme as grim
+        worlds, objectives, contacts = grim.build(q.ROOT)
+        plots = [c for c in worlds if "-nightshade-" in c["key"]]
+        self.assertEqual(len(plots), 5)
+        self.assertEqual(
+            len({tuple(c["selector"]["position"].values()) for c in plots}), 5
+        )
+        for i, c in enumerate(plots):
+            self.assertEqual(
+                c["item_reward"],
+                {"item": "oteryn:item.tibia.i22082", "count": 1, "contents": []},
+            )
+            self.assertEqual(
+                c["activation"], {"track": grim.FLOWERS, "minimum": i, "maximum": i}
+            )
+            self.assertTrue(c["requirements"]["premium"])
+        trap = next(
+            c for c in worlds if c["key"].endswith("/questpc7-grimvale-deploy-trap")
+        )
+        self.assertEqual(
+            trap["item_on_target"],
+            {
+                "item": "oteryn:item.tibia.i22074",
+                "count": 1,
+                "replacement": None,
+                "target_replacement": None,
+            },
+        )
+        afflicted = [o for o in objectives if o["counter"].endswith("/afflicted")]
+        self.assertEqual(
+            {o["creature"] for o in afflicted},
+            {"oteryn:creature." + n for n in ["werewolf", "werebear", "wereboar"]},
+        )
+        self.assertTrue(all(o["required"] == 10 for o in afflicted))
+        self.assertEqual(
+            next(
+                o for o in objectives if o["creature"] == "oteryn:creature.werehyaena"
+            )["required"],
+            20,
+        )
+        self.assertEqual(
+            {c["npc"] for c in contacts}, {"oteryn:npc.rhargu", "oteryn:npc.domizian"}
+        )
+
+    def test_real_native_sites_and_once_only_rewards_have_two_earned_travel_directions(
+        self,
+    ):
         import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
+
+        import questpc7_grimvale_programme as grim
+
+        sys.path.insert(0, str(q.ROOT / "tools/content-schema/world-authoring"))
         import world_region_codec as codec
-        worlds,_,_=grim.build(q.ROOT)
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
+
+        worlds, _, _ = grim.build(q.ROOT)
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        cache = {}
         for c in worlds:
-            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
-            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
-            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
-            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
-            self.assertIn(c['selector']['appearance'],native,c['key'])
-        reward=next(c for c in worlds if c.get('completes'))
-        self.assertEqual(reward['item_reward']['item'],'oteryn:item.tibia.i27565')
-        self.assertEqual(set(reward['achievements']),{'oteryn:achievement/over_the_moon','oteryn:achievement/drama_in_darama'})
-        travel=[c for c in worlds if '/questpc7-grimvale-earned-access-' in c['key']]
-        self.assertEqual(len(travel),2)
-        self.assertTrue(all(c['storage']==[{'track':grim.ACCESS,'minimum':1,'maximum':1,'set':1,'preserve':True}] and c['teleport'] and c['requirements']['premium'] for c in travel))
+            p = c["selector"]["position"]
+            x, y, z = p["x"], p["y"], p["floor"]
+            path = (
+                f"content/world/placements/region-z{-z:02}-x{x // 256}-y{y // 256}.b3"
+            )
+            if path not in cache:
+                cache[path] = codec.decode_region((q.ROOT / path).read_bytes())[3]
+            native = [
+                palette[i]["source_item_id"]
+                for _, cells in cache[path]
+                for tx, ty, _, _, _, items in cells
+                if (tx, ty) == (x, y)
+                for i, depth, _ in items
+                if depth == 0
+            ]
+            self.assertIn(c["selector"]["appearance"], native, c["key"])
+        reward = next(c for c in worlds if c.get("completes"))
+        self.assertEqual(reward["item_reward"]["item"], "oteryn:item.tibia.i27565")
+        self.assertEqual(
+            set(reward["achievements"]),
+            {"oteryn:achievement/over_the_moon", "oteryn:achievement/drama_in_darama"},
+        )
+        travel = [c for c in worlds if "/questpc7-grimvale-earned-access-" in c["key"]]
+        self.assertEqual(len(travel), 2)
+        self.assertTrue(
+            all(
+                c["storage"]
+                == [
+                    {
+                        "track": grim.ACCESS,
+                        "minimum": 1,
+                        "maximum": 1,
+                        "set": 1,
+                        "preserve": True,
+                    }
+                ]
+                and c["teleport"]
+                and c["requirements"]["premium"]
+                for c in travel
+            )
+        )
 
 
 class HeartProgramme(unittest.TestCase):
     def test_six_independent_source_arenas_and_exact_yana_reward(self):
         import questpc7_heart_programme as heart
-        worlds, objectives, rewards=heart.build(q.ROOT,q.donor_inputs(),q.PIN)
-        self.assertEqual([o['creature'] for o in objectives],['oteryn:creature.'+n for n in ['anomaly','rupture','realityquake','eradicator','outburst','world_devourer']])
-        self.assertEqual(len({o['counter'] for o in objectives}),6)
-        self.assertTrue(all(o['required']==1 and o['guardian']['respawn_ms']==60000 for o in objectives))
-        lever=next(c for c in worlds if c['key'].endswith('/questpc7-heart-destabilizer'))
-        self.assertEqual(lever['selector']['position'],{'x':32245,'y':31244,'floor':-14})
-        self.assertEqual(lever['lever'],[8911,8912])
-        self.assertEqual(rewards[0]['npc'],'oteryn:npc.yana')
-        self.assertEqual(rewards[0]['give'],{'item':'oteryn:item.tibia.i22721','count':5,'contents':[]})
-        self.assertTrue(rewards[0]['completes'])
-        self.assertEqual(rewards[0]['achievement'],'oteryn:achievement/ender_of_the_end')
-        self.assertEqual(rewards[0]['requirements'],{'min_level':150,'premium':True,'completed_quests':[]})
 
-    def test_powerful_learning_binds_only_the_source_named_families_to_native_completion(self):
+        worlds, objectives, rewards = heart.build(q.ROOT, q.donor_inputs(), q.PIN)
+        self.assertEqual(
+            [o["creature"] for o in objectives],
+            [
+                "oteryn:creature." + n
+                for n in [
+                    "anomaly",
+                    "rupture",
+                    "realityquake",
+                    "eradicator",
+                    "outburst",
+                    "world_devourer",
+                ]
+            ],
+        )
+        self.assertEqual(len({o["counter"] for o in objectives}), 6)
+        self.assertTrue(
+            all(
+                o["required"] == 1 and o["guardian"]["respawn_ms"] == 60000
+                for o in objectives
+            )
+        )
+        lever = next(
+            c for c in worlds if c["key"].endswith("/questpc7-heart-destabilizer")
+        )
+        self.assertEqual(
+            lever["selector"]["position"], {"x": 32245, "y": 31244, "floor": -14}
+        )
+        self.assertEqual(lever["lever"], [8911, 8912])
+        self.assertEqual(rewards[0]["npc"], "oteryn:npc.yana")
+        self.assertEqual(
+            rewards[0]["give"],
+            {"item": "oteryn:item.tibia.i22721", "count": 5, "contents": []},
+        )
+        self.assertTrue(rewards[0]["completes"])
+        self.assertEqual(
+            rewards[0]["achievement"], "oteryn:achievement/ender_of_the_end"
+        )
+        self.assertEqual(
+            rewards[0]["requirements"],
+            {"min_level": 150, "premium": True, "completed_quests": []},
+        )
+
+    def test_powerful_learning_binds_only_the_source_named_families_to_native_completion(
+        self,
+    ):
         import questpc7_knowledge
-        rules=[r for r in questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules'] if 'oteryn:quest.heart_of_destruction_quest' in r['any_completed_quests']]
-        self.assertEqual([(r['family'],r['tier']) for r in rules],[(1,3),(11,3),(12,3)])
+
+        rules = [
+            r
+            for r in questpc7_knowledge.build(q.ROOT, q.donor_inputs(), q.PIN)["rules"]
+            if "oteryn:quest.heart_of_destruction_quest" in r["any_completed_quests"]
+        ]
+        self.assertEqual(
+            [(r["family"], r["tier"]) for r in rules], [(1, 3), (11, 3), (12, 3)]
+        )
         for rule in rules:
-            self.assertEqual(rule['any_completed_quests'],['oteryn:quest.heart_of_destruction_quest','oteryn:quest.forgotten_knowledge_quest'])
-            self.assertTrue(any('data-global/npc/yana.lua:185-187:sha256:' in src for src in rule['sources']))
-            self.assertTrue(any(src.startswith('canonical:') for src in rule['sources']))
+            self.assertEqual(
+                rule["any_completed_quests"],
+                [
+                    "oteryn:quest.heart_of_destruction_quest",
+                    "oteryn:quest.forgotten_knowledge_quest",
+                ],
+            )
+            self.assertTrue(
+                any(
+                    "data-global/npc/yana.lua:185-187:sha256:" in src
+                    for src in rule["sources"]
+                )
+            )
+            self.assertTrue(
+                any(src.startswith("canonical:") for src in rule["sources"])
+            )
 
 
 class ForgottenProgramme(unittest.TestCase):
     def test_exact_selected_stages_source_terminal_bosses_and_tome_exchange(self):
         import questpc7_forgotten_programme as f
-        worlds,objectives,rewards=f.build(q.ROOT,q.donor_inputs(),q.PIN)
-        self.assertEqual(len(worlds),11)
-        self.assertEqual([r['creature'] for r in objectives],['oteryn:creature.'+n for n in ['lloyd','lady_tenebris','the_enraged_thorn_knight','soul_of_dragonking_zyrtarch','the_time_guardian','the_last_lore_keeper']])
-        self.assertEqual([r['stage_value'] for r in objectives],[2,3,5,7,8,9])
-        self.assertEqual(len({r['counter'] for r in objectives}),6)
-        self.assertTrue(all(r['required']==1 for r in objectives))
-        tome=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-tome'))
-        self.assertEqual(tome['item_reward'],{'item':'oteryn:item.tibia.i23986','count':1,'contents':[]})
-        take=next(r for r in rewards if r['key'].endswith('/questpc7-forgotten-tome'))
-        self.assertEqual(take['take'],[{'item':'oteryn:item.tibia.i23986','count':1}])
-        self.assertEqual(len(rewards),10)
-        self.assertEqual(sum(r['npc']=='oteryn:npc.ivalisse' for r in rewards),4)
-        self.assertEqual([r['keywords'][0] for r in rewards if r['npc']=='oteryn:npc.a_strange_chalice'],['chalice','daughter','story','disguised','thirsty','learned'])
-        self.assertEqual([r['key'] for r in rewards if r.get('completes')],['oteryn:quest-reward/questpc7-forgotten-complete'])
-        self.assertTrue(all(r['requirements']=={'min_level':0,'premium':True,'completed_quests':[]} for r in worlds+rewards))
+
+        worlds, objectives, rewards = f.build(q.ROOT, q.donor_inputs(), q.PIN)
+        self.assertEqual(len(worlds), 11)
+        self.assertEqual(
+            [r["creature"] for r in objectives],
+            [
+                "oteryn:creature." + n
+                for n in [
+                    "lloyd",
+                    "lady_tenebris",
+                    "the_enraged_thorn_knight",
+                    "soul_of_dragonking_zyrtarch",
+                    "the_time_guardian",
+                    "the_last_lore_keeper",
+                ]
+            ],
+        )
+        self.assertEqual([r["stage_value"] for r in objectives], [2, 3, 5, 7, 8, 9])
+        self.assertEqual(len({r["counter"] for r in objectives}), 6)
+        self.assertTrue(all(r["required"] == 1 for r in objectives))
+        tome = next(r for r in worlds if r["key"].endswith("/questpc7-forgotten-tome"))
+        self.assertEqual(
+            tome["item_reward"],
+            {"item": "oteryn:item.tibia.i23986", "count": 1, "contents": []},
+        )
+        take = next(r for r in rewards if r["key"].endswith("/questpc7-forgotten-tome"))
+        self.assertEqual(
+            take["take"], [{"item": "oteryn:item.tibia.i23986", "count": 1}]
+        )
+        self.assertEqual(len(rewards), 10)
+        self.assertEqual(sum(r["npc"] == "oteryn:npc.ivalisse" for r in rewards), 4)
+        self.assertEqual(
+            [
+                r["keywords"][0]
+                for r in rewards
+                if r["npc"] == "oteryn:npc.a_strange_chalice"
+            ],
+            ["chalice", "daughter", "story", "disguised", "thirsty", "learned"],
+        )
+        self.assertEqual(
+            [r["key"] for r in rewards if r.get("completes")],
+            ["oteryn:quest-reward/questpc7-forgotten-complete"],
+        )
+        self.assertTrue(
+            all(
+                r["requirements"]
+                == {"min_level": 0, "premium": True, "completed_quests": []}
+                for r in worlds + rewards
+            )
+        )
 
     def test_every_world_selector_exists_in_retained_native_map(self):
-        import questpc7_forgotten_programme as f
         import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
-        import world_region_codec as codec
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette'];cache={}
-        worlds,_,_=f.build(q.ROOT,q.donor_inputs(),q.PIN)
-        for c in worlds:
-            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
-            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
-            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
-            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
-            self.assertIn(c['selector']['appearance'],native,c['key'])
-        egg=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-egg'))
-        self.assertEqual(egg['selector']['appearance'],4839)
 
-    def test_native_learning_matches_source_families_and_preserves_heart_alternatives(self):
+        import questpc7_forgotten_programme as f
+
+        sys.path.insert(0, str(q.ROOT / "tools/content-schema/world-authoring"))
+        import world_region_codec as codec
+
+        palette = json.loads(
+            (q.ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        cache = {}
+        worlds, _, _ = f.build(q.ROOT, q.donor_inputs(), q.PIN)
+        for c in worlds:
+            p = c["selector"]["position"]
+            x, y, z = p["x"], p["y"], p["floor"]
+            path = (
+                f"content/world/placements/region-z{-z:02}-x{x // 256}-y{y // 256}.b3"
+            )
+            if path not in cache:
+                cache[path] = codec.decode_region((q.ROOT / path).read_bytes())[3]
+            native = [
+                palette[i]["source_item_id"]
+                for _, cells in cache[path]
+                for tx, ty, _, _, _, items in cells
+                if (tx, ty) == (x, y)
+                for i, depth, _ in items
+                if depth == 0
+            ]
+            self.assertIn(c["selector"]["appearance"], native, c["key"])
+        egg = next(r for r in worlds if r["key"].endswith("/questpc7-forgotten-egg"))
+        self.assertEqual(egg["selector"]["appearance"], 4839)
+
+    def test_native_learning_matches_source_families_and_preserves_heart_alternatives(
+        self,
+    ):
         import questpc7_knowledge
-        rules=questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules']
-        self.assertEqual([(r['family'],r['tier']) for r in rules],[(f,3) for f in [1,3,4,5,6,7,8,10,11,12,14,15,16,17,18,19,20]])
+
+        rules = questpc7_knowledge.build(q.ROOT, q.donor_inputs(), q.PIN)["rules"]
+        self.assertEqual(
+            [(r["family"], r["tier"]) for r in rules],
+            [
+                (f, 3)
+                for f in [1, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+            ],
+        )
         for rule in rules:
-            expected=['oteryn:quest.forgotten_knowledge_quest']
-            if rule['family'] in [1,11,12]:expected.insert(0,'oteryn:quest.heart_of_destruction_quest')
-            self.assertEqual(rule['any_completed_quests'],expected)
-            self.assertTrue(any('data/XML/imbuements.xml:' in s for s in rule['sources']))
+            expected = ["oteryn:quest.forgotten_knowledge_quest"]
+            if rule["family"] in [1, 11, 12]:
+                expected.insert(0, "oteryn:quest.heart_of_destruction_quest")
+            self.assertEqual(rule["any_completed_quests"], expected)
+            self.assertTrue(
+                any("data/XML/imbuements.xml:" in s for s in rule["sources"])
+            )
 
 
 class FeasterPrefix(unittest.TestCase):
     def test_norbert_mission_opens_the_death_knell_confirmation_topic(self):
         import questpc7_feaster_programme as feaster
+
         _, _, rewards = feaster.build(q.ROOT)
-        confirmation = next(row for row in rewards if row['key'].endswith('-feaster-mission'))
-        self.assertEqual((confirmation['keywords'], confirmation['topic'], confirmation['next_topic']),
-                         (['yes'], 1, 0))
+        confirmation = next(
+            row for row in rewards if row["key"].endswith("-feaster-mission")
+        )
+        self.assertEqual(
+            (
+                confirmation["keywords"],
+                confirmation["topic"],
+                confirmation["next_topic"],
+            ),
+            (["yes"], 1, 0),
+        )
         offer = feaster.mission_offer()
-        self.assertEqual((offer['npc'], offer['keywords'], offer['topic'], offer['next_topic']),
-                         (confirmation['npc'], ['mission'], 0, confirmation['topic']))
-        self.assertEqual(offer['storage'], [feaster.state(feaster.TRACK, -1, -1, -1, True)])
+        self.assertEqual(
+            (offer["npc"], offer["keywords"], offer["topic"], offer["next_topic"]),
+            (confirmation["npc"], ["mission"], 0, confirmation["topic"]),
+        )
+        self.assertEqual(
+            offer["storage"], [feaster.state(feaster.TRACK, -1, -1, -1, True)]
+        )
 
     def test_personal_quota_tool_custody_and_exact_potion_inputs(self):
         import questpc7_feaster_programme as f
-        worlds,objectives,rewards=f.build(q.ROOT)
-        self.assertEqual((len(worlds),len(objectives),len(rewards)),(13,0,4))
-        self.assertFalse(any(r.get('completes') for r in worlds+rewards))
-        repeated=[r for r in worlds if any(s.get('add') for s in r['storage'])]
-        self.assertEqual({r['key'].rsplit('-',1)[-1] for r in repeated},{'sample','soul','purify'})
+
+        worlds, objectives, rewards = f.build(q.ROOT)
+        self.assertEqual((len(worlds), len(objectives), len(rewards)), (13, 0, 4))
+        self.assertFalse(any(r.get("completes") for r in worlds + rewards))
+        repeated = [r for r in worlds if any(s.get("add") for s in r["storage"])]
+        self.assertEqual(
+            {r["key"].rsplit("-", 1)[-1] for r in repeated},
+            {"sample", "soul", "purify"},
+        )
         for row in repeated:
-            counters=[s for s in row['storage'] if s.get('add')]
-            self.assertEqual(len(counters),1)
-            state=counters[0]
-            self.assertEqual((state['minimum'],state['maximum'],state['set'],state['add']),(0,19,20,1))
-            self.assertEqual(row['activation'],{'track':state['track'],'minimum':0,'maximum':19})
-            self.assertTrue(row['requirements']['owned_items'])
-        apparatus=next(r for r in worlds if r['key'].endswith('-apparatus'))
-        self.assertEqual(apparatus['item_on_target']['item'],'oteryn:item.tibia.i32602')
-        self.assertEqual(apparatus['offerings'][0]['item'],'oteryn:item.tibia.i3661')
-        self.assertEqual(apparatus['item_reward']['item'],'oteryn:item.tibia.i32584')
-        self.assertEqual([r['give']['item'] for r in rewards if r.get('give')],['oteryn:item.tibia.i32582','oteryn:item.tibia.i32225','oteryn:item.tibia.i32226'])
-        phase_keys={'oteryn:quest-callback/questpc7-feaster-entry','oteryn:quest-callback/questpc7-feaster-purification-entry'}
-        for row in worlds+rewards:
-            if row['key'] in phase_keys:
-                self.assertEqual(row['minimum_level'],250)
-                self.assertEqual(row['admission'],{'premium':True})
-                self.assertTrue(row['requires_world_admission'])
-                self.assertNotIn('requirements',row)
+            counters = [s for s in row["storage"] if s.get("add")]
+            self.assertEqual(len(counters), 1)
+            state = counters[0]
+            self.assertEqual(
+                (state["minimum"], state["maximum"], state["set"], state["add"]),
+                (0, 19, 20, 1),
+            )
+            self.assertEqual(
+                row["activation"],
+                {"track": state["track"], "minimum": 0, "maximum": 19},
+            )
+            self.assertTrue(row["requirements"]["owned_items"])
+        apparatus = next(r for r in worlds if r["key"].endswith("-apparatus"))
+        self.assertEqual(
+            apparatus["item_on_target"]["item"], "oteryn:item.tibia.i32602"
+        )
+        self.assertEqual(apparatus["offerings"][0]["item"], "oteryn:item.tibia.i3661")
+        self.assertEqual(apparatus["item_reward"]["item"], "oteryn:item.tibia.i32584")
+        self.assertEqual(
+            [r["give"]["item"] for r in rewards if r.get("give")],
+            [
+                "oteryn:item.tibia.i32582",
+                "oteryn:item.tibia.i32225",
+                "oteryn:item.tibia.i32226",
+            ],
+        )
+        phase_keys = {
+            "oteryn:quest-callback/questpc7-feaster-entry",
+            "oteryn:quest-callback/questpc7-feaster-purification-entry",
+        }
+        for row in worlds + rewards:
+            if row["key"] in phase_keys:
+                self.assertEqual(row["minimum_level"], 250)
+                self.assertEqual(row["admission"], {"premium": True})
+                self.assertTrue(row["requires_world_admission"])
+                self.assertNotIn("requirements", row)
             else:
-                self.assertTrue(row['requirements']['min_level']==250 and row['requirements']['premium'])
+                self.assertTrue(
+                    row["requirements"]["min_level"] == 250
+                    and row["requirements"]["premium"]
+                )
 
     def test_anchored_props_have_ground_only_source_constructors(self):
         import questpc7_props
-        props=questpc7_props.build(q.ROOT)['props']
-        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
-        profiles={r['production_definition']['production_key']:r for r in packet['records']}
-        self.assertEqual(len(props),6)
+
+        props = questpc7_props.build(q.ROOT)["props"]
+        packet = json.loads(
+            (
+                q.ROOT
+                / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+            ).read_bytes()
+        )
+        profiles = {
+            r["production_definition"]["production_key"]: r for r in packet["records"]
+        }
+        self.assertEqual(len(props), 6)
         for prop in props:
-            row=profiles[prop['item']]
-            self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']})
-            for field in ['movable','pickupable']:
-                self.assertEqual(row['semantics']['physical']['value'][field],{'state':'KNOWN','value':False})
+            row = profiles[prop["item"]]
+            self.assertEqual(
+                row["admission"],
+                {
+                    "materializable": True,
+                    "stack_class": "NonStackable",
+                    "legal_destinations": ["Ground"],
+                },
+            )
+            for field in ["movable", "pickupable"]:
+                self.assertEqual(
+                    row["semantics"]["physical"]["value"][field],
+                    {"state": "KNOWN", "value": False},
+                )
 
 
 class FeasterRouteOwnership(unittest.TestCase):
-    KEYS = {
-        'oteryn:quest-callback/questpc7-feaster-entry',
-        'oteryn:quest-callback/questpc7-feaster-purification-entry',
-    }
-    SHARD = 'content/quests/definitions/quests-00100-00199.json'
-    PHASE_OUTPUT = 'content/quests/world-callbacks/feaster-phase-routes.json'
+    KEYS = frozenset(
+        {
+            "oteryn:quest-callback/questpc7-feaster-entry",
+            "oteryn:quest-callback/questpc7-feaster-purification-entry",
+        }
+    )
+    SHARD = "content/quests/definitions/quests-00100-00199.json"
+    PHASE_OUTPUT = "content/quests/world-callbacks/feaster-phase-routes.json"
 
     def test_phase_entries_replay_the_complete_accepted_contract(self):
         import questpc7_feaster_programme as feaster
+
         worlds, objectives, rewards = feaster.build(q.ROOT)
-        expected = json.loads((q.ROOT / self.PHASE_OUTPUT).read_bytes())['callbacks']
-        self.assertEqual([row for row in worlds if row['key'] in self.KEYS], expected)
+        expected = json.loads((q.ROOT / self.PHASE_OUTPUT).read_bytes())["callbacks"]
+        self.assertEqual([row for row in worlds if row["key"] in self.KEYS], expected)
         self.assertEqual((len(worlds), len(objectives), len(rewards)), (13, 0, 4))
-        original = json.loads((q.ROOT / 'content/quests/questpc7-world-callbacks.json').read_bytes())['callbacks']
+        original = json.loads(
+            (q.ROOT / "content/quests/questpc7-world-callbacks.json").read_bytes()
+        )["callbacks"]
         self.assertEqual(
-            [row for row in worlds if row['key'] not in self.KEYS],
-            [row for row in original if row['quest'] == feaster.QUEST and row['key'] not in self.KEYS],
+            [row for row in worlds if row["key"] not in self.KEYS],
+            [
+                row
+                for row in original
+                if row["quest"] == feaster.QUEST and row["key"] not in self.KEYS
+            ],
         )
 
     def build_changed_shard(self, change):
         from pathlib import Path
         from tempfile import TemporaryDirectory
+
         import questpc7_feaster_programme as feaster
+
         document = json.loads((q.ROOT / self.SHARD).read_bytes())
         change(document)
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             path = root / self.SHARD
             path.parent.mkdir(parents=True)
-            path.write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
+            path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
             return feaster.build(root)
 
     def test_full_definition_drift_cannot_inherit_the_historical_witness(self):
         import questpc7_feaster_programme as feaster
-        for mutation in ('later_stage', 'display_name', 'revision'):
+
+        for mutation in ("later_stage", "display_name", "revision"):
             with self.subTest(mutation=mutation):
-                def change(document):
-                    definition = next(row['definition'] for row in document['records']
-                                      if row['definition']['identity']['key'] == feaster.QUEST)
-                    if mutation == 'later_stage':
-                        definition['oteryn_recipe']['payload']['recipe']['stages'][-1]['count'] += 1
-                    elif mutation == 'display_name':
-                        definition['display_name'] = 'Changed Feaster definition'
+
+                def change(document, mutation=mutation):
+                    definition = next(
+                        row["definition"]
+                        for row in document["records"]
+                        if row["definition"]["identity"]["key"] == feaster.QUEST
+                    )
+                    if mutation == "later_stage":
+                        definition["oteryn_recipe"]["payload"]["recipe"]["stages"][-1][
+                            "count"
+                        ] += 1
+                    elif mutation == "display_name":
+                        definition["display_name"] = "Changed Feaster definition"
                     else:
-                        definition['identity']['revision'] = 'quest-r2'
-                with self.assertRaisesRegex(ValueError, 'QUESTPC7_FEASTER_DEFINITION_DRIFT'):
+                        definition["identity"]["revision"] = "quest-r2"
+
+                with self.assertRaisesRegex(
+                    ValueError, "QUESTPC7_FEASTER_DEFINITION_DRIFT"
+                ):
                     self.build_changed_shard(change)
 
     def test_neighbor_change_keeps_only_the_two_historical_route_witnesses(self):
         import questpc7_feaster_programme as feaster
+
         before, _, before_rewards = feaster.build(q.ROOT)
+
         def change(document):
-            neighbor = next(row['definition'] for row in document['records']
-                            if row['definition']['identity']['key'] != feaster.QUEST)
-            neighbor['display_name'] = 'Unrelated neighboring definition'
+            neighbor = next(
+                row["definition"]
+                for row in document["records"]
+                if row["definition"]["identity"]["key"] != feaster.QUEST
+            )
+            neighbor["display_name"] = "Unrelated neighboring definition"
+
         after, _, after_rewards = self.build_changed_shard(change)
-        for old, new in zip(before + before_rewards, after + after_rewards, strict=True):
-            if old['key'] in self.KEYS:
+        for old, new in zip(
+            before + before_rewards, after + after_rewards, strict=True
+        ):
+            if old["key"] in self.KEYS:
                 self.assertEqual(new, old)
             else:
-                self.assertNotEqual(new['sources'][0], old['sources'][0])
+                self.assertNotEqual(new["sources"][0], old["sources"][0])
                 new = copy.deepcopy(new)
-                new['sources'] = old['sources']
+                new["sources"] = old["sources"]
                 self.assertEqual(new, old)
 
     def test_integration_preserves_112_callbacks_under_two_disjoint_owners(self):
         from types import SimpleNamespace
         from unittest.mock import Mock, patch
+
         import questpc7_feaster_programme as feaster
         import questpc7_integration as integration
-        original = json.loads((q.ROOT / 'content/quests/questpc7-world-callbacks.json').read_bytes())['callbacks']
-        unrelated = [row for row in original if row['quest'] != feaster.QUEST]
+
+        original = json.loads(
+            (q.ROOT / "content/quests/questpc7-world-callbacks.json").read_bytes()
+        )["callbacks"]
+        unrelated = [row for row in original if row["quest"] != feaster.QUEST]
         self.assertEqual(len(unrelated), 99)
         worlds, _, _ = feaster.build(q.ROOT)
         worlds = unrelated + worlds
         unchanged = copy.deepcopy(worlds)
-        planned_props = {'content/world/placements/index.json': b'fixture index'}
+        planned_props = {"content/world/placements/index.json": b"fixture index"}
         modules = {
-            'questpc7_knowledge': SimpleNamespace(build=Mock(return_value={'schema': 1, 'rules': []})),
-            'questpc7_props': SimpleNamespace(outputs=Mock(return_value=planned_props)),
-            'questpc7_smith_programme': SimpleNamespace(placements=Mock()),
+            "questpc7_knowledge": SimpleNamespace(
+                build=Mock(return_value={"schema": 1, "rules": []})
+            ),
+            "questpc7_props": SimpleNamespace(outputs=Mock(return_value=planned_props)),
+            "questpc7_smith_programme": SimpleNamespace(placements=Mock()),
         }
         loader = Mock(side_effect=lambda name, path: modules[name])
-        with patch('questpc7_index_witness.rebind') as rebind:
-            result = integration.outputs(q.ROOT, {}, 'fixture pin', loader, (worlds, [], []))
+        with patch("questpc7_index_witness.rebind") as rebind:
+            result = integration.outputs(
+                q.ROOT, {}, "fixture pin", loader, (worlds, [], [])
+            )
         rebind.assert_called_once_with(q.ROOT, worlds, planned_props)
-        main = json.loads(result['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        phase = json.loads(result[self.PHASE_OUTPUT])['callbacks']
+        main = json.loads(result["content/quests/questpc7-world-callbacks.json"])[
+            "callbacks"
+        ]
+        phase = json.loads(result[self.PHASE_OUTPUT])["callbacks"]
         self.assertEqual((len(main), len(phase)), (110, 2))
-        self.assertEqual(main, [row for row in unchanged if row['key'] not in self.KEYS])
-        self.assertEqual(phase, [row for row in unchanged if row['key'] in self.KEYS])
-        main_keys = {row['key'] for row in main}
-        phase_keys = {row['key'] for row in phase}
+        self.assertEqual(
+            main, [row for row in unchanged if row["key"] not in self.KEYS]
+        )
+        self.assertEqual(phase, [row for row in unchanged if row["key"] in self.KEYS])
+        main_keys = {row["key"] for row in main}
+        phase_keys = {row["key"] for row in phase}
         self.assertEqual(phase_keys, self.KEYS)
         self.assertTrue(main_keys.isdisjoint(phase_keys))
         self.assertEqual(len(main_keys | phase_keys), 112)
         self.assertEqual(worlds, unchanged)
-        self.assertEqual(result['content/world/placements/index.json'], b'fixture index')
+        self.assertEqual(
+            result["content/world/placements/index.json"], b"fixture index"
+        )
 
     def test_missing_or_duplicate_phase_owner_stops_before_other_producers(self):
         from unittest.mock import Mock
+
         import questpc7_feaster_programme as feaster
         import questpc7_integration as integration
+
         worlds, _, _ = feaster.build(q.ROOT)
         for key in sorted(self.KEYS):
-            for mutation in ('missing', 'duplicate'):
+            for mutation in ("missing", "duplicate"):
                 with self.subTest(key=key, mutation=mutation):
                     rows = copy.deepcopy(worlds)
-                    if mutation == 'missing':
-                        rows = [row for row in rows if row['key'] != key]
+                    if mutation == "missing":
+                        rows = [row for row in rows if row["key"] != key]
                     else:
-                        rows.append(copy.deepcopy(next(row for row in rows if row['key'] == key)))
+                        rows.append(
+                            copy.deepcopy(
+                                next(row for row in rows if row["key"] == key)
+                            )
+                        )
                     loader = Mock()
-                    with self.assertRaisesRegex(ValueError, 'QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT'):
-                        integration.outputs(q.ROOT, {}, 'fixture pin', loader, (rows, [], []))
+                    with self.assertRaisesRegex(
+                        ValueError, "QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT"
+                    ):
+                        integration.outputs(
+                            q.ROOT, {}, "fixture pin", loader, (rows, [], [])
+                        )
                     loader.assert_not_called()
