@@ -335,7 +335,7 @@ impl ExchangeProof {
         session_id: String,
         sequence: u64,
     ) -> TestResult<String> {
-        let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        let root = std::env::var_os("E02_CAPTURE_DIR")
             .ok_or("E02 replay capture directory missing")?;
         let root = Path::new(&root);
         std::fs::write(

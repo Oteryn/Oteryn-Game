@@ -1582,7 +1582,7 @@ SQL
   evidence "d150_starter_history=registered historical=nb-starter-1 current=${INTERPRETATION[3]}"
 }
 
-e02_client_replay() {
+e02_replay() {
   local variant="${1:-client}"
   local seam_log="$WORK/stage-seam_stages.log"
   local captured replay_output
@@ -1914,8 +1914,8 @@ seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ -n "$e02_replays" ]]; then
   # The live row and replay share only files written by this invocation.
-  E2E_ALL_CAPTURE_DIR="$(mktemp -d "$WORK/e02-captures.XXXXXX")"
-  export E2E_ALL_CAPTURE_DIR
+  E02_CAPTURE_DIR="$(mktemp -d "$WORK/e02-captures.XXXXXX")"
+  export E02_CAPTURE_DIR
 fi
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
   stage "$seam_stage_name" -- seam_stages
@@ -1943,7 +1943,7 @@ else
 fi
 fi
 for e02_variant in $e02_replays; do
-  stage "e02_${e02_variant}_replay" seam_stages -- e02_client_replay "$e02_variant"
+  stage "e02_${e02_variant}_replay" seam_stages -- e02_replay "$e02_variant"
 done
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then

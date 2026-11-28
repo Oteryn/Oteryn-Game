@@ -283,7 +283,7 @@ fn e02_rejects_premature_collateral_and_snapshot_substitution() -> Result<(), Bo
 #[test]
 fn e02_coin_inventory_replay() -> Result<(), BoxError> {
     crate::tests::block_on(async {
-        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        if let Some(path) = std::env::var_os("E02_CAPTURE_DIR") {
             return replay_live(std::path::Path::new(&path)).await;
         }
         if std::env::var_os("E02_LIVE_CAPTURE_BINDING").is_some() {

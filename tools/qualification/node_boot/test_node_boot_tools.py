@@ -771,8 +771,19 @@ class E02ClientReplayTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), expected)
 
+    def test_e02_capture_keeps_the_shared_capture_directory(self):
+        setup = section('if [[ -n "$e02_replays" ]]; then\n  # The live row', 'if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then')
+        with tempfile.TemporaryDirectory() as work:
+            result = bash(setup + 'printf "%s|%s\n" "$E2E_ALL_CAPTURE_DIR" "$E02_CAPTURE_DIR"\n', {
+                "WORK": work, "e02_replays": "full client", "E2E_ALL_CAPTURE_DIR": "other-rows",
+            })
+            self.assertEqual(result.returncode, 0, result.stderr)
+            original, isolated = result.stdout.strip().split("|")
+            self.assertEqual(original, "other-rows")
+            self.assertTrue(Path(isolated).is_dir())
+
     def test_full_live_capture_requires_full_replay(self):
-        helper = section("e02_client_replay() {", "seam_stages() {")
+        helper = section("e02_replay() {", "seam_stages() {")
         with tempfile.TemporaryDirectory() as work:
             log = Path(work, "stage-seam_stages.log")
             log.write_text("SEAM_EVIDENCE e2e_capture scenario=E02.full status=CAPTURED seconds=1.000 session=01934f10-7c00-7000-8000-000000000001 sequence=8\n")
@@ -781,13 +792,13 @@ class E02ClientReplayTests(unittest.TestCase):
                     [[ "$E02_LIVE_VARIANT" == full ]] || return 1
                     printf '%s\\n' 'test tests::e2e_e02::e02_coin_inventory_replay ... ok'
                 }
-                e02_client_replay full
+                e02_replay full
             """, {"WORK": work})
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("scenario=E02.full status=PASS", result.stdout)
 
     def test_pass_requires_one_live_capture_and_executed_replay(self):
-        helper = section('e02_client_replay() {', 'seam_stages() {')
+        helper = section('e02_replay() {', 'seam_stages() {')
         capture = 'SEAM_EVIDENCE e2e_capture scenario=E02.client status=CAPTURED evidence=live session=01934f10-7c00-7000-8000-000000000001 sequence=8\n'
         passing_test = 'test tests::e2e_e02::e02_coin_inventory_replay ... ok'
         with tempfile.TemporaryDirectory() as work:
@@ -804,7 +815,7 @@ class E02ClientReplayTests(unittest.TestCase):
                     Path(work, 'stage-seam_stages.log').write_text(live_log)
                     result = bash(helper + '''
                         cargo() { printf '%s\\n' "$TEST_OUTPUT"; return "$TEST_EXIT"; }
-                        e02_client_replay
+                        e02_replay
                     ''', {'WORK': work, 'TEST_OUTPUT': test_output, 'TEST_EXIT': str(test_exit)})
                     self.assertIn(f'evidence={expected}', result.stdout)
                     self.assertEqual(result.returncode, int(expected != 'live-backpack-coin-replay'))
