@@ -12,21 +12,23 @@ mod journey {
 
     pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
         let mut client = super::super::connect_character(clients, 0xcb, 0).await?;
-        let snapshot = client
-            .session_mut()
-            .gated_snapshot(oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
-            .ok_or("C20b fresh admission omitted the inventory snapshot")?
-            .clone();
-        let inventory = client
+        let session = client.join_snapshot().game_session_id;
+        let client_session = client.session_mut();
+        let (sequence, revision, payload) = client_session
+            .raw_inventory_snapshot()
+            .ok_or("C20b fresh admission omitted the inventory snapshot")?;
+        let inventory = client_session
             .inventory()
             .ok_or("C20b fresh admission did not install inventory")?;
         if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
             return Err("C20b final server-observed inventory retained backpack custody".into());
         }
-        capture(snapshot.revision, &snapshot.payload, inventory)
+        capture(uuid_text(session.as_bytes()), sequence, revision, payload, inventory)
     }
 
     fn capture(
+        session: String,
+        sequence: u64,
         revision: u64,
         payload: &[u8],
         inventory: &oteryn_dev_client::CharacterInventory,
@@ -35,7 +37,7 @@ mod journey {
             std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C20b capture directory disappeared")?;
         let directory = std::path::Path::new(&directory);
         let expected = format!(
-            "revision={revision}\nbackpack={}\nentries={}\nequipment={}\n",
+            "session={session}\nsequence={sequence}\nrevision={revision}\nbackpack={}\nentries={}\nequipment={}\n",
             usize::from(inventory.main_backpack.is_some()),
             inventory.entries.len(),
             inventory.equipment.len()

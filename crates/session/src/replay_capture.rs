@@ -1,4 +1,4 @@
-//! Raw world and appearance payloads observed at validated session state boundaries.
+//! Raw world, inventory and appearance payloads observed at validated session state boundaries.
 use super::*;
 use oteryn_protocol_oteryn::{
     StateDeltaView, actor_motion, appearance, entity_names, guild_emblem, inventory_capacity,
@@ -22,6 +22,7 @@ pub struct RawReplayDelta {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct ReplayRetention {
+    pub(super) inventory_snapshot: Option<(u64, u64, Arc<[u8]>)>,
     pub(super) world_snapshot: Option<Arc<GatedSnapshot>>,
     pub(super) world_sequence: u64,
     pub(super) world_deltas: VecDeque<RawReplayDelta>,
@@ -47,6 +48,15 @@ pub(super) fn retain_delta(
 }
 
 impl<S> Session<S> {
+    /// Original inventory snapshot as (server sequence, revision, payload).
+    /// Inventory deltas do not change this capture.
+    pub fn raw_inventory_snapshot(&self) -> Option<(u64, u64, &[u8])> {
+        self.replay
+            .inventory_snapshot
+            .as_ref()
+            .map(|(sequence, revision, payload)| (*sequence, *revision, payload.as_ref()))
+    }
+
     /// Most recent applied world entity deltas, oldest first, since the latest world snapshot.
     /// The oldest entries are evicted at [`REPLAY_DELTA_LIMIT`].
     pub fn raw_world_entity_deltas(&self) -> &VecDeque<RawReplayDelta> {

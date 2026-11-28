@@ -135,6 +135,11 @@ impl SnapshotState {
                         .map_err(SessionError::ItemView)?,
                     );
                     state.inventory_revision = domain.revision;
+                    state.replay.inventory_snapshot = Some((
+                        sequence,
+                        domain.revision,
+                        std::sync::Arc::from(domain.payload),
+                    ));
                 }
                 (STATE_DOMAIN_OPEN_CONTAINER, item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1)
                     if item_selected =>

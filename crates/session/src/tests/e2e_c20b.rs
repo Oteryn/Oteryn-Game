@@ -30,6 +30,12 @@ fn c20b_inventory_loss_snapshot_replays_and_invalid_payload_is_atomic() -> Resul
         );
         let session = Session::admit(client, item_admission()?).await?;
         assert_eq!(session.inventory(), Some(&inventory));
+        let (sequence, revision, raw) = session
+            .raw_inventory_snapshot()
+            .ok_or("missing raw inventory snapshot")?;
+        assert_eq!(sequence, 40);
+        assert_eq!(revision, expected.0);
+        assert_eq!(raw, payload);
         drop(session);
         peer.await??;
 
