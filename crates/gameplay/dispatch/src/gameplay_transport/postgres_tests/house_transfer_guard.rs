@@ -15,6 +15,7 @@ struct GuardProbe<'a, A> {
     owner: &'a A,
     admitted: AdmittedSession,
     steps: Cell<usize>,
+    activity_busy: Cell<bool>,
     commands: crate::gameplay_transport::session_ingress::SessionCommands,
 }
 
@@ -41,7 +42,11 @@ impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for GuardProbe<'_, A> {
         &self,
         _: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {
-        self.owner.activity_transfer_input(self.admitted).await
+        let outcome = self.owner.activity_transfer_input(self.admitted).await;
+        if matches!(outcome, Err(crate::durability::DurabilityError::HolderBusy)) {
+            self.activity_busy.set(true);
+        }
+        outcome
     }
     async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(WorldSpatialObservation {
@@ -90,8 +95,19 @@ async fn result(client: &mut tokio::io::DuplexStream) -> TestResult<(CommandStat
 
 #[test]
 fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("house-guard-deferred", || {
-        run(async |admin| {
+    busy_guard_scenario(None)
+}
+
+#[test]
+fn holder_min_busy_command_replies_retryable_and_session_stays_live_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    busy_guard_scenario(Some(admin))
+}
+
+fn busy_guard_scenario(admin: Option<String>) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("command-guard-deferred", move || {
+        let require_typed_busy = admin.is_some();
+        let scenario = async move |admin| {
             let h = Harness::create_with_admission_seed(admin, "house_guard_deferred", true, false)
                 .await?;
             prepare_current_session(&h).await?;
@@ -109,10 +125,9 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     .current_session(admitted.game_session_id)
                     .await?,
             );
-            for capability in [
-                86,
-                oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
-            ] {
+            let activity = oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
+            let capabilities: &[u32] = if require_typed_busy { &[activity] } else { &[86, activity] };
+            for &capability in capabilities {
                 admitted.continuity.selected_capabilities =
                     crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                         &[crate::gameplay_transport::capabilities::OfferedCapability {
@@ -132,12 +147,16 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     owner: &owner,
                     admitted,
                     steps: Cell::new(0),
+                    activity_busy: Cell::new(false),
                     commands: Default::default(),
                 };
                 let mut transport = admitted;
                 // Only durable guard calls are delegated. Snapshot/step fixtures keep
                 // this test at the guard seam, through the production command dispatcher.
                 transport.continuity = SessionContinuity::FRESH;
+                if require_typed_busy {
+                    transport.continuity.house_input_pending = Some(false);
+                }
                 transport.first_entry = FirstEntryOutcome::Positioned;
                 let (mut server, mut client) = tokio::io::duplex(1 << 20);
                 let held = h.root.try_issue_semantic_pass()?;
@@ -161,6 +180,9 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                         result(&mut client).await?,
                         (CommandStatus::DuplicateReplay, refusal.1)
                     );
+                    if require_typed_busy {
+                        assert!(probe.activity_busy.get(), "checkout must return typed HolderBusy");
+                    }
                     assert_eq!(probe.steps.get(), 0);
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                     let next = command(2)?;
@@ -185,6 +207,11 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
             drop(owner);
             drop(seal);
             h.cleanup().await
-        })
+        };
+        if let Some(admin) = admin {
+            crate::bestiary_postgres_harness::runtime()?.block_on(scenario(admin))
+        } else {
+            run(scenario)
+        }
     })
 }
