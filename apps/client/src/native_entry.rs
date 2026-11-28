@@ -136,7 +136,7 @@ pub(crate) async fn enter_observed(
 
     let mut attempt = NativeAttempt {
         queue: None,
-        channel_full: false,
+        refusal: None,
         progress,
         client,
         ticket,
@@ -190,7 +190,7 @@ async fn initial_gateway_login(
 }
 
 struct NativeAttempt<'a> {
-    channel_full: bool,
+    refusal: Option<GameplayEntryError>,
     queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
@@ -210,7 +210,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     type Error = GameplayEntryError;
 
     fn terminal_refusal(&self) -> Option<Self::Error> {
-        self.channel_full.then_some(GameplayEntryError::ChannelFull)
+        self.refusal.clone()
     }
 
     fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
@@ -231,6 +231,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         capabilities.extend([615, 616, 617]);
         capabilities.sort_unstable();
         self.queue = None;
+        self.refusal = None;
         let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
         let counted = std::sync::Arc::clone(&traffic);
         let session = oteryn_session_tcp::connection::admit_detailed_optimized_wrapped(
@@ -258,7 +259,13 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         .map_err(|refusal| {
             refusal.map(|refusal| {
                 self.queue = refusal.queue;
-                self.channel_full = refusal.channel_full;
+                self.refusal = if refusal.channel_full {
+                    Some(GameplayEntryError::ChannelFull)
+                } else if refusal.code == oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE {
+                    Some(GameplayEntryError::SessionJoinUnavailable)
+                } else {
+                    None
+                };
                 refusal.code
             })
         })?;

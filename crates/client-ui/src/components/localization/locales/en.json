@@ -538,6 +538,7 @@
  "Channel switching is unavailable in this session": "Channel switching is unavailable in this session",
  "The server refused the channel change": "The server refused the channel change",
  "This channel is full.": "This channel is full.",
+ "Your character could not enter the game. Try signing in again.": "Your character could not enter the game. Try signing in again.",
  "You cannot change the channel while you are in a fight.": "You cannot change the channel while you are in a fight.",
  "With a red or black skull you can only change to an Open PvP channel.": "With a red or black skull you can only change to an Open PvP channel.",
  "Close the trade before you change the channel.": "Close the trade before you change the channel.",

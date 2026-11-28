@@ -102,19 +102,21 @@ fn house_podium_dispatch_unavailable_target_sends_no_result() -> TestResult {
 }
 
 #[test]
-fn house_podium_dispatch_busy_guard_sends_no_result() -> TestResult {
-    postgres_case(
-        "house_podium_guard_busy",
-        Case::GuardBusy(wire::COMMAND_QUERY),
-    )
+fn house_podium_refresh_busy_replays_and_retries_on_same_connection_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_podium_guard_busy", Case::GuardBusy(wire::COMMAND_QUERY))
 }
 
 #[test]
-fn house_podium_dispatch_busy_guard_sends_no_projection_result() -> TestResult {
-    postgres_case(
-        "house_podium_projection_guard_busy",
-        Case::GuardBusy(wire::COMMAND_PROJECTION),
-    )
+fn house_podium_projection_busy_replays_and_retries_on_same_connection_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_podium_projection_guard_busy", Case::GuardBusy(wire::COMMAND_PROJECTION))
 }
 
 #[test]
@@ -416,7 +418,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         },
         payload,
         matches!(case, Case::CancelWalk),
-        matches!(case, Case::GuardBusy(_) | Case::GuardBusyResume).then_some(h),
+        matches!(case, Case::GuardBusy(_) | Case::GuardBusyResume).then_some((h, case)),
     )
     .await?;
     match case {
@@ -438,7 +440,21 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 ConnectionEnd::AdmittedThenDisconnected(_)
             ));
             assert!(!result.protocol_error);
-            assert!(result.replies.is_empty());
+            let busy = oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec();
+            match case {
+                Case::Unavailable => assert!(result.replies.is_empty()),
+                Case::GuardBusy(_) => {
+                    assert_eq!(result.replies.len(), 3);
+                    assert_eq!(result.replies[0], (command, CommandStatus::Rejected, busy.clone()));
+                    assert_eq!(result.replies[1], (command, CommandStatus::DuplicateReplay, busy));
+                    assert_eq!((result.replies[2].0, result.replies[2].1), (command + 1, CommandStatus::Accepted));
+                    assert_eq!(result.steps, 0);
+                }
+                Case::GuardBusyResume => {
+                    assert_eq!(result.replies, [(command, CommandStatus::Rejected, busy)]);
+                }
+                _ => {}
+            }
             if matches!(case, Case::GuardBusyResume) {
                 let session = admitted.game_session_id;
                 let generation = admitted.continuity.connection_generation;
@@ -635,7 +651,7 @@ async fn conversation(
     command_type: u32,
     payload: &[u8],
     interrupt: bool,
-    guard_fixture: Option<&Harness>,
+    guard_fixture: Option<(&Harness, Case)>,
 ) -> TestResult<Conversation> {
     let generation = admitted.continuity.connection_generation;
     let frame = encode_client_command(
@@ -653,7 +669,9 @@ async fn conversation(
     }
     let receive = async move {
         let mut guard_fixture = guard_fixture;
+        let retry_busy = guard_fixture.is_some_and(|(_, case)| matches!(case, Case::GuardBusy(_)));
         let mut guard_lock = None;
+        let mut held = None;
         let mut replies = Vec::new();
         let mut steps = 0;
         let mut protocol_error = false;
@@ -668,16 +686,20 @@ async fn conversation(
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
                 MessageType::SnapshotCommit if guard_fixture.is_some() => {
-                    let h = guard_fixture.take().ok_or("guard fixture")?;
-                    // The House must finish admission before the command guard
-                    // encounters contention on the same durable relation.
-                    let mut tx = h.pool.begin().await?;
-                    sqlx::query(
-                        "LOCK TABLE game_durability_admission_lifecycle_receipts IN ROW SHARE MODE",
-                    )
-                    .execute(&mut *tx)
-                    .await?;
-                    guard_lock = Some(tx);
+                    let (h, case) = guard_fixture.take().ok_or("guard fixture")?;
+                    // Take the real holder only after the House snapshot has completed.
+                    if matches!(case, Case::GuardBusy(_)) {
+                        h.root.await_ready().await?;
+                        held = Some(h.root.try_acquire_ready()?);
+                    } else {
+                        let mut tx = h.pool.begin().await?;
+                        sqlx::query(
+                            "LOCK TABLE game_durability_admission_lifecycle_receipts IN ROW SHARE MODE",
+                        )
+                        .execute(&mut *tx)
+                        .await?;
+                        guard_lock = Some(tx);
+                    }
                     write_frame(&mut client, &frame).await?;
                 }
                 MessageType::LivenessProbe => {
@@ -718,6 +740,30 @@ async fn conversation(
                 MessageType::CommandResult => {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     replies.push((result.command_id, result.status, result.payload.to_vec()));
+                    if retry_busy && replies.len() == 1 {
+                        assert_eq!(result.payload, oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL);
+                        write_frame(&mut client, &frame).await?;
+                        continue;
+                    }
+                    if retry_busy && replies.len() == 2 {
+                        let mut holder = held.take().ok_or("held command guard connection")?;
+                        assert_eq!(
+                            holder.return_to_pool_observed_until(
+                                std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+                            ).await,
+                            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle,
+                        );
+                        let retry = encode_client_command(
+                            generation,
+                            &ClientCommandValue {
+                                command_id: command_id + 1,
+                                command_type,
+                                payload,
+                            },
+                        ).map_err(debug)?;
+                        write_frame(&mut client, &retry).await?;
+                        continue;
+                    }
                     if !interrupt || steps == 0 {
                         client.shutdown().await?;
                     }

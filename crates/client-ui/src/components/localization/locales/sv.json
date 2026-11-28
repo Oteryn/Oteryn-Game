@@ -538,6 +538,7 @@
  "Channel switching is unavailable in this session": "Kanalbyte är inte tillgängligt i den här sessionen",
  "The server refused the channel change": "Servern nekade kanalbytet",
  "This channel is full.": "Den här kanalen är full.",
+ "Your character could not enter the game. Try signing in again.": "Din karaktär kunde inte komma in i spelet. Försök logga in igen.",
  "You cannot change the channel while you are in a fight.": "Du kan inte byta kanal medan du slåss.",
  "With a red or black skull you can only change to an Open PvP channel.": "Med en röd eller svart dödskalle kan du bara byta till en kanal med öppen PvP.",
  "Close the trade before you change the channel.": "Avsluta handeln innan du byter kanal.",

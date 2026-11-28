@@ -15,6 +15,7 @@ pub enum GameplayEntryError {
     /// The Platform directory does not list the configured World; nothing was requested.
     WorldUnavailable,
     ChannelFull,
+    SessionJoinUnavailable,
     ClientUpdateRequired {
         manual_download_url: String,
         updater_started: bool,
@@ -32,6 +33,9 @@ impl Display for GameplayEntryError {
             Self::NativeProtocolUnavailable => "native gameplay protocol is not available",
             Self::InvalidConfiguration => "native login configuration is invalid",
             Self::ChannelFull => "This channel is full.",
+            Self::SessionJoinUnavailable => {
+                "Your character could not enter the game. Try signing in again."
+            }
             Self::ClientUpdateRequired { .. } => "please update the client",
             Self::Maintenance { .. } => "the game is undergoing maintenance",
             Self::WorldUnavailable => "the selected World is not available",

@@ -698,6 +698,13 @@ impl DurabilityRoot {
     }
 }
 
+/// The checkout result is separate from the outcome of issued admission work.
+#[allow(clippy::large_enum_variant, reason = "move the existing admission receipt without allocating")]
+pub enum BoundedFreshAdmissionCommit {
+    CheckoutFailed(DurabilityError),
+    Issued(Result<FreshAdmissionDurableOutcomeV1>),
+}
+
 impl DurabilityRoot {
     /// Durable fresh-admission commit that revalidates every owner inside the
     /// commit transaction: the sealed composition is recomputed from the
@@ -712,7 +719,7 @@ impl DurabilityRoot {
         request: &FreshAdmissionCommitRequestV1,
         capabilities: CurrentCapabilityCheck,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
-        self.commit_composed_fresh_admission_until(
+        self.commit_composed_fresh_admission_with_pass(
             character, holder, composition, request, capabilities, None,
         ).await
     }
@@ -724,7 +731,25 @@ impl DurabilityRoot {
         composition: &FreshAdmissionComposition,
         request: &FreshAdmissionCommitRequestV1,
         capabilities: CurrentCapabilityCheck,
-        checkout_deadline: Option<tokio::time::Instant>,
+        checkout_deadline: tokio::time::Instant,
+    ) -> BoundedFreshAdmissionCommit {
+        let pass = match self.issue_foreground_pass_until(checkout_deadline).await {
+            Ok(pass) => pass,
+            Err(error) => return BoundedFreshAdmissionCommit::CheckoutFailed(error),
+        };
+        BoundedFreshAdmissionCommit::Issued(self.commit_composed_fresh_admission_with_pass(
+            character, holder, composition, request, capabilities, Some(pass),
+        ).await)
+    }
+
+    async fn commit_composed_fresh_admission_with_pass(
+        &self,
+        character: &ReconciledCharacterAuthority<'_, '_>,
+        holder: &NodeIncarnationProof,
+        composition: &FreshAdmissionComposition,
+        request: &FreshAdmissionCommitRequestV1,
+        capabilities: CurrentCapabilityCheck,
+        issued: Option<crate::durability::db::IssuedSemanticPass>,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
         let recovery = character
             .record_for(self)
@@ -766,9 +791,8 @@ impl DurabilityRoot {
             })
         });
         let store = FreshAdmissionStore::from_root(self.clone());
-        match checkout_deadline {
-            Some(deadline) => {
-                let pass = self.issue_foreground_pass_until(deadline).await?;
+        match issued {
+            Some(pass) => {
                 store.commit_revalidated_with_pass(request, Some(revalidate), Some(pass)).await
             }
             None => store.commit_revalidated(request, Some(revalidate)).await,

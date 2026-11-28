@@ -250,6 +250,10 @@ pub use oteryn_protocol_oteryn::{
     ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass, admission_refusal_class,
 };
 pub use oteryn_protocol_oteryn::{CharacterId, CommandStatus};
+/// The shared join refusal code carried by a validated admission refusal.
+pub const SESSION_JOIN_UNAVAILABLE_CODE: u32 =
+    FoundationProtocolError::SessionJoinUnavailable.code();
+
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, ClientCommandValue, Direction, FoundationProtocolError, FrameLength,
     GameSessionId, MessageType, ProtocolDisposition, decode_command_result, decode_liveness_probe,

@@ -166,6 +166,23 @@ fn configured_character_is_only_a_preselect() -> TestResult {
 }
 
 #[test]
+fn native_entry_surfaces_pre_admission_e1051() -> TestResult {
+    let stack = Stack::start(vec![oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE])?;
+    let error = stack.entry(stack.config())?;
+    let message = oteryn_client_ui::localization::with_language(
+        oteryn_client_ui::localization::Language::En,
+        || crate::native_login::error_text(error),
+    );
+    assert_eq!(
+        message,
+        "Your character could not enter the game. Try signing in again."
+    );
+    assert_eq!(stack.admissions.load(Ordering::SeqCst), 1);
+    stack.finish();
+    Ok(())
+}
+
+#[test]
 fn terminal_refusal_is_its_public_class_without_retry() -> TestResult {
     // 1105 ADMISSION_GRANT_REPLAYED: SECURITY_TERMINAL, SESSION_UNAVAILABLE.
     let stack = Stack::start(vec![1105])?;

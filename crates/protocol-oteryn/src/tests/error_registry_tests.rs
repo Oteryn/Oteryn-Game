@@ -150,14 +150,10 @@ fn admission_refusal_classes_match_the_registry() {
         let code = u32::try_from(entry["code"].as_u64().expect("code")).expect("u32 code");
         let progression = entry.get("progression").and_then(|value| value.as_str());
         let class = entry.get("public_class").and_then(|value| value.as_str());
-        if !ADMISSION_REFUSAL_CODES.contains(&code) {
-            // The one post-admission row with an explicit progression (FND-04C §4.1).
-            let expected = if code == FoundationProtocolError::SessionJoinUnavailable.code() {
-                (Some("RETRYABLE"), Some("TEMPORARILY_UNAVAILABLE"))
-            } else {
-                (None, None)
-            };
-            assert_eq!((progression, class), expected, "{code}");
+        if code != FoundationProtocolError::SessionJoinUnavailable.code()
+            && !ADMISSION_REFUSAL_CODES.contains(&code)
+        {
+            assert_eq!((progression, class), (None, None), "{code}");
             assert_eq!(admission_refusal_class(code), None, "{code}");
             continue;
         }
@@ -190,7 +186,7 @@ fn admission_refusal_classes_match_the_registry() {
         );
         admission.push(code);
     }
-    assert_eq!(admission, (1100..=1118).collect::<Vec<_>>());
+    assert_eq!(admission, std::iter::once(1051).chain(1100..=1118).collect::<Vec<_>>());
     assert_eq!(
         ADMISSION_REFUSAL_ROWS
             .map(|(error, _, _)| error.code())
@@ -199,12 +195,13 @@ fn admission_refusal_classes_match_the_registry() {
     );
 }
 
-/// The 17 rows of §1.2 and the two ADMIT0 §5 rows, written out once more so a table edit cannot pass unnoticed.
+/// The fresh admission, ADMIT0 and shared join refusal classes.
 #[test]
 fn admission_refusal_class_table() {
     use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
     use AdmissionPublicClass::*;
     let rows = [
+        (1051, R, TemporarilyUnavailable),
         (1100, T, RetryLogin),
         (1101, S, AuthenticationRequired),
         (1102, S, RetryLogin),

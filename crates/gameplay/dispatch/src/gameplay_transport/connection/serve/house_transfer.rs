@@ -372,19 +372,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && !super::command::guards(authority, &mut admitted, command).await?;
             if guard_deferred {
                 drop(permit.take());
-                if command.command_type == COMMAND_PROJECTION
-                    && selected.command_selected(command.command_type)
-                {
-                    let _ = commands.cancel_undispatched(
-                        command.command_id,
-                        generation,
-                        admitted.continuity.server_sequence,
-                        &[],
-                    );
-                    return Err(ServeEnd::Disconnected);
-                }
             }
             let podium_query = command.command_type == COMMAND_QUERY
+                && selected.command_selected(command.command_type);
+            let podium_projection = command.command_type == COMMAND_PROJECTION
                 && selected.command_selected(command.command_type);
             let activity_at = authority.gameplay_idle_now();
             let gameplay_activity = permit.is_some()
@@ -425,7 +416,21 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
                     _ => return Err(ServeEnd::Disconnected),
                 }
-            } else if permit.is_some() || (guard_deferred && podium_query) {
+            } else if guard_deferred && (podium_query || podium_projection) {
+                if podium_query && decode_item(command.payload).is_none() {
+                    return Err(close(
+                        stream,
+                        admitted,
+                        FoundationProtocolError::MalformedEnvelope,
+                    )
+                    .await);
+                }
+                (
+                    None,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                    CommandStatus::Rejected,
+                )
+            } else if permit.is_some() {
                 let dispatch = if command.command_type == COMMAND_TYPE_LOGOUT_INTENT
                     && selected.command_selected(command.command_type)
                 {
@@ -466,11 +471,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         )
                         .await);
                     };
-                    let approach = if guard_deferred {
-                        Approach::Unavailable
-                    } else {
-                        authority.house_podium_approach(admitted, item).await
-                    };
+                    let approach = authority.house_podium_approach(admitted, item).await;
                     match approach {
                         Approach::Ready => services
                             .route(authority, &mut admitted, command)

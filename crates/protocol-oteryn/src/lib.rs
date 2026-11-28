@@ -364,7 +364,8 @@ impl Display for FoundationProtocolError {
 impl Error for FoundationProtocolError {}
 
 /// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2), and
-/// the ADMIT0 §5 reconnect (1117) and recovery (1118) rows; 1119..1199 are reserved for later
+/// the ADMIT0 §5 reconnect (1117) and recovery (1118) rows. The shared join refusal
+/// E1051 is classified separately. Codes 1119..1199 are reserved for later
 /// admission rows and never reused.
 pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
 
@@ -395,7 +396,7 @@ const ADMISSION_REFUSAL_ROWS: [(
     FoundationProtocolError,
     AdmissionProgression,
     AdmissionPublicClass,
-); 19] = {
+); 20] = {
     use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
     use AdmissionPublicClass::{
         AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
@@ -403,6 +404,11 @@ const ADMISSION_REFUSAL_ROWS: [(
     };
     use FoundationProtocolError as E;
     [
+        (
+            FoundationProtocolError::SessionJoinUnavailable,
+            Retryable,
+            TemporarilyUnavailable,
+        ),
         (E::AdmissionGrantMalformed, Terminal, RetryLogin),
         (
             E::AdmissionGrantAuthenticationFailed,
@@ -485,12 +491,14 @@ const ADMISSION_REFUSAL_ROWS: [(
     ]
 };
 
-/// The progression and public class of an admission refusal `code`, or `None` outside
-/// `ADMISSION_REFUSAL_CODES`. A code in the range this table does not know (a later row) is
+/// The progression and public class of a fresh admission refusal. E1051 can also occur during
+/// join after commit. A reserved code in `ADMISSION_REFUSAL_CODES` with no known row is
 /// `TEMPORARILY_UNAVAILABLE` with no automatic retry.
 #[must_use]
 pub fn admission_refusal_class(code: u32) -> Option<(AdmissionProgression, AdmissionPublicClass)> {
-    if !ADMISSION_REFUSAL_CODES.contains(&code) {
+    if code != FoundationProtocolError::SessionJoinUnavailable.code()
+        && !ADMISSION_REFUSAL_CODES.contains(&code)
+    {
         return None;
     }
     Some(

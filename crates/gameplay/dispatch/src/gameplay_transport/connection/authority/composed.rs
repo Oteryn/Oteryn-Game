@@ -2107,7 +2107,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        self.admit_fresh_session(attempt).await
+        self.admit_fresh_session(attempt, None).await
+    }
+
+    async fn admit_before(
+        &self,
+        attempt: FreshAdmissionAttempt<'_>,
+        entry_until: tokio::time::Instant,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        self.admit_fresh_session(attempt, Some(entry_until)).await
     }
 
     /// ITEM-MOVE-1 replay first: the receipt of this command 9's CommandRef in

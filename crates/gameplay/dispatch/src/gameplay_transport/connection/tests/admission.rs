@@ -614,3 +614,21 @@ fn operator_publication_reloads_through_the_authenticated_connection_writer() ->
         Ok(())
     })
 }
+
+#[test]
+fn fresh_refusal_write_uses_only_the_remaining_entry_budget() -> Result<(), Box<dyn Error>> {
+    run(async {
+        tokio::time::pause();
+        let (mut server, _client) = tokio::io::duplex(1);
+        let refusal = AdmissionRefusal::Classified(FoundationProtocolError::SessionJoinUnavailable);
+        let authority = Authority::new(Err(refusal));
+        let start = tokio::time::Instant::now();
+        let until = start + std::time::Duration::from_millis(50);
+        let end = admit_frame_until(&mut server, &bootstrap(1, 1, b"grant"), &authority, &Identifiers, until).await;
+        assert_eq!(end.err(), Some(ConnectionEnd::AdmissionRefused(refusal)));
+        let finished = tokio::time::Instant::now();
+        assert!(finished >= until);
+        assert!(finished < until + std::time::Duration::from_millis(10));
+        Ok(())
+    })
+}

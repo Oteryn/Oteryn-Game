@@ -2070,7 +2070,6 @@ impl IssuedSemanticPass {
 
         let held = self.owner.issued.elapsed();
         let deadline_exceeded = matches!(&result, Err(DurabilityError::RootPassDeadlineExceeded));
-        self.owner.clear();
         let report_slow = || {
             if deadline_exceeded || held >= SLOW_PASS_REPORT {
                 // The text line stays until node boot's run.sh selects the event instead (LOGDBG-C).
@@ -2087,6 +2086,7 @@ impl IssuedSemanticPass {
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
             self.holder.close_on_drop();
             drop(self.holder);
+            self.owner.clear();
             self.root.request_ready();
             report_slow();
             eprintln!(
@@ -2101,6 +2101,7 @@ impl IssuedSemanticPass {
             + self.deadline.saturating_duration_since(TokioInstant::now());
         let disposition = self.holder.return_to_pool_observed_until(release_deadline).await;
         drop(self.holder);
+        self.owner.clear();
         if matches!(disposition, PoolConnectionReturnDisposition::ReturnedToIdle) {
             self.root.holder_returned.notify_waiters();
         }

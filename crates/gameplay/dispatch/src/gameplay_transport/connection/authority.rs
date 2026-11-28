@@ -283,6 +283,14 @@ pub trait FreshAdmissionAuthority {
         attempt: FreshAdmissionAttempt<'_>,
     ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>>;
 
+    fn admit_before(
+        &self,
+        attempt: FreshAdmissionAttempt<'_>,
+        _entry_until: tokio::time::Instant,
+    ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>> {
+        self.admit(attempt)
+    }
+
     /// FND-04B §20 same-session reauthenticated recovery of a lost GameSession. Only an
     /// authority-committed switch returns the resumed session; the transport never infers
     /// one from the attempt.

@@ -538,6 +538,7 @@
  "Channel switching is unavailable in this session": "El cambio de canal no está disponible en esta sesión",
  "The server refused the channel change": "El servidor rechazó el cambio de canal",
  "This channel is full.": "Este canal está lleno.",
+ "Your character could not enter the game. Try signing in again.": "Tu personaje no pudo entrar en el juego. Intenta iniciar sesión de nuevo.",
  "You cannot change the channel while you are in a fight.": "No puedes cambiar de canal mientras estás en combate.",
  "With a red or black skull you can only change to an Open PvP channel.": "Con una calavera roja o negra solo puedes cambiar a un canal de PvP abierto.",
  "Close the trade before you change the channel.": "Cierra el intercambio antes de cambiar de canal.",

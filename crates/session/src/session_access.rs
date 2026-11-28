@@ -74,7 +74,7 @@ impl<S: SessionStream> Session<S> {
         accepted_envelope.validate(Direction::ServerToClient, false)?;
         if accepted_envelope.message_type() == MessageType::ProtocolError
             && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
-            && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+            && admission_refusal_class(refusal.error_code).is_some()
             // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
             && refusal.disposition == ProtocolDisposition::TransportFatal
             && refusal.related_command_id == 0

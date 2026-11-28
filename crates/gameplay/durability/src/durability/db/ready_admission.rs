@@ -87,6 +87,11 @@ impl DurabilityRoot {
         }
     }
 
+    #[cfg(any(test, feature = "test-support"))]
+    pub async fn close_holder_pool_for_test(&self) {
+        self.pool.close().await;
+    }
+
     fn report_holder_busy(&self, waiter: Site) {
         use oteryn_error_codes::{FieldValue, Level, Line};
         let owner = self.holder_owner.lock().ok().and_then(|slot| *slot);

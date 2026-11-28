@@ -3,7 +3,9 @@ use super::{Dependencies, TestResult};
 use crate::durability::{DB_PASS_DEADLINE, DurabilityRoot};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MessageType};
 use crate::gameplay_transport::composed_admission::FRESH_CHECKOUT_BARRIER;
-use crate::gameplay_transport::connection::{ConnectionIdentifiers, admit_frame};
+use crate::gameplay_transport::connection::{
+    AdmissionRefusal, ConnectionEnd, ConnectionIdentifiers, admit_frame,
+};
 use crate::gameplay_transport::tcp_tls::read_frame;
 use std::{
     future::{Future, poll_fn},
@@ -24,12 +26,19 @@ impl ConnectionIdentifiers for Identifiers {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Brief,
+    Deadline,
+    RootUnavailable,
+}
+
 #[test]
 fn holder_min_brief_busy_holder_during_join_admits_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, "holder_min_brief", false)
+    run(admin, "holder_min_brief", Case::Brief)
 }
 
 #[test]
@@ -37,21 +46,30 @@ fn holder_min_join_past_bound_sends_one_e1051_and_reconnect_succeeds_postgres() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, "holder_min_deadline", true)
+    run(admin, "holder_min_deadline", Case::Deadline)
 }
 
-fn run(admin: String, tag: &'static str, expire: bool) -> TestResult {
+#[test]
+fn holder_min_unissued_join_on_closed_pool_releases_reservation_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, "holder_min_closed_pool", Case::RootUnavailable)
+}
+
+fn run(admin: String, tag: &'static str, case: Case) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run(tag, move || {
         crate::bestiary_postgres_harness::runtime()?.block_on(async move {
             let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
-            let outcome = exercise(&h, expire).await;
+            let outcome = exercise(&h, case).await;
             h.cleanup().await?;
             outcome
         })
     })
 }
 
-async fn exercise(h: &Harness, expire: bool) -> TestResult {
+async fn exercise(h: &Harness, case: Case) -> TestResult {
+    let expire = case == Case::Deadline;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
     };
@@ -101,6 +119,20 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
             _ = barrier.0.notified() => {},
             end = &mut joining => return Err(format!("ended before checkout: {end:?}").into()),
         }
+        assert!(owner.runtime.lock().await.contains_player_session(session).map_err(debug)?);
+        if case == Case::RootUnavailable {
+            h.root.close_holder_pool_for_test().await;
+            barrier.1.notify_one();
+            let refused = joining.as_mut().await.err();
+            assert!(!owner.runtime.lock().await.contains_player_session(session).map_err(debug)?);
+            assert!(matches!(refused, Some(ConnectionEnd::AdmissionRefused(
+                AdmissionRefusal::Classified(crate::foundation::FoundationProtocolError::SessionJoinUnavailable)
+            ))));
+            let consumed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(consumed, 0);
+            return Ok(());
+        }
         let mut held = h.root.try_acquire_ready()?;
         barrier.1.notify_one();
         assert!(poll_fn(|cx| Poll::Ready(joining.as_mut().poll(cx))).await.is_pending());
@@ -132,6 +164,10 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
         Ok::<_, Box<dyn std::error::Error>>(())
     }).await??;
     drop(server);
+    if case == Case::RootUnavailable {
+        eprintln!("PG_EXECUTED holder_min_unissued_join slots=0 receipts=0");
+        return Ok(());
+    }
     let reply = read_frame(&mut peer).await?;
     let envelope = crate::foundation::decode_wire_envelope(&reply).map_err(debug)?;
     if expire {

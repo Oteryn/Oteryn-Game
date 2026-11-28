@@ -812,6 +812,7 @@ pub use test_support::serve_connection;
 
 /// Decode the entry frame, obtain the owning authority's decision and, only on
 /// commit, write `ServerAccepted`.
+#[cfg(test)]
 #[allow(
     clippy::result_large_err,
     reason = "one terminal end per connection; boxing would only add an allocation"
@@ -821,6 +822,34 @@ pub async fn admit_frame<S, A, I>(
     frame: &[u8],
     authority: &A,
     identifiers: &I,
+) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    admit_frame_until(
+        stream,
+        frame,
+        authority,
+        identifiers,
+        tokio::time::Instant::now()
+            + crate::durability::ROOT_RECOVERY_WINDOW
+            + ADMISSION_REFUSAL_WRITE_BOUND,
+    )
+    .await
+}
+
+#[allow(
+    clippy::result_large_err,
+    reason = "one terminal end per connection; boxing would only add an allocation"
+)]
+pub(super) async fn admit_frame_until<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    entry_until: tokio::time::Instant,
 ) -> Result<AdmittedSession, ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
@@ -983,37 +1012,40 @@ where
         transport,
         supported_capabilities: bootstrap.supported_capabilities,
     };
-    let mut admitted = match authority.admit(attempt).await {
+    let mut admitted = match authority.admit_before(attempt, entry_until).await {
         Ok(admitted) => admitted,
         Err(refusal) => {
             report_admission_refusal(refusal);
-            if let AdmissionRefusal::Classified(error) = refusal {
-                // A fresh admission refusal precedes ServerAccepted and all snapshot writes.
-                // Send one ProtocolError at generation 0, then close.
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
-                    send_error(stream, error, 0),
-                )
-                .await;
-            }
-            if let AdmissionRefusal::ChannelSwitch(status) = refusal
-                && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
-            {
-                let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
-                    write_frame(stream, &frame),
-                )
-                .await;
-            }
-            if let AdmissionRefusal::Queued(queue) = refusal
-                && let Ok(frame) =
-                    oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
-            {
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
-                    write_frame(stream, &frame),
-                )
+            let now = tokio::time::Instant::now();
+            if now < entry_until {
+                // A fresh refusal precedes ServerAccepted and all snapshot output.
+                let write_until = entry_until.min(now + ADMISSION_REFUSAL_WRITE_BOUND);
+                let _ = tokio::time::timeout_at(write_until, async {
+                    if tokio::time::Instant::now() >= write_until {
+                        return Ok(());
+                    }
+                    match refusal {
+                        AdmissionRefusal::Classified(error) => {
+                            send_error(stream, error, 0).await
+                        }
+                        AdmissionRefusal::ChannelSwitch(status)
+                            if status.lock
+                                == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull =>
+                        {
+                            let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
+                            write_frame(stream, &frame).await
+                        }
+                        AdmissionRefusal::Queued(queue) => {
+                            if let Ok(frame) =
+                                oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
+                            {
+                                write_frame(stream, &frame).await?;
+                            }
+                            Ok(())
+                        }
+                        _ => Ok(()),
+                    }
+                })
                 .await;
             }
             return Err(ConnectionEnd::AdmissionRefused(refusal));

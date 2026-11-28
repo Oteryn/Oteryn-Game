@@ -177,6 +177,83 @@ fn resource_limits_reject_values_above_registered_maxima() {
 }
 
 #[test]
+fn fresh_refusals_after_entry_deadline_send_zero_bytes() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::{
+        FoundationProtocolError, admission_queue::AdmissionQueue,
+        channel_switch::{SwitchLock, SwitchStatus},
+    };
+
+    struct Refusing {
+        entered: Notify,
+        release: Notify,
+        refusal: AdmissionRefusal,
+    }
+
+    impl FreshAdmissionAuthority for Refusing {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            self.entered.notify_one();
+            self.release.notified().await;
+            Err(self.refusal)
+        }
+    }
+
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let material = material()?;
+        for refusal in [
+            AdmissionRefusal::Classified(FoundationProtocolError::SessionJoinUnavailable),
+            AdmissionRefusal::ChannelSwitch(SwitchStatus {
+                lock: SwitchLock::ChannelFull,
+                cooldown_left_ms: 0,
+            }),
+            AdmissionRefusal::Queued(AdmissionQueue { position: 1, retry_after_ms: 100 }),
+        ] {
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let deadline = Duration::from_secs(10);
+            let limits = ListenerLimits::new(1, 1, deadline).ok_or("limits")?;
+            let authority = Refusing { entered: Notify::new(), release: Notify::new(), refusal };
+            let ends = Ends::default();
+            let shutdown = CancellationToken::new();
+            let serve = serve_listener(
+                &listener, &material.server, limits, &authority, &SecureIdentifiers,
+                &ends, &shutdown,
+            );
+            let check = async {
+                let mut client = material.client.connect(
+                    ServerName::try_from("localhost")?, TcpStream::connect(address).await?,
+                ).await?;
+                client.write_all(&bootstrap_frame()).await?;
+                authority.entered.notified().await;
+                tokio::time::pause();
+                tokio::time::advance(deadline).await;
+                authority.release.notify_one();
+                let mut bytes = Vec::new();
+                let read = client.read_to_end(&mut bytes).await;
+                tokio::time::resume();
+                if let Err(error) = read
+                    && error.kind() != std::io::ErrorKind::UnexpectedEof
+                {
+                    return Err(error.into());
+                }
+                assert!(bytes.is_empty(), "{refusal:?}: {bytes:?}");
+                Ok::<_, Box<dyn Error>>(())
+            };
+            let ((), result) = join(serve, async {
+                let result = tokio::time::timeout(Duration::from_secs(25), check).await;
+                shutdown.cancel();
+                result
+            }).await;
+            result??;
+            assert_eq!(ends.snapshot(), [ConnectionEnd::AdmissionRefused(refusal)]);
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn resource_connection_budget_backpressures_at_limit() -> Result<(), Box<dyn Error>> {
     runtime()?.block_on(async {
         let material = material()?;

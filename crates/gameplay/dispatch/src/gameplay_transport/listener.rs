@@ -1,4 +1,5 @@
 use super::*;
+use connection::admit_frame_until;
 
 pub async fn serve_listener<
     A: FreshAdmissionAuthority,
@@ -259,6 +260,7 @@ where
     // cancelled by shutdown; nothing authoritative has started yet.
     // NBDIAG-6: which entry step a failed or slow entry was waiting for.
     let entry_started = tokio::time::Instant::now();
+    let entry_until = entry_started + entry_deadline;
     let entry_step = std::sync::atomic::AtomicU8::new(0);
     let entry = async {
         let unit = units.acquire().await.ok()?;
@@ -269,7 +271,7 @@ where
         entry_step.store(3, std::sync::atomic::Ordering::Relaxed);
         Some((unit, stream, frame))
     };
-    let entry = first(tokio::time::timeout(entry_deadline, entry), async {
+    let entry = first(tokio::time::timeout_at(entry_until, entry), async {
         match drain {
             Some(drain) => {
                 let _ = first(shutdown.cancelled(), drain.requested()).await;
@@ -322,11 +324,11 @@ where
         Some(trace) => {
             connection::with_connection_trace(
                 trace,
-                admit_frame(&mut stream, &frame, authority, identifiers),
+                admit_frame_until(&mut stream, &frame, authority, identifiers, entry_until),
             )
             .await
         }
-        None => admit_frame(&mut stream, &frame, authority, identifiers).await,
+        None => admit_frame_until(&mut stream, &frame, authority, identifiers, entry_until).await,
     };
     drop(unit);
     match &admitted {

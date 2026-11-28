@@ -9,6 +9,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
+        entry_until: Option<tokio::time::Instant>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
@@ -37,6 +38,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // never creates a new preference window; cancellation drops this guard.
         let _foreground = self.root.foreground_demand().map_err(|_| Unavailable)?;
         let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if let Some(entry_until) = entry_until {
+            budget.deadline = budget.deadline.min(entry_until);
+        }
         let record = loop {
             match self
                 .root
@@ -263,9 +267,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         *record.account_id.as_bytes(),
                         capabilities.current_check(),
                     ),
-                    Some(budget.deadline),
+                    budget.deadline,
                 )
                 .await;
+            use crate::durability::fresh_admission_composition::BoundedFreshAdmissionCommit;
+            let outcome = match outcome {
+                BoundedFreshAdmissionCommit::Issued(outcome) => outcome,
+                BoundedFreshAdmissionCommit::CheckoutFailed(error) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    if matches!(error, crate::durability::DurabilityError::HolderBusy) {
+                        return Err(FRESH_JOIN_EXPIRED);
+                    }
+                    budget.retry_fresh_precommit(Unavailable).await?;
+                    continue;
+                }
+            };
             if matches!(
                 outcome,
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
@@ -280,10 +296,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(AdmissionRefusal::PremiumRequired);
             }
             match outcome {
-                Err(crate::durability::DurabilityError::HolderBusy) => {
-                    self.rollback_runtime_player(reservation).await?;
-                    return Err(FRESH_JOIN_EXPIRED);
-                }
                 Ok(
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),

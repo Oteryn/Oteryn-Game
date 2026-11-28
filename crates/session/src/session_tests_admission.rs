@@ -28,12 +28,18 @@ async fn refuse_admission(
     Ok(result)
 }
 
-/// N8: a refusal frame with a code in 1100..=1199 surfaces the code, and the code maps to
-/// its FND-04A class; any other `ProtocolError` stays `NotAdmitted`.
+/// A fresh admission or shared join refusal surfaces its FND-04 class.
 #[test]
 fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
     block_on(async {
         for (error, class) in [
+            (
+                FoundationProtocolError::SessionJoinUnavailable,
+                (
+                    AdmissionProgression::Retryable,
+                    AdmissionPublicClass::TemporarilyUnavailable,
+                ),
+            ),
             (
                 FoundationProtocolError::AdmissionGrantExpired,
                 (
