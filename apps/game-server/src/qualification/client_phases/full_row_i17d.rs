@@ -152,15 +152,12 @@ async fn settle(client: &mut DevClientSession, item: ItemEntry, equipped: bool) 
 async fn hotkey(
     client: &mut DevClientSession,
     definition: std::num::NonZeroU32,
-) -> TestResult<oteryn_dev_client::ItemMoveOutcome> {
+) -> TestResult<oteryn_dev_client::ItemMoveOutcomeResult> {
     client.take_events();
-    Ok(
-        oteryn_dev_client::client_runtime::hotkey_equip::equip_definition(
-            client.session_mut(),
-            definition,
-        )
-        .await?,
-    )
+    Ok(client
+        .session_mut()
+        .equip_item_definition(definition)
+        .await?)
 }
 
 async fn expect(
@@ -168,12 +165,12 @@ async fn expect(
     definition: std::num::NonZeroU32,
     step: &str,
     want: oteryn_dev_client::ItemMoveOutcome,
-) -> TestResult<()> {
-    let outcome = hotkey(client, definition).await?;
-    if outcome != want {
-        return Err(format!("step={step} observed={outcome:?};needed={want:?}").into());
+) -> TestResult<oteryn_dev_client::ItemMoveOutcomeResult> {
+    let result = hotkey(client, definition).await?;
+    if result.outcome != want {
+        return Err(format!("step={step} observed={result:?};needed={want:?}").into());
     }
-    Ok(())
+    Ok(result)
 }
 
 async fn relog(
@@ -401,7 +398,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     amulet_at(&client, item, false)?;
     evidence("I17D_CHECK prerequisite PASS fixture=one-carried-amulet-after-relog");
 
-    expect(&mut client, amulet, "equip-amulet", Out::Moved).await?;
+    let equip = expect(&mut client, amulet, "equip-amulet", Out::Moved).await?;
     settle(&mut client, item, true).await?;
     let equipped = client
         .inventory()
@@ -409,7 +406,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .clone();
     let equip_state_sequence = client.last_server_sequence();
     let refused = hotkey(&mut client, amulet).await?;
-    let cooldown_failure = match refused {
+    evidence(&format!(
+        "I17D_HOTKEY_FRAMES session={} equip_command={} equip_result_sequence={} equip_state_sequence={equip_state_sequence} repeat_command={} repeat_result_sequence={} repeat_outcome={:?}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        equip.command_id,
+        equip.result_server_sequence,
+        refused.command_id,
+        refused.result_server_sequence,
+        refused.outcome
+    ));
+    let cooldown_failure = match refused.outcome {
         Out::Rejected => {
             if client.inventory() != Some(&equipped) {
                 return Err("immediate cooldown refusal changed inventory".into());
@@ -425,7 +431,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         Out::Moved => {
             let failure = format!(
                 "step=immediate-repeat observed=Moved;equip_state_sequence={equip_state_sequence};repeat_sequence={};needed=Rejected-and-still-worn",
-                client.last_server_sequence()
+                refused.result_server_sequence
             );
             evidence(&format!("I17D_CHECK jewelry-delay FAIL {failure}"));
             Some(failure)
