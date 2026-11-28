@@ -206,6 +206,36 @@ async fn walk_to_rat(
     adjacent_rat(client).ok_or_else(|| "step=hunt;observed=no-adjacent-rat".into())
 }
 
+async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(
+        "P22d.full",
+        "sorcerer-level-100",
+        "the authored rat route and combat-lock wait exceed the ordinary character budget",
+    );
+    let mut client = connect_world(clients, 0xd5).await?;
+    selected(&client)?;
+    let old = client.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(old.as_bytes()), "--profile", "sorcerer".into()).await?;
+    logout(&mut client).await?;
+    let mut fresh = connect_world(clients, 0xd6).await?;
+    selected(&fresh)?;
+    expect(
+        fresh.join_snapshot().game_session_id != old,
+        "seeded-relog",
+        "reused-session",
+    )?;
+    let level = full_e2ef7::player_level(&mut fresh).await?;
+    let vitals = fresh
+        .actor_vitals()
+        .ok_or("step=seeded-stats;observed=no-vitals")?;
+    expect(
+        level == 100 && vitals.max_health == 645 && vitals.max_mana == 2850,
+        "seeded-stats",
+        (level, vitals.max_health, vitals.max_mana),
+    )?;
+    Ok(fresh)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -217,8 +247,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd6).await?;
-    selected(&client)?;
+    let mut client = prepare_hunter(clients).await?;
     let initial = read(&mut client, best).await?;
     expect(
         initial
