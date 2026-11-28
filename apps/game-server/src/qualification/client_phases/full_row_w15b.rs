@@ -164,7 +164,7 @@ pub(super) async fn connect_at_battle_axe(
     use sqlx::Connection as _;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let updated = sqlx::query(
-        "UPDATE game_character_last_positions SET tile_x=$3, tile_y=$4, tile_floor=$5
+        "UPDATE game_character_last_positions SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
          WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
     )
     .bind(clients.characters[index].as_slice())
