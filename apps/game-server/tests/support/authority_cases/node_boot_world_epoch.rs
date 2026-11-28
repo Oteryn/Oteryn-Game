@@ -19,10 +19,10 @@ fn node_boot_world_epoch_prepares_admission() -> fixture::TestResult {
                     let authority = h.root.open_character_authority(&seal).await.map_err(fixture::debug)?;
                     let permit = SpellLanePermit::of_fresh_scope(scope).await.map_err(fixture::debug)?;
                     let binding = CyclopediaWorldBinding {
-                        scope, generation: 1, bundle: [7; 32], epoch: 0, area: 1, legacy_area: 1,
+                        scope, generation: 1, bundle: [7; 32], epoch: 0, main_areas: [1].into(), legacy_area: 1,
                     };
                     assert!(matches!(
-                        h.root.prepare_cyclopedia_epoch(&authority, &h.node, &permit, binding).await,
+                        h.root.prepare_cyclopedia_epoch(&authority, &h.node, &permit, binding.clone()).await,
                         Err(crate::durability::DurabilityError::Unavailable)
                     ));
                     let (world, channel): (String, String) = sqlx::query_as(
@@ -51,7 +51,7 @@ fn node_boot_world_epoch_prepares_admission() -> fixture::TestResult {
                     assert_eq!(conflict.err().and_then(|e| e.as_database_error().and_then(|e| e.code()).map(|c| c.into_owned())).as_deref(), Some("23514"));
                     h.root.await_ready().await?;
                     // This is the same mandatory warm-up that fresh world admissions run.
-                    assert!(!h.root.prepare_cyclopedia_epoch(&authority, &h.node, &permit, binding).await?);
+                    assert!(h.root.prepare_cyclopedia_epoch(&authority, &h.node, &permit, binding).await?.is_empty());
                     Ok(())
                 }.await;
                 h.cleanup().await?;

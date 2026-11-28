@@ -1,16 +1,6 @@
 use super::*;
 use std::collections::BTreeMap;
 
-pub(super) const DONATION_GOAL: u64 = 10_000_000;
-
-pub(super) fn select_epoch(pool: u64) -> (bool, u64) {
-    if pool >= DONATION_GOAL {
-        (true, pool - DONATION_GOAL)
-    } else {
-        (false, pool)
-    }
-}
-
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct CanonicalProgress {
@@ -134,52 +124,28 @@ pub(super) async fn percentage(
         .count();
     Ok((done * 100 / ids.len()) as u8)
 }
-// One row per canonical main area; the shared row serializes all Channels of this World.
-pub(super) async fn world(
+// Lock the current area pool before projecting or adding a donation.
+pub(super) async fn pool(
     tx: &mut Type2Transaction<'_>,
     world: crate::foundation::WorldId,
     bundle: [u8; 32],
-    epoch: u64,
     area: u32,
-    legacy_area: u32,
-) -> Result<(u64, bool), DurabilityError> {
-    if !(1..=1024).contains(&area) || !(1..=1024).contains(&legacy_area) {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    // The reviewed entry parent's row imports the historical source-only pool once.
-    sqlx::query("INSERT INTO game_world_cyclopedia(world_id,bundle_digest,catalogue_digest,area_id,pool,legacy_imported) SELECT encode($1,'hex')::uuid,$2,$3,$4,CASE WHEN claim.import THEN COALESCE((SELECT pool FROM game_world_cyclopedia WHERE world_id=encode($1,'hex')::uuid AND area_id=0),0) ELSE 0 END,claim.import FROM (SELECT $5 AND NOT EXISTS(SELECT 1 FROM game_world_cyclopedia WHERE world_id=encode($1,'hex')::uuid AND legacy_imported) AS import) claim ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(bundle.as_slice()).bind(BasicArea::content_digest().as_slice()).bind(i64::from(area)).bind(area==legacy_area).execute(&mut ***tx).await?;
-    let row=sqlx::query("SELECT bundle_digest,catalogue_digest,pool,legacy_imported FROM game_world_cyclopedia WHERE world_id=encode($1,'hex')::uuid AND area_id=$2 FOR UPDATE")
+) -> Result<u64, DurabilityError> {
+    let row = sqlx::query("SELECT bundle_digest,catalogue_digest,pool FROM game_world_cyclopedia WHERE world_id=encode($1,'hex')::uuid AND area_id=$2 FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(i64::from(area)).fetch_one(&mut ***tx).await?;
+    read_pool(&row, bundle)
+}
+
+pub(super) fn read_pool(
+    row: &sqlx::postgres::PgRow,
+    bundle: [u8; 32],
+) -> Result<u64, DurabilityError> {
     if row.try_get::<Vec<u8>, _>("bundle_digest")? != bundle
         || row.try_get::<Vec<u8>, _>("catalogue_digest")? != BasicArea::content_digest()
     {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let pool = u64::try_from(row.try_get::<i64, _>("pool")?)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if let Some(improved)=sqlx::query_scalar("SELECT improved FROM game_world_cyclopedia_epochs WHERE world_id=encode($1,'hex')::uuid AND epoch=$2::text::numeric AND area_id=$3")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(i64::from(area)).fetch_optional(&mut ***tx).await? {
-        return Ok((pool,improved));
-    }
-    if row.try_get::<bool,_>("legacy_imported")?
-        && let Some(improved) = sqlx::query_scalar::<_,bool>("SELECT improved FROM game_world_cyclopedia_epochs WHERE world_id=encode($1,'hex')::uuid AND area_id=0 AND epoch=$2::text::numeric")
-            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut ***tx).await? {
-            // Preserve an already-selected legacy day without consuming its pool twice.
-            sqlx::query("INSERT INTO game_world_cyclopedia_epochs(world_id,area_id,epoch,improved,donation_winner,pool_before) VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,false,$5)")
-                .bind(world.as_bytes().as_slice()).bind(i64::from(area)).bind(epoch.to_string()).bind(improved).bind(pool as i64).execute(&mut ***tx).await?;
-            return Ok((pool,improved));
-    }
-    // Crystal discovery_system.lua:269-280: every funded save consumes one goal,
-    // carries excess, and can activate on consecutive days. There is no random draw.
-    let (improved, remaining) = select_epoch(pool);
-    sqlx::query("INSERT INTO game_world_cyclopedia_epochs(world_id,epoch,improved,donation_winner,pool_before,area_id) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$3,$4,$5)")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(improved).bind(pool as i64).bind(i64::from(area)).execute(&mut ***tx).await?;
-    if improved {
-        sqlx::query("UPDATE game_world_cyclopedia SET pool=$3 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2")
-            .bind(world.as_bytes().as_slice()).bind(i64::from(area)).bind(remaining as i64).execute(&mut ***tx).await?;
-    }
-    Ok((remaining, improved))
+    u64::try_from(row.try_get::<i64, _>("pool")?).map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -220,25 +186,4 @@ pub(super) async fn save(
         .await?;
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::select_epoch;
-
-    #[test]
-    fn w12_selection_carries_excess_over_goal() {
-        assert_eq!(select_epoch(25_000_000), (true, 15_000_000));
-        assert_eq!(select_epoch(10_000_000), (true, 0));
-    }
-
-    #[test]
-    fn w12_selection_has_no_random_or_winner_exclusion() {
-        assert_eq!(select_epoch(9_999_999), (false, 9_999_999));
-        assert_eq!(select_epoch(0), (false, 0));
-        let (first_improved, pool_after) = select_epoch(20_000_000);
-        let (second_improved, _) = select_epoch(pool_after);
-        assert!(first_improved);
-        assert!(second_improved);
-    }
 }

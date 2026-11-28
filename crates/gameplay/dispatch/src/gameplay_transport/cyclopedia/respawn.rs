@@ -29,40 +29,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let entry = map.entry_start;
         let legacy_area = table.resolve(entry.x, entry.y, entry.floor).ok_or(())?.0;
-        let mains: std::collections::BTreeSet<_> = table
-            .masks
-            .iter()
-            .filter_map(|mask| {
-                table
-                    .areas
-                    .iter()
-                    .find(|area| area.id == mask.subarea)?
-                    .parent
-            })
-            .collect();
-        let mut improved = std::collections::BTreeSet::new();
-        for area in mains {
-            if self
-                .root
-                .prepare_cyclopedia_epoch(
-                    self.character,
-                    self.holder,
-                    &permit,
-                    crate::durability::character_cyclopedia::CyclopediaWorldBinding {
-                        scope: binding.runtime_scope(),
-                        generation: binding.scope_generation().get(),
-                        bundle: map.overlay.base().digest(),
-                        epoch: self.reset_epoch,
-                        area,
-                        legacy_area,
-                    },
-                )
-                .await
-                .map_err(|_| ())?
-            {
-                improved.insert(area);
-            }
-        }
+        let improved = self
+            .root
+            .prepare_cyclopedia_epoch(
+                self.character,
+                self.holder,
+                &permit,
+                crate::durability::character_cyclopedia::CyclopediaWorldBinding {
+                    scope: binding.runtime_scope(),
+                    generation: binding.scope_generation().get(),
+                    bundle: map.overlay.base().digest(),
+                    epoch: self.reset_epoch,
+                    main_areas: content::main_areas(table),
+                    legacy_area,
+                },
+            )
+            .await
+            .map_err(|_| ())?;
         // Keep the existing admitted normal-creature eligibility boundary.
         let normal: std::collections::BTreeSet<_> = native
             .creature_profiles()

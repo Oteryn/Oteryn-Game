@@ -38,13 +38,17 @@ pub(super) async fn verify(
     assert_eq!(status, CommandStatus::Accepted);
     let atlas = Atlas::decode(&bytes).map_err(debug)?;
     assert_eq!(atlas.query.floor, 7);
+    let progress = atlas.progress.as_ref().ok_or("home area progress")?;
+    assert_eq!(progress.epoch, 3);
+    assert!(progress.improved, "atlas projects the active respawn epoch");
+    assert_eq!(progress.pool, 0, "atlas projects the cleared winning pool");
     assert!(atlas.cells.contains(&2));
     assert!(atlas.areas.iter().any(|a| a.id == 2 && a.parent == 1));
     assert!(
-        atlas.markers.iter().any(|m| m.kind == 1
-            && m.label == "oteryn:npc.cipfried"
-            && m.x == guide_x
-            && m.y == 2)
+        atlas
+            .markers
+            .iter()
+            .any(|m| m.kind == 1 && m.label == "oteryn:npc.cipfried" && m.x == guide_x && m.y == 2)
     );
     assert!(atlas.markers.iter().filter(|m| m.kind == 3).all(|m| {
         atlas

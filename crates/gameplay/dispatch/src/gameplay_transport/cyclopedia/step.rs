@@ -72,6 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             epoch: self.reset_epoch,
             area: area.area,
             legacy_area: area.legacy_area,
+            main_areas: area.main_areas,
             subarea: area.subarea,
             subareas: area.subareas,
             pool: area.pool,

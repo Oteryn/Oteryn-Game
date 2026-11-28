@@ -75,7 +75,7 @@ fn scenario(canonical: bool) -> TestResult {
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = support::world_with_subareas(&deps, generation, true)?;
+        let world = support::world_with_subareas(&deps, generation, !canonical)?;
         let cells = world
             .movement_cells(activation_pin.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -268,6 +268,11 @@ fn scenario(canonical: bool) -> TestResult {
                 195,
                 "T187: one fully discovered area contributes the content maximum"
             );
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=0").execute(&h.pool).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1")
+                .execute(&h.pool)
+                .await?;
+            owner.reset_epoch = 1;
             let (_, donated) =
                 support::exchange_inventory(&owner, &mut admitted, 4, 73, &request(4, 1)).await?;
             assert_eq!(donated[0], 0);
@@ -750,52 +755,19 @@ fn scenario(canonical: bool) -> TestResult {
         owner.reset_epoch = 1;
         let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
         assert_eq!(epoch[28], 2);
-        assert_eq!(pool(&epoch), 15_000_000, "donation excess survives reset");
-        // PAR-W12: Crystal `discovery_system.lua:191` DONATION_GOAL = 10,000,000 (MATCH, `>=`).
-        let (winner, before): (bool, i64) = sqlx::query_as(
-            "SELECT donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=1",
+        assert_eq!(pool(&epoch), 0, "the winning pool is cleared");
+        let selected_areas: Vec<i64> = sqlx::query_scalar(
+            "SELECT area_id FROM game_world_cyclopedia_epochs WHERE epoch=1 ORDER BY area_id",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(selected_areas, [1], "an empty source mask cannot enter the draw");
+        let before: i64 = sqlx::query_scalar(
+            "SELECT pool_before FROM game_world_cyclopedia_epochs WHERE epoch=1 AND donation_winner",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!((winner, before), (true, 25_000_000));
-        let (_, frozen_pool) =
-            support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
-        assert_eq!(
-            frozen_pool[0], 0,
-            "active boosts still accept next-cycle donations"
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
-                .fetch_one(&h.pool)
-                .await?,
-            989
-        );
-        assert_eq!(pool(&frozen_pool), 15_000_001);
-        let (receipt_before,receipt_after):(i64,i64)=sqlx::query_as("SELECT pool_before,pool_after FROM game_character_cyclopedia_receipts WHERE donation=1").fetch_one(&h.pool).await?;
-        assert_eq!((receipt_before, receipt_after), (15_000_000, 15_000_001));
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT count(*) FROM game_account_bank_entries WHERE kind=5"
-            )
-            .fetch_one(&h.pool)
-            .await?,
-            2
-        );
-
-        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=1").execute(&h.pool).await?;
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2")
-            .execute(&h.pool)
-            .await?;
-        owner.reset_epoch = 2;
-        let (_, epoch_two) = support::exchange(&owner, &mut admitted, 21, 72, &[]).await?;
-        assert_eq!(epoch_two[28], 2);
-        assert_eq!(pool(&epoch_two), 5_000_001);
-        let (improved, winner, before): (bool, bool, i64) = sqlx::query_as(
-            "SELECT improved,donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=2",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!((improved, winner, before), (true, true, 15_000_001));
+        assert_eq!(before, 25_000_000);
         {
             let mut runtime = owner.runtime.lock().await;
             let (point, _, live) = runtime.spawn_point_creatures()[0];
@@ -809,20 +781,57 @@ fn scenario(canonical: bool) -> TestResult {
                 "native 60-second home delay gets the persisted factor two"
             );
         }
+        let before_refusal = admitted;
+        let (_, refused) =
+            support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
+        assert_eq!(refused[0], 7, "a boosted area refuses donations before charging");
+        assert_eq!(pool(&refused), 0);
+
+        // Fund the same area in the fixture to exercise exclusion independently of the
+        // winning-pool debit and the active-day donation guard.
+        let mut snapshot = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *snapshot)
+            .await?;
+        sqlx::query("UPDATE game_world_cyclopedia SET pool=15000000 WHERE area_id=1")
+            .execute(&mut *snapshot)
+            .await?;
+        snapshot.commit().await?;
+        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=1").execute(&h.pool).await?;
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2")
+            .execute(&h.pool)
+            .await?;
+        owner.reset_epoch = 2;
+        let (_, epoch_two) = support::exchange(&owner, &mut admitted, 21, 72, &[]).await?;
+        assert_eq!(epoch_two[28], 1, "a funded previous winner still sits out");
+        assert_eq!(pool(&epoch_two), 15_000_000, "excluded pools carry forward");
+        let GuildReply::Payload(replayed_refusal) = owner
+            .cyclopedia_command(before_refusal, 20, 73, &request(4, 1))
+            .await
+        else {
+            return Err("retained area-improved refusal".into());
+        };
+        assert_eq!(replayed_refusal, refused);
+        let (improved, winner, before): (bool, bool, i64) = sqlx::query_as(
+            "SELECT improved,donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=2",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((improved, winner, before), (false, false, 15_000_000));
         sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,3,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=2").execute(&h.pool).await?;
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=3")
             .execute(&h.pool)
             .await?;
         owner.reset_epoch = 3;
         let (_, epoch_three) = support::exchange(&owner, &mut admitted, 22, 72, &[]).await?;
-        assert_eq!(epoch_three[28], 1);
-        assert_eq!(pool(&epoch_three), 5_000_001);
+        assert_eq!(epoch_three[28], 2, "funded areas are eligible after a day off");
+        assert_eq!(pool(&epoch_three), 0);
         let (improved, winner): (bool, bool) = sqlx::query_as(
             "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=3",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!((improved, winner), (false, false));
+        assert_eq!((improved, winner), (true, true));
         let reset_id = admitted.continuity.next_command_id;
         let (_, reset_pois) =
             support::exchange(&owner, &mut admitted, reset_id, 73, &request(2, 0)).await?;
@@ -977,7 +986,7 @@ fn scenario(canonical: bool) -> TestResult {
             sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
                 .fetch_one(&h.pool)
                 .await?,
-            989
+            990
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
@@ -985,7 +994,7 @@ fn scenario(canonical: bool) -> TestResult {
             )
             .fetch_one(&h.pool)
             .await?,
-            2
+            1
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(

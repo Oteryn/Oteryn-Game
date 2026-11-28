@@ -16,7 +16,9 @@ use crate::domain::cyclopedia::{BasicArea, MapAction, MapProgress, MapRefusal, P
 use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
 use sqlx::Row;
+use std::collections::BTreeSet;
 
+mod respawn;
 mod speed;
 mod storage;
 mod world;
@@ -31,6 +33,7 @@ pub struct MapRequest {
     pub epoch: u64,
     pub area: u32,
     pub legacy_area: u32,
+    pub main_areas: BTreeSet<u32>,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
     pub pool: Vec<Point>,
@@ -65,7 +68,7 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
+            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || !request.main_areas.contains(&request.area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -90,26 +93,36 @@ impl DurabilityRoot {
             if !epoch.as_ref().is_some_and(|r| numeric_u64(r,"reset_epoch").ok()==Some(request.epoch) && r.try_get::<Vec<u8>,_>("target_digest").ok().as_deref()==Some(request.bundle.as_slice())) {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
+            let world = fence.runtime_scope.world_id();
+            let improved = respawn::prepare(&mut tx, world, request.bundle, request.epoch, &request.main_areas, request.legacy_area)
+                .await?.contains(&request.area);
             let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
             let mut progress=storage::load(&mut tx,&fence,&request).await?;
             let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,false,&request.occurrence) {
                 Ok(changed)=>changed,
                 Err(reason)=> {
                     let code=match reason { MapRefusal::Invalid=>1, MapRefusal::PremiumRequired=>2, MapRefusal::AlreadyDiscovered=>3, MapRefusal::NoExploration=>4, MapRefusal::InsufficientPool=>5 };
-                    let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
+                    let pool=storage::pool(&mut tx,world,request.bundle,request.area).await?;
                     return Ok(Ok((root.revision,projection(code,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
                 }
             };
-            // Gold owner locks root, eligible coins, bank in that order, before the pool.
+            // On prepared days, the gold owner locks root, coins and bank before the area pool.
             let donation=if let MapAction::Donate(amount)=request.action {
                 if crate::domain::cyclopedia::DonationAmount::new(i64::from(amount)).is_err() { return Ok(Err(CharacterProgressionError::InvalidInput)); }
+                if improved {
+                    let pool=storage::pool(&mut tx,world,request.bundle,request.area).await?;
+                    let bytes=projection(7,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
+                    storage::save(&mut tx,&fence,&request,&progress,false,0,pool,pool,&bytes).await?;
+                    tx.commit(deadline).await?;
+                    return Ok(Ok((root.revision,bytes)));
+                }
                 let Some(change)=request.fee.clone() else { return Ok(Err(CharacterProgressionError::InvalidInput)); };
                 let fee=FeeBurnRequest { cause:FeeBurnCause::AreaDonation {world:fence.runtime_scope.world_id(),area:request.area,occurrence:request.occurrence},fee_gold_units:u64::from(amount),transaction_id:request.transaction,event_id:request.event,occurred_at_unix_ms:request.now,server_build_id:"oteryn-game-server".into(),change };
                 match burn_fee_in_transaction(&mut tx,&fence,&fee).await {
                     Ok(FeeBurnOutcome::Burned(_))=>(),
                     Ok(FeeBurnOutcome::AlreadyBurned(_))=>return Err(DurabilityError::InvalidStoredState),
                     Err(FeeBurnError::InsufficientFunds|FeeBurnError::ChangeDoesNotFit|FeeBurnError::CapacityExceeded)=> {
-                        let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
+                        let pool=storage::pool(&mut tx,world,request.bundle,request.area).await?;
                         return Ok(Ok((root.revision,projection(6,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
                     }
                     Err(FeeBurnError::Unavailable(e))=>return Err(e),
@@ -117,7 +130,7 @@ impl DurabilityRoot {
                 }
                 u64::from(amount)
             } else {0};
-            let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
+            let pool=storage::pool(&mut tx,world,request.bundle,request.area).await?;
             let pool_after=pool.checked_add(donation).filter(|v|*v<=i64::MAX as u64).ok_or(DurabilityError::InvalidStoredState)?;
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;

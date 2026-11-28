@@ -24,14 +24,12 @@ World pool u64,
 reset epoch u64, respawn factor u8 (1 or 2), visible count u8, then count records
 of x u16, y u16, Global floor i8 from 0 through 15. At most eight records. Code 0 success, 1 invalid,
 2 historical Premium refusal, 3 already discovered, 4 historical no-exploration
-refusal, 5 insufficient reachable pool, 6 insufficient funds, 7 historical area-improved
-refusal. Current donations remain allowed during an active boost and fund a future
-save. Area percent counts completed canonical subareas within the current main area.
+refusal, 5 insufficient reachable pool, 6 insufficient funds, 7 area already improved
+(donation refused before charging a fee). Area percent counts completed canonical
+subareas within the current main area.
 Only the requesting character's unfound same-floor POIs in its viewport are sent.
 Committed intent and initializing-query receipts retain the exact result, including query-time facts, for retries.
 New queries read current facts; progress survives session and process replacement.
-An epoch is improved iff the pool is at least 10,000,000; the goal is subtracted
-and the excess carries over.
 
 ## Durable fee source
 
@@ -49,10 +47,24 @@ invalidate unfinished canonical POIs without clearing completion. Legacy donatio
 pools and epochs remain source-only under area 0; the reviewed Entry parent's pool
 imports their spendable balance once, guarded by a unique import constraint.
 
-Each canonical main area owns its pool and epoch selection. A funded save consumes
-exactly 10,000,000 gp, carries excess, and may improve consecutive days. There is no
-random draw or prior-winner exclusion. Exact source locators and compatibility
-decisions: `docs/reference/content-prep/world-src-1105/map.md`.
+Each canonical main area owns its pool. At server save the World selects one donation
+winner from the eligible areas with the highest pool of at least 10,000,000 gp,
+breaking ties by draw. Its pool resets to zero. All other pools carry forward.
+With 33% probability a separate draw improves one of the remaining eligible areas.
+Areas improved in the preceding epoch are ineligible for either draw. An improvement
+doubles home spawn rates until the next server save. Both draws use the World ID and
+epoch, with separate purposes for chance, area and tie. Selection, winning pool debit
+and immutable epoch records commit together across Channels. Already-recorded days
+remain effective on upgrade.
+
+The Global Cyclopedia reference states “There is a 33% chance that one randomly
+selected area of the map will have its respawn rate improved” and “Thus, an area
+cannot have its spawn increased two days in a row.”
+[Cyclopedia, Improved Respawn Rate](https://tibia.fandom.com/wiki/Cyclopedia#Improved_Respawn_Rate)
+
+The retained Global interface reference specifies “Tie at highest donation = random
+winner; winning area's gold resets to 0, others carry their gold forward.”
+[Tibia interface reference](../../../reference/tibia-manual/interface.md#322-cyclopedia-map)
 
 ## Automatic discovery and POI reset (T186/T187, 2026-11-09)
 

@@ -1,5 +1,5 @@
-use tokio::io::AsyncWriteExt;
 use super::*;
+use tokio::io::AsyncWriteExt;
 
 use crate::foundation::{MessageType, decode_wire_envelope};
 
@@ -97,13 +97,13 @@ pub(in super::super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_with_subareas(deps, generation, true)
+    world_with_subareas(deps, generation, false)
 }
 
 pub(in super::super) fn world_with_subareas(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
-    canonical: bool,
+    include_uncovered_area: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         bundle,
@@ -128,7 +128,7 @@ pub(in super::super) fn world_with_subareas(
     // Two rows hold at most six POIs four tiles apart outside the entry window (x <= 10),
     // so x >= 11 extends to eight rows; walks to POIs stay on rows that exist.
     let mut tiles = Vec::new();
-    for y in 0..if canonical { 9 } else { 8 } {
+    for y in 0..9 {
         for x in (0..32).filter(|x| y < 2 || *x >= 11) {
             tiles.push(Tile {
                 x,
@@ -150,27 +150,33 @@ pub(in super::super) fn world_with_subareas(
         sy: 0,
         tiles,
     }];
-    if canonical {
+    {
         use oteryn_world_bundle::subarea::{Area, Mask, Run, Table};
         let hash = "a".repeat(64);
+        let area_ids = if include_uncovered_area { 1..=5 } else { 1..=3 };
+        let mask_ids = [2, 3]
+            .into_iter()
+            .chain(include_uncovered_area.then_some(5));
         parsed.manifest.subareas = Table {
             client_version: "15.30".into(),
             candidate_sha256: hash.clone(),
-            areas: [1, 2, 3]
-                .into_iter()
+            areas: area_ids
                 .map(|id| Area {
                     id,
                     key: format!("oteryn:content.area.fixture{id}"),
                     name: format!("Area {id}"),
-                    parent: (id != 1).then_some(1),
+                    parent: match id {
+                        2 | 3 => Some(1),
+                        5 => Some(4),
+                        _ => None,
+                    },
                     source_record_sha256: hash.clone(),
                     town_id: None,
                     hometown: false,
                     temple: None,
                 })
                 .collect(),
-            masks: [2, 3]
-                .into_iter()
+            masks: mask_ids
                 .map(|subarea| Mask {
                     subarea,
                     asset: format!("content/assets/files/subarea-{subarea:04}-{hash}.bmp.lzma"),
@@ -178,7 +184,11 @@ pub(in super::super) fn world_with_subareas(
                     bmp_sha256: hash.clone(),
                     source_record_sha256: hash.clone(),
                     source_tiles: 256,
-                    admitted_tiles: if subarea == 2 { 256 } else { 7 },
+                    admitted_tiles: match subarea {
+                        2 => 256,
+                        3 => 7,
+                        _ => 0,
+                    },
                 })
                 .collect(),
             runs: (0..8)

@@ -1,14 +1,32 @@
 //! W12: discovery membership and POI candidates come from admitted native subarea masks.
 use super::*;
+use oteryn_world_bundle::subarea::Table;
+use std::collections::BTreeSet;
 
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
     pub pool: Vec<Point>,
     pub area: u32,
     pub legacy_area: u32,
+    pub main_areas: BTreeSet<u32>,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
 }
+pub(super) fn main_areas(table: &Table) -> BTreeSet<u32> {
+    table
+        .masks
+        .iter()
+        .filter(|mask| mask.admitted_tiles > 0)
+        .filter_map(|mask| {
+            let index = table
+                .areas
+                .binary_search_by_key(&mask.subarea, |area| area.id)
+                .ok()?;
+            table.areas[index].parent
+        })
+        .collect()
+}
+
 pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<AdmittedArea> {
     let map = owner.bundle_map()?;
     admit_at(
@@ -114,6 +132,7 @@ pub(super) fn admit_at(
         pool,
         area,
         legacy_area,
+        main_areas: main_areas(table),
         subarea: Some(subarea),
         subareas,
     })
