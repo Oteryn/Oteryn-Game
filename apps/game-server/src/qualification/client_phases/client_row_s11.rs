@@ -47,8 +47,14 @@ async fn exchange(
             "request": exchange.request_frame,
             "result": exchange.result_frame,
         });
-        std::fs::write(root.join(format!("s11-{label}.json")), serde_json::to_vec(&envelope)?)?;
-        std::fs::write(root.join(format!("s11-{label}-wire.json")), serde_json::to_vec(&wire_proof)?)?;
+        std::fs::write(
+            root.join(format!("s11-{label}.json")),
+            serde_json::to_vec(&envelope)?,
+        )?;
+        std::fs::write(
+            root.join(format!("s11-{label}-wire.json")),
+            serde_json::to_vec(&wire_proof)?,
+        )?;
     }
     Ok((result.status, exchange.error_code, result.payload.to_vec()))
 }
@@ -60,30 +66,34 @@ fn row_text(row: &wire::HighscoreRow) -> String {
     )
 }
 
-async fn experience_facts(
+async fn ranking_facts(
     clients: &SeamClients<'_>,
+    loyalty: bool,
 ) -> TestResult<(Vec<wire::HighscoreRow>, wire::HighscoreRow, u32, bool)> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let rows = sqlx::query_as::<_, (String, String, i64, i64, i64, bool)>(
         r#"WITH facts AS (
              SELECT r.character_id, r.name, b.vocation,
                     COALESCE(p.level, birth.level)::bigint AS level,
-                    COALESCE(p.total_experience, birth.total_experience)::bigint AS total_experience
+                    CASE WHEN $3 THEN l.loyalty_points
+                         ELSE COALESCE(p.total_experience, birth.total_experience) END::bigint AS score
              FROM game_character_roots r
              JOIN game_character_build_state b USING (character_id)
              LEFT JOIN game_character_progression_state p USING (character_id)
              LEFT JOIN game_character_creation_progression birth
                  ON birth.character_id = r.character_id AND r.character_revision = 1
-             WHERE r.world_id = $1::uuid AND r.lifecycle = 1 AND b.vocation <> 'none'
+             LEFT JOIN game_account_loyalty_projections l USING (account_id)
+             WHERE (NOT $3 OR l.loyalty_points > 0) AND r.world_id = $1::uuid AND r.lifecycle = 1 AND b.vocation <> 'none'
                AND NOT game_account_closure_detached(r.character_id)
            )
-           SELECT name, vocation, level, total_experience,
-                  rank() OVER (ORDER BY total_experience DESC), character_id = $2::uuid
-           FROM facts ORDER BY total_experience DESC, name COLLATE "C", character_id
+           SELECT name, vocation, level, score,
+                  rank() OVER (ORDER BY score DESC), character_id = $2::uuid
+           FROM facts ORDER BY score DESC, name COLLATE "C", character_id
            LIMIT 51"#,
     )
     .bind(uuid_text(&clients.world))
     .bind(uuid_text(&clients.characters[1]))
+    .bind(loyalty)
     .fetch_all(&mut connection)
     .await?;
     let bound = wire::MAX_HIGHSCORES_PAGE_ROWS;
@@ -149,13 +159,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         snapshot_id: 0,
     };
     let (expected_rows, expected_own, expected_own_page, expected_has_more) =
-        experience_facts(clients).await?;
+        ranking_facts(clients, false).await?;
     let (status, _, before) = exchange(&mut client, "before", query).await?;
     require_mechanic_acceptance(status, "highscore-before-query")?;
     let before = wire::decode_highscores_result(&before)
         .map_err(|error| format!("step=before-decode observed={error:?}"))?;
     if before.rows == expected_rows && before.own_row.as_ref() == Some(&expected_own) {
         return Err("S11 expected ranking already present before publication".into());
+    }
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_account_loyalty_projections(account_id, loyalty_points, platform_revision)
+         SELECT account_id, seed.points, 1 FROM game_character_roots
+         JOIN (VALUES ($1::uuid, 41), ($2::uuid, 73)) seed(character_id, points) USING (character_id)",
+    )
+    .bind(uuid_text(&clients.characters[0]))
+    .bind(uuid_text(&clients.characters[1]))
+    .execute(&mut connection)
+    .await?;
+    if seeded.rows_affected() != 2 {
+        return Err("S11 could not seed two distinct Loyalty inputs".into());
+    }
+    evidence("FIXTURE S11.client loyalty_points=41,73");
+    let (loyalty_rows, loyalty_own, loyalty_own_page, loyalty_has_more) =
+        ranking_facts(clients, true).await?;
+    if loyalty_rows.len() < 2 || loyalty_own.value != 73 {
+        return Err("S11 Loyalty fixture lacks discriminating standings".into());
     }
     let (published, computed_at) = publish_ranking(clients).await?;
     if published <= before.snapshot_id {
@@ -212,7 +241,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         || loyalty.world != page.world
         || loyalty.page != 1
         || loyalty.snapshot_id == 0
-        || loyalty.rows.len() > wire::MAX_HIGHSCORES_PAGE_ROWS
+        || loyalty.computed_at != computed_at
+        || loyalty.rows != loyalty_rows
+        || loyalty.own_row.as_ref() != Some(&loyalty_own)
+        || loyalty.own_page != Some(loyalty_own_page)
+        || loyalty.has_more != loyalty_has_more
     {
         return Err(format!("step=loyalty-details observed={loyalty:?}").into());
     }
@@ -237,6 +270,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         row_text(&expected_own),
         refused
     ));
+    expected.push_str(&format!(
+        "loyalty_rows={}\nloyalty_own={}\nloyalty_own_page={}\nloyalty_has_more={}\n",
+        loyalty_rows.len(),
+        row_text(&loyalty_own),
+        loyalty_own_page,
+        u8::from(loyalty_has_more)
+    ));
+    for (index, row) in loyalty_rows.iter().enumerate() {
+        expected.push_str(&format!("loyalty_row{index}={}\n", row_text(row)));
+    }
     let (logout, observed, _, _) = logout_once(&mut client).await?;
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed={observed}").into());
@@ -258,7 +301,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout != Some(LogoutResult::Accepted) {
         return Err(format!("step=relog-logout observed={observed}").into());
     }
-    expected.push_str(&format!("relog_session={}\n", uuid_text(relog_session.as_bytes())));
+    expected.push_str(&format!(
+        "relog_session={}\n",
+        uuid_text(relog_session.as_bytes())
+    ));
     capture("s11-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "snapshot={} rows={} own={}",

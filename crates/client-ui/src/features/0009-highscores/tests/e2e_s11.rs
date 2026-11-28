@@ -192,7 +192,7 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     let (_, table) = text
         .split_once("Rank | Name | Vocation | Level | Value\n")
         .ok_or("missing rendered Highscores table")?;
-    let (rows, _) = table
+    let (rows, own_text) = table
         .split_once("\nYour rank:")
         .ok_or("missing rendered own rank")?;
     assert_eq!(rows.lines().collect::<Vec<_>>(), rendered);
@@ -202,6 +202,18 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
             .as_ref()
             .map_or_else(|| "none".into(), row_text),
         own
+    );
+
+    let own_row = parse_row(own)?;
+    assert_eq!(
+        own_text.lines().next(),
+        Some(
+            format!(
+                " {} — {} | {} | level {} | {}",
+                own_row.rank, own_row.name, own_row.vocation, own_row.level, own_row.value
+            )
+            .as_str()
+        )
     );
 
     // Submit an unregistered category while retaining the visible page.
@@ -247,7 +259,25 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     assert_eq!(loyalty_page.world, page.world);
     assert_eq!(loyalty_page.page, 1);
     assert_ne!(loyalty_page.snapshot_id, 0);
-    assert!(loyalty_page.rows.len() <= wire::MAX_HIGHSCORES_PAGE_ROWS);
+    let loyalty_count: usize = value(expected, "loyalty_rows")?.parse()?;
+    assert!(loyalty_count >= 2);
+    let loyalty_rows = (0..loyalty_count)
+        .map(|index| parse_row(value(expected, &format!("loyalty_row{index}"))?))
+        .collect::<Result<Vec<_>, BoxError>>()?;
+    assert_eq!(loyalty_page.rows, loyalty_rows);
+    assert_eq!(
+        loyalty_page.own_row,
+        Some(parse_row(value(expected, "loyalty_own")?)?)
+    );
+    assert_eq!(
+        loyalty_page.own_page,
+        Some(value(expected, "loyalty_own_page")?.parse()?)
+    );
+    assert_eq!(
+        u8::from(loyalty_page.has_more),
+        value(expected, "loyalty_has_more")?.parse::<u8>()?
+    );
+    assert_eq!(loyalty_page.computed_at, page.computed_at);
 
     let relog_session = value(expected, "relog_session")?;
     assert_ne!(session, relog_session);
