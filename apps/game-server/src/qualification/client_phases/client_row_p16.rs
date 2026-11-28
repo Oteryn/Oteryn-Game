@@ -359,7 +359,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     character_prep::grant_premium(&client).await?;
     evidence("P16_FIXTURE prereqs=premium,200-gold ferry-access-only");
     board_thais_ship(&mut client, world).await?;
-    for (key, keyword, arrival, fare) in FERRIES {
+    for (index, (key, keyword, arrival, fare)) in FERRIES.into_iter().enumerate() {
+        if index > 0 {
+            // The next ferry quote is unavailable for three seconds after the prior arrival.
+            client.service_liveness(Duration::from_secs(3)).await?;
+        }
         let npc = approach(&mut client, world, &metadata.npcs, key).await?;
         sail(&mut client, npc, keyword, arrival, fare, &coins).await?;
     }
