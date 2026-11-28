@@ -56,7 +56,11 @@ async fn exchange(
         )
         .await?;
     if response.status != CommandStatus::Accepted {
-        return Err(format!("step=command observed=status:{:?}", response.status).into());
+        return Err(format!(
+            "step=command command_id={} status={:?} payload={:02x?}",
+            response.command_id, response.status, response.payload
+        )
+        .into());
     }
     wire::Reply::decode(&response.payload)
         .ok_or_else(|| format!("step=decode observed=payload:{:?}", response.payload).into())

@@ -152,7 +152,11 @@ async fn catalogue(client: &mut DevClientSession, panel: &mut panel_ui::Panel) -
     panel.town = town.into();
     let reply = send(client, panel, None, false).await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step=query town={town} observed=status:{:?}", reply.status).into());
+        return Err(format!(
+            "step=query town={town} command_id={} status={:?} payload={:02x?}",
+            reply.command_id, reply.status, reply.payload
+        )
+        .into());
     }
     Ok(())
 }
