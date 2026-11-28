@@ -12,10 +12,18 @@ struct Capture {
     after: Vec<u8>,
     commit: Vec<u8>,
     refusal: Vec<u8>,
+    live: Option<LiveReplay>,
     outfit: String,
     colours: [u16; 4],
     committed: u64,
     content_revision: String,
+}
+
+struct LiveReplay {
+    commit: GatedCommandResult,
+    refusal: GatedCommandResult,
+    request: Vec<u8>,
+    refused_request: Vec<u8>,
 }
 
 fn catalogue_of(
@@ -66,7 +74,42 @@ fn capture() -> Result<Capture, String> {
             .split(',')
             .map(|c| c.parse::<u16>().map_err(|e| e.to_string()))
             .collect::<Result<Vec<_>, _>>()?;
+        let session = value("session")?;
+        if session.len() != 36 {
+            return Err("invalid capture session ID".into());
+        }
+        let reply = |name: &str, status| -> Result<GatedCommandResult, String> {
+            if value(&format!("{name}_status"))? != format!("{status:?}") {
+                return Err(format!("{name}: unexpected captured status"));
+            }
+            let number = |suffix: &str| -> Result<u64, String> {
+                value(&format!("{name}_{suffix}"))?
+                    .parse::<u64>()
+                    .map_err(|e| e.to_string())
+            };
+            Ok(GatedCommandResult {
+                command_id: number("id")?,
+                server_sequence: number("sequence")?,
+                status,
+                payload: read(&format!("s06-{name}.bin"))?,
+            })
+        };
+        let commit = reply("commit", CommandStatus::Accepted)?;
+        let refusal = reply("refusal", CommandStatus::Rejected)?;
+        if commit.command_id == 0
+            || commit.server_sequence == 0
+            || refusal.command_id <= commit.command_id
+            || refusal.server_sequence <= commit.server_sequence
+        {
+            return Err("capture results are out of session order".into());
+        }
         return Ok(Capture {
+            live: Some(LiveReplay {
+                commit,
+                refusal,
+                request: read("s06-request.bin")?,
+                refused_request: read("s06-refused-request.bin")?,
+            }),
             before: read("s06-before.bin")?,
             after: read("s06-after.bin")?,
             commit: read("s06-commit.bin")?,
@@ -90,10 +133,15 @@ fn capture() -> Result<Capture, String> {
         provenance: "player".to_owned(),
     };
     Ok(Capture {
+        live: None,
         before: snapshot_bytes(catalogue_of(outfit, 7, None))?,
         after: snapshot_bytes(catalogue_of(outfit, 8, Some(selected)))?,
-        commit: wire::ChangeResult::Committed(8).encode().map_err(|e| format!("{e:?}"))?,
-        refusal: wire::ChangeResult::Rejected.encode().map_err(|e| format!("{e:?}"))?,
+        commit: wire::ChangeResult::Committed(8)
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
+        refusal: wire::ChangeResult::Rejected
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
         outfit: outfit.to_owned(),
         colours,
         committed: 8,
@@ -127,10 +175,11 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
         ..Panel::default()
     };
     catalogue(&mut panel, before.catalogue.clone());
-    assert!(panel.summary.contains(&format!(
-        "Outfit: {}; allowed addon mask: ",
-        capture.outfit
-    )));
+    assert!(
+        panel
+            .summary
+            .contains(&format!("Outfit: {}; allowed addon mask: ", capture.outfit))
+    );
 
     let [head, body, legs, feet] = capture.colours;
     panel.fields = [
@@ -143,7 +192,10 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
     let (mut applying, change) = pending(&panel)?;
     assert_eq!(
         (change.capability, change.kind),
-        (wire::CAPABILITY_APPEARANCE_V1, wire::COMMAND_TYPE_APPEARANCE_CHANGE)
+        (
+            wire::CAPABILITY_APPEARANCE_V1,
+            wire::COMMAND_TYPE_APPEARANCE_CHANGE
+        )
     );
     let sent = wire::Change {
         context: before.catalogue.context,
@@ -158,7 +210,16 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
         content_revision: capture.content_revision.clone(),
     };
     assert_eq!(change.payload, sent.encode().map_err(|e| format!("{e:?}"))?);
-    apply(&mut applying, &change, &result(CommandStatus::Accepted, &capture.commit));
+    if let Some(live) = &capture.live {
+        assert_eq!(change.payload, live.request);
+        apply(&mut applying, &change, &live.commit);
+    } else {
+        apply(
+            &mut applying,
+            &change,
+            &result(CommandStatus::Accepted, &capture.commit),
+        );
+    }
     assert!(!applying.pending);
     assert_eq!(
         applying.feedback,
@@ -172,16 +233,52 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
         "Current outfit: {}\r\nAddons: 0\r\nMount: None\r\nColours: [{head}, {body}, {legs}, {feet}]\r\n",
         capture.outfit
     )));
-    let confirmed = applying.confirmed.clone().ok_or("selection not confirmed")?;
+    let confirmed = applying
+        .confirmed
+        .clone()
+        .ok_or("selection not confirmed")?;
     assert_eq!(confirmed.selection.outfit_key, capture.outfit);
     assert_eq!(confirmed.selection.colours, capture.colours);
     assert_eq!(after.catalogue.root_revision, capture.committed);
 
+    if let Some(live) = &capture.live {
+        let refused = wire::Change::decode(&live.refused_request).map_err(|e| format!("{e:?}"))?;
+        let mut bad = applying.clone();
+        bad.fields[1] = refused.selection.addons.to_string();
+        // The UI prevents this request. Replay the actual wire probe through the reducer.
+        assert!(command(&bad, Intent::Apply).is_err());
+        let change = FeatureCommand {
+            capability: wire::CAPABILITY_APPEARANCE_V1,
+            kind: wire::COMMAND_TYPE_APPEARANCE_CHANGE,
+            payload: live.refused_request.clone(),
+        };
+        assert!(bad.begin(change.kind));
+        apply(&mut bad, &change, &live.refusal);
+        assert!(!bad.pending);
+        assert_eq!(bad.feedback, "The server refused the appearance request");
+        assert_eq!(bad.confirmed, applying.confirmed);
+        assert_eq!(bad.summary, applying.summary);
+        assert_eq!(bad.catalogue, applying.catalogue);
+        return Ok(());
+    }
+
     // The refusal leaves the confirmed selection and the shown catalogue unchanged.
     for (status, payload, message) in [
-        (CommandStatus::Rejected, capture.refusal.clone(), "The server refused the appearance request"),
-        (CommandStatus::Accepted, capture.refusal.clone(), "The server refused the appearance request"),
-        (CommandStatus::Accepted, vec![0xff, 0x00], "Invalid appearance reply"),
+        (
+            CommandStatus::Rejected,
+            capture.refusal.clone(),
+            "The server refused the appearance request",
+        ),
+        (
+            CommandStatus::Accepted,
+            capture.refusal.clone(),
+            "The server refused the appearance request",
+        ),
+        (
+            CommandStatus::Accepted,
+            vec![0xff, 0x00],
+            "Invalid appearance reply",
+        ),
     ] {
         let (mut bad, change) = pending(&applying)?;
         apply(&mut bad, &change, &result(status, &payload));

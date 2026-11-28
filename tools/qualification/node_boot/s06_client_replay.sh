@@ -40,7 +40,7 @@ grep -q '^SEAM_EVIDENCE e2e_capture scenario=S06\.client status=CAPTURED ' "$cap
 if grep -Eq '^SEAM_EVIDENCE (e2e_all scenario=S06\.client status=FAIL |QUALIFICATION_CAUSE row=S06\.client |S06_CLIENT_CAPTURE_WRITE_ERROR )' "$capture/live.log"; then
   failed live-capture-failed
 fi
-for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt; do
+for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt s06-request.bin s06-refused-request.bin; do
   [[ -s "$capture/$file" ]] || failed "missing-$file"
 done
 

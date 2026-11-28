@@ -13,6 +13,8 @@ struct Observed {
     after: Vec<u8>,
     commit: Vec<u8>,
     refusal: Vec<u8>,
+    request: Vec<u8>,
+    refused_request: Vec<u8>,
     expected: String,
 }
 
@@ -27,10 +29,17 @@ fn raw_snapshot(client: &mut DevClientSession) -> TestResult<(Vec<u8>, appearanc
     Ok((payload, decoded))
 }
 
+struct CapturedReply {
+    status: CommandStatus,
+    command_id: u64,
+    server_sequence: u64,
+    payload: Vec<u8>,
+}
+
 async fn change(
     client: &mut DevClientSession,
     request: &appearance::Change,
-) -> TestResult<(CommandStatus, Vec<u8>)> {
+) -> TestResult<CapturedReply> {
     let payload = request
         .encode()
         .map_err(|error| format!("appearance change encode: {error:?}"))?;
@@ -42,7 +51,12 @@ async fn change(
             &payload,
         )
         .await?;
-    Ok((reply.status, reply.payload))
+    Ok(CapturedReply {
+        status: reply.status,
+        command_id: reply.command_id,
+        server_sequence: reply.server_sequence,
+        payload: reply.payload,
+    })
 }
 
 fn content_revision() -> TestResult<String> {
@@ -70,7 +84,12 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         .outfits
         .first()
         .ok_or("step=select no earned outfit")?;
-    let colours = match before.catalogue.selected.as_ref().map(|s| s.selection.colours) {
+    let colours = match before
+        .catalogue
+        .selected
+        .as_ref()
+        .map(|s| s.selection.colours)
+    {
         Some([4, 3, 2, 1]) => [1, 2, 3, 4],
         _ => [4, 3, 2, 1],
     };
@@ -88,10 +107,18 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         selection: selection.clone(),
         content_revision: revision.clone(),
     };
-    let (status, commit) = change(&mut client, &request).await?;
-    let committed = match appearance::ChangeResult::decode(&commit) {
-        Ok(appearance::ChangeResult::Committed(value)) if status == CommandStatus::Accepted => value,
-        observed => return Err(format!("step=select status={status:?} result={observed:?}").into()),
+    let commit = change(&mut client, &request).await?;
+    let committed = match appearance::ChangeResult::decode(&commit.payload) {
+        Ok(appearance::ChangeResult::Committed(value))
+            if commit.status == CommandStatus::Accepted =>
+        {
+            value
+        }
+        observed => {
+            return Err(
+                format!("step=select status={:?} result={observed:?}", commit.status).into(),
+            );
+        }
     };
     let mut after = before.clone();
     full_row_s06::wait_for_selection(&mut client, &mut after, committed, &selection).await?;
@@ -104,9 +131,9 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         return Err("step=select the catalogue does not show the committed selection".into());
     }
     let mut forbidden = selection.clone();
-    forbidden.addons = option.permitted_addons.saturating_add(1);
-    if forbidden.addons == 0 || forbidden.addons == selection.addons {
-        forbidden.mount_key = Some("oteryn:content.mount/not-earned".into());
+    forbidden.addons = (!option.permitted_addons) & 3;
+    if forbidden.addons == 0 {
+        return Err("no locked addon in fixture catalogue".into());
     }
     let refusal = appearance::Change {
         context: after.catalogue.context,
@@ -115,23 +142,60 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         selection: forbidden,
         content_revision: revision.clone(),
     };
-    let (status, refused) = change(&mut client, &refusal).await?;
-    if status != CommandStatus::Rejected
-        || appearance::ChangeResult::decode(&refused) != Ok(appearance::ChangeResult::Rejected)
+    let refused = change(&mut client, &refusal).await?;
+    if refused.status != CommandStatus::Rejected
+        || appearance::ChangeResult::decode(&refused.payload)
+            != Ok(appearance::ChangeResult::Rejected)
     {
-        return Err(format!("step=refusal status={status:?} expected Rejected").into());
+        return Err(format!("step=refusal status={:?} expected Rejected", refused.status).into());
+    }
+    client.service_liveness(Duration::from_millis(500)).await?;
+    let mut after_refusal = after.clone();
+    for event in client.take_events() {
+        if let oteryn_dev_client::SessionEvent::Appearance(delta) = event {
+            full_row_s06::apply_appearance(&mut after_refusal, delta.value);
+        }
+    }
+    if after_refusal.catalogue != after.catalogue {
+        return Err("refusal changed appearance catalogue".into());
+    }
+    let session = client.join_snapshot().game_session_id;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("appearance logout refused".into());
+    }
+    let mut fresh = connect_world(clients, 0x6a).await?;
+    let (_, persisted) = raw_snapshot(&mut fresh)?;
+    if fresh.join_snapshot().game_session_id == session
+        || persisted.catalogue.selected != after.catalogue.selected
+    {
+        return Err("appearance selection did not persist across fresh admission".into());
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("fresh appearance logout refused".into());
     }
     let [head, body, legs, feet] = colours;
     let expected = format!(
-        "outfit={}\naddons=0\ncolours={head},{body},{legs},{feet}\ncommitted={committed}\ncontent_revision={revision}\n",
-        selection.outfit_key
+        "outfit={}\naddons=0\ncolours={head},{body},{legs},{feet}\ncommitted={committed}\ncontent_revision={revision}\nsession={}\ncommit_id={}\ncommit_sequence={}\ncommit_status={:?}\nrefusal_id={}\nrefusal_sequence={}\nrefusal_status={:?}\n",
+        selection.outfit_key,
+        uuid_text(session.as_bytes()),
+        commit.command_id,
+        commit.server_sequence,
+        commit.status,
+        refused.command_id,
+        refused.server_sequence,
+        refused.status
     );
-    let _ = client.session_mut().logout().await;
     Ok(Observed {
         before: before_bytes,
         after: after_bytes,
-        commit,
-        refusal: refused,
+        commit: commit.payload,
+        refusal: refused.payload,
+        request: request.encode().map_err(|error| format!("{error:?}"))?,
+        refused_request: refusal.encode().map_err(|error| format!("{error:?}"))?,
         expected,
     })
 }
@@ -152,10 +216,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 ("s06-commit.bin", observed.commit.as_slice()),
                 ("s06-refusal.bin", observed.refusal.as_slice()),
                 ("s06-expected.txt", observed.expected.as_bytes()),
+                ("s06-request.bin", observed.request.as_slice()),
+                (
+                    "s06-refused-request.bin",
+                    observed.refused_request.as_slice(),
+                ),
             ] {
                 if let Err(error) = std::fs::write(root.join(name), bytes) {
-                    evidence(&format!("S06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-                    evidence("e2e_all scenario=S06.client status=FAIL evidence=capture-write-failed");
+                    evidence(&format!(
+                        "S06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+                    ));
+                    evidence(
+                        "e2e_all scenario=S06.client status=FAIL evidence=capture-write-failed",
+                    );
                     return;
                 }
             }

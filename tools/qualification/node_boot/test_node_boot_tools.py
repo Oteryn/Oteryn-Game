@@ -396,7 +396,7 @@ class SeamPassThroughTests(unittest.TestCase):
             cargo.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
             cargo.chmod(0o755)
             live = textwrap.dedent('''\
-                for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt; do
+                for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt s06-request.bin s06-refused-request.bin; do
                     printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
                 done
                 echo 'SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=fixture'
