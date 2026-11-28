@@ -366,10 +366,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let initial_id = uuid_text(session.as_bytes());
     require_release_state(&mut database, &initial_id, clients.characters[1], false).await?;
     let logout = client.session_mut().logout().await?;
-    require_mechanic_acceptance(logout.status, "I09 logout")?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("I09 first logout refused: {logout:?}").into());
-    }
+    require_clean_logout("initial", logout)?;
     require_release_state(&mut database, &initial_id, clients.characters[1], true).await?;
     evidence("I09_POSTGRES_ASSERTION clean_logout_release=verified");
     let transcript = oteryn_dev_client::take_qualification_transcript()
@@ -391,10 +388,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     assert_chair(&mut relogged, target, item)?;
     let relog_id = uuid_text(relogged.join_snapshot().game_session_id.as_bytes());
     let cleanup = relogged.session_mut().logout().await?;
-    require_mechanic_acceptance(cleanup.status, "I09 relog logout before public observation")?;
-    if cleanup.result != Some(LogoutResult::Accepted) {
-        return Err(format!("I09 relog first logout refused: {cleanup:?}").into());
-    }
+    require_clean_logout("relog", cleanup)?;
     drop(relogged);
     let (observer_id, observer_transcript) =
         oteryn_dev_client::with_qualification_transcript(async {
@@ -515,6 +509,13 @@ fn require_unique_chair(
     Ok(())
 }
 
+fn require_clean_logout(phase: &str, outcome: oteryn_dev_client::LogoutOutcome) -> TestResult {
+    if outcome.status != CommandStatus::Accepted || outcome.result != Some(LogoutResult::Accepted) {
+        return Err(format!("I09 {phase} first logout refused: {outcome:?}").into());
+    }
+    Ok(())
+}
+
 async fn require_release_state(
     database: &mut sqlx::PgConnection,
     session: &str,
@@ -610,4 +611,29 @@ fn i09_rejects_shifted_collision_probe_and_loss_release() {
     assert!(check_release_state((2, true, true), true).is_err());
     assert!(check_release_state((3, false, false), true).is_err());
     assert!(check_release_state((3, false, true), true).is_ok());
+}
+
+#[test]
+fn i09_logout_gate_keeps_refusal_details() {
+    let accepted = oteryn_dev_client::LogoutOutcome {
+        command_id: 60,
+        result_server_sequence: 187,
+        status: CommandStatus::Accepted,
+        result: Some(LogoutResult::Accepted),
+    };
+    assert!(require_clean_logout("initial", accepted).is_ok());
+    for (result, detail) in [
+        (Some(LogoutResult::Busy), "Busy"),
+        (Some(LogoutResult::InFight { retry_after_ms: 500 }), "InFight"),
+        (None, "result: None"),
+    ] {
+        let refusal = oteryn_dev_client::LogoutOutcome {
+            status: CommandStatus::Rejected,
+            result,
+            ..accepted
+        };
+        let error = require_clean_logout("initial", refusal).unwrap_err().to_string();
+        assert!(error.contains(detail));
+        assert!(error.contains("result_server_sequence: 187"));
+    }
 }
