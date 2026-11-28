@@ -7,15 +7,15 @@ mod qualification;
 use oteryn_gameplay_domain::domain::echo_warden::EchoVariant;
 use oteryn_gameplay_domain::domain::forge_creature::{
     FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate,
-    INFLUENCED_SIMULTANEOUS_MAX, plan_fiendish_tick,
+    forge_population_roll, influenced_available_slots, plan_fiendish_tick, plan_influenced_tick,
 };
 #[cfg(feature = "qualification-spawn")]
 pub(super) use qualification::PendingDraw;
 #[cfg(feature = "qualification-spawn")]
 pub use qualification::{
-    ForgePopulationCensus, ForgePopulationDrawRefusal, ForgePopulationSelection,
+    ForgePopulationCandidate, ForgePopulationCensus, ForgePopulationDrawRefusal,
+    ForgePopulationSelection,
 };
-use sha2::{Digest, Sha256};
 
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
 pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
@@ -36,16 +36,12 @@ impl ChannelRuntimeV1 {
     }
 
     fn population_roll(&self, actor: ExactActorRef, seed: Option<u64>) -> u64 {
-        let mut hash = Sha256::new();
-        hash.update(b"FORGECREATURE/spawn/v1");
-        hash.update(self.content.server_artifact_digest());
-        hash.update(actor.placement_identity());
-        hash.update(actor.actor_local_generation().to_be_bytes());
-        if let Some(seed) = seed {
-            hash.update(seed.to_be_bytes());
-        }
-        let bytes: [u8; 32] = hash.finalize().into();
-        u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default())
+        forge_population_roll(
+            self.content.server_artifact_digest(),
+            actor.placement_identity(),
+            actor.actor_local_generation(),
+            seed,
+        )
     }
 
     pub(super) fn apply_forge_classification(
@@ -219,6 +215,7 @@ impl ChannelRuntimeV1 {
                 actors.push((identity, actor));
                 #[cfg(feature = "qualification-spawn")]
                 if let Some(draw) = &mut draw {
+                    draw.record_candidate(identity, &snapshot);
                     if eligible {
                         draw.census.eligible.push((identity, actor));
                     }
@@ -271,7 +268,13 @@ impl ChannelRuntimeV1 {
                     .is_ok_and(|s| matches!(s.forge, Some(ForgeCreature::Influenced(_))))
             })
             .count();
-        let mut influenced: Vec<_> = actors
+        let influenced_available = influenced_available_slots(influenced_count);
+        #[cfg(feature = "qualification-spawn")]
+        if let Some(draw) = &mut draw {
+            draw.census.influenced_count = influenced_count;
+            draw.census.influenced_available_slots = influenced_available;
+        }
+        let influenced_rolls = actors
             .iter()
             .filter(|(_, actor)| {
                 self.companion_snapshot(*actor).is_ok_and(|s| {
@@ -286,24 +289,16 @@ impl ChannelRuntimeV1 {
                     _ => self.population_roll(*actor, population_seed),
                 };
                 (roll, *actor)
-            })
-            .collect();
-        influenced.sort_unstable_by_key(|(roll, _)| *roll);
-        for (roll, actor) in influenced.into_iter().take(
-            usize::from(INFLUENCED_SIMULTANEOUS_MAX)
-                .saturating_sub(influenced_count)
-                .min(1),
-        ) {
-            if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
-                self.apply_forge_classification_observed(actor, kind, |snapshot| {
-                    #[cfg(feature = "qualification-spawn")]
-                    if let Some(draw) = &mut draw {
-                        draw.record_selection(snapshot, kind);
-                    }
-                    #[cfg(not(feature = "qualification-spawn"))]
-                    let _ = snapshot;
-                })?;
-            }
+            });
+        if let Some((actor, kind)) = plan_influenced_tick(influenced_available, influenced_rolls) {
+            self.apply_forge_classification_observed(actor, kind, |snapshot| {
+                #[cfg(feature = "qualification-spawn")]
+                if let Some(draw) = &mut draw {
+                    draw.record_selection(snapshot, kind);
+                }
+                #[cfg(not(feature = "qualification-spawn"))]
+                let _ = snapshot;
+            })?;
         }
         let next_scan = now.saturating_add(POPULATION_TICK_MICROS);
         self.forge_next_tick_micros = self

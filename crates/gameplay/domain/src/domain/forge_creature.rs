@@ -80,6 +80,45 @@ pub fn plan_fiendish_tick(
     }
 }
 
+/// Stateless Influenced roll shared by the population owner and Echo.
+#[must_use]
+pub fn forge_population_roll(
+    artifact_digest: [u8; 32],
+    placement_identity: [u8; 16],
+    generation: u64,
+    seed: Option<u64>,
+) -> u64 {
+    let mut hash = Sha256::new()
+        .chain_update(b"FORGECREATURE/spawn/v1")
+        .chain_update(artifact_digest)
+        .chain_update(placement_identity)
+        .chain_update(generation.to_be_bytes());
+    if let Some(seed) = seed {
+        hash.update(seed.to_be_bytes());
+    }
+    let bytes: [u8; 32] = hash.finalize().into();
+    u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default())
+}
+
+#[must_use]
+pub fn influenced_available_slots(influenced_count: usize) -> usize {
+    usize::from(INFLUENCED_SIMULTANEOUS_MAX)
+        .saturating_sub(influenced_count)
+        .min(1)
+}
+
+/// Select the lowest unweighted roll. Equal rolls keep native spawn scan order.
+pub fn plan_influenced_tick<T>(
+    available_slots: usize,
+    rolls: impl Iterator<Item = (u64, T)>,
+) -> Option<(T, ForgeCreature)> {
+    if available_slots == 0 {
+        return None;
+    }
+    let (roll, actor) = rolls.min_by_key(|(roll, _)| *roll)?;
+    ForgeCreature::new_influenced(1 + (roll % 5) as u8).map(|kind| (actor, kind))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForgeRecipientFacts {
     pub premium: bool,
