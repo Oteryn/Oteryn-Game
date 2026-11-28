@@ -413,12 +413,23 @@ async fn fight(
             .iter()
             .any(|fact| matches!(fact, AnalyserFact::Kill { .. }));
         let xp = facts.iter().any(|fact| matches!(fact, AnalyserFact::Experience { raw, gained } if *raw > 0 && *gained > 0));
-        if target_state.target_selected && kill && xp {
+        let target_removed = client.world_entities().is_some_and(|view| {
+            view.get(&target.entity)
+                .is_none_or(|entry| entry.kind != EntityKind::Creature)
+        });
+        let corpse_visible = client.world_entities().is_some_and(|view| {
+            view.iter().any(|entry| {
+                entry.kind == EntityKind::Corpse
+                    && entry.position == target_state.last_position
+                    && !existing_corpses.contains(&entry.entity)
+            })
+        });
+        if target_state.target_selected && kill && xp && target_removed && corpse_visible {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "Rat analyser settlement deadline target={} kill={kill} xp={xp}",
+                "Rat analyser settlement deadline target={} kill={kill} xp={xp} target_removed={target_removed} corpse_visible={corpse_visible}",
                 target_state.target_selected
             )
             .into());
