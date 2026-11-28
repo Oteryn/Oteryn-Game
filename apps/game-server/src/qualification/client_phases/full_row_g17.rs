@@ -1,5 +1,5 @@
 //! G17 returner reward query and claim (capability 182, commands 6124 and 6125).
-//! 1. Admit the node-boot character; query the returner state (6124).
+//! 1. Admit and log out a dedicated character, then age its terminal history in the disposable database.
 //! 2. With no entitlement (state 0) a claim for an unknown identity must be refused and leave
 //!    the inventory and the state unchanged; the row then fails naming the precondition,
 //!    because an entitlement needs twelve months of inactivity evidence no player route makes.
@@ -14,6 +14,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_reward::{self as daily, returner};
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -77,10 +78,9 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
     }
     Ok(())
 }
@@ -107,7 +107,6 @@ fn claim_reply_matches(payload: &[u8], disposition: u8, id: Option<[u8; 16]>) ->
 
 /// Whether the durable claim receipt for `offer` joins a minted item instance (read-only).
 async fn receipt_exists(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<bool> {
-    use sqlx::Connection;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_returner_reward_claims c \
