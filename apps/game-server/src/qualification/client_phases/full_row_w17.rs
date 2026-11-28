@@ -193,13 +193,13 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
 
     character_prep::declare_seeded(
-        "W17.full", "knight-level-100,1000-carried-gold,crude-umbral-blade,arena-entrance",
+        "W17.full", "knight-level-100,1000-carried-gold,giant-sword,arena-entrance",
         "travel and build preparation exceed the row budget",
     );
     let preparation_session = client.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(preparation_session.as_bytes()), "--profile", "knight".into()).await?;
     character_prep::grant_item(&client, 3035, 10).await?;
-    character_prep::grant_item(&client, 20064, 1).await?;
+    character_prep::grant_item(&client, 3281, 1).await?;
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 0).await?;
@@ -215,7 +215,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     let definitions = provisioning::item_index()?;
     let platinum = provisioning::item_reference(&definitions, 3035)?;
-    let sword = provisioning::item_reference(&definitions, 20064)?;
+    let sword = provisioning::item_reference(&definitions, 3281)?;
     let trophy = provisioning::item_reference(&definitions, 5807)?;
     if count(&client, platinum)? != 10 || count(&client, trophy)? != 0 {
         return Err("W17 entry inputs or empty trophy pre-state differ".into());
@@ -224,16 +224,16 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         inventory.equipment.iter().any(|slot| slot.item.item_definition_ref == sword)
     });
     if count(&client, sword)? != 1 || equipped(&client) {
-        return Err("W17 crude umbral blade was not carried unequipped before the move".into());
+        return Err("W17 giant sword was not carried unequipped before the move".into());
     }
     let gear = client.session_mut().equip_item_definition(sword).await?;
     if gear.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
-        return Err(format!("W17 crude umbral blade equip refused: {gear:?}").into());
+        return Err(format!("W17 giant sword equip refused: {gear:?}").into());
     }
     let gear_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !equipped(&client) {
         if tokio::time::Instant::now() >= gear_deadline {
-            return Err("W17 crude umbral blade equip sent no confirming inventory frame".into());
+            return Err("W17 giant sword equip sent no confirming inventory frame".into());
         }
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
