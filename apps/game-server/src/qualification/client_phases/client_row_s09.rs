@@ -20,6 +20,53 @@ async fn saved_position(
     .await?)
 }
 
+async fn terminal_lease(
+    clients: &SeamClients<'_>,
+    db: &mut sqlx::PgConnection,
+    session: &[u8; 16],
+) -> TestResult<String> {
+    let released: Option<(bool, String)> = sqlx::query_as(
+        "SELECT session_state=3 AND current_transport_ref IS NULL AND control_loss_epoch IS NULL, \
+         character_lease_generation::text FROM game_durability_reconnect_sessions \
+         WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid",
+    )
+    .bind(session.as_slice())
+    .bind(clients.characters[0].as_slice())
+    .fetch_optional(db)
+    .await?;
+    require_terminal_lease(released)
+}
+
+fn require_terminal_lease(released: Option<(bool, String)>) -> TestResult<String> {
+    match released {
+        Some((true, lease)) => Ok(lease),
+        _ => Err(format!("step=logout-release exact session observed={released:?}").into()),
+    }
+}
+
+fn require_logout_save(
+    expected: (i32, i32, i16),
+    lease: &str,
+    before: &Option<SavedPosition>,
+    saved: &Option<SavedPosition>,
+) -> TestResult {
+    if !saved
+        .as_ref()
+        .is_some_and(|row| (row.0, row.1, row.2) == expected && row.3 == lease)
+        || saved == before
+    {
+        return Err(format!("step=logout-save expected={expected:?} lease={lease} before={before:?} observed={saved:?}").into());
+    }
+    Ok(())
+}
+
+fn bound_frame<'a>(contents: &'a [u8], binding: &[u8], original: &[u8]) -> TestResult<&'a [u8]> {
+    contents
+        .strip_prefix(binding)
+        .filter(|frame| *frame == original)
+        .ok_or_else(|| "S09 replay capture binding or frame mismatch".into())
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let root =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S09 requires a fresh capture directory")?;
@@ -54,13 +101,13 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             return Err(format!("step=move expected={target:?} observed={step:?}").into());
         }
     }
-    if !is_logout_rest_tile(world, target) {
+    if target == start || target == default || !is_logout_rest_tile(world, target) {
         return Err(format!("step=pz tile={target:?}").into());
     }
     let expected = (
         i32::from(target.x),
         i32::from(target.y),
-        i16::from(target.floor),
+        -i16::from(target.floor),
     );
     let before = saved_position(clients, &mut db).await?;
     if before
@@ -75,26 +122,9 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     if outcome.status != CommandStatus::Accepted || outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout observed {outcome:?}").into());
     }
-    let released: Option<(bool, String)> = sqlx::query_as(
-        "SELECT session_state=3 AND current_transport_ref IS NULL AND control_loss_epoch IS NULL, \
-         character_lease_generation::text FROM game_durability_reconnect_sessions \
-         WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid",
-    )
-    .bind(session.as_bytes().as_slice())
-    .bind(clients.characters[0].as_slice())
-    .fetch_optional(&mut db)
-    .await?;
-    let Some((true, lease)) = released else {
-        return Err(format!("step=logout-release exact session observed={released:?}").into());
-    };
+    let lease = terminal_lease(clients, &mut db, session.as_bytes()).await?;
     let saved = saved_position(clients, &mut db).await?;
-    if !saved
-        .as_ref()
-        .is_some_and(|row| (row.0, row.1, row.2) == expected && row.3 == lease)
-        || saved == before
-    {
-        return Err(format!("step=logout-save expected={expected:?} lease={lease} before={before:?} observed={saved:?}").into());
-    }
+    require_logout_save(expected, &lease, &before, &saved)?;
     drop(client);
     let mut fresh = connect_character(clients, 0x46, 0).await?;
     if tile(fresh.world_spatial().actor_position)? != target
@@ -107,10 +137,13 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         )
         .into());
     }
+    let fresh_session = fresh.join_snapshot().game_session_id;
     let cleanup = fresh.session_mut().logout().await?;
     if cleanup.status != CommandStatus::Accepted || cleanup.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=relog-logout observed {cleanup:?}").into());
     }
+
+    terminal_lease(clients, &mut db, fresh_session.as_bytes()).await?;
 
     let binding = format!(
         "{}\t{}\t{}\t{}\t{}\n",
@@ -124,11 +157,9 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture.write_all(&frame)?;
     drop(capture);
     let contents = std::fs::read(&path)?;
-    let replay_frame = contents
-        .strip_prefix(binding.as_bytes())
-        .ok_or("S09 replay capture binding mismatch")?;
+    let replay_frame = bound_frame(&contents, binding.as_bytes(), &frame)?;
     let decoded = oteryn_dev_client::DevClientSession::replay_logout_frame(replay_frame)?;
-    if replay_frame != frame || decoded != outcome || decoded.command_id != command {
+    if decoded != outcome || decoded.command_id != command {
         return Err(format!("step=replay original={outcome:?} decoded={decoded:?}").into());
     }
     Ok(format!(
@@ -153,5 +184,43 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=S09.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_unsaved_default_unchanged_and_prior_lease_positions() -> TestResult {
+        let expected = (32369, 32237, 7);
+        let saved = Some((32369, 32237, 7, "2".into(), "42".into()));
+        require_logout_save(expected, "2", &None, &saved)?;
+        assert!(require_logout_save(expected, "2", &None, &None).is_err());
+        let default = Some((32369, 32238, 7, "2".into(), "42".into()));
+        assert!(require_logout_save(expected, "2", &None, &default).is_err());
+        assert!(require_logout_save(expected, "2", &saved, &saved).is_err());
+        assert!(require_logout_save(expected, "3", &None, &saved).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_a_missing_or_unreleased_session() -> TestResult {
+        assert!(require_terminal_lease(None).is_err());
+        assert!(require_terminal_lease(Some((false, "2".into()))).is_err());
+        assert_eq!(require_terminal_lease(Some((true, "2".into())))?, "2");
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_a_missing_stale_or_substituted_capture() -> TestResult {
+        assert_eq!(
+            bound_frame(b"this-run\nreply", b"this-run\n", b"reply")?,
+            b"reply"
+        );
+        assert!(bound_frame(b"", b"this-run\n", b"reply").is_err());
+        assert!(bound_frame(b"prior-run\nreply", b"this-run\n", b"reply").is_err());
+        assert!(bound_frame(b"this-run\nreplacement", b"this-run\n", b"reply").is_err());
+        Ok(())
     }
 }
