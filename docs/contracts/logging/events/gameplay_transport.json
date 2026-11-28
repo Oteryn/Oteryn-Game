@@ -278,6 +278,7 @@
       "level": "info",
       "span": false,
       "fields": [
+        "retry_stage",
         "stage"
       ],
       "codes": [],
@@ -288,8 +289,9 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage",
-        "kind"
+        "kind",
+        "retry_stage",
+        "stage"
       ],
       "codes": [],
       "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
