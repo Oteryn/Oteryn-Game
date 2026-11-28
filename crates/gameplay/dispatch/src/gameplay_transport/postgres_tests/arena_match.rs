@@ -12,6 +12,30 @@ use crate::gameplay_transport::connection::{
 };
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 
+#[path = "arena_match/fee_inventory.rs"]
+mod fee_inventory;
+
+#[test]
+fn w17_arena_entry_emits_inventory_with_fee_balance() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(
+                true,
+                Some(NativeScenario::FeeInventory),
+                "w17_arena_fee_inventory",
+            )
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "W17 arena fee inventory scenario panicked")??;
+    Ok(())
+}
+
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -126,6 +150,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 
 #[derive(Clone, Copy)]
 enum NativeScenario {
+    FeeInventory,
     Portals,
     RecreatedPillars,
     Departure,
@@ -239,7 +264,8 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>, test: &str) -> Te
 }
 
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool, test: &str) -> TestResult {
-    let native_portals = route.is_some();
+    let fee_inventory = matches!(route, Some(NativeScenario::FeeInventory));
+    let native_portals = route.is_some() && !fee_inventory;
     let leave_early = matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
@@ -353,7 +379,14 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             "oteryn:item.tibia.i3035"
         };
-        super::item_look_fixtures::seed_main_backpack(&harness, &[(coins, 2)]).await?;
+        if fee_inventory {
+            super::item_look_fixtures::seed_main_backpack(
+                &harness,
+                &[("oteryn:item.tibia.i3035", 10), ("oteryn:item.tibia.i3031", 50)],
+            ).await?;
+        } else {
+            super::item_look_fixtures::seed_main_backpack(&harness, &[(coins, 2)]).await?;
+        }
         fixture::equip_sword(&harness).await?;
         owner.admit_progression_session(&mut admitted).await;
         assert!(
@@ -459,7 +492,11 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             None
         };
         let entry_id = admitted.continuity.next_command_id;
-        let entered = command(&owner, &mut admitted, A::Enter).await?;
+        let entered = if fee_inventory {
+            fee_inventory::enter_and_check_inventory_frame(&owner, admitted).await?
+        } else {
+            command(&owner, &mut admitted, A::Enter).await?
+        };
         if !funded {
             assert_eq!(entered.disposition, D::InsufficientGold);
             assert_eq!(entered.state.active_rank, 0);
@@ -486,6 +523,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         .fetch_one(&harness.pool)
         .await?;
         assert_eq!(fee, 1000);
+        if fee_inventory {
+            return Ok(());
+        }
         let replay = owner
             .arena_match_command(
                 admitted,
