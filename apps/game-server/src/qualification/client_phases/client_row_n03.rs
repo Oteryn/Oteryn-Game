@@ -103,6 +103,57 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn walk_to_depot(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    let mut step_wait_ms = 0;
+    for &direction in path {
+        if step_wait_ms != 0 {
+            client.service_liveness(Duration::from_millis(u64::from(step_wait_ms))).await?;
+        }
+        let start = tile(client.world_spatial().actor_position)?;
+        let landing = destination(world, start, direction).ok_or("N03 invalid depot route")?;
+        let mut outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked {
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Creature
+                        && tile(entity.position).ok() == Some(landing)
+                }).map(|entity| entity.entity.identity)
+            }).ok_or_else(|| format!("BLOCKER-SERVER N03 blocked without visible creature at {landing:?}: {outcome:?}"))?;
+            evidence(&format!("N03_MOVE_BLOCKED occupant={occupant:?} at={landing:?} frame={outcome:?}"));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            loop {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                let still_there = client.world_entities().is_some_and(|entities| {
+                    entities.iter().any(|entity| entity.entity.identity == occupant
+                        && tile(entity.position).ok() == Some(landing))
+                });
+                if !still_there {
+                    evidence(&format!("N03_MOVE_CLEARED occupant={occupant:?} at={landing:?}"));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("N03 creature {occupant:?} remained at {landing:?}").into());
+                }
+            }
+            outcome = client.step(direction).await?;
+        }
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != landing
+        {
+            return Err(format!("N03 step {direction:?} expected={landing:?}: {outcome:?}").into());
+        }
+        step_wait_ms = outcome.step_wait_ms;
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_root = required("E2E_ALL_CAPTURE_DIR")?;
     let capture_root = Path::new(&capture_root);
@@ -120,7 +171,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         near_locker(world, at)
     })
     .ok_or("no reachable authored depot locker")?;
-    walk(&mut client, world, &path).await?;
+    walk_to_depot(&mut client, world, &path).await?;
     let item = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -171,10 +222,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut row = None;
     let listed = loop {
         let (page, page_envelope) = search_command(&mut client, wire::Request::Open { after }).await?;
-        if let Some(found) = page.results.iter().find(|row| row.client_id == client_id) {
-            if row.replace(found.clone()).is_some() {
-                return Err("N03 item repeated across holdings pages".into());
-            }
+        if let Some(found) = page.results.iter().find(|row| row.client_id == client_id)
+            && row.replace(found.clone()).is_some()
+        {
+            return Err("N03 item repeated across holdings pages".into());
         }
         pages.push(page_envelope);
         if page.outcome == wire::Outcome::Listed {

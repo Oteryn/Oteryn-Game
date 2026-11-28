@@ -278,6 +278,7 @@ fn e2e_n03_depot_list_retrieve_one_and_refusals() -> Result<(), Error> {
         Some(root) => {
             let captured = captured_from(std::path::Path::new(&root))?;
             replay(&captured)?;
+            depot_search_malformed_payload_and_refusal_keep_the_last_reply()?;
             println!("N03_NATIVE_REPLAY session={}", captured.session);
             Ok(())
         }
