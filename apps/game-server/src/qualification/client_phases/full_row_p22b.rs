@@ -40,6 +40,9 @@ async fn call(
                 .ok_or("step=decode;observed=undecodable-tracker-snapshot")?,
         )
     };
+    if let Some(snapshot) = &snapshot {
+        expect(snapshot.boss, "decode", "expected-bosstiary-snapshot")?;
+    }
     Ok((reply.status, snapshot))
 }
 
@@ -50,19 +53,17 @@ fn change(action: tr::TrackerAction, key: &str) -> tr::TrackerRequest {
     }
 }
 
-fn has(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> bool {
+fn contains_boss(snapshot: &tr::TrackerSnapshot) -> bool {
     snapshot
-        .as_ref()
-        .is_some_and(|list| list.entries.iter().any(|entry| entry.creature_key == key))
+        .entries
+        .iter()
+        .any(|entry| entry.creature_key == BOSS)
 }
 
-async fn read(
-    client: &mut DevClientSession,
-    command: u32,
-) -> TestResult<Option<tr::TrackerSnapshot>> {
+async fn read(client: &mut DevClientSession, command: u32) -> TestResult<tr::TrackerSnapshot> {
     let (status, list) = call(client, command, &tr::TrackerRequest::Read).await?;
     expect(status == CommandStatus::Accepted, "read", status)?;
-    Ok(list)
+    list.ok_or_else(|| "step=read;observed=missing-tracker-snapshot".into())
 }
 
 const BOSS: &str = "oteryn:creature.ferumbras";
@@ -84,17 +85,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let mut client = connect_world(clients, 0xd2).await?;
     selected(&client)?;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
+    let before = read(&mut client, boss).await?;
+    expect(
+        !contains_boss(&before),
+        "before-add",
+        "boss-already-tracked",
+    )?;
     let credited = progress(clients).await?;
     let (status, list) = call(&mut client, boss, &change(tr::TrackerAction::Add, BOSS)).await?;
     if status == CommandStatus::Rejected {
-        let (removed, _) =
-            call(&mut client, boss, &change(tr::TrackerAction::Remove, BOSS)).await?;
         let list = read(&mut client, boss).await?;
         expect(
-            !has(&list, BOSS),
+            list == before,
             "refused-add",
-            "boss-tracked-despite-refusal",
+            "tracker-changed-despite-refusal",
         )?;
+        let (removed, _) =
+            call(&mut client, boss, &change(tr::TrackerAction::Remove, BOSS)).await?;
         logout(&mut client).await?;
         return Ok((
             "FAIL",
@@ -104,37 +111,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         ));
     }
     expect(
-        status == CommandStatus::Accepted && has(&list, BOSS) && credited > 0,
+        status == CommandStatus::Accepted
+            && list.as_ref().is_some_and(contains_boss)
+            && credited > 0,
         "boss-add",
         (status, credited),
     )?;
     let list = read(&mut client, boss).await?;
-    expect(has(&list, BOSS), "read-after-add", "boss-missing")?;
+    expect(contains_boss(&list), "read-after-add", "boss-missing")?;
     // Durable: the entry survives logout and a fresh admission.
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xd3).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
-        has(&list, BOSS),
+        contains_boss(&list),
         "relog-with-entry",
         "boss-lost-after-relog",
     )?;
     let (status, list) = call(&mut client, boss, &change(tr::TrackerAction::Remove, BOSS)).await?;
     expect(
-        status == CommandStatus::Accepted && !has(&list, BOSS),
+        status == CommandStatus::Accepted && list.as_ref().is_some_and(|list| !contains_boss(list)),
         "boss-remove",
         status,
     )?;
     let list = read(&mut client, boss).await?;
-    expect(!has(&list, BOSS), "read-after-remove", "boss-still-tracked")?;
+    expect(
+        !contains_boss(&list),
+        "read-after-remove",
+        "boss-still-tracked",
+    )?;
     // Durable: the removal also survives logout and a fresh admission.
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xd4).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
-        !has(&list, BOSS),
+        !contains_boss(&list),
         "relog-after-remove",
         "boss-back-after-relog",
     )?;
@@ -149,7 +162,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
