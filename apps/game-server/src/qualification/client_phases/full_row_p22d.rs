@@ -507,19 +507,32 @@ async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> Tes
     // PvE combat can remain locked for up to 60 seconds after the last hit.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     verdict::Harness::global().bounded_wait(deadline, "p22d-combat-lock");
-    while client
-        .session_mut()
-        .combat_state()
-        .is_none_or(|state| state.in_fight)
-    {
-        let remaining = deadline
-            .checked_duration_since(tokio::time::Instant::now())
-            .ok_or("step=combat-lock;observed=still-in-fight")?;
+    while let Some(remaining) = deadline.checked_duration_since(tokio::time::Instant::now()) {
         client
             .service_liveness(remaining.min(Duration::from_secs(1)))
             .await?;
         client.take_events();
     }
+    // Combat state is refreshed after an attack or mode command. Reset the
+    // changed chase mode and use its pushed state to check the expired lock.
+    let reply = client
+        .session_mut()
+        .set_fight_modes(&FightModes::DEFAULT)
+        .await?;
+    expect(
+        reply.disposition == AttackIntentDisposition::Ok,
+        "restore-fight-modes",
+        reply,
+    )?;
+    client.service_liveness(Duration::from_millis(25)).await?;
+    let combat = client.session_mut().combat_state().copied();
+    expect(
+        combat.is_some_and(|state| {
+            state.modes == FightModes::DEFAULT && state.target.is_none() && !state.in_fight
+        }),
+        "combat-lock-after-retreat",
+        combat,
+    )?;
     Ok(())
 }
 
