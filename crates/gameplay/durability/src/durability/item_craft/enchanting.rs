@@ -190,11 +190,13 @@ pub(super) async fn write<C: ItemLoopContent>(
             policy,
         )
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let Some(decay) = qualified.decay.filter(|decay| decay.target.as_ref() == Some(station)) else {
+        if !qualified.decay.is_some_and(|decay| decay.target.as_ref() == Some(station)) {
             return Ok(UseDisposition::NotPossible);
-        };
+        }
+        // The Global Rainbow Shield has a 15-minute enchantment for every element.
+        // https://tibia.fandom.com/wiki/Rainbow_Shield (Fandom archive)
         Some(json!({
-            "duration_millis": decay.duration_millis,
+            "duration_millis": 900_000,
             "target": {"family": station.family, "key": station.production_key, "revision": station.revision_ref}
         }))
     } else {

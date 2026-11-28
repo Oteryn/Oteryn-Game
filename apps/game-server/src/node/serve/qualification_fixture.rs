@@ -16,7 +16,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
 
 fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
     match profile {
-        "explorer" => Some(("knight", 100, false)),
+        "explorer" | "gem-use" => Some(("knight", 100, false)),
         "knight-underlevel" => Some(("knight", 66, false)),
         "levitate" => Some(("sorcerer", 12, true)),
         "magic-rope" => Some(("sorcerer", 9, true)),
@@ -695,7 +695,12 @@ async fn prepare_build(
         root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    let extra = if profile == "gem-use" {
+        &[(676, 2), (8077, 1), (9020, 1)][..]
+    } else {
+        &[]
+    };
+    prepare_items(root, authority, proof, &current, native, deadline, extra).await
 }
 
 pub(crate) fn fixture_build_spec<'a>(
@@ -743,6 +748,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    extra: &[(u32, u32)],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -817,7 +823,8 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    let starter = [(3276, 1), (3003, 1), (3457, 1)];
+    for (ordinal, (id, quantity)) in starter.into_iter().chain(extra.iter().copied()).enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -827,11 +834,19 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
-        if inventory
-            .equipment
+        // Only the starter gear may already be equipped. USE needs the
+        // gem recipe inputs as direct entries of the carried backpack.
+        if bag
+            .entries
             .iter()
-            .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .map(|entry| &entry.item)
+            .chain(
+                inventory
+                    .equipment
+                    .iter()
+                    .filter(|_| ordinal < starter.len()),
+            )
+            .any(|existing| existing.definition == definition && existing.quantity >= quantity)
         {
             continue;
         }
@@ -855,7 +870,7 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,

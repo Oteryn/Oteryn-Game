@@ -27,7 +27,7 @@ pub(in crate::qualification) async fn provision_profile(
     profile: &str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let vocation = if profile == "explorer" {
+    let vocation = if matches!(profile, "explorer" | "gem-use") {
         "knight"
     } else {
         profile

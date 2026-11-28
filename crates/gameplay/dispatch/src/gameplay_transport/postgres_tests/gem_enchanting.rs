@@ -20,7 +20,7 @@ fn gemx_legacy_shrine_refuses_without_inventory_or_vitals_change() -> TestResult
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
@@ -33,13 +33,26 @@ fn gemx_legacy_weapons_refuse_and_live_gem_uses_commit_and_replay() -> TestResul
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "enchanting e2e panic")??;
     Ok(())
 }
 
-fn scenario(weapon: bool) -> TestResult {
+#[test]
+fn gemx_legacy_rainbow_shield_backfills_equips_and_expires() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "legacy shield scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(weapon: bool, legacy_shield: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "gemx", true, false).await?;
         super::reset();
@@ -352,7 +365,12 @@ fn scenario(weapon: bool) -> TestResult {
                     );
                 }
             }
-            equip_and_expire_rainbow_shield(&harness, &owner, admitted, command).await?;
+            if legacy_shield {
+                restore_legacy_shield_shape(&harness).await?;
+                equip_and_expire_rainbow_shield(&harness, &owner, admitted, command).await?;
+            } else {
+                move_shield_through_depot_and_expiry(&harness, &owner, admitted, command).await?;
+            }
             eprintln!("GEMX_LIVE_USES_EXECUTED");
         } else {
             {
@@ -443,12 +461,7 @@ async fn equip_and_expire_rainbow_shield(
     use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
 
-    let shield: Vec<u8> = sqlx::query_scalar(
-        "SELECT uuid_send(item_instance_id) FROM game_item_instances
-         WHERE definition_production_key='oteryn:item.tibia.i8078' AND lifecycle=1",
-    )
-    .fetch_one(&harness.pool)
-    .await?;
+    let shield = fiery_shield(harness).await?;
     let actor = admitted.runtime_actor.ok_or("shield owner")?;
     let result = crate::gameplay_transport::equipment_move::move_equipment(
         owner,
@@ -469,40 +482,8 @@ async fn equip_and_expire_rainbow_shield(
         EquipmentMoveResult::Committed,
         "equip the crafted shield"
     );
-    let deadline: (i64, i64, String) = sqlx::query_as(
-        "SELECT s.duration_millis,s.expires_at_unix_ms-c.occurred_at,s.target_production_key
-         FROM game_spell_item_temporal_schedules s
-         JOIN game_item_craft_records c ON c.transaction_id=s.source_transaction_id
-         WHERE uuid_send(s.item_instance_id)=$1",
-    )
-    .bind(&shield)
-    .fetch_one(&harness.pool)
-    .await?;
-    assert!(deadline.0 > 0);
-    assert_eq!(deadline.0, deadline.1);
-    assert_eq!(deadline.2, "oteryn:item.tibia.i8077");
-
-    // Advance the fixture's persisted deadline, then drive the normal absolute owner.
-    let mut fixture = harness.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *fixture)
-        .await?;
-    sqlx::query(
-        "UPDATE game_spell_item_temporal_schedules
-         SET expires_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1
-         WHERE uuid_send(item_instance_id)=$1",
-    )
-    .bind(&shield)
-    .execute(&mut *fixture)
-    .await?;
-    fixture.commit().await?;
-    owner
-        .states
-        .spell_states
-        .lock()
-        .await
-        .next_item_deadline_pass_us = 0;
-    owner.drain_source_item_deadlines().await;
+    assert_original_shield_deadline(harness, &shield).await?;
+    expire_shield(harness, owner, &shield).await?;
     let expired: (String, i16, i16) = sqlx::query_as(
         "SELECT i.definition_production_key,e.slot,r.custody_kind
          FROM game_item_instances i JOIN game_spell_item_temporal_receipts r USING(item_instance_id)
@@ -513,6 +494,198 @@ async fn equip_and_expire_rainbow_shield(
     .fetch_one(&harness.pool)
     .await?;
     assert_eq!(expired, ("oteryn:item.tibia.i8077".into(), 5, 3));
+    assert_no_active_shield_deadline(harness, &shield).await?;
+    Ok(())
+}
+
+async fn fiery_shield(harness: &Harness) -> TestResult<Vec<u8>> {
+    Ok(sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_instances
+         WHERE definition_production_key='oteryn:item.tibia.i8078' AND lifecycle=1",
+    )
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn restore_legacy_shield_shape(harness: &Harness) -> TestResult {
+    let shield = fiery_shield(harness).await?;
+    // Restore the 0660 shape using the craft just driven through the real USE route.
+    // Historical receipts lacked both the schedule and the decay field.
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query(
+        "DELETE FROM game_spell_item_temporal_schedules WHERE uuid_send(item_instance_id)=$1",
+    )
+    .bind(&shield)
+    .execute(&mut *fixture)
+    .await?;
+    sqlx::query(
+        "UPDATE game_item_craft_records SET outputs=jsonb_build_array((outputs->0)-'decay')
+         WHERE transaction_id=(SELECT minted_transaction_id FROM game_item_instances WHERE uuid_send(item_instance_id)=$1)",
+    ).bind(&shield).execute(&mut *fixture).await?;
+    fixture.commit().await?;
+    // Model startup on either side of the upgrade. Without 3349's backfill
+    // the following real equip attempt returns TimedNotHosted.
+    if sqlx::query_scalar::<_, bool>(
+        "SELECT to_regprocedure('game_rainbow_shield_backfill()') IS NOT NULL",
+    )
+    .fetch_one(&harness.pool)
+    .await?
+    {
+        sqlx::query("SELECT game_rainbow_shield_backfill()")
+            .execute(&harness.pool)
+            .await?;
+    }
+    Ok(())
+}
+
+async fn assert_original_shield_deadline(harness: &Harness, shield: &[u8]) -> TestResult {
+    let deadline: (i64, i64, String) = sqlx::query_as(
+        "SELECT s.duration_millis,s.expires_at_unix_ms-c.occurred_at,s.target_production_key
+         FROM game_spell_item_temporal_schedules s
+         JOIN game_item_craft_records c ON c.transaction_id=s.source_transaction_id
+         WHERE uuid_send(s.item_instance_id)=$1",
+    )
+    .bind(shield)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(deadline.0, 900_000, "Global shield lifetime");
+    assert_eq!(deadline.0, deadline.1);
+    assert_eq!(deadline.2, "oteryn:item.tibia.i8077");
+
+    Ok(())
+}
+
+async fn expire_shield(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    shield: &[u8],
+) -> TestResult {
+    // Advance the fixture's persisted deadline, then drive the normal absolute owner.
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query(
+        "UPDATE game_spell_item_temporal_schedules
+         SET expires_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1
+         WHERE uuid_send(item_instance_id)=$1",
+    )
+    .bind(shield)
+    .execute(&mut *fixture)
+    .await?;
+    fixture.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    Ok(())
+}
+
+async fn assert_no_active_shield_deadline(harness: &Harness, shield: &[u8]) -> TestResult {
+    let (scheduled, audited): (bool, bool) = sqlx::query_as(
+        "SELECT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules WHERE uuid_send(item_instance_id)=$1),
+                EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r
+                    JOIN game_spell_item_temporal_audit a USING(transaction_id)
+                    WHERE uuid_send(r.item_instance_id)=$1
+                    AND convert_from(a.envelope,'UTF8')::jsonb #>> '{schedule,target_production_key}'='oteryn:item.tibia.i8077')",
+    ).bind(shield).fetch_one(&harness.pool).await?;
+    assert!(!scheduled, "base shield retains an active deadline");
+    assert!(audited, "expiry lost the original deadline evidence");
+    Ok(())
+}
+
+async fn move_shield_through_depot_and_expiry(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+) -> TestResult {
+    let shield = fiery_shield(harness).await?;
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    // This deliberate unqualified-weight fixture proved that crafting does
+    // not reread unrelated weights. Withdrawals do require carried capacity.
+    sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id IN
+        (SELECT item_instance_id FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i146')")
+        .execute(&mut *fixture).await?;
+    sqlx::query(
+        "DELETE FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i146'",
+    )
+    .execute(&mut *fixture)
+    .await?;
+    fixture.commit().await?;
+    let item = shield.as_slice().try_into()?;
+    assert_original_shield_deadline(harness, &shield).await?;
+    depot_move(owner, admitted, command, item, true).await?;
+    assert_original_shield_deadline(harness, &shield).await?;
+    expire_shield(harness, owner, &shield).await?;
+    let expired: (String, i16, i32) = sqlx::query_as(
+        "SELECT i.definition_production_key,r.custody_kind,d.town_id
+         FROM game_item_instances i JOIN game_spell_item_temporal_receipts r USING(item_instance_id)
+         JOIN game_item_character_depot_locations d USING(item_instance_id)
+         WHERE uuid_send(i.item_instance_id)=$1 AND i.lifecycle=1",
+    )
+    .bind(&shield)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(expired, ("oteryn:item.tibia.i8077".into(), 5, 1));
+    assert_no_active_shield_deadline(harness, &shield).await?;
+    depot_move(owner, admitted, command + 1, item, false).await?;
+    Ok(())
+}
+
+async fn depot_move(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+    item: [u8; 16],
+    deposit: bool,
+) -> TestResult {
+    use crate::domain::premium::PremiumGate;
+    use crate::durability::item_loop_move::DepotMove;
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+    let permit = owner.spell_lane_permit().await.ok_or("depot permit")?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let moved = owner
+        .root
+        .commit_depot_move(
+            &permit,
+            owner.character,
+            owner.holder,
+            &admitted.item_fence.ok_or("item fence")?,
+            CommandRef::new(
+                admitted.game_session_id,
+                CommandId::new(command).map_err(debug)?,
+            ),
+            &NativeItemWeights(native),
+            DepotMove {
+                town: 1,
+                box_number: 1,
+                deposit,
+                request_digest: [u8::from(deposit) + 1; 32],
+                premium: PremiumGate::CLOSED,
+            },
+            item,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        moved.is_ok(),
+        "depot shield move deposit={deposit} observed={moved:?}"
+    );
     Ok(())
 }
 
