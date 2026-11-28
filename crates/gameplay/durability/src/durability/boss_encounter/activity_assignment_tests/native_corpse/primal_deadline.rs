@@ -347,6 +347,172 @@ async fn prove_carried_corpse(h: &fixture::Harness) -> TestResult {
         WHERE i.item_instance_id=encode($1,'hex')::uuid
     "#).bind(item.as_slice()).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(outcome, (target, bag, deadline, true, true, true));
+    let snapshot =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(
+                crate::foundation::GameSessionId::decode(&id(90)).map_err(fixture::debug)?,
+            )
+            .await?
+            .0;
+    let fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+        character_id: origin.character_id,
+        game_session_id: snapshot.current_game_session_id(),
+        character_lease_generation: snapshot.current_character_lease().generation(),
+        connection_generation: snapshot.current_connection_generation(),
+        scope_ownership_generation: snapshot.current_scope_generation(),
+        runtime_scope: instance,
+    };
+    reject_legacy_pickup(h, &authority, &instance_permit, &fence).await?;
+    let command = crate::foundation::CommandRef::new(
+        fence.game_session_id,
+        crate::foundation::CommandId::new(5).map_err(fixture::debug)?,
+    );
+    let result = h
+        .root
+        .commit_item_loop_move(
+            &instance_permit,
+            &authority,
+            &h.node,
+            &fence,
+            command,
+            &ButterflyContent,
+            crate::durability::item_loop_move::LoopMoveRequest {
+                item,
+                count: None,
+                pickup_cell: None,
+                destination: crate::durability::item_loop_move::LoopDestination::Ground(
+                    crate::durability::item_loop_move::LoopGround {
+                        spatial_position: [
+                            200_i32.to_be_bytes().as_slice(),
+                            201_i32.to_be_bytes().as_slice(),
+                            (-7_i16).to_be_bytes().as_slice(),
+                        ]
+                        .concat(),
+                        map_revision: format!("sha256:{}", "22".repeat(32)),
+                        content_revision: format!("sha256:{}", "33".repeat(32)),
+                        placement_context: vec![0x11; 32],
+                    },
+                ),
+            },
+        )
+        .await?;
+    assert!(result.is_ok(), "drop after carried decay: {result:?}");
+    let ground: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid AND instance_id=encode($2,'hex')::uuid)")
+        .bind(item.as_slice()).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
+    assert!(ground);
     eprintln!("Ordinary corpse PostgreSQL carried Instance deadline PASS");
     Ok(())
+}
+
+async fn reject_legacy_pickup(
+    h: &fixture::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    permit: &SpellLanePermit,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRefusal, LoopMoveRequest};
+    let (death, mut request) = corpse_request(fence.runtime_scope, 1)?;
+    let cell = request.ground.spatial_position.clone();
+    request.item = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "oteryn:item.tibia.i4024".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    request.cause = ItemMintCause::from_creature_death(
+        death,
+        request.item.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+        0,
+    )
+    .map_err(fixture::debug)?;
+    let mut mint = h
+        .root
+        .freeze_item_mint(authority, &h.node, request)
+        .await
+        .map_err(fixture::debug)?;
+    h.root
+        .commit_corpse_mint(
+            permit,
+            authority,
+            &h.node,
+            &mut mint,
+            *fence.character_id.as_bytes(),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    let item = *mint.item_instance_id();
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_item_mint_receipts SET ordinary_corpse_policy=false WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).execute(&mut *tx).await?;
+    let removed = sqlx::query("DELETE FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid AND target_production_key IS NULL")
+        .bind(item.as_slice()).execute(&mut *tx).await?;
+    assert_eq!(removed.rows_affected(), 1);
+    tx.commit().await?;
+    let command = crate::foundation::CommandRef::new(
+        fence.game_session_id,
+        crate::foundation::CommandId::new(4).map_err(fixture::debug)?,
+    );
+    let result = h
+        .root
+        .commit_item_loop_move(
+            permit,
+            authority,
+            &h.node,
+            fence,
+            command,
+            &ButterflyContent,
+            LoopMoveRequest {
+                item,
+                count: None,
+                pickup_cell: Some(cell),
+                destination: LoopDestination::MainBackpack,
+            },
+        )
+        .await?;
+    assert!(
+        matches!(result, Err(LoopMoveRefusal::NotSupported)),
+        "legacy pickup with a finite Ground-only deadline: {result:?}"
+    );
+    Ok(())
+}
+
+struct ButterflyContent;
+
+impl crate::durability::item_transfer::ItemWeightLookup for ButterflyContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0x33; 32]
+    }
+    fn weight_of(
+        &self,
+        _: &TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        Ok(1)
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for ButterflyContent {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        [0x33; 32]
+    }
+    fn loop_facts(
+        &self,
+        item: &TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+        let bag = item.production_key == "oteryn:item.tibia.i2815";
+        Some(ItemDefinitionFacts {
+            definition: item.clone(),
+            weight: None,
+            stack: if bag || item.production_key == "oteryn:item.tibia.i4024" {
+                ItemStackClass::NonStackable
+            } else {
+                ItemStackClass::Unknown
+            },
+            container_capacity: bag.then_some(20),
+            container_slot_equip_pattern: bag,
+        })
+    }
 }

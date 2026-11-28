@@ -82,6 +82,45 @@ LANGUAGE sql STABLE STRICT AS $$
     )
 $$;
 
+-- The pre-upgrade Ground owner retains finite corpses for which no carried
+-- terminal timer was installed. Permanent predecessor remains can still move.
+CREATE FUNCTION game_legacy_corpse_requires_ground(p_item UUID) RETURNS BOOLEAN
+LANGUAGE sql STABLE STRICT AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM game_item_mint_receipts m
+        WHERE m.item_instance_id=p_item AND NOT m.ordinary_corpse_policy
+          AND game_corpse_retirement_deadline(p_item) IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM game_spell_field_temporal_schedules s
+              WHERE s.item_instance_id=p_item AND s.source_transaction_id=m.transaction_id
+                AND s.source_ordinal=0 AND s.target_production_key IS NULL
+                AND s.expires_at_unix_ms=game_corpse_retirement_deadline(p_item)))
+$$;
+
+-- A transform in the backpack can produce a Ground-only successor. Its
+-- current temporal receipt admits only the whole instance back onto Ground.
+CREATE FUNCTION game_carried_corpse_transform_source(p_item UUID) RETURNS BOOLEAN
+LANGUAGE sql STABLE STRICT AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM game_item_instances i
+        JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id
+        JOIN game_spell_field_temporal_schedules s ON s.item_instance_id=i.item_instance_id
+          AND s.source_transaction_id=m.transaction_id AND s.source_ordinal=0
+        JOIN game_spell_field_temporal_receipts r ON r.item_instance_id=s.item_instance_id AND r.source_stage=s.source_stage
+        WHERE i.item_instance_id=p_item AND i.quantity=1 AND i.lifecycle=1
+          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL
+          AND r.custody_kind=2 AND r.transaction_id=i.last_transaction_id AND r.state_revision_before+1=i.state_revision
+          AND (s.target_family,s.target_production_key,s.target_revision)=
+              (i.definition_family,i.definition_production_key,i.definition_revision_ref))
+$$;
+REVOKE ALL ON FUNCTION game_legacy_corpse_requires_ground(UUID),game_carried_corpse_transform_source(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_legacy_corpse_requires_ground(UUID),game_carried_corpse_transform_source(UUID)
+    TO oteryn_game_runtime,oteryn_game_control;
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_legacy_corpse_requires_ground(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+    EXECUTE format('ALTER FUNCTION game_carried_corpse_transform_source(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+
 DO $ordinary_corpse_drag$
 DECLARE
     body TEXT := pg_get_functiondef('game_item_loop_line_admit()'::regprocedure);
@@ -96,7 +135,7 @@ BEGIN
         RAISE EXCEPTION 'Ordinary corpse move predecessor changed';
     END IF;
     body := replace(body, source, source||' OR (NEW.to_kind=3 AND NEW.quantity_before=1 AND NEW.quantity_after=1 AND game_ordinary_corpse_drag_source(NEW.item_instance_id))');
-    body := replace(body, timed, 'NEW.from_kind=3 AND NEW.to_kind=3 AND
+    body := replace(body, timed, '(NEW.from_kind IN (1,2) AND NEW.to_kind=3 AND game_carried_corpse_transform_source(NEW.item_instance_id)) OR NEW.from_kind=3 AND NEW.to_kind=3 AND
         (game_item_loop_native_corpse_source(NEW.item_instance_id) OR game_ordinary_corpse_drag_source(NEW.item_instance_id))');
     original := 'IF NEW.from_kind=3 AND NEW.to_kind<>3 AND EXISTS';
     IF (length(body)-length(replace(body,original,'')))/length(original) <> 1
@@ -104,6 +143,9 @@ BEGIN
         RAISE EXCEPTION 'Ordinary corpse custody predecessor changed';
     END IF;
     body := replace(body, original, $guard$
+    IF NEW.from_kind=3 AND NEW.to_kind<>3 AND game_legacy_corpse_requires_ground(NEW.item_instance_id) THEN
+        RAISE EXCEPTION 'Legacy corpse requires Ground retirement' USING ERRCODE='23514';
+    END IF;
     -- Every ordinary retirement freezes the corpse's Ground, including a
     -- child step. Serialize that read with relocation on the root Item row.
     IF NEW.from_kind=3 THEN
@@ -648,3 +690,45 @@ BEGIN
       )
     $retire$||anchor);
 END $ordinary_corpse_skinning$;
+
+-- A previous writer's placement remains valid after takeover. Bind the new
+-- writer to the active assignment and the old placement to its source receipt.
+CREATE FUNCTION game_skinning_prior_ground(p_item UUID,p_generation NUMERIC) RETURNS BOOLEAN
+LANGUAGE sql STABLE STRICT AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM game_item_ground_locations g
+        JOIN game_item_instances i USING(item_instance_id,world_id)
+        JOIN game_corpse_source_races race ON race.item_instance_id=i.item_instance_id
+          AND race.mint_transaction_id=i.minted_transaction_id
+        JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id
+        JOIN game_runtime_scope_assignments a ON a.scope_key=decode('01','hex')||uuid_send(g.world_id)||uuid_send(g.channel_id)
+        WHERE i.item_instance_id=p_item AND g.scope_kind=1 AND g.instance_id IS NULL
+          AND a.state=1 AND a.ownership_generation=p_generation AND g.runtime_scope_ownership_generation<p_generation
+          AND m.death_world_id=g.world_id AND m.materialized_at IS NOT NULL
+          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+          AND (game_ordinary_corpse_loop_ground(p_item) OR (
+              m.death_scope_kind=1 AND m.death_channel_id=g.channel_id AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation
+              AND g.corpse_ref=uuid_send(m.death_world_id)||uuid_send(m.death_channel_id)
+                ||decode(lpad(to_hex(trunc(m.death_scope_ownership_generation/4294967296)::bigint),8,'0')
+                    ||lpad(to_hex(mod(m.death_scope_ownership_generation,4294967296)::bigint),8,'0'),'hex')
+                ||substring(int8send(m.death_actor_local_id) from 5 for 4)
+                ||decode(lpad(to_hex(trunc(m.death_actor_local_generation/4294967296)::bigint),8,'0')
+                    ||lpad(to_hex(mod(m.death_actor_local_generation,4294967296)::bigint),8,'0'),'hex'))))
+$$;
+REVOKE ALL ON FUNCTION game_skinning_prior_ground(UUID,NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_skinning_prior_ground(UUID,NUMERIC) TO oteryn_game_runtime,oteryn_game_control;
+DO $skinning_takeover$
+DECLARE
+    guard REGPROCEDURE;
+    body TEXT;
+    generation CONSTANT TEXT := 'g.runtime_scope_ownership_generation=NEW.scope_ownership_generation';
+BEGIN
+    EXECUTE format('ALTER FUNCTION game_skinning_prior_ground(UUID,NUMERIC) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+    FOREACH guard IN ARRAY ARRAY['game_corpse_skinning_admit()'::regprocedure,'game_corpse_skinning_complete()'::regprocedure] LOOP
+        body := pg_get_functiondef(guard);
+        IF (length(body)-length(replace(body,generation,'')))/length(generation)<>1 THEN
+            RAISE EXCEPTION 'Corpse skinning generation predecessor changed in %',guard;
+        END IF;
+        EXECUTE replace(body,generation,'('||generation||' OR game_skinning_prior_ground(g.item_instance_id,NEW.scope_ownership_generation))');
+    END LOOP;
+END $skinning_takeover$;

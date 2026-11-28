@@ -176,6 +176,25 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         item: [u8; 16],
     ) -> Result<Option<GroundActionSource>, DurabilityError> {
+        self.read_ground_source(recovery, fence, item, false).await
+    }
+
+    pub async fn read_skinning_ground_source(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        item: [u8; 16],
+    ) -> Result<Option<GroundActionSource>, DurabilityError> {
+        self.read_ground_source(recovery, fence, item, true).await
+    }
+
+    async fn read_ground_source(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        item: [u8; 16],
+        skinning: bool,
+    ) -> Result<Option<GroundActionSource>, DurabilityError> {
         let Ok(_) = scope_of(&fence) else {
             return Ok(None);
         };
@@ -189,9 +208,9 @@ impl DurabilityRoot {
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut *tx).await?;
-    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
+    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR ($5 AND game_skinning_prior_ground(i.item_instance_id,$4::text::numeric))) AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-                .bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut *tx).await?;
+                .bind(fence.scope_ownership_generation.get().to_string()).bind(skinning).fetch_optional(&mut *tx).await?;
             let result = row.map(|row| -> Result<GroundActionSource, DurabilityError> {
                 let position: Vec<u8> = row.try_get("spatial_position")?;
                 let cell = crate::durability::spell_items_abi::decode_ground_cell(&position)

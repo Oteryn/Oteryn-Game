@@ -141,7 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This identifies the rule shape only; the durable provenance supplies the race.
         let Some(ground) = self
             .root
-            .read_ground_action_source(self.character, fence, corpse)
+            .read_skinning_ground_source(self.character, fence, corpse)
             .await
             .map_err(|_| ())?
         else {

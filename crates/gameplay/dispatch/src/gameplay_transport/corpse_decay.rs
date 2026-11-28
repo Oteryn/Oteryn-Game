@@ -94,6 +94,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             for corpse in &schedule.corpses {
                 if !live.contains(&corpse.corpse_item_instance_id) {
+                    if !schedule.complete {
+                        self.states.loop_ground.invalidate();
+                        let _ = runtime
+                            .set_corpse_item_ground_position(corpse.corpse_item_instance_id, None);
+                    }
                     continue;
                 }
                 if let Some(bytes) = &corpse.loop_ground_spatial_position
