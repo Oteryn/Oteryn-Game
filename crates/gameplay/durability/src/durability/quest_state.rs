@@ -782,6 +782,7 @@ mod wrath_sleeping_dragon;
 
 mod owned_cosmetics;
 mod owned_items;
+pub(super) mod travora;
 mod world_access;
 mod writer;
 use storage::*;

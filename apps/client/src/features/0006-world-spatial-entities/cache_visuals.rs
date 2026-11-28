@@ -6,6 +6,9 @@ impl PresentationCache {
         id: u16,
     ) -> Option<oteryn_client_ui::world_interaction::menu::Action> {
         use oteryn_client_ui::world_interaction::menu::Action;
+        if id == 7535 {
+            return Some(Action::Use);
+        }
         let assets = self
             .assets
             .as_ref()?

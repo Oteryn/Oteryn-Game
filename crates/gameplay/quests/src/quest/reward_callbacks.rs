@@ -95,6 +95,7 @@ impl ItemReward {
 }
 
 mod reward_text;
+mod sinatuki;
 pub use reward_text::{RewardContentText, RewardText};
 
 #[cfg(test)]
@@ -829,7 +830,9 @@ fn retain_offered_callbacks(callbacks: &mut Vec<RewardCallback>) {
         .iter()
         .any(|callback| callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves");
     callbacks.retain(|callback| {
-        super::authored_bindings::personal_event_offered(callback)
+        // Historical Sinatuki exchanges still resolve for receipt recovery.
+        !sinatuki::historical(callback)
+            && super::authored_bindings::personal_event_offered(callback)
             && (!elane_sale
                 || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free")
             && (!elane_addon || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves")
@@ -905,6 +908,18 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 
 fn embedded_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
+    let first = sinatuki::feeding_rows(&document.callbacks)?;
+    let template = first.first().ok_or("empty Sinatuki feeding catalogue")?;
+    document.tracks.push(TrackDeclaration {
+        key: sinatuki::CONTRIBUTION.into(),
+        quest: template.quest.clone(),
+        initial: 0,
+        min: 0,
+        max: 99,
+        writable: true,
+        sources: template.sources.clone(),
+    });
+    document.callbacks.extend(first);
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
@@ -1820,7 +1835,7 @@ const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
 
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
-    // These changes preserve every track default.
+    // Keep published quest snapshots readable after the dialogue and selector changes.
     for (quest, hash) in [
         (
             "oteryn:quest.citizen_outfits_quest_on_rook",
@@ -2132,6 +2147,41 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.authored.top_of_the_city_quest",
+            super::published_quest_pins::hash(
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+            ),
+            &[(super::top_of_the_city::ASSASSINS, 0)],
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            super::published_quest_pins::hash(
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.sinatuki_quest",
+            super::published_quest_pins::hash(
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+            ),
+            &[(sinatuki::CONTRIBUTION, 0)],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            super::published_quest_pins::hash(
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.travora_ticket",
+            super::published_quest_pins::hash(
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+            ),
+            &[],
+        ),
         (
             "oteryn:quest.brotherhood_outfits_quest",
             super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
@@ -2576,6 +2626,48 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reviewed_quest_saves_resume_after_content_corrections() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, hash, counter) in [
+            (
+                "oteryn:quest.authored.top_of_the_city_quest",
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+                Some(super::super::top_of_the_city::ASSASSINS),
+            ),
+            (
+                "oteryn:quest.sinatuki_quest",
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+                Some(sinatuki::CONTRIBUTION),
+            ),
+            (
+                "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+                None,
+            ),
+            (
+                "oteryn:quest.koshei_the_deathless_quest",
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+                None,
+            ),
+            (
+                "oteryn:quest.travora_ticket",
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+                None,
+            ),
+        ] {
+            let pin = super::super::published_quest_pins::hash(hash);
+            let defaults = super::super::npc_rules::legacy_defaults(catalogue, quest, &pin)
+                .ok_or_else(|| format!("missing predecessor for {quest}"))?;
+            if let Some(counter) = counter {
+                assert_eq!(defaults.get(counter), Some(&0), "{quest}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
         let callbacks = super::load()?;
@@ -3408,7 +3500,7 @@ mod tests {
     #[test]
     fn sinatuki_first_hand_in_debits_the_source_quantity_and_grants_crystals() -> Result<(), String>
     {
-        let callbacks = load()?;
+        let callbacks: Vec<_> = load()?.into_iter().filter(sinatuki::historical).collect();
         for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
             for quantity in [99, 100, 101] {
                 let carried = BTreeMap::from([(item.to_owned(), quantity)]);
@@ -3439,10 +3531,102 @@ mod tests {
     }
 
     #[test]
+    fn sinatuki_mixed_feeding_and_one_final_fish() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = super::offered_for(loaded.catalogue())?;
+        let callbacks: Vec<_> = callbacks
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki")
+            .collect();
+        for trout in 0..=99 {
+            let mut held = BTreeMap::from([
+                ("oteryn:item.tibia.i7158".to_owned(), trout),
+                ("oteryn:item.tibia.i7159".to_owned(), 99 - trout),
+            ]);
+            let mut progress = BTreeMap::new();
+            let mut stage = -1;
+            while held.values().sum::<u64>() > 0 {
+                let rows: Vec<_> = callbacks
+                    .iter()
+                    .filter(|row| {
+                        row.storage.iter().all(|gate| {
+                            let value = progress.get(&gate.track).copied().or_else(|| {
+                                loaded
+                                    .catalogue()
+                                    .track(&gate.track)
+                                    .map(|track| track.initial)
+                            });
+                            value.is_some_and(|v| (gate.minimum..=gate.maximum).contains(&v))
+                        }) && row.inventory.iter().all(|rule| rule.holds(&held))
+                            && row
+                                .state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(loaded.catalogue(), &progress))
+                    })
+                    .collect();
+                let [first] = rows.as_slice() else {
+                    return Err(format!(
+                        "ambiguous feeding for {trout} trout: {}",
+                        rows.len()
+                    ));
+                };
+                assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
+                let cost = &first.take[0];
+                assert_eq!(cost.count, 1, "each nupi feeds one fish");
+                *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
+                let changes = loaded
+                    .catalogue()
+                    .evaluate(
+                        loaded.catalogue().transition(&first.key).ok_or("payment")?,
+                        &progress,
+                        1,
+                    )
+                    .map_err(|e| format!("{e:?}"))?;
+                for change in changes {
+                    progress.insert(change.track, change.after);
+                }
+                stage = first.storage[0].set;
+            }
+            assert_eq!(stage, 1);
+            assert_eq!(progress.get(sinatuki::CONTRIBUTION), Some(&99));
+        }
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            let held = BTreeMap::from([(item.to_owned(), 1)]);
+            let rows: Vec<_> = callbacks
+                .iter()
+                .filter(|row| {
+                    row.npc == "oteryn:npc.sinatuki"
+                        && row.storage[0].minimum == 1
+                        && row.inventory.iter().all(|rule| rule.holds(&held))
+                })
+                .collect();
+            let [last] = rows.as_slice() else {
+                return Err(format!("missing final feeding for {item}"));
+            };
+            assert_eq!(last.take[0].count, 1);
+            assert_eq!(last.give.as_ref().ok_or("missing shards")?.count, 5);
+            assert!(last.completes && last.achievement.is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn sinatuki_repeat_hand_ins_load_at_the_completed_stage() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let callbacks = super::offered_for(lowered.catalogue())?;
+        let historical = load_for(lowered.catalogue())?;
+        for row in historical
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki" && row.key.ends_with("-repeat"))
+        {
+            assert!(row.is_paid_exchange());
+            assert!(matches!(row.take.as_slice(), [cost] if matches!(cost.count, 99 | 100)));
+            assert!(row.give.as_ref().is_some_and(|reward| {
+                reward.item == "oteryn:item.tibia.i7290" && reward.count == 5
+            }));
+        }
         for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
             for quantity in [99, 100, 101] {
                 let carried = BTreeMap::from([(item.to_owned(), quantity)]);
@@ -3457,14 +3641,7 @@ mod tests {
                             && callback.inventory.iter().all(|rule| rule.holds(&carried))
                     })
                     .collect();
-                assert_eq!(eligible.len(), 1, "{item} × {quantity} at stage 2");
-                assert!(eligible[0].is_paid_exchange());
-                assert_eq!(u64::from(eligible[0].take[0].count), quantity.min(100));
-                let reward = eligible[0].give.as_ref().ok_or("Sinatuki crystals")?;
-                assert_eq!(
-                    (reward.item.as_str(), reward.count),
-                    ("oteryn:item.tibia.i7290", 5)
-                );
+                assert!(eligible.is_empty(), "{item} × {quantity} at stage 2");
             }
         }
         Ok(())
@@ -3537,6 +3714,14 @@ mod tests {
             }
         }
         assert!(expected.insert(colours_peer::KEY.to_owned()));
+        for species in ["perch", "trout"] {
+            for fish in 1..=99 {
+                assert!(expected.insert(format!(
+                    "oteryn:quest-reward/sinatuki/{species}-fish-{fish}"
+                )));
+            }
+            assert!(expected.insert(format!("oteryn:quest-reward/sinatuki/final-{species}")));
+        }
         if let Some(full) = shards
             .iter()
             .flat_map(|shard| &shard.callbacks)

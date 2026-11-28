@@ -35,6 +35,14 @@ fn open_conversation(npc: EntityRef) -> NpcConversation {
     }
 }
 
+fn departure_line(platform: bool) -> &'static str {
+    if platform {
+        "Log out on the departure platform when you are ready for your world transfer."
+    } else {
+        "Set the sails!"
+    }
+}
+
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
     let line = match cause {
         TravelRefusal::UnavailableRoute => "I'm sorry but I don't sail there.",
@@ -50,6 +58,9 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
         TravelRefusal::ArrivalPending => "You cannot travel while another arrival is pending.",
         TravelRefusal::StaleQuote => {
             "The offer has expired. Please ask for your destination again."
+        }
+        TravelRefusal::TransferRestricted => {
+            "Before you transfer, you must clear any red or black skull, give up guild leadership and close your Tibia Coin market offers."
         }
         TravelRefusal::InsufficientFunds => "You don't have enough money.",
     };
@@ -109,7 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let (fare, npc) = {
+        let (fare, npc, platform) = {
             let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&command.game_session_id)?;
             if held.frozen.command.command_id().get() != command.command_id
@@ -117,7 +128,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            (held.frozen.fare, held.npc)
+            (
+                held.frozen.fare,
+                held.npc,
+                held.frozen.npc == "oteryn:npc.sharon",
+            )
         };
         let result = self
             .reconcile_newhaven_travel(actor, command.game_session_id)
@@ -128,8 +143,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         Some(match result {
             Some(true) => {
-                let mut outcome =
-                    npc_command::NpcConversations::bank_reply(&intent, "Set the sails!".into());
+                let mut outcome = npc_command::NpcConversations::bank_reply(
+                    &intent,
+                    departure_line(platform).into(),
+                );
                 outcome.inventory_changed = fare > 0;
                 if let Some(conversation) = outcome.conversation.as_mut() {
                     conversation.open = None;
@@ -197,6 +214,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
+        let dead = self.states.spell_states.lock().await.is_dead(actor);
         let (context, routes, fence, previous, source_confirmation) = {
             let runtime = self.runtime.lock().await;
             let previous = match self.states.newhaven_travel.paid_prompts.lock() {
@@ -218,10 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 ordinary.window = ordinary.window.or(update.window);
             }
-            if ordinary.disposition != NpcIntentDisposition::Ok
-                || ordinary.unknown
-                || self.states.spell_states.lock().await.is_dead(actor)
-            {
+            if ordinary.disposition != NpcIntentDisposition::Ok || ordinary.unknown || dead {
                 return ordinary;
             }
             let Some(context) = conversations.current_npc(chat, &runtime, actor, session, intent)
@@ -308,7 +323,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
             && contains_whole_keyword(&text, "yes");
+        let remembered = if context.2 == "oteryn:npc.captain_tiberius" && text == "passage" {
+            let Some(requirement) = routes.iter().find_map(|route| route.return_origin.as_ref())
+            else {
+                return refusal(intent, TravelRefusal::UnavailableRoute);
+            };
+            let Ok(Some(current)) = self.current_quest_fence(session).await else {
+                return refusal(intent, TravelRefusal::StaleQuote);
+            };
+            if current.item_fence() != fence {
+                return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            match self
+                .root
+                .npc_travel_last_port(self.character, self.holder, current, requirement)
+                .await
+            {
+                Ok(Some(origin)) => Some(origin),
+                Ok(None) => return refusal(intent, TravelRefusal::UnavailableRoute),
+                Err(_) => {
+                    return npc_command::NpcTalkOutcome {
+                        unknown: true,
+                        ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                    };
+                }
+            }
+        } else {
+            None
+        };
         let route = routes.into_iter().find(|route| {
+            if let Some(origin) = remembered.as_deref() {
+                return route
+                    .return_origin
+                    .as_ref()
+                    .is_some_and(|gate| gate.return_from == origin);
+            }
             let trigger = route.route.key.replace('_', " ");
             if route.crystal_callback {
                 contains_whole_keyword(&text, &trigger)
@@ -421,10 +470,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                 }
             };
-            let line = format!(
-                "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
-            );
+            let line = if route.is_transfer_platform() {
+                "You meet all in-game requirements for a character world transfer. Have you signed up and paid for your transfer, and are you ready to go to the departure platform?".into()
+            } else {
+                format!(
+                    "Do you seek a passage to {} for {fare} gold?",
+                    route.keyword
+                )
+            };
             let runtime = self.runtime.lock().await;
             if self
                 .states
@@ -532,8 +585,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match self.reconcile_newhaven_travel(actor, session).await {
             Some(true) => {
-                let mut result =
-                    npc_command::NpcConversations::bank_reply(intent, "Set the sails!".into());
+                let mut result = npc_command::NpcConversations::bank_reply(
+                    intent,
+                    departure_line(prompt.route.is_transfer_platform()).into(),
+                );
                 result.inventory_changed = prompt.fare > 0;
                 if let Some(conversation) = result.conversation.as_mut() {
                     conversation.open = None;

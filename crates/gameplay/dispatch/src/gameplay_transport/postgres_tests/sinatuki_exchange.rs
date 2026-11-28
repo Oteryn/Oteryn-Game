@@ -189,7 +189,7 @@ fn scenario(name: &str, case: Case) -> TestResult {
         .await?;
         let keyword_case: Option<(&str, Option<&[&str]>)> = match case {
             Case::EmbeddedKeyword => Some(("nupi anupi", Some(&[]))),
-            Case::KeywordPrefix => Some(("nupix", Some(&[REWARD]))),
+            Case::KeywordPrefix => Some(("nupix", Some(&[HAND_IN]))),
             Case::MissingDonorPrerequisite => Some(("nupi", None)),
             Case::Trout | Case::PerchResume => None,
         };
@@ -197,11 +197,11 @@ fn scenario(name: &str, case: Case) -> TestResult {
             add_item(&h, 201, TROUT, 100, 1).await?;
             talk(&mut owner, &mut admitted, npc, text, reply).await?;
             let traded = matches!(case, Case::KeywordPrefix);
-            assert_inventory(&h, if traded { [0, 0, 5] } else { [100, 0, 0] }).await?;
+            assert_inventory(&h, if traded { [99, 0, 0] } else { [100, 0, 0] }).await?;
             assert_eq!(
                 quest_state(&h).await?,
                 if traded {
-                    (Some(2), true, 1)
+                    (Some(0), false, 0)
                 } else {
                     (None, false, 0)
                 }
@@ -219,26 +219,33 @@ fn scenario(name: &str, case: Case) -> TestResult {
             assert_inventory(&h, [0, 0, 0]).await?;
             assert_eq!(quest_state(&h).await?, (None, false, 0));
         }
-        add_item(&h, 202, fish, 98, 2).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[GIGGLE])).await?;
-        assert_eq!(carried(&h, fish).await?, 98, "short hand-in is kept");
-        assert_eq!(quest_state(&h).await?, (None, false, 0));
-
+        let first_stack = if resume { 98 } else { 48 };
+        add_item(&h, 202, fish, first_stack, 2).await?;
+        if !resume {
+            add_item(&h, 206, PERCH, 50, 6).await?;
+        }
+        for _ in 0..first_stack {
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+        }
+        assert_eq!(carried(&h, fish).await?, 0);
+        assert_eq!(quest_state(&h).await?, (Some(0), false, 0));
+        if !resume {
+            for _ in 0..50 {
+                talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+            }
+            assert_eq!(carried(&h, PERCH).await?, 0);
+        }
         add_item(&h, 203, fish, if resume { 2 } else { 1 }, 3).await?;
         talk(
             &mut owner,
             &mut admitted,
             npc,
             if resume { "nupi please" } else { "nupi" },
-            Some(if resume {
-                &[GIGGLE, REWARD]
-            } else {
-                &[HAND_IN]
-            }),
+            Some(&[HAND_IN]),
         )
         .await?;
-        assert_inventory(&h, [0, 0, 5]).await?;
-        assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
+        assert_inventory(&h, if resume { [0, 1, 0] } else { [0, 0, 0] }).await?;
+        assert_eq!(quest_state(&h).await?, (Some(1), false, 0));
 
         if resume {
             talk(
@@ -262,15 +269,23 @@ fn scenario(name: &str, case: Case) -> TestResult {
             owner.admit_quest_session(&admitted).await;
         }
 
-        let reward: &[&str] = if resume { &[GIGGLE, REWARD] } else { &[REWARD] };
+        if !resume {
+            add_item(&h, 207, PERCH, 1, 7).await?;
+        }
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[REWARD])).await?;
+        assert_inventory(&h, [0, 0, 5]).await?;
+        assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
+
+        let satisfied: &[&str] =
+            &["Quatu, quata jusipa. Nguraka suq! <seems pleased and doesn't need anything else>"];
         add_item(&h, 204, fish, 100, 4).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", Some(reward)).await?;
-        assert_eq!(carried(&h, fish).await?, 0);
-        assert_eq!(carried(&h, SHARD).await?, 10);
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(satisfied)).await?;
+        assert_eq!(carried(&h, fish).await?, 100);
+        assert_eq!(carried(&h, SHARD).await?, 5);
         add_item(&h, 205, fish, 100, 5).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", Some(reward)).await?;
-        assert_eq!(carried(&h, fish).await?, 0);
-        assert_eq!(carried(&h, SHARD).await?, 15);
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(satisfied)).await?;
+        assert_eq!(carried(&h, fish).await?, 200);
+        assert_eq!(carried(&h, SHARD).await?, 5);
         assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
 
         drop(seal);

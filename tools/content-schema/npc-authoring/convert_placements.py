@@ -262,7 +262,10 @@ def apply_wiki_br_contacts(candidates: dict, scope: dict, facts: bytes) -> None:
                             "fact": "placements",
                             "chosen": "oteryn",
                             "rule": "CHOSEN_OTERYN_APPROXIMATION",
-                            "basis": "Owner-approved seasonal merchant cell beside the retained marker.",
+                            "basis": contact.get(
+                                "basis",
+                                "Owner-approved seasonal merchant cell beside the retained marker.",
+                            ),
                         }
                     ],
                 },

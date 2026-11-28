@@ -230,6 +230,7 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
 }
 
 pub(super) enum ShopScenario {
+    Seasonal,
     Sell,
     Rashid,
     Bulk,
@@ -291,6 +292,105 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
+        if matches!(case, ShopScenario::Seasonal) {
+            use oteryn_protocol_oteryn::npc_service::NpcTradeIntent;
+            let admitted = &deps.admitted;
+            let session = admitted.game_session_id;
+            deps.runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            seed_main_backpack(&h, &[]).await?;
+            sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+                .execute(&h.pool)
+                .await?;
+            super::guild_bank_fixtures::bank_seed::balance(&h, id(40), id(41), 100_000, 180)
+                .await?;
+            let npcs = super::classic_quests_fixtures::install(
+                &owner,
+                admitted,
+                ["oteryn:npc.stan", "oteryn:npc.valentina"],
+            )
+            .await?;
+            let mut serial = 0;
+            for (npc, count) in npcs.into_iter().zip([3, 8]) {
+                let mut window = None;
+                for word in ["hi", "trade"] {
+                    serial += 1;
+                    let fence = owner
+                        .current_quest_fence(session)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let outcome = owner
+                        .npc_talk(
+                            deps.actor,
+                            UseCommand {
+                                game_session_id: session,
+                                command_id: serial,
+                                item_fence: Some(fence.item_fence()),
+                            },
+                            NpcTalkIntent {
+                                npc_actor: npc,
+                                text: word.into(),
+                            },
+                        )
+                        .await;
+                    window = outcome.window;
+                }
+                let window = window.ok_or("seasonal trade window")?;
+                let (_, revision) = window.open.ok_or("open seasonal shop")?;
+                assert_eq!(window.offers.len(), count);
+                for (index, offer) in window.offers.iter().enumerate() {
+                    let fence = owner
+                        .current_quest_fence(session)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let command = |serial| UseCommand {
+                        game_session_id: session,
+                        command_id: serial,
+                        item_fence: Some(fence.item_fence()),
+                    };
+                    let look = NpcShopIntent {
+                        npc_actor: npc,
+                        catalogue_revision: revision,
+                        offer_index: u32::try_from(index)?,
+                        side: offer.side,
+                        action: NpcShopAction::Look,
+                        expected_unit_price: offer.unit_price,
+                    };
+                    serial += 1;
+                    let looked = owner
+                        .npc_shop(deps.actor, command(serial), look)
+                        .await
+                        .result();
+                    assert_eq!(looked.disposition, NpcIntentDisposition::Ok);
+                    assert!(looked.look_text.starts_with("You see "));
+                    serial += 1;
+                    let buy = NpcTradeIntent {
+                        npc_actor: npc,
+                        catalogue_revision: revision,
+                        offer_index: u32::try_from(index)?,
+                        side: offer.side,
+                        quantity: 1,
+                        expected_unit_price: offer.unit_price,
+                    };
+                    assert!(matches!(
+                        owner.npc_trade(deps.actor, command(serial), buy).await,
+                        crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded
+                    ));
+                }
+                serial += 1;
+                super::classic_quests_fixtures::talk(&mut owner, admitted, npc, serial, "bye")
+                    .await?;
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if matches!(case, ShopScenario::MissingProfile) {
             use oteryn_protocol_oteryn::npc_service::{NpcOffer, NpcTradeWindow};
             let native = active.native_gameplay().ok_or("native gameplay")?;

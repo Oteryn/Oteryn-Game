@@ -201,6 +201,23 @@
     "native_addition": true
   },
   {
+    "key": "oteryn:service.travel.captain_bluebear/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
+  },
+  {
     "key": "oteryn:service.travel.captain_bluebear/venore",
     "keyword": "venore",
     "price": 170,
@@ -470,6 +487,23 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_fearless/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
   },
   {
     "key": "oteryn:service.travel.captain_fearless/yalahar",
@@ -791,6 +825,23 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_pelagia/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
+  },
+  {
     "key": "oteryn:service.travel.captain_pelagia/venore",
     "keyword": "venore",
     "price": 110,
@@ -849,6 +900,23 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_seagull/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
   },
   {
     "key": "oteryn:service.travel.captain_seagull/venore",
@@ -1124,6 +1192,37 @@
     "yalahar_town_gate": "ankrahmun"
   },
   {
+    "key": "oteryn:service.travel.captain_tiberius/ab_dendriel",
+    "keyword": "ab'dendriel",
+    "price": 0,
+    "premium": false,
+    "x": 32734,
+    "y": 31668,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_seagull/travora"
+    }
+  },
+  {
     "key": "oteryn:service.travel.captain_tiberius/ankrahmun",
     "keyword": "ankrahmun",
     "price": 0,
@@ -1137,10 +1236,17 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
@@ -1161,10 +1267,17 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
@@ -1185,10 +1298,17 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
@@ -1209,14 +1329,145 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_seahorse/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/krailos",
+    "keyword": "krailos",
+    "price": 0,
+    "premium": false,
+    "x": 33493,
+    "y": 31712,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_pelagia/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/liberty_bay",
+    "keyword": "liberty bay",
+    "price": 0,
+    "premium": false,
+    "x": 32285,
+    "y": 32892,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.jack_fate/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/liberty_bay_waverider",
+    "keyword": "liberty bay",
+    "price": 0,
+    "premium": false,
+    "x": 32349,
+    "y": 32856,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_waverider/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/port_hope",
+    "keyword": "port hope",
+    "price": 0,
+    "premium": false,
+    "x": 32527,
+    "y": 32784,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.charles/travora"
     }
   },
   {
@@ -1233,14 +1484,83 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_breezelda/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/thais",
+    "keyword": "thais",
+    "price": 0,
+    "premium": false,
+    "x": 32310,
+    "y": 32210,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_bluebear/travora"
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/venore",
+    "keyword": "venore",
+    "price": 0,
+    "premium": false,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_fearless/travora"
     }
   },
   {
@@ -1257,10 +1577,17 @@
     "native_addition": true,
     "return_origin": {
       "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
         "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
         "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
@@ -1280,6 +1607,23 @@
     "carpet": false,
     "native_addition": true,
     "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana"
+  },
+  {
+    "key": "oteryn:service.travel.captain_waverider/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
   },
   {
     "key": "oteryn:service.travel.captain_waverider/treasure_island",
@@ -1421,6 +1765,23 @@
     "native_addition": true
   },
   {
+    "key": "oteryn:service.travel.charles/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
+  },
+  {
     "key": "oteryn:service.travel.charles/venore",
     "keyword": "venore",
     "price": 160,
@@ -1548,6 +1909,20 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.dalbrect/isle_of_kings",
+    "keyword": "passage",
+    "price": 10,
+    "premium": false,
+    "x": 32190,
+    "y": 31957,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log"
   },
   {
     "key": "oteryn:service.travel.eremo/cormaya",
@@ -1941,6 +2316,23 @@
     "held": false,
     "carpet": false,
     "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.jack_fate/travora",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32057,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
   },
   {
     "key": "oteryn:service.travel.jack_fate/venore",
@@ -2675,19 +3067,6 @@
     "native_addition": true
   },
   {
-    "key": "oteryn:service.travel.petros/venore",
-    "keyword": "venore",
-    "price": 180,
-    "premium": false,
-    "x": 32954,
-    "y": 32022,
-    "floor": 6,
-    "postman": true,
-    "carpet": false,
-    "held": true,
-    "native_addition": true
-  },
-  {
     "key": "oteryn:service.travel.petros/travora",
     "keyword": "travora",
     "price": 0,
@@ -2703,6 +3082,19 @@
       "track": "oteryn:quest-progress/travora/ticket_purchased",
       "valid_for_seconds": 86400
     }
+  },
+  {
+    "key": "oteryn:service.travel.petros/venore",
+    "keyword": "venore",
+    "price": 180,
+    "premium": false,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": true,
+    "carpet": false,
+    "held": true,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.pino/darama",
@@ -2934,6 +3326,19 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.sharon/departure_platform",
+    "keyword": "check",
+    "price": 0,
+    "premium": false,
+    "x": 32062,
+    "y": 32367,
+    "floor": 5,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.svenson/senja",
@@ -3452,19 +3857,5 @@
     "postman": true,
     "held": false,
     "carpet": true
-  },
-  {
-    "key": "oteryn:service.travel.dalbrect/isle_of_kings",
-    "keyword": "passage",
-    "price": 10,
-    "premium": false,
-    "x": 32190,
-    "y": 31957,
-    "floor": 6,
-    "postman": false,
-    "held": false,
-    "carpet": false,
-    "native_addition": true,
-    "quest_gate": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log"
   }
 ]

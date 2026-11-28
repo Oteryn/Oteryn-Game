@@ -141,7 +141,7 @@ impl crate::play::PlayView {
             return false;
         }
         let mailbox = lock(&link.mailbox);
-        !mailbox.world_context.pending && mailbox.world_context.targeting.is_none()
+        !mailbox.world_context.pending && mailbox.world_context.targeting_action().is_none()
     }
     pub fn item_floor(&self) -> i16 {
         self.floor

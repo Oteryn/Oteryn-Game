@@ -66,20 +66,13 @@
               "failure_message": null,
               "selector": {
                 "position": {
-                  "x": 33281,
-                  "y": 32447,
-                  "floor": -8
+                  "x": 33271,
+                  "y": 32418,
+                  "floor": -12
                 },
-                "appearance": 7534,
-                "native": {
-                  "position": {
-                    "x": 33281,
-                    "y": 32447,
-                    "floor": -8
-                  },
-                  "appearance": 7534,
-                  "ordinal": 1
-                }
+                "appearance": 5120,
+                "action": 1040,
+                "ordinal": 1
               },
               "reversible": false,
               "requires_world_admission": true,
@@ -126,9 +119,9 @@
                   "players": [
                     {
                       "from": {
-                        "x": 33280,
-                        "y": 32447,
-                        "floor": -8
+                        "x": 33271,
+                        "y": 32419,
+                        "floor": -12
                       },
                       "to": {
                         "x": 33270,

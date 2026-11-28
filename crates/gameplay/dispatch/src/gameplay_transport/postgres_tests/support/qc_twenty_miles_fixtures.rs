@@ -793,6 +793,8 @@ pub(super) async fn exercise(
         .await?;
     }
     awaken_fire_feathered(owner, h).await?;
+    say!(1, "guardian-skulls-laid", ["mission", "yes"], false);
+    stage(h, 2).await?;
     let energies = oteryn_gameplay_quests::quest::fire_feathered_native::TRACKS
         .map(|key| (key.to_owned(), 1));
     super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
@@ -902,12 +904,18 @@ pub(super) async fn exercise(
     // A live Yeo in the event placement must leave the pearl and stage untouched.
     let pearl_key = "oteryn:item.tibia.i21747";
     let pearl = only_live_item(h, pearl_key).await?;
-    say!(4, "yeo-slab", ["nacre slab", "yes"], true);
+    say!(4, "yeo-slab", ["seacrest pearl", "yes"], true);
     stage(h, 13).await?;
     assert_eq!(only_live_item(h, pearl_key).await?, pearl);
-    say!(2, "yeo-slab", ["fishing", "interesting", "use", "seacrest pearl", "yes"], true);
+    say!(2, "yeo-slab", ["fishing", "interesting", "use"], true);
+    say!(2, "yeo-slab", ["nacre slab", "use"], true);
+    stage(h, 13).await?;
+    assert_eq!(only_live_item(h, pearl_key).await?, pearl);
+    say!(2, "yeo-slab", ["seacrest pearl", "yes"], true);
     say!(1, "guardian-third-slab", ["mission"], true);
-    say!(1, "guardian-second-slab-back", ["mission"], true);
+    stage(h, 16).await?;
+    only_live_item(h, "oteryn:item.tibia.i21753").await?;
+    only_live_item(h, "oteryn:item.tibia.i21861").await?;
     for (altar, slab) in [21753, 21861, 21862].into_iter().enumerate() {
         use_object(
             owner,

@@ -94,13 +94,7 @@ def unweighed(source_root, root=batch.ROOT):
 
 
 def capture(source_root):
-    packet = batch.capture(source_root, additional_inputs=INPUTS)
-    packet["records"] = [
-        r
-        for r in packet["records"]
-        if r["production_definition"]["production_key"] in KEYS
-    ]
-    packet["classification"] = [r for r in packet["classification"] if r["key"] in KEYS]
+    packet = batch.capture(source_root, additional_inputs=INPUTS, cohort=KEYS)
     equipment = shared.capture(item_ids=EQUIPMENT)
     packet["records"].extend(equipment["records"])
     packet["records"].extend(unweighed(source_root))

@@ -34,10 +34,18 @@
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 1,
-      "storage": [],
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13,
+          "preserve": true
+        }
+      ],
       "reply": [
-        "You brought me that mother-of-pearl orb I asked you about?"
+        "The nacre slab is my latest find. It looks nice, but it is cracked and seems to be of little use."
       ]
     },
     {
@@ -187,7 +195,7 @@
       "keywords": [
         "seacrest pearl"
       ],
-      "topic": 4,
+      "topic": 0,
       "next_topic": 1,
       "storage": [
         {
@@ -199,8 +207,9 @@
         }
       ],
       "reply": [
-        "Yes, a Seacrest Pearl. Do you have one to trade for the nacre slab?"
-      ]
+        "You brought me that mother-of-pearl orb I asked you about?"
+      ],
+      "any_topic": true
     }
   ]
 }

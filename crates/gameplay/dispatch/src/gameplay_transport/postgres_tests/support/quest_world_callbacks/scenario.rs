@@ -69,7 +69,8 @@ fn scenario_case(
     };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
-    let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    let spatial_corpse = name == super::super::koshei_the_deathless_journey_fixtures::SPATIAL;
+    let koshei = spatial_corpse || name == super::super::koshei_the_deathless_journey_fixtures::NAME;
     let cyclops_amulet = matches!(
         name,
         "questpc7-friends-draconian-amulet-replaces-steel"
@@ -164,7 +165,7 @@ fn scenario_case(
     let twenty_miles = super::super::qc_twenty_miles_fixtures::matches(name);
     let pinned_qc_world = twenty_miles || classic_access.is_some() || name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let city_story = name == super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY;
+    let city_story = matches!(name, super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY | super::super::qh_authored_cases_fixtures::AMBUSH);
     if city_story {
         let callback = super::super::qh_authored_cases_fixtures::callback(name)?;
         assert_eq!(callback.selector.position, Some(trigger), "cellar crate scenario trigger");
@@ -277,7 +278,7 @@ fn scenario_case(
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
     } else if koshei {
-        Position { x: trigger.x - 1, ..trigger }
+        super::super::koshei_the_deathless_journey_fixtures::STAGING
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
     } else if too_hot_research || tower_defence {
@@ -1640,7 +1641,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
-            super::super::koshei_the_deathless_journey_fixtures::NAME => Some(150),
+            _ if koshei => Some(150),
             // The settlement journey includes combat with a classed starter loadout.
             new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
@@ -1882,8 +1883,8 @@ fn scenario_case(
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {
-                // Two players plus Iriana and Jimmy for Top of the City.
-                4
+                // Two players, Iriana, Jimmy and the three assassins.
+                7
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
@@ -2281,7 +2282,7 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if koshei {
             Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &world,
+                &mut owner, &mut admitted, &h, &world, spatial_corpse,
             )).await?;
         } else if explorer {
             Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;

@@ -75,6 +75,27 @@ impl PlayView {
         })
     }
 
+    fn ground_appearance(&self, item: crate::play::GroundItem) -> u16 {
+        match item {
+            crate::play::GroundItem::Map { item, .. } => item.appearance_id,
+            crate::play::GroundItem::Entity { reference, .. } => self
+                .entities
+                .iter()
+                .find(|entity| entity.entity == reference)
+                .and_then(|entity| {
+                    if let oteryn_session::EntityDetail::ObjectWithAppearance {
+                        appearance_id,
+                        ..
+                    } = entity.detail
+                    {
+                        Some(appearance_id.get())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default(),
+        }
+    }
     pub fn world_context(&self, tile: TileCoord, link: &PlayLink) -> Option<Menu> {
         self.world_context_for(tile, link, false)
     }
@@ -96,11 +117,15 @@ impl PlayView {
         )
         .with_targeting(mailbox.world_context.use_with);
         menu.tile = Some(tile);
-        if let Some(crate::play::GroundItem::Map { header, .. }) = if prefer_item {
+        let selected = if prefer_item {
             self.scene.item_target_at(tile)
         } else {
             self.scene.target_at(tile).and_then(|target| target.item)
-        } {
+        };
+        if selected.is_some_and(|item| self.ground_appearance(item) == 7535) {
+            menu.entries.retain(|(_, action)| *action != Action::Open);
+        }
+        if let Some(crate::play::GroundItem::Map { header, .. }) = selected {
             menu.binding = Some((
                 header.content_generation,
                 header.bundle_digest,
@@ -258,25 +283,7 @@ impl PlayView {
         let Some(item) = self.scene.item_target_at(tile) else {
             return false;
         };
-        let id = match item {
-            crate::play::GroundItem::Map { item, .. } => item.appearance_id,
-            crate::play::GroundItem::Entity { reference, .. } => self
-                .entities
-                .iter()
-                .find(|entity| entity.entity == reference)
-                .and_then(|entity| {
-                    if let oteryn_session::EntityDetail::ObjectWithAppearance {
-                        appearance_id,
-                        ..
-                    } = entity.detail
-                    {
-                        Some(appearance_id.get())
-                    } else {
-                        None
-                    }
-                })
-                .unwrap_or_default(),
-        };
+        let id = self.ground_appearance(item);
         let action = match (scheme, self.scene.smart_item_action(id)) {
             (crate::play::MouseScheme::Classic, Some(Action::Look) | None) => Action::Use,
             (_, Some(action)) => action,

@@ -238,10 +238,44 @@
           "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
           "minimum": 5,
           "maximum": 44
+        },
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": 1
         }
       ],
       "reply": [
         "Kisavuta! <giggles>"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        },
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Quatu, quata jusipa. Nguraka suq! <seems pleased and doesn't need anything else>"
       ]
     }
   ]

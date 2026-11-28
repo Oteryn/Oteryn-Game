@@ -44,7 +44,7 @@ impl PlayView {
                     let mailbox = lock(&link.mailbox);
                     let blocked = mailbox.world_input_blocked()
                         || mailbox.world_context.pending
-                        || mailbox.world_context.targeting.is_some()
+                        || mailbox.world_context.targeting_action().is_some()
                         || self.cursor_spell.is_some();
                     drop(mailbox);
                     if blocked {

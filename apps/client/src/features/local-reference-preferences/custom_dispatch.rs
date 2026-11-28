@@ -275,7 +275,7 @@ impl PlayLink {
                 if mailbox.inventory_shutdown
                     || mailbox.world_input_blocked()
                     || mailbox.world_context.pending
-                    || mailbox.world_context.targeting.is_some()
+                    || mailbox.world_context.targeting_action().is_some()
                 {
                     return false;
                 }
@@ -304,7 +304,8 @@ impl PlayLink {
                     return false;
                 };
                 let item = item_source(&mailbox, definition_id, Some(*sub_type));
-                let Some(item) = item else {
+                let handle = item.map(|item| item.handle);
+                if handle.is_none() && (!mailbox.world_context.use_with || *sub_type != 0) {
                     mailbox.custom_hotkey_feedback =
                         Some("Custom hotkey: item is no longer visible in inventory or an open container".into());
                     return false;
@@ -325,7 +326,9 @@ impl PlayLink {
                     *target
                 };
                 let target = match &target_mode {
-                    ObjectTarget::Use => Target::Item(item.handle),
+                    ObjectTarget::Use => handle
+                        .map(Target::Item)
+                        .unwrap_or(Target::Definition(definition_id)),
                     ObjectTarget::CursorPosition => {
                         let Some((target, cursor)) = mailbox.bar_actions.cursor.clone() else {
                             mailbox.custom_hotkey_feedback =
@@ -342,7 +345,10 @@ impl PlayLink {
                             .entries()
                             .iter()
                             .any(|entry| entry.rune_item == Some(*definition));
-                        mailbox.world_context.begin_targeting(item.handle);
+                        mailbox.world_context.begin_shortcut_targeting(
+                            handle,
+                            handle.is_none().then_some(definition_id),
+                        );
                         mailbox.world_context.rune_targeting = rune;
                         return true;
                     }
@@ -374,7 +380,9 @@ impl PlayLink {
                     ) {
                         Action::Use
                     } else {
-                        Action::UseOn(item.handle)
+                        handle
+                            .map(Action::UseOn)
+                            .unwrap_or(Action::UseDefinitionOn(definition_id))
                     },
                     selection,
                 };

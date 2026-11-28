@@ -96,20 +96,30 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     let (controller, activated) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let room = activated.qualified_room();
+    let bundle = super::qc_pinned_world::world_near(
+        controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native content")?,
+        &[(33289, 32480), (32057, 32368)],
+    )?;
+    let cells = bundle
+        .movement_cells(room.movement_cells())
+        .map_err(debug)?;
     let channel_pin = ChannelContentPin::from_activation(
         world,
         activated.activation_sequence(),
         activated.identity().server_artifact_digest(),
         activated.identity().client_artifact_digest(),
-        room.frame_binding().digest(),
-        room.map_revision_digest(),
+        bundle.frame_binding_digest(world),
+        bundle.map_revision_digest(),
         (33289, 32480, 6),
     );
     let deps = Dependencies::with_content_and_capacity(
         channel_pin,
         room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
-        3,
+        5,
     )?;
     deps.runtime
         .lock()
@@ -118,6 +128,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(debug)?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = controller.active();
+    owner.movement_cells = (&cells).into();
     owner.quest_catalogue = Some(Arc::new(quest_state.catalogue().clone()));
     let session = deps.admitted.game_session_id;
     let fence = owner
@@ -130,7 +141,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .quote_npc_travel(&authority, &h.node, fence, inbound.clone(), &NoPremium)
             .await
             .map_err(debug)?,
-        Err(TravelRefusal::UnavailableRoute)
+        Ok(1000)
     );
 
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
@@ -138,10 +149,38 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .await?;
     super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 2000, 80).await?;
     owner.refresh_quest_session(session, true).await;
-    let [captain, petros] = super::classic_quests_fixtures::install(
+    use oteryn_gameplay_quests::quest::world_callbacks::Position;
+    let [captain, petros, tiberius, sharon] = super::classic_quests_fixtures::install_positions(
         &owner,
         &deps.admitted,
-        [greyhound, "oteryn:npc.petros"],
+        [
+            greyhound,
+            "oteryn:npc.petros",
+            "oteryn:npc.captain_tiberius",
+            "oteryn:npc.sharon",
+        ],
+        [
+            Position {
+                x: 33289,
+                y: 32481,
+                floor: -6,
+            },
+            Position {
+                x: 33290,
+                y: 32481,
+                floor: -6,
+            },
+            Position {
+                x: 32056,
+                y: 32368,
+                floor: -6,
+            },
+            Position {
+                x: 32055,
+                y: 32368,
+                floor: -6,
+            },
+        ],
     )
     .await?;
     let now: i64 =
@@ -278,7 +317,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(|()| "fence")?
         .ok_or("fence")?;
     for (route, expected) in [
-        (inbound, Err(TravelRefusal::UnavailableRoute)),
+        (inbound.clone(), Ok(1000)),
         (ankrahmun, Err(TravelRefusal::UnavailableRoute)),
         (darashia, Ok(0)),
     ] {
@@ -290,5 +329,58 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             expected
         );
     }
+    talk(&mut owner, &deps.admitted, tiberius, 48102, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, tiberius, 48103, "passage").await?;
+    assert!(
+        offer
+            .iter()
+            .any(|line| line.to_ascii_lowercase().contains("darashia"))
+    );
+    talk(&mut owner, &deps.admitted, tiberius, 48104, "yes").await?;
+    let returned = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!((returned.x, returned.y, returned.floor), (33289, 32480, 6));
+    sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+    talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
+    assert!(offer.iter().any(|line| line.contains("1000")));
+    talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
+    let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT balance FROM game_account_bank_balances),
+                (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=48107)",
+    )
+    .bind(TRACK)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((balance, paid), (0, 1000));
+    assert!(renewed >= stamp);
+    sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+    talk(&mut owner, &deps.admitted, sharon, 48108, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, sharon, 48109, "check").await?;
+    assert!(
+        offer
+            .iter()
+            .any(|line| line.contains("in-game requirements"))
+    );
+    let arrival = talk(&mut owner, &deps.admitted, sharon, 48110, "yes").await?;
+    assert!(
+        arrival
+            .iter()
+            .any(|line| line.contains("departure platform"))
+    );
+    let placed = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!((placed.x, placed.y, placed.floor), (32062, 32367, 5));
     Ok(())
 }

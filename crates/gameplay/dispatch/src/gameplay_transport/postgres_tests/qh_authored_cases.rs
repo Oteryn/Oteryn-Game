@@ -1,6 +1,7 @@
 //! Lane qh: registered authored bindings driven by literal USE on an unmodified native map crop.
 use super::qh_authored_cases_fixtures::{
-    BARE, DIG, DIRT, NO_PICK, SMALL_SAPPHIRE, TOP_OF_THE_CITY, TOP_OF_THE_CITY_CRATE, WRONG_TOOL,
+    AMBUSH, BARE, DIG, DIRT, NO_PICK, SMALL_SAPPHIRE, TOP_OF_THE_CITY, TOP_OF_THE_CITY_CRATE,
+    WRONG_TOOL,
 };
 use super::{TestResult, quest_world_callbacks_fixtures};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
@@ -81,4 +82,14 @@ fn qh_top_of_the_city_npc_chain_and_cellar_crate_postgres() -> TestResult {
         started.elapsed()
     );
     Ok(())
+}
+
+#[test]
+fn qh_jimmy_greeting_requires_three_assassin_deaths_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(AMBUSH, || {
+        quest_world_callbacks_fixtures::scenario(AMBUSH, TOP_OF_THE_CITY_CRATE, false)
+    })
 }

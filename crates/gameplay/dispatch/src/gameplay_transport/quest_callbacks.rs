@@ -1678,29 +1678,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(UseOutcome::rejected());
             };
-            use oteryn_gameplay_quests::quest::koshei_amulet::{SUNDIAL, TOMB_ENTRY};
-            // The two Koshei callbacks deliberately share the same sundial. A
-            // ready statue puzzle opens the coffin first. Otherwise retain
-            // the authored encounter eligibility and the puzzle's refusal.
-            let koshei = match selected.as_slice() {
-                [first, second] if first.key == SUNDIAL && second.key == TOMB_ENTRY => {
-                    Some((*first, *second))
-                }
-                [first, second] if first.key == TOMB_ENTRY && second.key == SUNDIAL => {
-                    Some((*second, *first))
-                }
-                _ => None,
-            };
-            let resolved = if let Some((sundial, entry)) = koshei {
-                if world_requirements_match(map, sundial) {
-                    Some(sundial)
-                } else {
-                    unique_eligible(std::iter::once(entry), &tracks).or(Some(sundial))
-                }
-            } else {
-                unique_eligible(selected.iter().copied(), &tracks)
-            };
-            let Some(callback) = resolved else {
+            let Some(callback) = unique_eligible(selected.iter().copied(), &tracks) else {
                 return Some(UseOutcome::rejected());
             };
             callback

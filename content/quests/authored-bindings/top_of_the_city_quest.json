@@ -25,6 +25,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 11
+        },
+        {
+          "key": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
         }
       ],
       "stages": [
@@ -82,7 +88,8 @@
               "quest": "oteryn:quest.authored.top_of_the_city_quest",
               "npc": "oteryn:npc.iriana",
               "keywords": [
-                "quest"
+                "hi",
+                "hello"
               ],
               "topic": 0,
               "next_topic": 0,
@@ -95,7 +102,7 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "You lost the thief? Start again from my roof and follow his trail."
+                "What happened?! Did you lose track of him? I'm sure he'll come back, he always does. Try to track him down from here once more."
               ],
               "sources": [
                 "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
@@ -780,6 +787,33 @@
           }
         },
         {
+          "key": "jimmy-ambush",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/top-of-the-city-assassins",
+              "creature": "oteryn:creature.assassin",
+              "track": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+              "gate": "oteryn:quest-progress/authored/top-of-the-city/pursuit",
+              "gate_value": 10,
+              "maximum": 3,
+              "death_area": {
+                "minimum": [
+                  32856,
+                  31374,
+                  6
+                ],
+                "maximum": [
+                  32859,
+                  31385,
+                  6
+                ]
+              }
+            }
+          }
+        },
+        {
           "key": "s2",
           "completes": false,
           "trigger": {
@@ -805,6 +839,13 @@
                   "minimum": 10,
                   "maximum": 10,
                   "set": 10,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/top-of-the-city/assassins",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 3,
                   "preserve": true
                 }
               ],
