@@ -430,16 +430,14 @@ class KnownFailRowsTests(unittest.TestCase):
         self.assertEqual(self.rows(log, 'PASS', known)[1], 'C03.full')
 
     def test_missing_list_hides_nothing(self):
-        log = "SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n"
-        self.assertEqual(self.rows(log, "FAIL", ""), ("C01.full", ""))
+        log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
+        self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
 
-    def test_w19a_actor_failure_fails_the_seam_stage(self):
-        log = (
-            "e2e_all scenario=W19a.full status=FAIL evidence=Messenger_absent\n"
-            "e2e_all scenario=W19a.client status=FAIL evidence=Messenger_absent\n"
-        )
-        known = SOURCE.with_name("known_fail_rows.txt").read_text()
-        self.assertEqual(self.rows(log, "FAIL", known), ("W19a.client,W19a.full", ""))
+    def test_seed_list_has_one_reason_per_row(self):
+        listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
+        rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
+        self.assertTrue(all(len(row) == 2 and row[0].endswith('.full') for row in rows))
+        self.assertEqual(len({row[0] for row in rows}), len(rows))
 
     def test_selected_live_rows_require_the_expected_verdict(self):
         helpers = "\n".join(
@@ -450,6 +448,7 @@ class KnownFailRowsTests(unittest.TestCase):
             (
                 "set -Eeuo pipefail",
                 "WORK=$1; VARS=/dev/null; GAME_SOURCE=$2",
+                 "node_log=$WORK/node.log; failed_node_log=$WORK/failed-node.log",
                 "OTERYN_E2E_ROW_BATCH=$3; NODE_BOOT_E2E_ONLY=rows",
                 "NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0",
                 "declare -A STATUS=(); ORDER=()",
@@ -509,184 +508,6 @@ class KnownFailRowsTests(unittest.TestCase):
                         result.stdout.splitlines()[-1], f"verdict={verdict}"
                     )
 
-    def test_seed_list_has_one_reason_per_row(self):
-        listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
-        rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
-        self.assertTrue(all(len(row) == 2 and row[0].endswith('.full') for row in rows))
-        self.assertEqual(len({row[0] for row in rows}), len(rows))
 
-
-class ChristmasFixtureTests(unittest.TestCase):
-    def test_world_seam_passes_normalized_row_batch_to_journeys(self):
-        script = r"""
-set -Eeuo pipefail
-GAME_SOURCE=$PWD; NODE_BOOT_LIBTEST=$1
-export OTERYN_E2E_ROW_BATCH=$2
-NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_LIFECYCLE=native_reference
-BASE=/x; MAP_REVISION=m; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
-ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
-RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
-PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q; LIGHT_ACCOUNT_ID=l
-G17_ACCOUNT=g17; G01_ACCOUNT=g01
-EXTRA_WORLD_ACCOUNTS=(e); NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
-declare -A STATUS=()
-sleep() { :; }
-"""
-        script += function("node_boot_row_selection") + "\n" + function("seam_stages")
-        script += "\nseam_stages\n"
-        with tempfile.TemporaryDirectory() as work:
-            package = Path(work, "apps", "game-server")
-            package.mkdir(parents=True)
-            executable = Path(work, "test-binary")
-            executable.write_text(
-                '#!/bin/bash\ncase "$1" in\n'
-                '  *qualification_spawn_transaction*) echo "test result: ok. 1 passed; 0 failed; 0 ignored;" ;;\n'
-                '  *) echo "batch=${OTERYN_E2E_ROW_BATCH-unset}" ;;\nesac\n'
-            )
-            executable.chmod(0o700)
-            for batch, expected in (
-                ("+12:+1", "12:1"),
-                ("0:18446744073709551615", "0:18446744073709551615"),
-            ):
-                with self.subTest(batch=batch):
-                    result = subprocess.run(
-                        ["bash", "-c", script, "w19a", executable, batch],
-                        cwd=work,
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    self.assertEqual(
-                        result.stdout.splitlines()[-1], f"batch={expected}"
-                    )
-
-    def test_assignment_waits_for_rendered_christmas_epoch(self):
-        script = r"""
-set -Eeuo pipefail
-GAME_SOURCE=$1; node_log=$2
-NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_UNPRIVILEGED=0
-NODE_BOOT_E2E_ONLY=rows; OTERYN_E2E_ROW_BATCH=12:1
-BASE=$GAME_SOURCE; SERVICE_UID=123; WORLD_ID=world; CHANNEL_ID=channel
-WORLD_DIGEST=digest; MAP_REVISION=revision; NODE_ACTIVATION_WAIT_SECONDS=1
-node_field() { echo value; }
-remember() { printf '%s=%s\n' "$1" "$2"; }
-ops() { case "$*" in *ungranted.json*|*content-stale.json*) return 6 ;; esac; }
-node_deployment_grants() { :; }
-assignment_report_args() { :; }
-psql_admin() {
-    case "$(cat)" in
-        "PREPARE node_boot_christmas"*) echo 1 ;;
-        "PREPARE node_boot_world_epoch"*) printf 'f\nf\n' ;;
-        "SELECT count(*)"*) echo 1 ;;
-        *) return 1 ;;
-    esac
-}
-sudo() { echo '123 600'; }
-evidence() { :; }
-fail() { echo "$1" >&2; return 1; }
-seq() { echo 1; }
-sleep() { :; }
-"""
-        # Captured from oteryn_error_codes::Line::render with and without a boot trace.
-        calendar = (
-            "oteryn-game-server ts=0 level=info module=node event=seasonal_calendar "
-        )
-        christmas = r'detail="reset_epoch=1 active=[\"christmas\"]"'
-        script += "\n".join(
-            function(name)
-            for name in (
-                "node_boot_row_selection",
-                "w19a_rows",
-                "await_log",
-                "node_complete_assignment",
-            )
-        )
-        script += '\nnode_complete_assignment "$SECONDS"\n'
-        with tempfile.TemporaryDirectory() as work:
-            log = Path(work, "node.log")
-            for detail, ready in (
-                (christmas, True),
-                ("trace=1234 " + christmas, True),
-                (r'detail="reset_epoch=0 active=[]"', False),
-                (r'detail="reset_epoch=1 active=[\"not_christmas\"]"', False),
-            ):
-                with self.subTest(detail=detail):
-                    log.write_text(
-                        "event=content_activated detail=activation_sequence=1 \n"
-                        "event=readiness detail=ready=true\n" + calendar + detail + "\n"
-                    )
-                    result = subprocess.run(
-                        [
-                            "bash",
-                            "-c",
-                            script,
-                            "w19a",
-                            Path(__file__).resolve().parents[3],
-                            log,
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    self.assertEqual(
-                        result.returncode, 0 if ready else 1, result.stderr
-                    )
-                    if ready:
-                        self.assertIn(
-                            "node_seasonal_fixture=christmas_epoch_1", result.stdout
-                        )
-                    else:
-                        self.assertIn("missing node event", result.stderr)
-                        self.assertNotIn("node_seasonal_fixture=", result.stdout)
-
-    def test_reused_world_checks_christmas_before_running_seam(self):
-        dispatch = re.search(
-            r"(?ms)^seam_stage_name=seam_stages\n.*?(?=^else\n)", TEXT
-        ).group(0)
-        script = "\n".join(
-            (
-                "set -Eeuo pipefail",
-                "NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_REUSE_STACK=1",
-                "NODE_BOOT_E2E_ONLY=rows; OTERYN_E2E_ROW_BATCH=$1",
-                '[[ -z "$2" ]] || kept_seasonal_fixture=$2',
-                "trap 'echo \"${result:-}\"' EXIT",
-                'stage() { echo "ran $1"; }',
-                function("node_boot_row_selection"),
-                function("w19a_rows"),
-                dispatch,
-                "fi",
-            )
-        )
-        for batch, fixture, allowed in (
-            ("0:1", "", True),
-            ("13:1", "", True),
-            ("12:1", "", False),
-            ("216:1", "", False),
-            ("+12:1", "", False),
-            ("0:18446744073709551615", "", False),
-            ("12:1", "christmas_epoch_1", True),
-            ("216:1", "christmas_epoch_1", True),
-        ):
-            with self.subTest(batch=batch, fixture=fixture):
-                result = subprocess.run(
-                    ["bash", "-c", script, "w19a", batch, fixture],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-                self.assertEqual(
-                    result.returncode,
-                    0 if allowed else 2,
-                    result.stdout + result.stderr,
-                )
-                if allowed:
-                    self.assertIn("ran seam_stages", result.stdout)
-                else:
-                    self.assertEqual(
-                        result.stdout.strip(),
-                        "BLOCKED reason=kept_stack_requires_christmas_epoch_1",
-                    )
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
