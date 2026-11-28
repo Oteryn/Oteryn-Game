@@ -2,17 +2,19 @@
 //! slots and offers, and the server's answer to a query for an item that is not carried. The
 //! consumer is `apply_result` and `panel_text` in `crates/client-ui/src/features/0068-imbue`.
 use super::*;
+use crate::map::view::MapFacts;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::imbuement::{
     CAPABILITY_IMBUE_V1, CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
     CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1, COMMAND_TYPE_IMBUEMENT, ImbuementAction,
-    ImbuementOffer, ImbuementRequest, ImbuementResult, ImbuementWindow, decode_imbuement_reply,
+    ImbuementOffer, ImbuementRequest, ImbuementResult, ImbuementWindow,
     decode_imbuement_reply_with_success, encode_imbuement_request,
 };
 use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, encode_character_inventory_with_appearances,
 };
 use sha2::{Digest as _, Sha256};
+use std::collections::BTreeSet;
 use std::num::NonZeroU64;
 
 const SWORD: u32 = 3264;
@@ -33,12 +35,8 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 // Sword eligibility: rulesets/items/imbuements/equipment.json (wiki_swords, item 3264).
 // Global fees: https://tibia.fandom.com/wiki/Imbuing
-fn expected_offers(expanded: bool) -> Vec<ImbuementOffer> {
-    let families: &[u8] = if expanded {
-        &[1, 11, 12, 20, 21, 22, 23, 24, 25]
-    } else {
-        &[1, 2, 11, 12, 20]
-    };
+fn expected_offers() -> Vec<ImbuementOffer> {
+    let families = [1, 11, 12, 20, 21, 22, 23, 24, 25];
     families
         .iter()
         .flat_map(|&family| {
@@ -54,13 +52,21 @@ fn expected_offers(expanded: bool) -> Vec<ImbuementOffer> {
         .collect()
 }
 
-fn verify_window(
-    window: &ImbuementWindow,
-    success: &[u8],
-    expanded: bool,
-    success_selected: bool,
-) -> TestResult {
-    let offers = expected_offers(expanded);
+fn require_imbuement_capabilities(selected: &[u32]) -> TestResult {
+    for required in [
+        CAPABILITY_IMBUE_V1,
+        CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
+        CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+    ] {
+        if !selected.contains(&required) {
+            return Err(format!("P21 admission omitted capability {required}").into());
+        }
+    }
+    Ok(())
+}
+
+fn verify_window(window: &ImbuementWindow, success: &[u8]) -> TestResult {
+    let offers = expected_offers();
     if window.slot_count != 2
         || window.clear_gold != 15_000
         || !window.applied.is_empty()
@@ -68,12 +74,7 @@ fn verify_window(
     {
         return Err(format!("P21 Sword catalogue mismatch: {window:?}").into());
     }
-    let expected_success = if success_selected {
-        vec![100; offers.len()]
-    } else {
-        Vec::new()
-    };
-    if success != expected_success {
+    if success.len() != offers.len() || success.iter().any(|&percent| percent != 100) {
         return Err(format!("P21 Sword success percentages mismatch: {success:?}").into());
     }
     Ok(())
@@ -110,6 +111,75 @@ async fn query(
     Ok((reply.status, reply.server_sequence, reply.payload, payload))
 }
 
+async fn require_shrine_picker(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    let world = full_e2ef7::qualification_world(clients)?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let bundle = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let shrine_palette: BTreeSet<usize> = bundle
+        .manifest
+        .palette
+        .iter()
+        .enumerate()
+        .filter(|(_, entry)| {
+            [
+                24964, 25060, 25061, 25103, 25104, 25174, 25175, 25182, 25183, 25202,
+            ]
+            .iter()
+            .any(|id| entry.key == format!("oteryn:item.tibia.i{id}"))
+        })
+        .map(|(index, _)| index)
+        .collect();
+    let mut shrines = BTreeSet::new();
+    oteryn_world_bundle::bundle::visit(&bytes, |_, sector| {
+        for tile in &sector.tiles {
+            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                if shrine_palette.contains(&(item.palette as usize))
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                    && let Some(key) = oteryn_world_bundle::bundle::placement_key(
+                        sector.floor,
+                        tile.x,
+                        tile.y,
+                        ordinal,
+                    )
+                    && !world.facts().base_hidden(key)
+                {
+                    shrines.insert((sector.floor, tile.x, tile.y, key));
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let adjacent = |at: TilePos| {
+        shrines.iter().find(|&&(floor, x, y, _)| {
+            floor == at.floor && x.abs_diff(at.x).max(y.abs_diff(at.y)) <= 1
+        })
+    };
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        adjacent(at).is_some()
+    })
+    .ok_or("P21 no reachable authored imbuing shrine")?;
+    walk(client, world, &path).await?;
+    let &(floor, x, y, key) = adjacent(tile(client.world_spatial().actor_position)?)
+        .ok_or("P21 did not reach the authored imbuing shrine")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let result = client.session_mut().use_object(&placement, 0).await?;
+    evidence(&format!(
+        "P21_SHRINE_USE x={x} y={y} floor={floor} placement={key} disposition={:?}",
+        result.disposition
+    ));
+    // USE_INTENT has no imbuing-picker result or event yet. A generic Use acknowledgement
+    // gives no evidence that the shrine opened the picker, so block before sending Query.
+    Err(format!(
+        "BLOCKER-SERVER P21 shrine Use has no item-picker event: {:?}",
+        result.disposition
+    )
+    .into())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     character_prep::declare_seeded(
         "P21.client",
@@ -141,21 +211,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if client.join_snapshot().game_session_id == setup_session {
         return Err("P21 reused the fixture grant session".into());
     }
-    if !client
-        .selected_capabilities()
-        .contains(&CAPABILITY_IMBUE_V1)
-    {
-        return Err("admission omitted the imbue capability".into());
-    }
-    let success_selected = client
-        .selected_capabilities()
-        .contains(&CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
+    require_imbuement_capabilities(client.selected_capabilities())?;
+    require_shrine_picker(&mut client, &scope).await?;
     let decode = |payload: &[u8]| {
-        if success_selected {
-            decode_imbuement_reply_with_success(payload)
-        } else {
-            decode_imbuement_reply(payload).map(|reply| (reply, Vec::new()))
-        }
+        decode_imbuement_reply_with_success(payload)
+            .map_err(|error| format!("P21 imbuement reply decode: {error:?}"))
     };
     let inventory = client
         .inventory()
@@ -170,19 +230,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("P21 expected exactly one fixture sword".into());
     }
     let handle = sword.handle;
-    let expanded = client
-        .selected_capabilities()
-        .contains(&CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
     let (status, window_sequence, payload, request) = query(&mut client, handle).await?;
     if status != CommandStatus::Accepted {
         return Err(format!("fixture sword query refused: {status:?}").into());
     }
-    let (reply, success) = decode(&payload).map_err(|error| format!("reply decode: {error:?}"))?;
+    let (reply, success) = decode(&payload)?;
     let found = reply.window.ok_or("fixture sword query has no window")?;
     if reply.result != ImbuementResult::Ok {
         return Err(format!("fixture sword query result: {:?}", reply.result).into());
     }
-    verify_window(&found, &success, expanded, success_selected)?;
+    verify_window(&found, &success)?;
     client.service_liveness(Duration::from_millis(50)).await?;
     verify_inventory(&inventory, client.inventory(), "after-query")?;
     capture("p21-window.bin", &payload)?;
@@ -191,7 +248,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if status != CommandStatus::Accepted {
         return Err(format!("unknown item query failed at command boundary: {status:?}").into());
     }
-    let (refusal, _) = decode(&refused).map_err(|error| format!("refusal decode: {error:?}"))?;
+    let (refusal, _) = decode(&refused)?;
     if refusal.result != ImbuementResult::NotAllowed || refusal.window.is_some() {
         return Err(format!("unexpected unknown item query result: {refusal:?}").into());
     }
@@ -211,7 +268,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let refused_sha256 = hex(&Sha256::digest(&refused));
     let refused_result = refusal.result;
     let mut expected = format!(
-        "session={session}\nwindow_sequence={window_sequence}\nrefused_sequence={refused_sequence}\nwindow_sha256={window_sha256}\nrefused_sha256={refused_sha256}\nquery_hex={query_hex}\nitem_handle={handle}\nitem_definition={definition}\ninventory_hex={inventory_hex}\nsuccess_selected={success_selected}\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",
+        "session={session}\nwindow_sequence={window_sequence}\nrefused_sequence={refused_sequence}\nwindow_sha256={window_sha256}\nrefused_sha256={refused_sha256}\nquery_hex={query_hex}\nitem_handle={handle}\nitem_definition={definition}\ninventory_hex={inventory_hex}\nsuccess_selected=true\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",
         found.slot_count,
         found.clear_gold,
         found.applied.len(),
@@ -241,13 +298,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .inventory()
         .cloned()
         .ok_or("post-query relog inventory missing")?;
+    require_imbuement_capabilities(fresh.selected_capabilities())?;
+    let sword = reloaded
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == definition)
+        .ok_or("P21 Sword missing from post-query admission")?;
+    let (status, _, payload, _) = query(&mut fresh, sword.handle).await?;
+    let (reply, success) = decode(&payload)?;
+    if status != CommandStatus::Accepted || reply.result != ImbuementResult::Ok {
+        return Err(format!(
+            "P21 post-relog Sword query refused: {status:?} {:?}",
+            reply.result
+        )
+        .into());
+    }
+    verify_window(
+        &reply.window.ok_or("P21 post-relog Sword window missing")?,
+        &success,
+    )?;
     verify_inventory(
         &full_row_p18::durable_inventory(inventory),
         Some(&full_row_p18::durable_inventory(reloaded)),
         "after-relog",
     )?;
     evidence(
-        "P21_CHECK inventory PASS checkpoints=before-query,after-query,after-refusal,after-relog",
+        "P21_CHECK inventory PASS checkpoints=before-query,after-query,after-refusal,after-relog,after-relog-sword-query",
     );
     logout(&mut fresh).await?;
     Ok(expected.replace('\n', ";"))
@@ -277,13 +353,13 @@ mod audit_tests {
             slot_count: 2,
             clear_gold: 15_000,
             applied: Vec::new(),
-            offers: expected_offers(true),
+            offers: expected_offers(),
         };
         let success = vec![100; 27];
-        verify_window(&correct, &success, true, true)?;
+        verify_window(&correct, &success)?;
         let mut wrong = correct.clone();
         wrong.clear_gold += 1;
-        assert!(verify_window(&wrong, &success, true, true).is_err());
+        assert!(verify_window(&wrong, &success).is_err());
         let changes: [fn(&mut Vec<ImbuementOffer>); 6] = [
             |offers: &mut Vec<ImbuementOffer>| {
                 offers.truncate(26);
@@ -312,17 +388,37 @@ mod audit_tests {
         for change in changes {
             let mut wrong = correct.clone();
             change(&mut wrong.offers);
-            assert!(verify_window(&wrong, &success, true, true).is_err());
+            assert!(verify_window(&wrong, &success).is_err());
         }
         let mut wrong_success = success;
         wrong_success[0] = 99;
-        assert!(verify_window(&correct, &wrong_success, true, true).is_err());
-        let legacy = ImbuementWindow {
-            offers: expected_offers(false),
-            ..correct
-        };
-        assert_eq!(legacy.offers.len(), 15);
-        verify_window(&legacy, &[], false, false)?;
+        assert!(verify_window(&correct, &wrong_success).is_err());
+        assert!(verify_window(&correct, &[]).is_err());
+        let mut persisted = correct;
+        persisted
+            .applied
+            .push(oteryn_protocol_oteryn::imbuement::AppliedImbuement {
+                slot: 0,
+                family: 1,
+                tier: 1,
+                remaining_ms: 72_000_000,
+            });
+        assert!(verify_window(&persisted, &[100; 27]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn p21_requires_both_catalogue_extensions() -> TestResult {
+        let required = [
+            CAPABILITY_IMBUE_V1,
+            CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
+            CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+        ];
+        require_imbuement_capabilities(&required)?;
+        for omitted in required {
+            let selected: Vec<_> = required.into_iter().filter(|id| *id != omitted).collect();
+            assert!(require_imbuement_capabilities(&selected).is_err());
+        }
         Ok(())
     }
 

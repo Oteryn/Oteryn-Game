@@ -95,6 +95,39 @@ fn response(
     })
 }
 
+// Global names for Sword eligibility, plus the local codec fixture's Snake Skin.
+fn expected_offer_label(family: u8) -> Result<&'static str, Error> {
+    Ok(match family {
+        1 => "Strike",
+        4 => "Snake Skin",
+        11 => "Vampirism",
+        12 => "Void",
+        20 => "Slash",
+        21 => "Scorch",
+        22 => "Venom",
+        23 => "Frost",
+        24 => "Electrify",
+        25 => "Reap",
+        _ => return Err(format!("unexpected P21 family {family}").into()),
+    })
+}
+
+fn verify_offer_line(text: &str, expected: &str) -> Result<(), Error> {
+    if !text.lines().any(|row| row == expected) {
+        return Err(format!("P21 offer row missing: {expected}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p21_rejects_wrong_display_name() -> Result<(), Error> {
+    let name = expected_offer_label(1)?;
+    let expected = format!("Offer 0: family {name}, tier 1, 7500 gold");
+    verify_offer_line(&expected, &expected)?;
+    assert!(verify_offer_line("Offer 0: family Void, tier 1, 7500 gold", &expected).is_err());
+    Ok(())
+}
+
 #[test]
 fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     let (window, refused, expected) = load()?;
@@ -147,7 +180,7 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
             (family.to_string(), tier.to_string())
         );
         assert_eq!(offer.gold.to_string(), *gold);
-        let name = family_name(offer.family);
+        let name = expected_offer_label(family.parse()?)?;
         let suffix = if *premium == "true" { " (premium)" } else { "" };
         let success = if success_selected {
             let percent: u8 = value(&expected, &format!("offer_{index}_success"))?.parse()?;
@@ -157,13 +190,10 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
             assert!(panel.success.is_empty());
             String::new()
         };
-        assert!(
-            text.lines().any(|row| row
-                == format!(
-                    "Offer {index}: family {name}, tier {tier}, {gold} gold{suffix}{success}"
-                )),
-            "offer {index} row missing in {text}"
-        );
+        verify_offer_line(
+            &text,
+            &format!("Offer {index}: family {name}, tier {tier}, {gold} gold{suffix}{success}"),
+        )?;
     }
 
     // The refusal for an item that is not carried leaves the loaded window untouched.
