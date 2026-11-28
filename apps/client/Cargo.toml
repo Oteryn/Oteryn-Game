@@ -82,6 +82,7 @@ tokio-rustls.workspace = true
 winit = { workspace = true, features = ["x11"] }
 
 [build-dependencies]
+oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 serde_json.workspace = true
 
 # The workspace lints with one change: `unsafe_code` is `deny` instead of `forbid`, so the

@@ -154,5 +154,30 @@ pub fn decode_region(
     Ok(tiles)
 }
 
+/// Town IDs bound to depots in the shipped World placement shards.
+pub fn depot_town_ids(root: &Path) -> Result<std::collections::BTreeSet<u16>, String> {
+    let index = read_placement_index(root)?;
+    let mut budget = oteryn_world_bundle::bundle::BUNDLE_BUDGET;
+    let mut towns = std::collections::BTreeSet::new();
+    let edge = i32::from(u16::MAX);
+    for region in index.regions {
+        let data = read_capped(&root.join(&region.path), MAX_REGION_BYTES)?;
+        let Some(&[floor, x_lo, x_hi, y_lo, y_hi]) = data.get(5..10) else {
+            return Err(format!("{}: missing B3 region coordinates", region.path));
+        };
+        let x = i32::from(u16::from_le_bytes([x_lo, x_hi]));
+        let y = i32::from(u16::from_le_bytes([y_lo, y_hi]));
+        let tiles = decode_region(&data, (floor, x, y), (0, edge, 0, edge), &mut budget)
+            .map_err(|error| format!("{}: {error}", region.path))?;
+        towns.extend(
+            tiles
+                .into_iter()
+                .flat_map(|tile| tile.items)
+                .filter_map(|item| item.attrs.depot),
+        );
+    }
+    Ok(towns)
+}
+
 #[cfg(test)]
 mod tests;

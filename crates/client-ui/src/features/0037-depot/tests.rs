@@ -240,3 +240,59 @@ fn manual_sort_deposit_holds_the_item_until_a_box_slot_is_chosen() {
     );
     assert_eq!(p.held, None);
 }
+
+#[test]
+fn stale_or_rejected_cross_town_reply_restores_legacy_local_browse() -> Result<(), &'static str> {
+    let remote = 6;
+    for outcome in [
+        Some(DepotOutcome::Stale),
+        Some(DepotOutcome::Rejected),
+        None,
+    ] {
+        for box_number in [17, 2] {
+            let mut panel = DepotPanel {
+                selected: true,
+                cross_town_selected: true,
+                reply: Some(reply(DepotOutcome::Opened)),
+                ..Default::default()
+            };
+            let selected =
+                request(&mut panel, Intent::SelectTown(Some(remote))).ok_or("select town")?;
+            assert!(request_for_selection(&panel, selected, None).cross_town);
+            apply_result(
+                &mut panel,
+                outcome.map(|outcome| DepotReply {
+                    town: Some(remote),
+                    ..reply(outcome)
+                }),
+            );
+            assert_eq!(panel.selected_town, None, "outcome {outcome:?}");
+            assert!(!panel.pending);
+            assert!(panel.reply.as_ref().is_none_or(|reply| {
+                reply.town.is_none() && reply.entries.is_empty() && reply.total == 0
+            }));
+
+            let local = request(
+                &mut panel,
+                Intent::Browse {
+                    box_number,
+                    page: 0,
+                },
+            )
+            .ok_or("local browse")?;
+            assert_eq!(
+                request_for_selection(&panel, local, None),
+                DepotRequest::local(
+                    DepotIntent {
+                        town: None,
+                        box_number,
+                        page: 0,
+                        action: DepotAction::Browse,
+                    },
+                    None
+                )
+            );
+        }
+    }
+    Ok(())
+}

@@ -483,3 +483,33 @@ async fn depot_panel_until(
         tokio::task::yield_now().await;
     }
 }
+
+#[test]
+fn depot_picker_only_offers_towns_with_shipped_depot_bindings() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    commands.try_recv()?;
+    outbox.bevy_depot_initialize(true, true);
+    outbox.bevy_depot_result(Some(reply()));
+    app.update();
+    let offered: std::collections::BTreeSet<_> = app
+        .world_mut()
+        .query::<&Control>()
+        .iter(app.world())
+        .filter_map(|control| match control.kind {
+            Kind::Request(Intent::SelectTown(Some(town))) => Some(town),
+            _ => None,
+        })
+        .collect();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let bound = oteryn_client_assets::world::depot_town_ids(&root)?;
+    assert!(offered.contains(&6), "Carlin has a depot");
+    let unbound: Vec<_> = offered.difference(&bound).collect();
+    assert!(
+        unbound.is_empty(),
+        "picker offered unbound towns: {unbound:?}"
+    );
+    for town in [24, 25, 27, 29, 30, 31, 32, 33, 34, 35, 36] {
+        assert!(!offered.contains(&town), "picker offered town {town}");
+    }
+    Ok(())
+}

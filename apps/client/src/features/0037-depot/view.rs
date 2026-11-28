@@ -50,6 +50,7 @@ pub(crate) fn depot_towns() -> &'static [DepotTown] {
         towns: Vec<DepotTown>,
     }
 
+    const SHIPPED_DEPOT_TOWNS: &[u16] = &include!(concat!(env!("OUT_DIR"), "/depot_town_ids.rs"));
     static TOWNS: std::sync::OnceLock<Vec<DepotTown>> = std::sync::OnceLock::new();
     TOWNS.get_or_init(|| {
         let source = include_str!(concat!(
@@ -59,6 +60,7 @@ pub(crate) fn depot_towns() -> &'static [DepotTown] {
         let Ok(TownCatalogue { mut towns }) = serde_json::from_str(source) else {
             return Vec::new();
         };
+        towns.retain(|town| SHIPPED_DEPOT_TOWNS.binary_search(&town.town_id).is_ok());
         towns.sort_by(|left, right| left.name.cmp(&right.name));
         towns
     })

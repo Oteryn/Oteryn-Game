@@ -15,7 +15,7 @@ use std::{
 type Error = Box<dyn std::error::Error + Send + Sync>;
 fn item() -> ItemEntry {
     ItemEntry {
-        appearance_id: 0,
+        appearance_id: 3585, // Apple, the stackable ware served by the peer.
         handle: NonZeroU64::MIN,
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -148,11 +148,13 @@ fn native_stash_picker_stow_refusal_retrieve_refresh_and_logout() -> Result<(), 
                     link.open_stash();
                     ready(&link, true, false).await?;
                     assert!(link.stash_panel().open);
-                    let displayed = link.stash_panel().carried;
-                    link.stash_stow_selected(&displayed, 0);
+                    let displayed = link.stash_panel();
+                    let stackable =
+                        |appearance| (appearance == item().appearance_id).then_some(true);
+                    link.stash_stow_selected(&displayed, 0, stackable);
                     ready(&link, false, true).await?;
                     assert!(panel_text(&link.stash_panel()).contains("Stowed 1 object"));
-                    link.stash_stow_selected(&displayed, 0);
+                    link.stash_stow_selected(&displayed, 0, stackable);
                     assert!(!link.stash_panel().pending);
                     link.stash_request(Intent::Withdraw { row: 0, amount: 1 });
                     ready(&link, false, true).await?;

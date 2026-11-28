@@ -56,18 +56,21 @@ fn emit_launcher_version() {
 
 /// The Bevy host is the Windows client, so `cfg(bevy_shell)` is on for every Windows build;
 /// elsewhere the `bevy-shell` feature opts in.
-fn emit_bevy_shell_cfg() {
+fn emit_bevy_shell_cfg() -> bool {
     println!("cargo:rustc-check-cfg=cfg(bevy_shell)");
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    if target_os == "windows" || std::env::var_os("CARGO_FEATURE_BEVY_SHELL").is_some() {
+    let bevy_shell =
+        target_os == "windows" || std::env::var_os("CARGO_FEATURE_BEVY_SHELL").is_some();
+    if bevy_shell {
         println!("cargo:rustc-cfg=bevy_shell");
     }
+    bevy_shell
 }
 
 fn main() -> Result<(), String> {
     emit_common_controls_manifest();
     emit_launcher_version();
-    emit_bevy_shell_cfg();
+    let bevy_shell = emit_bevy_shell_cfg();
     update_trust::emit()?;
     println!("cargo:rerun-if-changed=build_support/update_trust.rs");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
@@ -82,6 +85,17 @@ fn main() -> Result<(), String> {
     println!("cargo:rerun-if-changed=../../crates/client-ui/src/features");
     let bindings = preference_bindings::generate(&root.join("../.."))?;
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
+    if bevy_shell {
+        println!("cargo:rerun-if-changed=../../content/world/placements");
+        let towns = oteryn_client_assets::world::depot_town_ids(&root.join("../.."))?
+            .into_iter()
+            .collect::<Vec<_>>();
+        std::fs::write(
+            std::path::Path::new(&out).join("depot_town_ids.rs"),
+            format!("{towns:?}"),
+        )
+        .map_err(|error| error.to_string())?;
+    }
     prey_catalogue::emit(&root.join("../.."), std::path::Path::new(&out))?;
     println!("cargo:rerun-if-changed=build_support/spell_parameters.rs");
     spell_parameters::generate(root, std::path::Path::new(&out))?;

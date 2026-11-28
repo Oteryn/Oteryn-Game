@@ -5,7 +5,7 @@ use oteryn_client::{
 };
 use oteryn_client_ui::depot::{Intent, deposit_items};
 use oteryn_session::{
-    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, ItemEntry, LogoutResult,
+    DepotAction, DepotEntry, DepotOutcome, DepotReply, DepotRequest, ItemEntry, LogoutResult,
     SessionError, SessionEvent, StepDirection, StepOutcome,
 };
 use std::{
@@ -62,11 +62,16 @@ impl Stepper for DepotPeer {
         self.bag_open = true;
         Ok(Some(oteryn_client_ui::depot::ContainerViewOutcome::Opened))
     }
-    async fn depot(
-        &mut self,
-        intent: DepotIntent,
-        slot: Option<u32>,
-    ) -> Result<Option<DepotReply>, SessionError> {
+    async fn depot(&mut self, request: DepotRequest) -> Result<Option<DepotReply>, SessionError> {
+        let DepotRequest {
+            intent,
+            slot,
+            cross_town,
+        } = request;
+        assert!(
+            !cross_town,
+            "this legacy peer does not select cross-town depots"
+        );
         assert_eq!(slot, None, "this legacy peer does not select manual sort");
         let outcome = match intent.action {
             DepotAction::Browse => DepotOutcome::Opened,

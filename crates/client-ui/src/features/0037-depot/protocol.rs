@@ -130,7 +130,15 @@ pub fn deposit_items(p: &DepotPanel) -> Vec<ItemEntry> {
 
 pub fn apply_result(p: &mut DepotPanel, reply: Option<DepotReply>) {
     p.pending = false;
-    let Some(reply) = reply else {
+    let fallback_to_local = p.selected_town.is_some()
+        && reply.as_ref().is_none_or(|reply| {
+            matches!(reply.outcome, DepotOutcome::Stale | DepotOutcome::Rejected)
+        });
+    if fallback_to_local {
+        p.selected_town = None;
+        p.held = None;
+    }
+    let Some(mut reply) = reply else {
         p.reply = None;
         p.feedback = tr!("The server refused the depot request");
         return;
@@ -146,6 +154,12 @@ pub fn apply_result(p: &mut DepotPanel, reply: Option<DepotReply>) {
         DepotOutcome::Unsupported => tr!("This item cannot be moved through the depot"),
         DepotOutcome::Rejected => tr!("The server refused the depot move"),
     };
+    if fallback_to_local {
+        // Keep the box and page available for refresh while dropping the remote contents.
+        reply.town = None;
+        reply.total = 0;
+        reply.entries.clear();
+    }
     p.reply = Some(reply);
 }
 

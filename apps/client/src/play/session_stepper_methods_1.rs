@@ -42,10 +42,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     async fn depot(
         &mut self,
-        intent: oteryn_session::DepotIntent,
-        slot: Option<u32>,
+        request: oteryn_session::DepotRequest,
     ) -> Result<Option<oteryn_session::DepotReply>, SessionError> {
-        oteryn_client_runtime::depot::send(self, intent, slot).await
+        self.depot_request(request).await
     }
 
     async fn target_walk(
