@@ -169,88 +169,99 @@ async fn explore(
     mut observed: wire::MapResult,
     root: &Path,
 ) -> TestResult<wire::MapResult> {
-    while !pending.is_empty() {
+    use crate::domain::cyclopedia::Point;
+    let point = |at: TilePos| Point {
+        x: at.x.into(),
+        y: at.y.into(),
+        floor: at.floor.into(),
+    };
+    let mut known = BTreeSet::new();
+    for _ in 0..512 {
         let from = tile(client.world_spatial().actor_position)?;
+        for &(x, y, floor) in &observed.visible {
+            let at = TilePos {
+                x,
+                y,
+                floor: -floor,
+            };
+            if !pending.contains(&at) && !known.contains(&at) {
+                return Err(
+                    format!("W12 revealed a point outside its terrain coverage: {at:?}").into(),
+                );
+            }
+            known.insert(at);
+        }
+        pending.retain(|at| !point(*at).in_window(point(from)));
         let path = route_avoiding(
             world,
             from,
-            |at| pending.contains(&at),
             |at| {
-                world
-                    .base()
-                    .subareas
-                    .resolve(at.x, at.y, at.floor)
-                    .is_some_and(|(_, id)| id == subarea)
-            },
-        )
-        .ok_or_else(|| {
-            format!(
-                "W12 traversal has {} uncovered eligible tiles from {from:?}",
-                pending.len()
-            )
-        })?;
-        let mut at = from;
-        pending.remove(&at);
-        for direction in path {
-            let expected =
-                destination(world, at, direction).ok_or("W12 planned landing disappeared")?;
-            let stepped = exploration_step(client, direction, at, expected).await?;
-            let landed = tile(client.world_spatial().actor_position)?;
-            if stepped.disposition != StepDisposition::Moved
-                || stepped.world_spatial_delta.is_none()
-                || landed != expected
-            {
-                return Err(format!(
-                    "W12 movement {at:?} -> {expected:?} landed {landed:?}: {stepped:?}"
-                )
-                .into());
-            }
-            at = landed;
-            pending.remove(&at);
-            verdict::Harness::global().progress("w12-exploration-step");
-            let (next, reply) = exchange(client, 0).await?;
-            let visible_point = observed.visible.contains(&(at.x, at.y, -at.floor));
-            if next.code != 0
-                || next.found < observed.found
-                || next.found > observed.found + 1
-                || (visible_point && next.found != observed.found + 1)
-                || (next.found > observed.found && next.revision <= observed.revision)
-                || next.discovered != (next.found == 7)
-            {
-                return Err(format!(
-                    "W12 invalid movement discovery at {at:?}: {observed:?} -> {next:?}"
-                )
-                .into());
-            }
-            if next.found == 6 && observed.found == 5 {
-                capture_reply(root, "w12-progress.bin", &reply)?;
-                capture(
-                    root,
-                    "w12-progress.txt",
-                    describe("progress", &next).as_bytes(),
-                )?;
-            }
-            if next.discovered {
-                if observed.found != 6
-                    || next.area_percent != completion_percent
-                    || !next.visible.is_empty()
-                {
-                    return Err(format!(
-                        "W12 incomplete completion evidence: {observed:?} -> {next:?}"
-                    )
-                    .into());
+                if known.is_empty() {
+                    pending.iter().any(|candidate| point(*candidate).in_window(point(at)))
+                } else {
+                    known.contains(&at)
                 }
-                capture_reply(root, "w12-complete.bin", &reply)?;
-                return Ok(next);
-            }
-            observed = next;
-            tokio::time::sleep(Duration::from_millis(stepped.step_wait_ms.into())).await;
+            },
+            |at| world.base().subareas.resolve(at.x, at.y, at.floor)
+                .is_some_and(|(_, id)| id == subarea)
+                && (known.contains(&at) || occupant(client, at).is_none()),
+        ).ok_or_else(|| format!(
+            "W12 has no route to a revealed point or uncovered viewport from {from:?}: known={known:?} uncovered={}",
+            pending.len()
+        ))?;
+        let direction = *path
+            .first()
+            .ok_or("W12 exploration planned an empty step")?;
+        let expected =
+            destination(world, from, direction).ok_or("W12 planned landing disappeared")?;
+        let stepped = exploration_step(client, direction, from, expected).await?;
+        let landed = tile(client.world_spatial().actor_position)?;
+        if stepped.disposition != StepDisposition::Moved
+            || stepped.world_spatial_delta.is_none()
+            || landed != expected
+        {
+            return Err(format!(
+                "W12 movement {from:?} -> {expected:?} landed {landed:?}: {stepped:?}"
+            )
+            .into());
         }
+        verdict::Harness::global().progress("w12-exploration-step");
+        let (next, reply) = exchange(client, 0).await?;
+        let expected_found = observed.found + u8::from(known.remove(&landed));
+        if next.code != 0
+            || next.found != expected_found
+            || (next.found > observed.found && next.revision <= observed.revision)
+            || next.discovered != (next.found == 7)
+        {
+            return Err(format!(
+                "W12 invalid movement discovery at {landed:?} expected_found={expected_found}: {observed:?} -> {next:?}"
+            ).into());
+        }
+        if next.found == 6 && observed.found == 5 {
+            capture_reply(root, "w12-progress.bin", &reply)?;
+            capture(
+                root,
+                "w12-progress.txt",
+                describe("progress", &next).as_bytes(),
+            )?;
+        }
+        if next.discovered {
+            if observed.found != 6
+                || next.area_percent != completion_percent
+                || !next.visible.is_empty()
+            {
+                return Err(format!(
+                    "W12 incomplete completion evidence: {observed:?} -> {next:?}"
+                )
+                .into());
+            }
+            capture_reply(root, "w12-complete.bin", &reply)?;
+            return Ok(next);
+        }
+        observed = next;
+        tokio::time::sleep(Duration::from_millis(stepped.step_wait_ms.into())).await;
     }
-    Err(
-        format!("W12 traversed eligible terrain without discovering seven points: {observed:?}")
-            .into(),
-    )
+    Err(format!("W12 exhausted its 512-step exploration budget: {observed:?}").into())
 }
 
 fn describe(prefix: &str, result: &wire::MapResult) -> String {
