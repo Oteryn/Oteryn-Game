@@ -222,6 +222,16 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/storage/100157",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
     }
   ],
   "rules": [
@@ -362,6 +372,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -444,6 +459,11 @@
           "kind": "set",
           "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
           "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
         },
         {
           "kind": "set_topic",
@@ -536,6 +556,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -596,8 +621,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "eq",
-          "value": 2
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [
@@ -707,7 +732,7 @@
         }
       ],
       "reply": [
-        "The hunt for 100 Trolls is still in progress. See your quest log for the count."
+        "Your current task is to kill 100 trolls. You have already killed $count of them. Keep going!"
       ],
       "effects": [],
       "sources": [
@@ -715,7 +740,8 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "reply_count_track": "oteryn:quest-progress/hunting-tasks/trolls/count"
     },
     {
       "key": "oteryn:quest-npc/hunting-tasks/goblins/accept",
@@ -765,8 +791,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "eq",
-          "value": 2
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [
@@ -787,6 +813,11 @@
           "kind": "set",
           "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
           "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
         },
         {
           "kind": "set_topic",
@@ -966,7 +997,7 @@
         }
       ],
       "reply": [
-        "The hunt for 150 Goblins is still in progress. See your quest log for the count."
+        "Your current task is to kill 150 goblins. You have already killed $count of them. Keep going!"
       ],
       "effects": [],
       "sources": [
@@ -974,7 +1005,8 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "reply_count_track": "oteryn:quest-progress/hunting-tasks/goblins/count"
     },
     {
       "key": "oteryn:quest-npc/hunting-tasks/cyclops/accept",
@@ -992,7 +1024,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 40
+          "value": 30
         },
         {
           "kind": "level",
@@ -1048,6 +1080,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -1076,7 +1113,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 20
+          "value": 30
         },
         {
           "kind": "level",
@@ -1143,7 +1180,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 40
+          "value": 30
         },
         {
           "kind": "level",
@@ -1219,7 +1256,7 @@
         }
       ],
       "reply": [
-        "The hunt for 500 Cyclops is still in progress. See your quest log for the count."
+        "Your current task is to kill 500 cyclops. You have already killed $count of them. Keep going!"
       ],
       "effects": [],
       "sources": [
@@ -1227,7 +1264,8 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "reply_count_track": "oteryn:quest-progress/hunting-tasks/cyclops/count"
     },
     {
       "key": "oteryn:quest-npc/hunting-tasks/rotworms/accept",
@@ -1301,6 +1339,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -1329,7 +1372,7 @@
         {
           "kind": "level",
           "op": "ge",
-          "value": 40
+          "value": 30
         },
         {
           "kind": "level",
@@ -1361,8 +1404,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
-          "op": "ne",
-          "value": 1
+          "op": "eq",
+          "value": 0
         }
       ],
       "reply": [
@@ -1472,7 +1515,7 @@
         }
       ],
       "reply": [
-        "The hunt for 300 Rotworms is still in progress. See your quest log for the count."
+        "Your current task is to kill 300 rotworms. You have already killed $count of them. Keep going!"
       ],
       "effects": [],
       "sources": [
@@ -1480,7 +1523,8 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "reply_count_track": "oteryn:quest-progress/hunting-tasks/rotworms/count"
     },
     {
       "key": "oteryn:quest-npc/hunting-tasks/green-djinns/accept",
@@ -1537,6 +1581,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -1555,8 +1604,7 @@
       "npc": "oteryn:npc.gabel",
       "trigger": "say",
       "keywords": [
-        "task",
-        "green djinns"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1608,8 +1656,7 @@
       "npc": "oteryn:npc.gabel",
       "trigger": "say",
       "keywords": [
-        "task",
-        "green djinns"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1695,6 +1742,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -1713,8 +1765,7 @@
       "npc": "oteryn:npc.malor",
       "trigger": "say",
       "keywords": [
-        "task",
-        "blue djinns"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1766,8 +1817,7 @@
       "npc": "oteryn:npc.malor",
       "trigger": "say",
       "keywords": [
-        "task",
-        "blue djinns"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1853,6 +1903,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -1874,8 +1929,7 @@
       "npc": "oteryn:npc.raymond_striker",
       "trigger": "say",
       "keywords": [
-        "task",
-        "pirates"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1930,8 +1984,7 @@
       "npc": "oteryn:npc.raymond_striker",
       "trigger": "say",
       "keywords": [
-        "task",
-        "pirates"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -1972,11 +2025,9 @@
       "trigger": "say",
       "keywords": [
         "mission",
-        "quest",
-        "task",
-        "minotaurs"
+        "quest"
       ],
-      "keyword_mode": "msg_contains",
+      "keyword_mode": "exact",
       "topics": [
         0
       ],
@@ -2073,6 +2124,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -2116,12 +2172,10 @@
       "npc": "oteryn:npc.budrik",
       "trigger": "say",
       "keywords": [
-        "task",
-        "minotaurs",
         "mission",
         "quest"
       ],
-      "keyword_mode": "msg_contains",
+      "keyword_mode": "exact",
       "topics": [
         0
       ],
@@ -2196,6 +2250,11 @@
           "value": 0
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/storage/100157",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -2263,8 +2322,7 @@
       "npc": "oteryn:npc.lugri",
       "trigger": "say",
       "keywords": [
-        "task",
-        "necromancers"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -2319,8 +2377,7 @@
       "npc": "oteryn:npc.lugri",
       "trigger": "say",
       "keywords": [
-        "task",
-        "necromancers"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -2489,8 +2546,7 @@
       "npc": "oteryn:npc.lugri",
       "trigger": "say",
       "keywords": [
-        "task",
-        "necromancers"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [
@@ -2551,8 +2607,7 @@
       "npc": "oteryn:npc.lugri",
       "trigger": "say",
       "keywords": [
-        "task",
-        "necromancers"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "topics": [

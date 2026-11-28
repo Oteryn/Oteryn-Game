@@ -246,6 +246,10 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     && (rule.trigger != NpcRuleTrigger::Say
                         || !rule.keywords.is_empty()
                         || rule.any_message))
+                || [&rule.reply_count_track, &rule.reply_remaining_track]
+                    .into_iter()
+                    .flatten()
+                    .any(|track| !tracks.contains_key(track))
                 || rule.reply.len() > 32
                 || rule
                     .reply

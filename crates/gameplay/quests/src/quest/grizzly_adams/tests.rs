@@ -1170,6 +1170,11 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
         assert!(
             plan.track_changes
                 .iter()
+                .any(|change| change.key == storage_track(JOIN_STORAGE) && change.after == 1)
+        );
+        assert!(
+            plan.track_changes
+                .iter()
                 .any(|change| change.key == phase && change.after == 1)
         );
         tracks.extend(
@@ -1183,6 +1188,34 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
             catalogue.evaluate(&report_transition, &tracks, 0),
             Err(crate::quest::QuestRefusal::StageMismatch)
         ));
+        if report.npc == "oteryn:npc.daniel_steelsoul" {
+            tracks.insert(count.clone(), 37);
+            let progress = programme
+                .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                    message: "task",
+                    topic: 0,
+                    tracks: &tracks,
+                    inventory: &Default::default(),
+                    outfits: &Default::default(),
+                    npc: &report.npc,
+                    trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+                    player_name: None,
+                    now_epoch_seconds: 1_700_000_000,
+                    calendar_month: 11,
+                    premium_current: true,
+                    level,
+                    vocation: "oteryn:vocation.knight",
+                    sex: 0,
+                })
+                .map_err(|error| error.to_string())?
+                .ok_or("missing hunt progress")?;
+            assert!(
+                progress
+                    .reply
+                    .iter()
+                    .any(|line| line.contains("killed 37 of them"))
+            );
+        }
         tracks.insert(count.clone(), quota - 1);
         for creature in creatures {
             let key =
@@ -1597,13 +1630,15 @@ fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
         .map_err(|error| error.to_string())?
         .ok_or("Daniel hunting programme")?;
     let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
-    for (level, trolls, initial_topic, offered, alternate) in [
-        (19, 0, 1, 1, None),
-        (19, 2, 2, 2, Some(("trolls", 1))),
-        (30, 0, 4, 4, None),
-        (39, 0, 3, 4, Some(("rotworms", 4))),
-        (40, 0, 4, 3, Some(("cyclops", 3))),
-        (59, 0, 3, 3, None),
+    for (level, trolls, offered, alternate) in [
+        (19, 0, 1, Some(("goblins", 2))),
+        (19, 2, 2, Some(("trolls", 1))),
+        (29, 0, 4, None),
+        (30, 0, 3, Some(("rotworms", 4))),
+        (35, 0, 3, Some(("rotworms", 4))),
+        (39, 0, 3, Some(("rotworms", 4))),
+        (40, 0, 3, None),
+        (59, 0, 3, None),
     ] {
         let tracks = BTreeMap::from([(phase("trolls"), trolls)]);
         let input = NpcRuleInput {
@@ -1634,12 +1669,16 @@ fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
         let ask = plan("task", 0)?.ok_or("missing hunt offer")?;
         assert!(ask.track_changes.is_empty());
         assert_eq!(ask.next_topic, offered);
-        let decline = plan("no", initial_topic)?;
+        let decline = plan("no", ask.next_topic)?;
         if let Some((hunt, topic)) = alternate {
             let switch = decline.ok_or("missing eligible alternate")?;
             assert!(switch.track_changes.is_empty());
             assert_eq!(switch.next_topic, topic);
-            let acceptance = plan("yes", topic)?.ok_or("missing acceptance")?;
+            if (30..40).contains(&level) {
+                let back = plan("no", switch.next_topic)?.ok_or("missing cyclops alternate")?;
+                assert_eq!(back.next_topic, ask.next_topic);
+            }
+            let acceptance = plan("yes", switch.next_topic)?.ok_or("missing acceptance")?;
             assert_eq!(acceptance.next_topic, 0);
             assert!(
                 acceptance
@@ -1653,8 +1692,8 @@ fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
             );
         }
         for (topic, eligible) in [
-            (2, trolls == 2 && level < 20),
-            (3, level >= 40),
+            (2, level < 20),
+            (3, level >= 30),
             (4, (20..40).contains(&level)),
         ] {
             assert_eq!(

@@ -1347,6 +1347,8 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
         let cap = u32::try_from(crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE)?;
         for offset in 0..cap {
             let corpse = if offset == cap - 1 {
+                definition("Item", "oteryn:item.tibia.i35136", "definition-r1")
+            } else if offset == cap - 2 {
                 definition("Item", "oteryn:item.tibia.i52559", "definition-r1")
             } else {
                 definition("ItemType", "fixture:seed.corpse", "corpse-r1")
@@ -1400,10 +1402,19 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
             .await
             .map_err(debug)?;
         assert_eq!(schedule.corpses.len(), usize::try_from(cap)?);
-        let permanent = schedule
+        let dread = schedule
             .corpses
             .iter()
             .find(|corpse| corpse.definition.production_key == "oteryn:item.tibia.i52559")
+            .ok_or("dread corpse in the scoped schedule")?;
+        assert_eq!(
+            dread.decay_at_unix_ms,
+            Some(dread.materialized_at_unix_ms + 300_000)
+        );
+        let permanent = schedule
+            .corpses
+            .iter()
+            .find(|corpse| corpse.definition.production_key == "oteryn:item.tibia.i35136")
             .ok_or("permanent corpse in the scoped schedule")?;
         assert_eq!(permanent.decay_at_unix_ms, None);
 

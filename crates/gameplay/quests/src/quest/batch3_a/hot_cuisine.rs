@@ -410,6 +410,8 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         topics: Some(vec![recipe.topic]),
         guards,
         reply: Vec::new(),
+        reply_count_track: None,
+        reply_remaining_track: None,
         effects: Vec::new(),
         continue_matching: false,
         inventory_failure_reply: Vec::new(),

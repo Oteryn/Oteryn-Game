@@ -9,6 +9,25 @@ use super::{
 #[path = "renown.rs"]
 mod renown;
 
+fn remaining_time(seconds: u64) -> String {
+    let mut parts = Vec::new();
+    for (unit, amount) in [
+        ("day", seconds / 86_400),
+        ("hour", seconds / 3600 % 24),
+        ("minute", seconds / 60 % 60),
+        ("second", seconds % 60),
+    ] {
+        if amount > 0 {
+            let plural = if amount == 1 { "" } else { "s" };
+            parts.push(format!("{amount} {unit}{plural}"));
+        }
+    }
+    if parts.is_empty() {
+        return "0 seconds".into();
+    }
+    parts.join(", ")
+}
+
 struct Staged<'a> {
     definitions: BTreeMap<&'a str, &'a NpcTrackDefinition>,
     original: &'a BTreeMap<String, i64>,
@@ -466,7 +485,25 @@ fn plan_with_teleport(
             }
             completes |= rule.completes;
             selected_rule_keys.push(rule.key.clone());
+            let first_line = reply.len();
             reply.extend_from_slice(rule_reply);
+            if let Some(track) = &rule.reply_count_track {
+                let count = state.track(track)?.to_string();
+                for line in &mut reply[first_line..] {
+                    *line = line.replace("$count", &count);
+                }
+            }
+            if let Some(track) = &rule.reply_remaining_track {
+                let deadline = state.track(track)?;
+                let duration = remaining_time(
+                    deadline
+                        .max(input.now_epoch_seconds)
+                        .abs_diff(input.now_epoch_seconds),
+                );
+                for line in &mut reply[first_line..] {
+                    *line = line.replace("$remaining", &duration);
+                }
+            }
             if reply.len() > 32 {
                 return Err(NpcRuleError::LimitExceeded);
             }

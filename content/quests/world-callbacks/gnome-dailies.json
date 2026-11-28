@@ -2311,6 +2311,10 @@
             "floor": -13
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2380,6 +2384,10 @@
             "floor": -13
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2449,6 +2457,10 @@
             "floor": -13
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2518,6 +2530,10 @@
             "floor": -13
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2587,6 +2603,10 @@
             "floor": -14
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2656,6 +2676,10 @@
             "floor": -14
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -2725,6 +2749,10 @@
             "floor": -14
           },
           "effect": 36
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed",
+          "message": "This is not the crystal you're looking for!"
         }
       }
     },
@@ -4894,6 +4922,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32163-32711-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -4959,6 +4991,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32163-32711-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5023,6 +5059,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32166-32519-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5088,6 +5128,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32166-32519-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5152,6 +5196,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32167-32683-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5217,6 +5265,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32167-32683-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5281,6 +5333,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32205-32515-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5346,6 +5402,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32205-32515-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5410,6 +5470,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32231-32637-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5475,6 +5539,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32231-32637-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5539,6 +5607,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32244-32536-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5604,6 +5676,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32244-32536-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5668,6 +5744,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32250-32557-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5733,6 +5813,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32250-32557-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5797,6 +5881,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32311-32681-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5862,6 +5950,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32311-32681-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5926,6 +6018,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32334-32506-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -5991,6 +6087,10 @@
             "floor": -11
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32334-32506-11",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -6055,6 +6155,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32350-32629-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {
@@ -6120,6 +6224,10 @@
             "floor": -12
           },
           "effect": 46
+        },
+        "tool_refusal": {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32350-32629-12",
+          "message": "You have already fertilised this mushroom."
         }
       },
       "track_initials": {

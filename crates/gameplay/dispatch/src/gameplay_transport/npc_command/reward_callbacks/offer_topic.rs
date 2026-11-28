@@ -3,6 +3,6 @@ use super::Offer;
 
 impl Offer {
     pub(super) fn matches_topic(&self, current: u16) -> bool {
-        self.any_topic || self.topic == current
+        self.exclude_topic != Some(current) && (self.any_topic || self.topic == current)
     }
 }

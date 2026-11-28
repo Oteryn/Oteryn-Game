@@ -38,6 +38,8 @@ pub(super) struct Offer {
     #[serde(default)]
     any_topic: bool,
     #[serde(default)]
+    exclude_topic: Option<u16>,
+    #[serde(default)]
     preserve_topic: bool,
     #[serde(default)]
     open_shop: bool,

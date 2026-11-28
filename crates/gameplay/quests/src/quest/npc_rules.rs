@@ -316,6 +316,10 @@ pub struct NpcRule {
     pub guards: Vec<NpcRuleGuard>,
     #[serde(default)]
     pub reply: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reply_count_track: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reply_remaining_track: Option<String>,
     #[serde(default)]
     pub effects: Vec<NpcRuleEffect>,
     #[serde(default)]

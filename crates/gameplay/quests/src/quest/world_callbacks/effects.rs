@@ -51,9 +51,19 @@ pub struct RandomRelocation {
     pub attempts: u8,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ToolRefusal {
+    pub track: String,
+    pub message: String,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Feedback when only this storage guard refuses the selected carried tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_refusal: Option<ToolRefusal>,
     /// Survey tools credit the current player tile inside this inclusive rectangle.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub direct_use_area: Option<[Position; 2]>,

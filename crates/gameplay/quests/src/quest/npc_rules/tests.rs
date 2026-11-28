@@ -1931,7 +1931,12 @@ fn spike_tasks_enforce_level_attempt_and_report_cooldown() -> Result<(), NpcRule
             .ok_or_else(|| NpcRuleError::Invalid(format!("missing {task} offer")))?;
         assert_ne!(offer.next_topic, 0);
         request.level -= 1;
-        assert!(catalogue.plan(&request)?.is_none());
+        let refusal = catalogue
+            .plan(&request)?
+            .ok_or_else(|| NpcRuleError::Invalid("missing level refusal".into()))?;
+        assert_eq!(refusal.next_topic, 0);
+        assert!(refusal.track_changes.is_empty());
+        assert!(refusal.reply[0].contains("required"));
         let mut confirm = facts.input(&npc, "yes", offer.next_topic);
         confirm.level = level;
         let start = catalogue
@@ -1945,7 +1950,7 @@ fn spike_tasks_enforce_level_attempt_and_report_cooldown() -> Result<(), NpcRule
         );
         facts.tracks.insert(stage.clone(), goal);
         let report = catalogue
-            .plan(&facts.input(&npc, "report", 0))?
+            .plan(&facts.input(&npc, &format!("report {report_word}"), 0))?
             .ok_or_else(|| NpcRuleError::Invalid("missing report prompt".into()))?;
         let result = catalogue
             .plan(&facts.input(&npc, report_word, report.next_topic))?
@@ -1966,7 +1971,14 @@ fn spike_tasks_enforce_level_attempt_and_report_cooldown() -> Result<(), NpcRule
         }
         let mut request = facts.input(&npc, word, 0);
         request.level = level;
-        request.now_epoch_seconds += 72_000;
+        request.now_epoch_seconds += 3600;
+        request.level -= 1;
+        let cooldown = catalogue
+            .plan(&request)?
+            .ok_or_else(|| NpcRuleError::Invalid("missing cooldown".into()))?;
+        assert!(cooldown.reply[0].contains("19 hours"));
+        request.level += 1;
+        request.now_epoch_seconds += 19 * 3600;
         assert_eq!(
             catalogue.plan(&request)?.map(|plan| plan.next_topic),
             Some(0)
@@ -1976,6 +1988,47 @@ fn spike_tasks_enforce_level_attempt_and_report_cooldown() -> Result<(), NpcRule
             catalogue.plan(&request)?.map(|plan| plan.next_topic),
             Some(offer.next_topic)
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn spike_pending_selections_and_report_answers_follow_the_conversation() -> Result<(), NpcRuleError>
+{
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let facts = Facts::empty();
+    let talk = |npc, message, topic| {
+        let mut input = facts.input(npc, message, topic);
+        input.level = 25;
+        catalogue
+            .plan(&input)?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {message}")))
+    };
+    let gnomilly = "oteryn:npc.gnomilly";
+    let first = talk(gnomilly, "pacifiers", 0)?;
+    let second = talk(gnomilly, "kill", first.next_topic)?;
+    let start = talk(gnomilly, "yes", second.next_topic)?;
+    assert!(
+        start
+            .track_changes
+            .iter()
+            .any(|change| change.key.ends_with("/spike_upper_kill_main") && change.after == 0)
+    );
+    for (npc, word) in [
+        (gnomilly, "release"),
+        (gnomilly, "tracking"),
+        ("oteryn:npc.gnombold", "nests"),
+        ("oteryn:npc.gnomargery", "delivery"),
+        ("oteryn:npc.gnomargery", "temperature"),
+    ] {
+        let prompt = talk(npc, "report killing", 0)?;
+        assert!(prompt.reply[0].contains(word));
+        let result = talk(npc, word, prompt.next_topic)?;
+        assert_eq!(result.reply, ["You have not started that mission."]);
+        assert_eq!(result.next_topic, 0);
+        let invalid = talk(npc, "unrelated", prompt.next_topic)?;
+        assert_eq!(invalid.reply, ["That's not a valid mission name."]);
+        assert_eq!(invalid.next_topic, 0);
     }
     Ok(())
 }

@@ -1390,7 +1390,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if source_trial && selected.is_empty() {
             return Some(UseOutcome::rejected());
         }
-        if selected.len() > 1
+        let tool_feedback = selected_tool.is_some()
+            && selected
+                .iter()
+                .any(|callback| callback.effects.tool_refusal.is_some());
+        if (selected.len() > 1 || tool_feedback)
             && selected.iter().all(|callback| {
                 callback
                     .item_on_target
@@ -1410,16 +1414,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(UseOutcome::rejected());
             };
+            let mut refusal = None;
             selected.retain(|callback| {
-                callback.storage.iter().all(|state| {
-                    snapshot
+                let mut failed = callback.storage.iter().filter(|guard| {
+                    !snapshot
                         .tracks()
-                        .get(&state.track)
+                        .get(&guard.track)
                         .copied()
-                        .or_else(|| catalogue.track(&state.track).map(|track| track.initial))
-                        .is_some_and(|value| (state.minimum..=state.maximum).contains(&value))
-                })
+                        .or_else(|| catalogue.track(&guard.track).map(|track| track.initial))
+                        .is_some_and(|value| (guard.minimum..=guard.maximum).contains(&value))
+                });
+                let Some(guard) = failed.next() else {
+                    return true;
+                };
+                if tool_feedback
+                    && failed.next().is_none()
+                    && let Some(feedback) = &callback.effects.tool_refusal
+                    && feedback.track == guard.track
+                {
+                    refusal = Some((*callback, feedback.message.as_str()));
+                }
+                false
             });
+            if selected.is_empty()
+                && let Some((callback, message)) = refusal
+            {
+                let runtime = self.runtime.lock().await;
+                if let Some(at) = runtime
+                    .read_actor_position(actor)
+                    .ok()
+                    .and_then(|p| native(p.position()))
+                    && callback.reaches(
+                        Position {
+                            x: at.x,
+                            y: at.y,
+                            floor: at.floor,
+                        },
+                        Position {
+                            x: resolved.pos.x,
+                            y: resolved.pos.y,
+                            floor: resolved.pos.floor,
+                        },
+                    )
+                {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, message);
+                }
+                return Some(UseOutcome::rejected());
+            }
         }
         let mut selection_permit = None;
         let mut selection_deadline = None;

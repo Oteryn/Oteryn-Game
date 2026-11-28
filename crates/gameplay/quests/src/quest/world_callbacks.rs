@@ -1129,6 +1129,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 || minimum.y.abs_diff(maximum.y) >= 64
                 || !selector.position.is_some_and(|pos| callback.admits_direct_use(pos))
                 || !selector.ordinal.is_some_and(|ordinal| u8::try_from(ordinal).is_ok())
+        }) || callback.effects.tool_refusal.as_ref().is_some_and(|refusal| {
+            !callback.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance)
+                || !callback.storage.iter().any(|guard| guard.track == refusal.track)
+                || refusal.message.is_empty() || refusal.message.len() > 256
         }) || !completed_quests::valid(callback)
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
@@ -1884,6 +1888,12 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     fields.remove("sources");
     fields.remove("success_message");
     fields.remove("failure_message");
+    if let Some(effects) = fields
+        .get_mut("effects")
+        .and_then(serde_json::Value::as_object_mut)
+    {
+        effects.remove("tool_refusal");
+    }
     let bytes = serde_json::to_vec(&value).map_err(|error| error.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
 }
