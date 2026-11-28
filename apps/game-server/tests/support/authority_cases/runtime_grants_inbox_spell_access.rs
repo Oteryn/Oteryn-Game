@@ -37,14 +37,7 @@ async fn run_case(admin: String) -> TestResult {
     let inbox = read_inbox_summary(&h).await.map_err(debug);
     let exiva = read_exiva(&h).await.map_err(debug);
     let identity_update = try_update_spell_access_identity(&h).await.map_err(debug);
-    // The harness applied 3348 during setup. Replay it as the migration owner.
-    let replay = sqlx::raw_sql(include_str!(
-        "../../../migrations/3348_runtime_grants_inbox_spell_access.sql"
-    ))
-    .execute(&h.pool)
-    .await;
     h.cleanup().await?;
-    replay?;
 
     // Evaluate both reads before asserting, so the base run reports both failures.
     assert_eq!(
@@ -76,9 +69,7 @@ async fn read_inbox_summary(h: &Harness) -> TestResult<i64> {
         "{}?options=-c%20role%3Doteryn_game_runtime",
         h.database.url
     ))?;
-    if !runtime.maintain_ready_once().await? {
-        return Err("Character Info runtime did not become ready".into());
-    }
+    assert!(runtime.maintain_ready_once().await?);
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = runtime
         .open_character_authority(&seal)
