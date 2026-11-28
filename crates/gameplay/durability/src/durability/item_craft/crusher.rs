@@ -4,7 +4,7 @@ use super::super::item_mint::{TypedDefinitionRef, uuid_text};
 use super::super::item_mint_audit::Type2Transaction;
 use super::super::item_timed_state::{
     TimedCheckpointRequest, TimedDefinitionFacts, TimedExpiryRequest, load_timed_state,
-    write_checkpoint, write_expiry,
+    write_checkpoint_with_nested_crusher, write_expiry_with_nested_crusher,
 };
 use super::*;
 use crate::domain::{
@@ -23,11 +23,16 @@ pub(super) struct Charge {
     revision: u64,
     before: u32,
     transaction: String,
+    nested_location: Option<Value>,
 }
 
 impl Charge {
     pub(super) fn retires(&self) -> bool {
         self.before == 1
+    }
+
+    pub(super) fn frees_output_slot(&self) -> bool {
+        self.retires() && self.nested_location.is_none()
     }
 
     pub(super) fn proof(&self) -> Value {
@@ -39,6 +44,7 @@ impl Charge {
             "charges_before": self.before,
             "charges_after": self.before - 1,
             "transaction": self.transaction,
+            "location": self.nested_location,
         })
     }
 
@@ -46,13 +52,28 @@ impl Charge {
         self,
         tx: &mut Type2Transaction<'_>,
         fence: CurrentCharacterItemFence,
+        craft_transaction: &str,
         occurred_at_unix_ms: i64,
     ) -> Result<(), DurabilityError> {
         let transaction_id = uuid_text(&self.transaction)?;
+        if let Some(location) = &self.nested_location {
+            sqlx::query(
+                "INSERT INTO game_item_crusher_nested_tool_proofs
+                    (craft_transaction_id,timed_transaction_id,item_instance_id,location)
+                 VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4)",
+            )
+            .bind(craft_transaction)
+            .bind(&self.transaction)
+            .bind(self.item.as_slice())
+            .bind(location)
+            .execute(&mut ***tx)
+            .await?;
+        }
+        let nested = self.nested_location.is_some();
         if !self.retires() {
             let after = TimedValues::new(Some(self.before - 1), None)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
-            write_checkpoint(
+            write_checkpoint_with_nested_crusher(
                 tx,
                 fence.character_id,
                 &TimedCheckpointRequest {
@@ -62,6 +83,7 @@ impl Charge {
                     definition: self.definition,
                     values: after,
                 },
+                nested,
             )
             .await
             .map_err(timed_error)?;
@@ -88,7 +110,7 @@ impl Charge {
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             };
             let tuple = tx.tuple();
-            write_expiry(
+            write_expiry_with_nested_crusher(
                 tx,
                 &gameplay,
                 &TimedExpiryRequest {
@@ -103,6 +125,8 @@ impl Charge {
                     server_build_id: super::super::character_authority::SERVER_BUILD_ID.into(),
                 },
                 tuple,
+                None,
+                nested,
             )
             .await
             .map_err(timed_error)?;
@@ -147,27 +171,41 @@ pub(super) async fn prepare(
     let full = TimedValues::new(Some(full_charges), None)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let world = fence.runtime_scope.world_id();
-    let held = sqlx::query(
-        "SELECT i.item_instance_id FROM game_item_instances i
-           JOIN game_item_container_entries e USING(item_instance_id)
-           JOIN game_item_container_slots b ON b.character_id=e.character_id
-             AND b.item_instance_id=e.parent_item_instance_id AND b.world_id=e.world_id
-          WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid
-            AND i.world_id=encode($3,'hex')::uuid AND i.world_id=e.world_id
-            AND i.definition_family='Item' AND i.definition_production_key=$4
-            AND i.definition_revision_ref=$5 AND i.lifecycle=1 AND i.quantity=1
-          FOR UPDATE OF i",
+    let direct: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+           SELECT 1 FROM game_item_instances i
+             JOIN game_item_container_entries e USING(item_instance_id)
+             JOIN game_item_container_slots b ON b.character_id=e.character_id
+               AND b.item_instance_id=e.parent_item_instance_id AND b.world_id=e.world_id
+            WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid
+              AND i.world_id=encode($3,'hex')::uuid AND i.world_id=e.world_id
+              AND i.definition_family='Item' AND i.definition_production_key=$4
+              AND i.definition_revision_ref=$5 AND i.lifecycle=1 AND i.quantity=1
+            FOR UPDATE OF i)",
     )
     .bind(item.as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(world.as_bytes().as_slice())
     .bind(CRUSHER_KEY)
     .bind(&tool.revision_ref)
-    .fetch_optional(&mut ***tx)
+    .fetch_one(&mut ***tx)
     .await?;
-    if held.is_none() {
-        return Ok(Err(UseDisposition::StaleState));
-    }
+    let nested_location = if direct {
+        None
+    } else {
+        let Some(row) = event_containers::nested_source(tx, fence, item, *world.as_bytes()).await?
+        else {
+            return Ok(Err(UseDisposition::StaleState));
+        };
+        if row.try_get::<String, _>("definition_family")? != "Item"
+            || row.try_get::<String, _>("definition_production_key")? != CRUSHER_KEY
+            || row.try_get::<String, _>("definition_revision_ref")? != tool.revision_ref
+            || row.try_get::<i64, _>("quantity")? != 1
+        {
+            return Ok(Err(UseDisposition::StaleState));
+        }
+        Some(row.try_get::<Value, _>("nested_source")?)
+    };
     let (revision, before) = match load_timed_state(tx, &item).await.map_err(timed_error)? {
         None => (0, full_charges),
         Some(state) => {
@@ -246,6 +284,7 @@ pub(super) async fn prepare(
             revision,
             before,
             transaction,
+            nested_location,
         },
         CookingConversion {
             recipe: RECIPE.into(),

@@ -351,12 +351,15 @@ async fn write<C: ItemLoopContent>(
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let sculpture_target = request.station.as_ref().and_then(source_item_id);
+    let crushing = request.tool.is_some()
+        && request.station.as_ref().is_some_and(|station| station.production_key == CRUSHER_KEY);
     let source = match source {
         Some(source) => Some(source),
-        None if request.tool.is_none()
-            && ((request.station.is_none() && request.gathering.is_none())
-                || ((request.ingredient.is_some() || request.gathering.is_some())
-                    && sculpture_target.is_some_and(|target| fishing::is_sculpture(5908, target)))) =>
+        None if crushing
+            || (request.tool.is_none()
+                && ((request.station.is_none() && request.gathering.is_none())
+                    || ((request.ingredient.is_some() || request.gathering.is_some())
+                        && sculpture_target.is_some_and(|target| fishing::is_sculpture(5908, target))))) =>
         {
             event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?
         }
@@ -374,10 +377,11 @@ async fn write<C: ItemLoopContent>(
     let sculpture_station = source_item_id(&definition)
         .zip(sculpture_target)
         .is_some_and(|(tool, target)| fishing::is_sculpture(tool, target));
-    if nested_source.is_some() && !sculpture_station && request.station.is_some() {
+    if nested_source.is_some() && !crushing && !sculpture_station && request.station.is_some() {
         return Ok(UseDisposition::StaleState);
     }
     if nested_source.is_some()
+        && !crushing
         && !sculpture_station
         && skinning.is_none()
         && oteryn_gameplay_items::reward_bag::event_containers::legacy_conversion_rule(
@@ -424,9 +428,7 @@ async fn write<C: ItemLoopContent>(
     let mut carried_attempt = None;
     let mut ingredient_location: Option<Value> = None;
     let mut crusher_charge = None;
-    let conversion = if request.station.as_ref().is_some_and(|station| station.production_key == CRUSHER_KEY)
-        && request.tool.is_some()
-    {
+    let conversion = if crushing {
         match crusher::prepare(tx, fence, request, native, &definition).await? {
             Ok((charge, conversion)) => {
                 crusher_charge = Some(charge);
@@ -722,7 +724,7 @@ async fn write<C: ItemLoopContent>(
         .min(20);
     let bag_full = occupied + output_count
         - i64::from(frees_output_slot)
-        - i64::from(retires_crusher)
+        - i64::from(crusher_charge.as_ref().is_some_and(crusher::Charge::frees_output_slot))
         - i64::from(retired_carried_ingredient && ingredient_location.is_none())
         > i64::from(capacity);
     let nested_destination = if marble_yield
@@ -904,7 +906,7 @@ async fn write<C: ItemLoopContent>(
     let envelope = if let Some(charge) = &crusher_charge {
         let proof = serde_json::to_vec(&json!({
             "recipe": conversion.recipe, "intent": request.intent, "character": fence.character_id.as_bytes(),
-            "before": before, "crusher": charge.proof(), "outputs": outputs,
+            "before": before, "gem_location": nested_source, "crusher": charge.proof(), "outputs": outputs,
             "content_digest": native.source_digest(), "scope_generation": fence.scope_ownership_generation.get(),
             "lease_generation": fence.character_lease_generation,
         })).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -992,7 +994,7 @@ async fn write<C: ItemLoopContent>(
             .await?;
     }
     if let Some(charge) = crusher_charge {
-        charge.spend(tx, fence, occurred).await?;
+        charge.spend(tx, fence, &transaction, occurred).await?;
     }
     let gathering_award = request
         .gathering

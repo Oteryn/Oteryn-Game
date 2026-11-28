@@ -381,11 +381,26 @@ pub(super) async fn write_checkpoint(
     holder: CharacterId,
     request: &TimedCheckpointRequest,
 ) -> Result<TimedWriteOutcome> {
+    write_checkpoint_with_nested_crusher(connection, holder, request, false).await
+}
+
+/// A nested Crusher is admitted only by the craft transaction's custody proof.
+pub(super) async fn write_checkpoint_with_nested_crusher(
+    connection: &mut PgConnection,
+    holder: CharacterId,
+    request: &TimedCheckpointRequest,
+    nested_crusher: bool,
+) -> Result<TimedWriteOutcome> {
     let full = request.definition.full;
     let definition = &request.definition.definition;
     let cause = TimedWriteCause::Timed(TimedItemCause::Checkpoint);
     if let Some(outcome) = replay(connection, request).await? {
         return Ok(outcome);
+    }
+    if nested_crusher
+        && !nested_crusher_held(connection, holder, request.item_instance_id, request.transaction_id).await?
+    {
+        return Err(TimedWriteError::NotHeld);
     }
     let item = sqlx::query(
         "SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref, \
@@ -400,13 +415,14 @@ pub(super) async fn write_checkpoint(
                              WHERE e.item_instance_id = i.item_instance_id \
                                AND e.character_id = encode($2,'hex')::uuid) \
                  OR game_item_dispenser_checkpoint_held(i.item_instance_id, \
-                     encode($2,'hex')::uuid,encode($3,'hex')::uuid)) AS held \
+                     encode($2,'hex')::uuid,encode($3,'hex')::uuid) OR $4) AS held \
            FROM game_item_instances i \
           WHERE i.item_instance_id = encode($1,'hex')::uuid FOR UPDATE OF i",
     )
     .bind(request.item_instance_id.as_slice())
     .bind(holder.as_bytes().as_slice())
     .bind(request.transaction_id.as_slice())
+    .bind(nested_crusher)
     .fetch_optional(&mut *connection)
     .await?;
     let Some(item) = item else {
@@ -687,6 +703,17 @@ pub(super) async fn write_expiry_in_scope(
     tuple: SelectedType2Tuple,
     origin_channel: Option<[u8; 16]>,
 ) -> Result<TimedWriteOutcome> {
+    write_expiry_with_nested_crusher(connection, fence, request, tuple, origin_channel, false).await
+}
+
+pub(super) async fn write_expiry_with_nested_crusher(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &TimedExpiryRequest,
+    tuple: SelectedType2Tuple,
+    origin_channel: Option<[u8; 16]>,
+    nested_crusher: bool,
+) -> Result<TimedWriteOutcome> {
     let channel_id = match (fence.runtime_scope, origin_channel) {
         (RuntimeScopeRefV1::Channel { channel_id, .. }, None) => *channel_id.as_bytes(),
         (RuntimeScopeRefV1::Instance { .. }, Some(origin)) => origin,
@@ -699,6 +726,12 @@ pub(super) async fn write_expiry_in_scope(
     if let Some(outcome) = replay_expiry(connection, request).await? {
         return Ok(outcome);
     }
+    if nested_crusher
+        && (request.target.is_some() || request.reason != ExpireReason::ChargesExhausted
+            || !nested_crusher_held(connection, holder, request.item_instance_id, request.transaction_id).await?)
+    {
+        return Err(TimedWriteError::NotHeld);
+    }
     let item = sqlx::query(
         "SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref, \
                 i.lifecycle, i.quantity, i.world_id::text, \
@@ -707,8 +740,8 @@ pub(super) async fn write_expiry_in_scope(
                            AND s.character_id = encode($2,'hex')::uuid) AS in_slot, \
                 (SELECT slot FROM game_character_equipment_slots s \
                   WHERE s.item_instance_id=i.item_instance_id AND s.character_id=encode($2,'hex')::uuid) AS equipment_slot, \
-                e.parent_item_instance_id::text AS parent, \
-                e.placement_ordinal::text AS ordinal, \
+                COALESCE(e.parent_item_instance_id,n.parent_item_instance_id)::text AS parent, \
+                COALESCE(e.placement_ordinal,n.placement_ordinal)::text AS ordinal, \
                 (EXISTS (SELECT 1 FROM game_item_container_entries c \
                           WHERE c.parent_item_instance_id = i.item_instance_id) \
                  OR EXISTS (SELECT 1 FROM game_item_corpse_container_entries c \
@@ -718,10 +751,12 @@ pub(super) async fn write_expiry_in_scope(
            LEFT JOIN game_item_container_entries e \
              ON e.item_instance_id = i.item_instance_id \
             AND e.character_id = encode($2,'hex')::uuid \
+           LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id AND $3 \
           WHERE i.item_instance_id = encode($1,'hex')::uuid FOR UPDATE OF i",
     )
     .bind(request.item_instance_id.as_slice())
     .bind(holder.as_bytes().as_slice())
+    .bind(nested_crusher)
     .fetch_optional(&mut *connection)
     .await?;
     let Some(item) = item else {
@@ -930,6 +965,18 @@ pub(super) async fn write_expiry_in_scope(
             .rows_affected()
                 == 1
     } else {
+        let removal = if nested_crusher {
+            sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(request.item_instance_id.as_slice())
+        } else {
+            sqlx::query(if equipment_slot.is_some() {
+                "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid"
+            } else {
+                "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid"
+            })
+            .bind(request.item_instance_id.as_slice())
+            .bind(holder.as_bytes().as_slice())
+        };
         sqlx::query(
             "UPDATE game_item_instances \
                 SET quantity = 0, lifecycle = 2, last_transaction_id = encode($2,'hex')::uuid \
@@ -941,18 +988,7 @@ pub(super) async fn write_expiry_in_scope(
         .await?
         .rows_affected()
             == 1
-            && sqlx::query(
-                if equipment_slot.is_some() { "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid" } else {
-                "DELETE FROM game_item_container_entries \
-                  WHERE item_instance_id = encode($1,'hex')::uuid \
-                    AND character_id = encode($2,'hex')::uuid" },
-            )
-            .bind(request.item_instance_id.as_slice())
-            .bind(holder.as_bytes().as_slice())
-            .execute(&mut *connection)
-            .await?
-            .rows_affected()
-                == 1
+            && removal.execute(&mut *connection).await?.rows_affected() == 1
     };
     if !changed {
         return Err(DurabilityError::InvalidStoredState.into());
@@ -984,6 +1020,23 @@ pub(super) async fn write_expiry_in_scope(
     Ok(TimedWriteOutcome::Written {
         revision: request.revision_after(),
     })
+}
+
+async fn nested_crusher_held(
+    connection: &mut PgConnection,
+    holder: CharacterId,
+    item: [u8; 16],
+    transaction: [u8; 16],
+) -> Result<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT game_item_crusher_nested_tool_held(
+            encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
+    )
+    .bind(item.as_slice())
+    .bind(holder.as_bytes().as_slice())
+    .bind(transaction.as_slice())
+    .fetch_one(connection)
+    .await?)
 }
 
 fn charges_of(values: Option<TimedValues>) -> Option<i32> {

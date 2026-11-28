@@ -16,6 +16,18 @@ fn crusher_item_use_commits_charge_and_fragments_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run(admin, false)
+}
+
+#[test]
+fn crusher_item_use_from_open_nested_bags() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, true)
+}
+
+fn run(admin: String, nested: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || -> Result<(), String> {
@@ -23,7 +35,7 @@ fn crusher_item_use_commits_charge_and_fragments_once() -> TestResult {
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(Box::pin(scenario(admin)))
+                .block_on(Box::pin(scenario(admin, nested)))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -31,7 +43,7 @@ fn crusher_item_use_commits_charge_and_fragments_once() -> TestResult {
     Ok(())
 }
 
-async fn scenario(admin: String) -> TestResult {
+async fn scenario(admin: String, nested: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "crusher", true, false).await?;
     super::reset();
     prepare_current_session(&h).await?;
@@ -91,6 +103,13 @@ async fn scenario(admin: String) -> TestResult {
         .bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice())
         .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+    if nested {
+        check_nested(&h, &owner, deps.actor, fence).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     super::item_look_fixtures::seed_main_backpack(
         &h,
         &[
@@ -401,4 +420,180 @@ async fn scenario(admin: String) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn check_nested(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use crate::gameplay_transport::container_view::{ContainerPlan, ContainerViewState};
+    use oteryn_protocol_oteryn::container_tree::{ContainerViewIntent, ContainerViewOutcome};
+
+    super::item_look_fixtures::seed_main_backpack(
+        h,
+        &[
+            ("oteryn:item.tibia.i2854", 1),
+            ("oteryn:item.tibia.i46627", 1),
+            ("oteryn:item.tibia.i44608", 2),
+            ("oteryn:item.tibia.i46627", 1),
+            ("oteryn:item.tibia.i44610", 1),
+        ],
+    )
+    .await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "WITH moved AS (
+           DELETE FROM game_item_container_entries
+            WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)
+            RETURNING item_instance_id,world_id,placement_ordinal,placed_transaction_id
+         )
+         INSERT INTO game_item_nested_entries
+           (item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+         SELECT item_instance_id,world_id,encode($3,'hex')::uuid,placement_ordinal,placed_transaction_id
+           FROM moved",
+    ).bind(id(72).as_slice()).bind(id(73).as_slice()).bind(id(71).as_slice())
+        .execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision)
+         VALUES(encode($1,'hex')::uuid,2,1)",
+    )
+    .bind(id(72).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    let bag = owner
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("nested Crusher backpack")?;
+    let index = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("nested Crusher item index")?;
+    let mut items = SessionItemView::resume(Default::default()).with_container_tree();
+    items
+        .snapshot(
+            inventory_from_backpack(Some(&bag), |definition| {
+                index.definition_ref(
+                    &definition.family,
+                    &definition.production_key,
+                    &definition.revision_ref,
+                )
+            })
+            .ok_or("nested Crusher main projection")?,
+            None,
+        )
+        .map_err(debug)?;
+    assert_eq!(items.table().handle(&ItemKey::Instance(id(72))), None);
+    assert_eq!(items.table().handle(&ItemKey::Instance(id(73))), None);
+    let bag_handle = items
+        .table()
+        .handle(&ItemKey::Instance(id(71)))
+        .ok_or("nested bag handle")?;
+    let mut views = ContainerViewState::default();
+    let ContainerPlan::Observe(pending) = views
+        .plan(
+            &mut items,
+            ContainerViewIntent::Open {
+                handle: bag_handle,
+                replace_view: None,
+            },
+        )
+        .map_err(debug)?
+    else {
+        return Err("nested bag must open via its handle".into());
+    };
+    let observation = owner
+        .observe_container(actor, Some(fence), pending.key())
+        .await;
+    let (disposition, delta) = views
+        .apply(&mut items, pending, observation)
+        .map_err(debug)?;
+    assert_eq!(disposition, ContainerViewOutcome::Opened);
+    assert!(delta.is_some());
+    let handle = |seed| {
+        items
+            .table()
+            .handle(&ItemKey::Instance(id(seed)))
+            .ok_or("Crusher operand handle")
+    };
+    for (command_id, crusher, gem) in [(1, 72, 73), (2, 74, 73), (3, 72, 75)] {
+        let outcome = crate::gameplay_transport::mining::dispatch_map_use(
+            owner,
+            actor,
+            UseCommand {
+                game_session_id: fence.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            UseIntent {
+                target: UseTarget::Item(handle(crusher)?),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Item(handle(gem)?)),
+                use_with_position: None,
+            },
+            Some(&items),
+        )
+        .await
+        .ok_or("nested Crusher result")?;
+        assert_eq!(
+            outcome.disposition,
+            UseDisposition::Committed,
+            "command {command_id}"
+        );
+        if command_id == 1 {
+            let checkpoint: (i32, i64) = sqlx::query_as(
+                "SELECT t.charges,i.quantity FROM game_item_timed_states t
+                 JOIN game_item_nested_entries n ON n.item_instance_id=t.item_instance_id
+                 JOIN game_item_instances i ON i.item_instance_id=encode($2,'hex')::uuid
+                 WHERE t.item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(72).as_slice())
+            .bind(id(73).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(checkpoint, (1, 1));
+        }
+    }
+    let remaining: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid",
+    ).bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(remaining, 0);
+    let retired: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_instances WHERE item_instance_id IN
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid) AND lifecycle=2 AND quantity=0",
+    )
+    .bind(id(72).as_slice())
+    .bind(id(73).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(retired, 2);
+    let outputs: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_craft_records r JOIN game_item_container_entries e
+            ON e.placed_transaction_id=r.transaction_id
+          WHERE r.recipe='oteryn:gem-atelier.crush' AND e.parent_item_instance_id=encode($1,'hex')::uuid",
+    ).bind(id(70).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(outputs, 3);
+    let timed_links: Vec<(i16, i32, i32)> = sqlx::query_as(
+        "SELECT w.cause,w.charges_before,w.charges_after
+         FROM game_item_crusher_nested_tool_proofs p
+         JOIN game_item_craft_records r ON r.transaction_id=p.craft_transaction_id
+         JOIN game_item_timed_state_writes w ON w.transaction_id=p.timed_transaction_id
+            AND w.item_instance_id=p.item_instance_id AND w.created_xact_id=r.created_xact_id
+         ORDER BY r.command_id",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(timed_links, [(1, 2, 1), (3, 1, 1)]);
+    eprintln!("POSTGRES_CASE_COMPLETED crusher_item_use_from_open_nested_bags");
+    Ok(())
 }

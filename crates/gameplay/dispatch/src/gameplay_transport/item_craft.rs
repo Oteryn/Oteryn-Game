@@ -299,20 +299,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return disposition(UseDisposition::Rejected);
             };
-            let entry = inventory
+            let mut carried = inventory
                 .backpack
                 .iter()
                 .flat_map(|bag| &bag.entries)
-                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .chain(inventory.nested.iter().map(|(_, entry)| entry));
+            let entry = carried
+                .clone()
                 .find(|entry| entry.item.item_instance_id == ingredient);
-            let crusher = inventory
-                .backpack
-                .iter()
-                .flat_map(|bag| &bag.entries)
-                .find(|entry| {
-                    entry.item.item_instance_id == source
-                        && entry.item.definition.production_key == CRUSHER_KEY
-                });
+            let crusher = carried.find(|entry| {
+                entry.item.item_instance_id == source
+                    && entry.item.definition.production_key == CRUSHER_KEY
+            });
             if let Some(crusher) = crusher {
                 if !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
                     || intent.use_with.is_some()
