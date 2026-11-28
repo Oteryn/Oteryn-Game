@@ -410,6 +410,21 @@ PY_MP_SEED
     -d "$platform_db" -v account="$Q_P10_ACCOUNT" \
     < "$GAME_SOURCE/tools/qualification/node_boot/p10_premium.sql"
   evidence "fixture=q_p10 input=premium producer=platform_ledger"
+  if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 165:1 ]]; then
+    local attempt nonce status endpoint=/internal/v1/products-entitlements/premium-snapshots/read
+    local cert_dir="$WORK/portal/certs"
+    for attempt in 1 2 3; do
+      nonce="$(openssl rand -hex 16)"
+      status="$(curl --silent --max-time 8 --output /dev/null --write-out '%{http_code}' \
+        --cacert "$cert_dir/ca.pem" --cert "$cert_dir/clients/premium.pem" \
+        --key "$cert_dir/clients/premium.key" --header 'Content-Type: application/json' \
+        --data "{\"schema\":\"oteryn.premium_snapshot_request.v1\",\"account_id\":\"$Q_P10_ACCOUNT\",\"nonce\":\"$nonce\"}" \
+        "https://localhost:$WP5_PORT$endpoint")" || status=transport_error
+      evidence "fixture=q_p10 snapshot_path=$endpoint attempt=$attempt status=$status utc=$(date -u +%FT%TZ)"
+      [[ "$status" == 503 && "$attempt" != 3 ]] || break
+      sleep 1
+    done
+  fi
 }
 
 result=NODE_BOOT_FAIL
