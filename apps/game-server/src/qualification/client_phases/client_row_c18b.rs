@@ -22,6 +22,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    let accounts = [required("NODE_BOOT_C18B_ACCOUNT")?];
+    let characters = [full_row_g01::fixture_character(clients, &accounts[0]).await?];
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -31,9 +38,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let book = spell_book()?;
-    let client = connect_character(clients, 0x18, 1).await?;
+    let client = connect_character(clients, 0x18, 0).await?;
     let mut client =
-        provisioning::provision_profile(client, clients, 1, 120, "sorcerer-120").await?;
+        provisioning::provision_profile(client, clients, 0, 120, "sorcerer-120").await?;
     let spell = book
         .spoken(SPELL)
         .ok_or("C18b.client Death Echo absent")?
@@ -98,7 +105,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     drop(client);
-    let (outcome, session) = connect_character_using(clients, 0x19, 1, async |request| {
+    let (outcome, session) = connect_character_using(clients, 0x19, 0, async |request| {
         oteryn_dev_client::replay_live_position_cast(request, index, target, before, &capture_path)
             .await
             .map_err(|error| error.to_string().into())
@@ -123,7 +130,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let fresh = connect_character(clients, 0x1a, 1).await?;
+    let fresh = connect_character(clients, 0x1a, 0).await?;
     if fresh.join_snapshot().game_session_id.as_bytes() == &session
         || fresh.world_spatial().actor_position != here
         || fresh.actor_vitals() != Some(&delta.value)

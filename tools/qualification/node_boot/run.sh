@@ -17,6 +17,7 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
+readonly C18B_ACCOUNT=01934f10-7c00-7000-8000-000000000022
 readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000021
 readonly G17_ACCOUNT=01934f10-7c00-7000-8000-000000000020
 readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
@@ -25,9 +26,9 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Returner Reward Player" "House Control Player")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Returner Reward Player" "House Control Player" "Crosshair Caster")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -173,7 +174,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" "$C18B_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -351,7 +352,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "$C18B_ACCOUNT" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -359,7 +360,7 @@ import subprocess
 import sys
 
 work = Path(sys.argv[1])
-world, *accounts = sys.argv[2:]
+world, crosshair, *accounts = sys.argv[2:]
 env = json.loads((work / "portal/secrets/env.json").read_text())
 binary = json.loads((work / "identity.json").read_text())["portal_binary"]
 
@@ -371,8 +372,9 @@ def seed(entity, args):
         raise SystemExit(f"node_boot_mp_seed_failed entity={entity}") from None
 
 seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
-for account in accounts:
-    seed("account", {"accountId": account, "email": f"nb-{account}@example.invalid",
+for account in [*accounts, crosshair]:
+    name = "q_c18b" if account == crosshair else f"nb-{account}"
+    seed("account", {"accountId": account, "email": f"{name}@example.invalid",
                      "password": secrets.token_urlsafe(48)})
 PY_MP_SEED
 }
@@ -1468,6 +1470,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     index=$((index + 1))
     requested_vocation="$vocation"
     [[ "$account" != "$LIGHT_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
+    [[ "$account" != "$C18B_ACCOUNT" ]] || requested_vocation=Sorcerer
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
       echo "platform intent issue failed for operation $operation"
@@ -1554,6 +1557,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     row_batch="$(node_boot_row_selection batch)"
     test_env+=("OTERYN_E2E_ROW_BATCH=$row_batch")
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
+    test_env+=("NODE_BOOT_C18B_ACCOUNT=$C18B_ACCOUNT")
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_G17_ACCOUNT=$G17_ACCOUNT" "NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
