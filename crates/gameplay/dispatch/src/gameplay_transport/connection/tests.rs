@@ -23,6 +23,9 @@ mod inventory_capacity_reread;
 #[path = "tests/sidecar_header.rs"]
 mod sidecar_header;
 
+#[path = "tests/stash_container_commit.rs"]
+mod stash_container_commit;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }

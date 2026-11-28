@@ -199,7 +199,10 @@ pub(super) async fn stackable_only(
     )
     .fetch_one(pool)
     .await?;
-    assert_eq!(carried_armor, 1, "stow actions preserve the armor in the backpack");
+    assert_eq!(
+        carried_armor, 1,
+        "stow actions preserve the armor in the backpack"
+    );
     Ok(())
 }
 

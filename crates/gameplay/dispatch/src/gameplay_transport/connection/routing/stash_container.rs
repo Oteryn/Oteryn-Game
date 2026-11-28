@@ -1,6 +1,9 @@
 use super::super::{AdmittedSession, FreshAdmissionAuthority, SessionItemView};
 use super::Dispatch;
-use crate::durability::character_stash::container::{Quote, Request, Target};
+use crate::durability::{
+    DurabilityError,
+    character_stash::container::{Quote, Request, Target},
+};
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::{ClientCommandView, container_batch::Request as WireRequest};
 use std::num::NonZeroU64;
@@ -48,9 +51,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             Some(Dispatch::CarriedBatch(result.reply))
         }
-        // A confirmation with a quote may have sent COMMIT. The authority
-        // currently erases the error, so preserve replay for that confirmation.
-        Err(()) if may_write => None,
-        Ok(None) | Err(()) => Some(Dispatch::Unregistered),
+        // A confirmation can reach the durable receipt owner with no cached quote.
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
+            None
+        }
+        Err(_) if may_write => None,
+        Ok(None) | Err(_) => Some(Dispatch::Unregistered),
     }
 }

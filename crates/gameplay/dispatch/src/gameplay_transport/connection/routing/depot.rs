@@ -23,7 +23,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1);
         if let Ok(request) = oteryn_protocol_oteryn::depot::decode_depot_request(
-            command.payload, admitted.continuity.selected_capabilities.as_slice(),
+            command.payload,
+            admitted.continuity.selected_capabilities.as_slice(),
         ) {
             let intent = request.intent;
             let item = match intent.action {

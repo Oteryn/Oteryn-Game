@@ -31,8 +31,16 @@ fn stash_cross_town_wire_stows_only_stackable_items() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_with_premium(true, false, false, false, false, None, Mode::StashEligibility)
-                .map_err(|error| error.to_string())
+            scenario_with_premium(
+                true,
+                false,
+                false,
+                false,
+                false,
+                None,
+                Mode::StashEligibility,
+            )
+            .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "stash eligibility thread panicked")?

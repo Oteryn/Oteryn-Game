@@ -697,8 +697,11 @@ fn scenario_with_premium(
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if bag || (mail && special_item.is_some()) || mode == Mode::ManagedArmor
-                            || (mode == Mode::StashEligibility && ordinal == 3) {
+                        quantity: if bag
+                            || (mail && special_item.is_some())
+                            || mode == Mode::ManagedArmor
+                            || (mode == Mode::StashEligibility && ordinal == 3)
+                        {
                             1
                         } else if managed {
                             40
@@ -880,14 +883,24 @@ fn scenario_with_premium(
                 tokio::time::timeout(
                     std::time::Duration::from_secs(60),
                     cross_town_cases::depot(&owner, admitted, &harness.pool, handle, carried),
-                ).await.map_err(|_| "cross-town depot exchange timed out")??;
+                )
+                .await
+                .map_err(|_| "cross-town depot exchange timed out")??;
             } else {
-                let nonstackable = view.table().handle(&ItemKey::Instance(stacks[2])).ok_or("single item")?;
-                let bag = view.table().handle(&ItemKey::Instance(main_bag.ok_or("main bag")?)).ok_or("main bag handle")?;
+                let nonstackable = view
+                    .table()
+                    .handle(&ItemKey::Instance(stacks[2]))
+                    .ok_or("single item")?;
+                let bag = view
+                    .table()
+                    .handle(&ItemKey::Instance(main_bag.ok_or("main bag")?))
+                    .ok_or("main bag handle")?;
                 tokio::time::timeout(
                     std::time::Duration::from_secs(60),
                     stash_cases::stackable_only(&owner, admitted, &harness.pool, nonstackable, bag),
-                ).await.map_err(|_| "cross-town stash eligibility exchange timed out")??;
+                )
+                .await
+                .map_err(|_| "cross-town stash eligibility exchange timed out")??;
             }
             drop(owner);
             drop(authority);
