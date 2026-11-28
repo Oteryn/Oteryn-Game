@@ -785,7 +785,7 @@ BASE=/x; MAP_REVISION=m; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_
 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
 PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q; LIGHT_ACCOUNT_ID=l
-W10_ACCOUNT_ID=w10; C16C_ACCOUNT_ID=c16c; G17_ACCOUNT=g17; G01_ACCOUNT=g01
+C18B_ACCOUNT=c18b; W10_ACCOUNT_ID=w10; C16C_ACCOUNT_ID=c16c; G17_ACCOUNT=g17; G01_ACCOUNT=g01
 EXTRA_WORLD_ACCOUNTS=(e); NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
 declare -A STATUS=()
 sleep() { :; }
@@ -799,7 +799,7 @@ sleep() { :; }
             executable.write_text(
                 '#!/bin/bash\ncase "$1" in\n'
                 '  *qualification_spawn_transaction*) echo "test result: ok. 1 passed; 0 failed; 0 ignored;" ;;\n'
-                '  *) echo "batch=${OTERYN_E2E_ROW_BATCH-unset}" ;;\nesac\n'
+                '  *) echo "batch=${OTERYN_E2E_ROW_BATCH-unset} c18b=${NODE_BOOT_C18B_ACCOUNT-unset}" ;;\nesac\n'
             )
             executable.chmod(0o700)
             for batch, expected in (
@@ -815,7 +815,7 @@ sleep() { :; }
                         check=True,
                     )
                     self.assertEqual(
-                        result.stdout.splitlines()[-1], f"batch={expected}"
+                        result.stdout.splitlines()[-1], f"batch={expected} c18b=c18b"
                     )
 
     def test_assignment_waits_for_rendered_christmas_epoch(self):
