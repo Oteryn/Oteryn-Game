@@ -19,20 +19,9 @@ pub(super) fn reward_increased(
     definition: u32,
     count: u32,
 ) -> bool {
-    let quantity = |custody: &Custody| {
-        custody
-            .0
-            .iter()
-            .filter(|((_, key, _), _)| *key == definition)
-            .map(|(_, quantity)| quantity)
-            .sum::<u64>()
-    };
-    quantity(after).checked_sub(quantity(before)) == Some(u64::from(count))
-        && before
-            .0
-            .iter()
-            .filter(|((_, key, _), _)| *key != definition)
-            .eq(after.0.iter().filter(|((_, key, _), _)| *key != definition))
+    let mut expected = before.clone();
+    *expected.0.entry((u8::MAX, definition, 0)).or_default() += u64::from(count);
+    *after == expected
 }
 
 pub(super) fn custody(client: &DevClientSession) -> TestResult<Custody> {
@@ -126,6 +115,39 @@ fn adjacent(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x) <= 1 && a.y.abs_diff(b.y) <= 1
 }
 
+const BATTLE_AXE_TRANSITION: &str = "oteryn:quest-transition/kv/battleaxe/chest";
+
+fn check_transition(transition: &str) -> TestResult {
+    if transition != BATTLE_AXE_TRANSITION {
+        return Err(format!("Battle Axe chest bound to unexpected transition {transition}").into());
+    }
+    Ok(())
+}
+
+async fn check_inventory_frames(mut bytes: &[u8], expected: usize) -> TestResult {
+    use oteryn_dev_client::native_session::read_frame;
+    use oteryn_protocol_oteryn::{
+        MessageType, decode_state_delta, decode_wire_envelope, item_view,
+    };
+    let mut observed = 0;
+    while !bytes.is_empty() {
+        let frame = read_frame(&mut bytes).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::StateDelta
+            && decode_state_delta(envelope.payload())?.domain_id
+                == item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+        {
+            observed += 1;
+        }
+    }
+    if observed != expected {
+        return Err(
+            format!("W15b inventory frames expected={expected} observed={observed}").into(),
+        );
+    }
+    Ok(())
+}
+
 pub(super) const BATTLE_AXE_CLAIM: &str = "oteryn:reward-claim.kv.battleaxe";
 pub(super) const BATTLE_AXE_CHEST: TilePos = TilePos {
     x: 32305,
@@ -209,10 +231,9 @@ async fn fresh_admission(
 async fn quest_receipts(
     database: &mut sqlx::PgConnection,
     clients: &SeamClients<'_>,
-    transition: &str,
 ) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT count(*), count(*) FILTER (WHERE transition_key=$2) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid")
-        .bind(clients.characters[1].as_slice()).bind(transition).fetch_one(database).await?)
+        .bind(clients.characters[1].as_slice()).bind(BATTLE_AXE_TRANSITION).fetch_one(database).await?)
 }
 
 use oteryn_dev_client::client_runtime::quest_log as journal;
@@ -260,6 +281,28 @@ async fn quest_list(
     Ok(state.list.clone())
 }
 
+async fn check_duplicate(
+    client: &mut DevClientSession,
+    journal: &mut journal::QuestState,
+    chest: &Chest,
+    awarded: &Custody,
+    quests: &[journal::QuestListEntry],
+) -> TestResult {
+    let (result, wire) = oteryn_dev_client::native_session::capture_inbound(async {
+        let reply = use_chest(client, chest).await?;
+        if reply != UseDisposition::NothingToUse {
+            return Err(format!("W15b duplicate USE reply={reply:?}").into());
+        }
+        if quest_list(client, journal).await? != quests || custody(client)? != *awarded {
+            return Err("W15b duplicate USE changed inventory or Quest Log".into());
+        }
+        TestResult::Ok(())
+    })
+    .await;
+    result?;
+    check_inventory_frames(&wire, 0).await
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -272,48 +315,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_at_battle_axe(clients, 0xb5, 1, "W15b.full").await?;
     let mut journal = quest_state(&mut client)?;
     let before_quests = quest_list(&mut client, &mut journal).await?;
+    super::client_row_w15b::check_baseline(&before_quests)?;
     let before_items = custody(&client)?;
 
     let chest = quest_chests(world)?
         .into_iter()
         .find(|chest| chest.at == BATTLE_AXE_CHEST && chest.claim == BATTLE_AXE_CLAIM)
         .ok_or("step-2: exact Battle Axe chest is not served")?;
+    check_transition(&chest.transition)?;
     let expected = provisioning::item_reference(&provisioning::item_index()?, 3266)?.get();
     if chest.reward_definition != expected || chest.reward_count != 1 {
         return Err("step-2: Battle Axe chest does not bind exactly one Battle Axe".into());
     }
     use sqlx::Connection as _;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let receipts_before = quest_receipts(&mut database, clients, &chest.transition).await?;
+    let receipts_before = quest_receipts(&mut database, clients).await?;
     if receipts_before.1 != 0 {
         return Err("step-3: Battle Axe quest transition was already claimed".into());
     }
-    let first = use_chest(&mut client, &chest).await?;
-    if first != UseDisposition::Committed {
-        return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
+    use oteryn_dev_client::native_session::capture_inbound;
+    let (claim, wire) = capture_inbound(async {
+        let first = use_chest(&mut client, &chest).await?;
+        if first != UseDisposition::Committed {
+            return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
+        }
+        quest_list(&mut client, &mut journal).await
+    })
+    .await;
+    let advanced = claim?;
+    check_inventory_frames(&wire, 1).await?;
+    let awarded = custody(&client)?;
+    if !reward_increased(&before_items, &awarded, expected, 1) {
+        return Err(
+            "step-3: inventory must gain exactly one plain Battle Axe in the backpack".into(),
+        );
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let awarded = loop {
-        let observed = custody(&client)?;
-        if reward_increased(
-            &before_items,
-            &observed,
-            chest.reward_definition,
-            chest.reward_count,
-        ) {
-            break observed;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step-3: USE committed but exact reward delta missing claim={} definition={} count={}",
-                chest.claim, chest.reward_definition, chest.reward_count
-            ).into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-    };
-    let advanced = quest_list(&mut client, &mut journal).await?;
-    let receipts_after = quest_receipts(&mut database, clients, &chest.transition).await?;
+    let receipts_after = quest_receipts(&mut database, clients).await?;
     if receipts_after != (receipts_before.0 + 1, receipts_before.1 + 1) {
         return Err(format!("step-3: exact quest receipt missing or unrelated transition committed: expected={} before={receipts_before:?} after={receipts_after:?}", chest.transition).into());
     }
@@ -327,21 +364,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
 
-    let second = use_chest(&mut client, &chest).await?;
-    if second != UseDisposition::NothingToUse {
-        return Err(format!(
-            "step-4: duplicate USE reply={second:?} claim={}",
-            chest.claim
-        )
-        .into());
-    }
-    if custody(&client)? != awarded || quest_list(&mut client, &mut journal).await? != advanced {
-        return Err("step-4: refused duplicate changed inventory or quest state".into());
-    }
+    check_duplicate(&mut client, &mut journal, &chest, &awarded, &advanced).await?;
 
     let mut fresh = fresh_admission(&mut client, clients).await?;
     let mut fresh_journal = quest_state(&mut fresh)?;
-    if custody(&fresh)? != awarded || quest_list(&mut fresh, &mut fresh_journal).await? != advanced
+    if quest_list(&mut fresh, &mut fresh_journal).await? != advanced || custody(&fresh)? != awarded
     {
         return Err(
             "step-5: reward custody or quest advance did not survive fresh admission".into(),
@@ -350,15 +377,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if tile(fresh.world_spatial().actor_position)? != BATTLE_AXE_APPROACH {
         return Err("step-5: relog did not restore the chest approach tile".into());
     }
-    let after_relog = use_chest(&mut fresh, &chest).await?;
-    if after_relog != UseDisposition::NothingToUse {
-        return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());
-    }
-    if custody(&fresh)? != awarded || quest_list(&mut fresh, &mut fresh_journal).await? != advanced
-    {
-        return Err("step-5: post-relog refusal changed durable inventory or quest state".into());
-    }
-    if quest_receipts(&mut database, clients, &chest.transition).await? != receipts_after {
+    check_duplicate(&mut fresh, &mut fresh_journal, &chest, &awarded, &advanced).await?;
+    if quest_receipts(&mut database, clients).await? != receipts_after {
         return Err(
             "step-5: duplicate USE or fresh admission changed durable quest receipts".into(),
         );
@@ -409,6 +429,52 @@ mod tests {
         assert!(reward_increased(&before, &reward, 3607, 1));
         let lost = Custody(BTreeMap::from([((255, 3607, 0), 1)]));
         assert!(!reward_increased(&before, &lost, 3607, 1));
+    }
+
+    #[test]
+    fn rejects_misbound_transition_and_wrong_axe_custody() {
+        assert!(check_transition("oteryn:quest-transition/kv/adoreduh/chest").is_err());
+        assert!(check_transition(BATTLE_AXE_TRANSITION).is_ok());
+        let before = Custody(BTreeMap::new());
+        assert!(!reward_increased(
+            &before,
+            &Custody(BTreeMap::from([((255, 3266, 1), 1)])),
+            3266,
+            1
+        ));
+        assert!(!reward_increased(
+            &before,
+            &Custody(BTreeMap::from([((4, 3266, 0), 1)])),
+            3266,
+            1
+        ));
+    }
+
+    #[test]
+    fn rejects_corrected_extra_grant_and_late_duplicate_inventory_push() -> TestResult {
+        use oteryn_dev_client::native_session::write_frame;
+        use oteryn_protocol_oteryn::{encode_state_delta, item_view};
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let domain = item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
+            let mut wire = Vec::new();
+            let first = encode_state_delta(1, 2, domain, 1, 2, 1, &[8, 2])?;
+            write_frame(&mut wire, &first).await?;
+            assert!(check_inventory_frames(&wire, 1).await.is_ok());
+            let correction = encode_state_delta(1, 3, domain, 2, 3, 1, &[8, 1])?;
+            write_frame(&mut wire, &correction).await?;
+            assert!(check_inventory_frames(&wire, 1).await.is_err());
+            wire.clear();
+            let journal =
+                encode_state_delta(1, 2, journal::STATE_DOMAIN_QUEST_LOG, 1, 2, 1, &[8, 1])?;
+            write_frame(&mut wire, &journal).await?;
+            assert!(check_inventory_frames(&wire, 0).await.is_ok());
+            write_frame(&mut wire, &correction).await?;
+            assert!(check_inventory_frames(&wire, 0).await.is_err());
+            Ok(())
+        })
     }
 
     #[test]

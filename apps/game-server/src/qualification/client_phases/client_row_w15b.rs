@@ -2,45 +2,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::quest_log as journal;
-use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
-
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "W15B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
-}
-
-/// `reference:count` of every carried item (backpack, loose entries, equipment), sorted.
-fn units(client: &DevClientSession) -> TestResult<String> {
-    let inventory = client.inventory().ok_or("inventory snapshot missing")?;
-    let mut held: Vec<(u32, u32)> = inventory
-        .main_backpack
-        .iter()
-        .chain(inventory.entries.iter())
-        .chain(inventory.equipment.iter().map(|entry| &entry.item))
-        .map(|item| (item.item_definition_ref.get(), item.count.get()))
-        .collect();
-    held.sort_unstable();
-    Ok(held
-        .iter()
-        .map(|(reference, count)| format!("{reference}:{count}"))
-        .collect::<Vec<_>>()
-        .join(";"))
-}
-
-fn list_text(entries: &[journal::QuestListEntry]) -> String {
-    entries
-        .iter()
-        .map(|entry| format!("{}:{}", entry.quest_index, u8::from(entry.completed)))
-        .collect::<Vec<_>>()
-        .join(";")
-}
 
 #[derive(PartialEq, Eq)]
 struct Listed {
@@ -90,7 +52,7 @@ async fn list_session<S: oteryn_dev_client::native_session::SessionStream>(
 
 // This isolated character starts with no displayed quests. Global's displayed
 // Quest Log omits the Battle Axe Quest, including after its chest is claimed.
-fn check_baseline(entries: &[journal::QuestListEntry]) -> TestResult {
+pub(super) fn check_baseline(entries: &[journal::QuestListEntry]) -> TestResult {
     if !entries.is_empty() {
         return Err(
             format!("W15b expected an empty fixture Quest Log, observed {entries:?}").into(),
@@ -176,29 +138,11 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
         BATTLE_AXE_CHEST, BATTLE_AXE_CLAIM, connect_at_battle_axe, custody, reward_increased,
     };
     let mut client = connect_at_battle_axe(clients, 0x87, 0, "W15b.client").await?;
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
-        .ok_or("step=snapshot quest log snapshot absent")?
-        .clone();
-    let inventory_payload = |client: &DevClientSession| -> TestResult<Vec<u8>> {
-        let inventory = client.inventory().ok_or("inventory snapshot missing")?;
-        if !client
-            .selected_capabilities()
-            .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1)
-        {
-            return Err("W15b inventory capture requires equipment capability".into());
-        }
-        item_view::encode_character_inventory_with_equip_drop(inventory, true)
-            .map_err(|error| format!("inventory encode: {error:?}").into())
-    };
     let before_inventory = client
         .inventory()
         .ok_or("missing pre-claim inventory")?
         .clone();
     let before_custody = custody(&client)?;
-    let before_units = units(&client)?;
-    let before_payload = inventory_payload(&client)?;
     let before = list(&mut client).await?;
     check_baseline(&before.entries)?;
     let chest = quest_chests(world)?
@@ -214,8 +158,6 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
         .inventory()
         .ok_or("missing post-claim inventory")?
         .clone();
-    let after_units = units(&client)?;
-    let after_payload = inventory_payload(&client)?;
     let expected_reward = provisioning::item_reference(&provisioning::item_index()?, 3266)?.get();
     let awarded = custody(&client)?;
     if !reward_increased(&before_custody, &awarded, expected_reward, 1)
@@ -224,40 +166,19 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
         return Err(format!(
             "step=claim claim={} inventory_changed={} quest_changed={}",
             chest.claim,
-            after_units != before_units,
+            awarded != before_custody,
             after.entries != before.entries
         )
         .into());
     }
     let second = use_chest(&mut client, &chest).await?;
-    if second != UseDisposition::NothingToUse || units(&client)? != after_units {
+    if second != UseDisposition::NothingToUse || custody(&client)? != awarded {
         return Err(format!("step=duplicate-use disposition={second:?}").into());
     }
     let duplicate = list(&mut client).await?;
     if duplicate.entries != after.entries || custody(&client)? != awarded {
         return Err("step=duplicate-use changed quest or inventory state".into());
     }
-    let expected = format!(
-        "claim={}\nsnapshot_revision={}\nbefore_units={before_units}\nafter_units={after_units}\n\
-         list_before={}\nlist_before_base={}\nlist_before_new={}\nlist_before_sequence={}\n\
-         list_after={}\nlist_after_base={}\nlist_after_new={}\nlist_after_sequence={}\nsecond_use={second:?}\n",
-        chest.claim,
-        snapshot.revision,
-        list_text(&before.entries),
-        before.base,
-        before.new,
-        before.sequence,
-        list_text(&after.entries),
-        after.base,
-        after.new,
-        after.sequence,
-    );
-    capture("w15b-quest-snapshot.bin", &snapshot.payload);
-    capture("w15b-quest-before.bin", &before.payload);
-    capture("w15b-quest-after.bin", &after.payload);
-    capture("w15b-inventory-before.bin", &before_payload);
-    capture("w15b-inventory-after.bin", &after_payload);
-    capture("w15b-expected.txt", expected.as_bytes());
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout refused: {logout:?}").into());

@@ -1,10 +1,5 @@
-//! W15b client replay: using a quest reward chest adds its reward to the CharacterInventory
-//! (`Session::apply_state_delta` in `domain_dispatch.rs`, read through `Session::inventory`) and
-//! advances the quest journal (`Session::read_gated_delta` for domain 16). The second use of the
-//! chest changes nothing; a malformed inventory delta is refused and leaves the reward in place.
-//!
-//! The inventory views are session-owned views re-encoded by the row with the production encoder
-//! (the C09/I11 practice); the quest payloads are the raw bytes the client received.
+//! Synthetic session codec coverage for a reward delta and malformed-delta rejection.
+//! Live W15b qualification records and replays its own original wire frames.
 use super::*;
 use crate::tests::{BoxError, admission_with, join_peer_with};
 use oteryn_protocol_oteryn::{encode_state_delta, item_view};
@@ -66,17 +61,6 @@ fn list_text(log: &quest_log::QuestLog) -> String {
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok(Capture {
-            inventory_before: std::fs::read(path.join("w15b-inventory-before.bin"))?,
-            inventory_after: std::fs::read(path.join("w15b-inventory-after.bin"))?,
-            quest_snapshot: std::fs::read(path.join("w15b-quest-snapshot.bin"))?,
-            quest_before: std::fs::read(path.join("w15b-quest-before.bin"))?,
-            quest_after: std::fs::read(path.join("w15b-quest-after.bin"))?,
-            expected: std::fs::read_to_string(path.join("w15b-expected.txt"))?,
-        });
-    }
     let inventory = |extra: Option<ItemEntry>| -> Result<Vec<u8>, BoxError> {
         let mut entries = vec![entry(3, 3031, 100)?];
         entries.extend(extra);
@@ -135,7 +119,7 @@ fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, BoxError> {
 }
 
 #[test]
-fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
+fn w15b_reward_chest_codec_fixture() -> Result<(), BoxError> {
     crate::tests::block_on(async {
         let capture = fixture()?;
         let expected = capture.expected.as_str();
