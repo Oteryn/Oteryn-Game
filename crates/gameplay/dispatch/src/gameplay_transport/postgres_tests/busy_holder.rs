@@ -245,11 +245,11 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                 accepted,
                 "a background pass must not close ordinary activity-capable input"
             );
-            // A persistently unavailable root still authorizes no input.
+            // A persistently busy holder still authorizes no input.
             let held = h.root.try_issue_semantic_pass()?;
             assert!(matches!(
                 owner.activity_transfer_input(admitted).await,
-                Err(crate::durability::DurabilityError::RootUnavailable)
+                Err(crate::durability::DurabilityError::HolderBusy)
             ));
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             drop(owner);
