@@ -1720,20 +1720,49 @@ mod protected_loot_tests {
                 Err(reason) => return Err(format!("{creature}: {}", reason.as_str()).into()),
             }
         }
-        // Other package cohorts qualify additional required loot. Keep the
-        // exact refusal set for bodies whose protected yields still lack proof.
-        assert_eq!(
-            protected_loot_refusals,
-            [
-                "oteryn:creature.sir_leonard",
-                "oteryn:creature.sir_leopold",
-                "oteryn:creature.the_flaming_orchid",
-                "oteryn:creature.ushuriel",
-                "oteryn:creature.varg",
-                "oteryn:creature.vladrukh",
-                "oteryn:creature.zorvorax",
-            ]
+        assert!(
+            protected_loot_refusals.is_empty(),
+            "{protected_loot_refusals:?}"
         );
+        // The integrated loot cohorts now qualify every protected yield for
+        // these seven bodies. Require the full ordinary table for each.
+        for (name, count) in [
+            ("sir_leonard", 22),
+            ("sir_leopold", 13),
+            ("the_flaming_orchid", 26),
+            ("ushuriel", 38),
+            ("varg", 9),
+            ("vladrukh", 15),
+            ("zorvorax", 20),
+        ] {
+            let key = format!("oteryn:creature.{name}");
+            let row = table
+                .row(&key)
+                .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+            let corpse = row.corpse_item.as_ref().ok_or("protected loot corpse")?;
+            assert!(
+                loot.items.iter().any(|facts| facts.item.lower() == *corpse
+                    && facts.materializable
+                    && facts.container_capacity.is_some()),
+                "{key}"
+            );
+            let authored_key = format!("oteryn:loot.creature.{name}");
+            let authored = loot
+                .tables
+                .iter()
+                .find(|source| source.identity.key == authored_key)
+                .ok_or("protected loot source")?;
+            assert_eq!(authored.entries.len(), count, "{key}");
+            assert_eq!(row.loot_table.entries.len(), count, "{key}");
+            for (actual, source) in row.loot_table.entries.iter().zip(&authored.entries) {
+                assert_eq!(actual.item, source.item.lower(), "{key}");
+                assert_eq!(
+                    (actual.min_count, actual.max_count, actual.probability_ppm),
+                    (source.min_count, source.max_count, source.probability_ppm),
+                    "{key}"
+                );
+            }
+        }
         Ok(())
     }
 
