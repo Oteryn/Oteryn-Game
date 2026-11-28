@@ -4,7 +4,6 @@
 //! decision MAP-LOAD-PACKET-1 §1.2; the NPC frame, decision NPC-PLACE-1 §3.
 
 pub mod bundle;
-pub mod crystal_item_collision;
 pub mod layers;
 mod manifest;
 pub mod npc;

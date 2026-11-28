@@ -141,11 +141,7 @@ def main()->int:
                 req(payload.get("population_state") in WORLD_STATES|({"POPULATED"} if catalogue else set()),f"WORLD_MARKER_STATE:{path}")
                 if catalogue:
                     req(not locators and catalogue_shards(path),f"WORLD_CATALOGUE_EMPTY:{path}")
-                    catalogue_files = local - {"index.json"}
-                    if path == "content/world/terrain/":
-                        # The bundle compiler separately validates this pinned source table.
-                        catalogue_files.discard("crystal-item-collision.bin")
-                    req(all(CATALOGUE_SHARD.match(n) and n.startswith(POPULATED_WORLD_CATALOGUES[path]) for n in catalogue_files),f"WORLD_STRAY_FILE:{path}")
+                    req(all(CATALOGUE_SHARD.match(n) and n.startswith(POPULATED_WORLD_CATALOGUES[path]) for n in local-{"index.json"}),f"WORLD_STRAY_FILE:{path}")
                 else:
                     req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":

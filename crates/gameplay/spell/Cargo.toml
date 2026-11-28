@@ -12,7 +12,6 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-qualification-cast-evidence = []
 test-support = ["oteryn-gameplay-combat/test-support", "oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support", "oteryn-gameplay-world/test-support"]
 
 [dependencies]

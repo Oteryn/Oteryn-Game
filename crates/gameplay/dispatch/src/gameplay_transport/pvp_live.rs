@@ -38,21 +38,10 @@ pub(super) async fn legal_player(
     target: ExactActorRef,
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
-    let facts = legal_player_at(
+    legal_player_at(
         tx, root, authority, runtime, states, room, objects, actor, target, modes, None,
     )
-    .await?;
-    // Ordinary spell targets still use the unarmoured qualification boundary.
-    if !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
-        .await
-        .map_err(|_| SpellCastDisposition::TargetIllegal)?
-    {
-        super::operator_event(
-            "event=pvp_target_refused reason=spell_target_equipped_or_equipment_state_missing",
-        );
-        return Err(SpellCastDisposition::TargetIllegal);
-    }
-    Ok(facts)
+    .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -127,61 +116,58 @@ async fn legal_player_at(
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     field_destination: Option<crate::foundation::MovementLocalPosition>,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
-    let reject = |reason: &str| {
-        super::operator_event(&format!("event=pvp_target_refused reason={reason}"));
-        SpellCastDisposition::TargetIllegal
-    };
+    let reject = || SpellCastDisposition::TargetIllegal;
     if runtime.actor_staff_visibility(actor).is_ok_and(|f| f.0)
         || runtime.actor_staff_visibility(target).is_ok_and(|f| f.0)
     {
-        return Err(reject("staff_visibility"));
+        return Err(reject());
     }
     if runtime.is_tibiadrome(actor) || runtime.is_tibiadrome(target) {
-        return Err(reject("tibiadrome"));
+        return Err(reject());
     }
     let source = states
         .get(runtime, actor, authority.game_session_id())
-        .ok_or_else(|| reject("missing_player_state"))?;
+        .ok_or_else(reject)?;
     let (_, session, state) = states
         .actors
         .iter()
         .find(|(a, s, _)| *a == target && states.get(runtime, *a, *s).is_some())
-        .ok_or_else(|| reject("missing_player_state"))?;
+        .ok_or_else(reject)?;
     if actor == target
         || states.is_dead(actor)
         || states.is_dead(target)
         || state.vitals().health == 0
     {
-        return Err(reject("invalid_player_target"));
+        return Err(reject());
     }
     let from = runtime
         .read_actor_position(actor)
-        .map_err(|_| reject("attacker_position"))?
+        .map_err(|_| reject())?
         .position();
     let to = field_destination.unwrap_or(
         runtime
             .read_actor_position(target)
-            .map_err(|_| reject("target_position"))?
+            .map_err(|_| reject())?
             .position(),
     );
     if field_destination.is_none() && !super::attack::sees(from, to) {
-        return Err(reject("target_not_visible"));
+        return Err(reject());
     }
     let source_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
         tx, authority, room, runtime, objects, from,
     )
     .await
-    .map_err(|_| reject("attacker_tile"))?;
+    .map_err(|_| reject())?;
     let target_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
         tx, authority, room, runtime, objects, to,
     )
     .await
-    .map_err(|_| reject("target_tile"))?;
+    .map_err(|_| reject())?;
     let facts = storage::read_live_pvp_in_transaction(
         tx, root, authority, runtime, actor, target, *session,
     )
     .await
-    .map_err(|_| reject("live_pvp_facts"))?;
+    .map_err(|_| reject())?;
     let a = PvpActor {
         level: source.character_facts().level,
         in_protection_zone: source_tile.protection_zone(),
@@ -204,8 +190,14 @@ async fn legal_player_at(
         on_no_pvp_tile: target_tile.no_pvp_zone(),
         marked: facts.marked,
     };
-    check_pvp_legality(facts.world, &a, &t, &facts.relation)
-        .map_err(|reason| reject(&format!("{reason:?}")))?;
+    check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
+    if field_destination.is_none()
+        && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
+            .await
+            .map_err(|_| reject())?
+    {
+        return Err(reject());
+    }
     Ok(facts)
 }
 
@@ -307,9 +299,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-                let result = legal_player_at(
+                let result = legal_player(
                     &mut tx, owner.root, &authority, runtime, states, room, objects, actor, target,
-                    modes, None,
+                    modes,
                 )
                 .await
                 .ok()
@@ -426,7 +418,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let facts = legal_player_at(
+                    let facts = legal_player(
                         &mut tx,
                         owner.root,
                         &authority,
@@ -437,7 +429,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         hit.batch.caster,
                         target,
                         modes,
-                        None,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;

@@ -102,8 +102,9 @@ impl From<FactsRefusal> for BootRefusal {
     }
 }
 
-/// The production bundle Item lookup. Crystal's collision facts fill gaps in
-/// the native profiles. Pickup and custody still require a native policy.
+/// The production bundle Item lookup. A known pinned reference may have no
+/// native profile: its unknown facts stay blocking/non-pickupable. Terrain-backed
+/// floor classification remains the map owner's existing qualified fallback.
 pub fn native_item_definition(
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
     key: &str,
@@ -121,25 +122,18 @@ pub fn native_item_definition(
                 if physical.pickupable == ReferenceItemField::Known(true)
         )
     });
-    let donor = oteryn_world_bundle::crystal_item_collision::for_key(key);
-    let door = match profile.map(|profile| &profile.semantics.classification) {
-        Some(ReferenceItemField::Known(classification)) => {
-            classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-                || (classification.item_type == ReferenceItemField::Unknown
-                    && donor.is_some_and(|item| item.door))
-        }
-        Some(ReferenceItemField::NotApplicable | ReferenceItemField::Conflict) => false,
-        Some(ReferenceItemField::Unknown) | None => donor.is_some_and(|item| item.door),
-    };
+    let door = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.classification, ReferenceItemField::Known(classification)
+                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+        )
+    });
     let attributes = profile.map(|profile| &profile.attributes);
     Some(ItemDefinition {
         reference,
-        solid: attributes
-            .and_then(|attributes| attributes.blocks_movement)
-            .or_else(|| donor.map(|item| item.solid)),
+        solid: attributes.and_then(|attributes| attributes.blocks_movement),
         blocks_projectile: attributes
             .and_then(|attributes| attributes.blocks_projectile)
-            .or_else(|| donor.map(|item| item.blocks_projectile))
             .unwrap_or(true),
         pickupable,
         door,

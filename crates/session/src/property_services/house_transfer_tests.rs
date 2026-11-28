@@ -7,22 +7,18 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
         .stack_size(64 << 20)
         .spawn(|| {
             block_on(async {
-                let selection = &[6, 59, 86];
                 let (client, mut server) = tokio::io::duplex(256 * 1024);
                 let peer = tokio::spawn(async move {
                     join_peer_with(
                         &mut server,
-                        selection,
-                        selection,
+                        &[59, 86],
+                        &[59, 86],
                         &[],
-                        entity_snapshot(vec![]),
+                        (1, spatial(100)),
                         &[],
                     )
                     .await?;
-                    let summon = actor(EntityKind::Creature, 1, 1, at(1, 0));
-                    let delta = entities_delta(at(0, 0), vec![summon], vec![], vec![]);
-                    play_step(&mut server, entities_push(41, 5, 6, &delta)?).await?;
-                    for (exit, command_id, sequence) in [(false, 7, 42), (true, 1, 2)] {
+                    for (exit, command_id, sequence) in [(false, 7, 41), (true, 1, 2)] {
                         let frame = read_frame(&mut server).await?;
                         let envelope = decode_wire_envelope(&frame)?;
                         let command = envelope.client_command(1)?;
@@ -42,7 +38,7 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                             scope_generation: 2,
                             connection_generation: 1,
                             lease_generation: 2,
-                            selection: selection.to_vec(),
+                            selection: vec![59, 86],
                             position: [100, 0, 0],
                         };
                         let payload =
@@ -58,12 +54,12 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                             )?,
                         )
                         .await?;
-                        let (spatial_type, spatial_payload) = entity_snapshot(vec![]);
+                        let spatial_payload = spatial(100);
                         let domain = if exit {
                             DomainSnapshot {
                                 domain_id: 1,
                                 revision: 1,
-                                snapshot_type: spatial_type,
+                                snapshot_type: 1,
                                 payload: &spatial_payload,
                             }
                         } else {
@@ -92,14 +88,8 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                     Ok::<(), BoxError>(())
                 });
                 let mut input = admission()?;
-                input.supported_capabilities = selection;
+                input.supported_capabilities = &[59, 86];
                 let mut session = Session::admit(client, input).await?;
-                let events = session.wait_for_events(DEADLINE).await?;
-                assert!(matches!(
-                    events.as_slice(),
-                    [SessionEvent::WorldSpatialEntities(_)]
-                ));
-                assert_eq!(session.raw_world_entity_deltas().len(), 1);
                 for exit in [false, true] {
                     let payload = wire::encode_house_transfer_intent(&wire::HouseTransferIntent {
                         exit,
@@ -107,7 +97,6 @@ fn pc04_house_transfer_handoff_restarts_the_command_namespace() -> Result<(), Bo
                     })
                     .map_err(|e| format!("{e:?}"))?;
                     session.gated_command(86, 102, &payload).await?;
-                    assert!(session.raw_world_entity_deltas().is_empty());
                     assert_eq!(session.next_command_id, 1);
                     assert_eq!(session.last_server_sequence, if exit { 0 } else { 1 });
                 }

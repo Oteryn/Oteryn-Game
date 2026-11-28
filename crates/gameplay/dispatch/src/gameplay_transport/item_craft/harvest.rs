@@ -126,6 +126,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let operand = {
             let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, command.game_session_id)
+                || pinned_index(&runtime, self.active_generation).is_none()
+                || !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, None)
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
             let facts = map.facts.pinned();
             let source = super::super::world_map::MapViewSource {
                 overlay: &map.overlay,
@@ -200,20 +214,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(plan) = fishing::map_harvest(before.appearance_id, 1) else {
                 return Ok(None);
             };
-            let states = self.states.spell_states.lock().await;
-            if !runtime
-                .player_control_facts(actor, command.game_session_id)
-                .is_ok_and(|facts| facts.control_loss.is_none())
-                || states.is_dead(actor)
-                || !states.spell_idle(&runtime, actor, command.game_session_id)
-                || pinned_index(&runtime, self.active_generation).is_none()
-                || !self
-                    .states
-                    .player_trades
-                    .physical(command.game_session_id, None)
-            {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            }
             let actor_at = runtime
                 .read_actor_position(actor)
                 .map_err(|_| ())?

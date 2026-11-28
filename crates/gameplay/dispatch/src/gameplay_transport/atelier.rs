@@ -467,20 +467,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::character_progression::CharacterProgressionError as Error;
         let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
         let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
-        let fence = budget
-            .retry_holder(
-                async || self.current_quest_fence_durable(session).await,
-                super::root_holder_busy,
-            )
+        let fence = self
+            .current_quest_fence(session)
             .await
-            .map_err(|error| {
-                if super::root_holder_busy(&error) {
-                    Error::Unavailable(error)
-                } else {
-                    Error::AuthorityRejected
-                }
-            })?
+            .map_err(|_| Error::AuthorityRejected)?
             .ok_or(Error::AuthorityRejected)?;
         if expected.is_some_and(|expected| {
             expected.character_id != fence.character_id
@@ -533,62 +523,33 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .await?,
             ),
             GemBuildCommand::Wheel(request) => GemBuildOutcome::Wheel(Box::new(
-                budget
-                    .retry_holder(
-                        async || {
-                            slot.commit_wheel_with_admission(
-                                self.root,
-                                self.character,
-                                self.holder,
-                                fence,
-                                *request,
-                                std::sync::Arc::clone(ruleset),
-                                crate::durability::character_wheel::WheelChangeFacts { at_temple },
-                                gate,
-                                &admit,
-                            )
-                            .await
-                        },
-                        super::progression_holder_busy,
-                    )
-                    .await?,
+                slot.commit_wheel_with_admission(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    *request,
+                    std::sync::Arc::clone(ruleset),
+                    crate::durability::character_wheel::WheelChangeFacts { at_temple },
+                    gate,
+                    &admit,
+                )
+                .await?,
             )),
         };
         // Reload current committed rows, including on receipt replay after a lost acknowledgement.
-        // A failed projection must never retry or report a pre-commit refusal for the mutation.
-        let projection_error = |error| {
-            if super::progression_holder_busy(&error) {
-                Error::Unavailable(crate::durability::DurabilityError::Unavailable)
-            } else {
-                error
-            }
-        };
-        let allocation = budget
-            .retry_holder(
-                async || {
-                    self.root
-                        .read_character_wheel(
-                            self.character,
-                            fence.character_id,
-                            std::sync::Arc::clone(ruleset),
-                        )
-                        .await
-                },
-                super::progression_holder_busy,
+        let allocation = self
+            .root
+            .read_character_wheel(
+                self.character,
+                fence.character_id,
+                std::sync::Arc::clone(ruleset),
             )
-            .await
-            .map_err(projection_error)?;
-        let atelier = budget
-            .retry_holder(
-                async || {
-                    self.root
-                        .read_character_atelier(self.character, fence.character_id)
-                        .await
-                },
-                super::progression_holder_busy,
-            )
-            .await
-            .map_err(projection_error)?;
+            .await?;
+        let atelier = self
+            .root
+            .read_character_atelier(self.character, fence.character_id)
+            .await?;
         self.states
             .atelier_sessions
             .lock()

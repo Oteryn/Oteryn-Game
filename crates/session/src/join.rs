@@ -100,7 +100,6 @@ impl<S: SessionStream> Session<S> {
         let snapshot_state::SnapshotState {
             world_spatial_observation,
             entities,
-            replay,
             world_object_overlay,
             actor_vitals,
             combat_state,
@@ -205,7 +204,6 @@ impl<S: SessionStream> Session<S> {
             actor_cooldown_snapshot,
             gated_revisions,
             events,
-            replay,
             entities,
             appearance,
             chat_revision,

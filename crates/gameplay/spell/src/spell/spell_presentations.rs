@@ -319,7 +319,7 @@ impl SpellPresentationOwner {
             && profile.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            allowed.insert(SOURCE_MAGIC_GREEN_CUE);
+            allowed.insert("appearance:effect/magic_green");
         }
         let acquisition = &profile.spell()["execution"]["native_behavior"];
         if acquisition["key"] == "acquire_summon"
@@ -329,7 +329,7 @@ impl SpellPresentationOwner {
             if acquisition["parameters"]["source"] == "named_creature"
                 && acquisition["parameters"]["visuals"]["created_teleport"] == true
             {
-                allowed.insert(SOURCE_TELEPORT_CUE);
+                allowed.insert("appearance:effect/teleport");
             }
         }
         self.prepare_qualified_positions(runtime, batch, requests, allowed)
@@ -633,9 +633,6 @@ impl SpellPresentationOwner {
         Ok(delivered)
     }
 }
-pub const SOURCE_TELEPORT_CUE: &str = "canary.appearance:effect/teleport";
-pub const SOURCE_MAGIC_GREEN_CUE: &str = "canary.appearance:effect/magic_green";
-
 fn collect_bindings<'a>(value: &'a serde_json::Value, into: &mut BTreeSet<&'a str>) {
     match value {
         serde_json::Value::Object(object) => {
@@ -796,41 +793,11 @@ struct CueRecord {
     kind: String,
     value: u16,
 }
-fn summon_teleport_client_id() -> Option<u16> {
-    static TELEPORT: OnceLock<Option<u16>> = OnceLock::new();
-    *TELEPORT.get_or_init(|| {
-        let bindings: serde_json::Value = serde_json::from_slice(include_bytes!(
-            "../../../../../content/presentations/bindings/client-ids.json"
-        ))
-        .ok()?;
-        if bindings["schema"] != "OTERYN_PRESENTATION_CLIENT_IDS/v1" {
-            return None;
-        }
-        let mut records = bindings["records"]
-            .as_array()?
-            .iter()
-            .filter(|row| row["key"] == SOURCE_TELEPORT_CUE);
-        let row = records.next()?;
-        if records.next().is_some()
-            || row["kind"] != "effect"
-            || row["source_member"] != "CONST_ME_TELEPORT"
-        {
-            return None;
-        }
-        u16::try_from(row["client_id"].as_u64()?)
-            .ok()
-            .filter(|id| *id != 0)
-    })
-}
-
 #[allow(
     clippy::expect_used,
     reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
 )]
 pub fn resolve_source_cue(alias: &str) -> Option<Cue> {
-    if alias == SOURCE_TELEPORT_CUE {
-        return summon_teleport_client_id().map(Cue::Effect);
-    }
     static REGISTRY: OnceLock<Vec<CueRecord>> = OnceLock::new();
     let records = REGISTRY.get_or_init(|| {
         serde_json::from_slice::<CueDocument>(include_bytes!(

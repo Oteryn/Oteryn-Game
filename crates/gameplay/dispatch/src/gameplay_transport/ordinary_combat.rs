@@ -19,15 +19,6 @@ pub(super) struct OrdinaryItemCreation {
     pub(super) item: DefinitionRef,
 }
 
-fn caster_front(
-    caster: TilePosition,
-    facing: Option<MovementFacing>,
-) -> Result<TilePosition, SpellCastDisposition> {
-    plans::player_spell_front(plan_position(caster), facing.map(direction).map(delta))
-        .map(cast_position)
-        .map_err(|_| SpellCastDisposition::Rejected)
-}
-
 pub use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::applicable;
 use oteryn_gameplay_spell_rules::dispatch_plans::{geometry as plans, ordinary_combat as rules};
 
@@ -466,13 +457,14 @@ fn lower(
             && !spell.self_target
             && spell.target_or_direction
         {
-            let position = runtime
+            let facing = runtime
                 .read_actor_position(owned.binding().actor)
-                .map_err(|_| SpellCastDisposition::Rejected)?;
-            Some(plan_position(caster_front(
-                world.caster.position,
-                position.facing(),
-            )?))
+                .map_err(|_| SpellCastDisposition::Rejected)?
+                .facing()
+                .map(direction)
+                .ok_or(SpellCastDisposition::TargetRequired)?;
+            let (dx, dy) = delta(facing);
+            Some(plan_position(offset(world.caster.position, dx, dy)?))
         } else {
             None
         };

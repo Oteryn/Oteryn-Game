@@ -8,10 +8,6 @@ use oteryn_protocol_oteryn::logout::LogoutResult;
     dead_code,
     reason = "this mount uses the served-policy provisioning entry point"
 )]
-#[allow(
-    unexpected_cfgs,
-    reason = "the shared Game Server module owns the qualification-spawn feature"
-)]
 #[path = "../../../../../../apps/game-server/src/qualification_spell_character.rs"]
 pub(super) mod provision;
 

@@ -34,8 +34,7 @@ use sqlx::Row;
 
 const VISIBLE_SQL: &str = "SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)";
 
-const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,b.vocation,l.health,l.mana, \
- EXISTS (SELECT 1 FROM game_character_promotions WHERE character_id=p.character_id) AS promoted \
+const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,b.vocation,l.health,l.mana \
  FROM game_character_progression_state p JOIN game_character_build_state b ON b.character_id=p.character_id \
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
@@ -210,19 +209,7 @@ impl DurabilityRoot {
                         _ => None,
                     };
                     let vocation: String = row.try_get("vocation")?;
-                    let vocation = if row.try_get("promoted")? {
-                        match vocation.as_str() {
-                            "druid" => "elder_druid",
-                            "sorcerer" => "master_sorcerer",
-                            "knight" => "elite_knight",
-                            "paladin" => "royal_paladin",
-                            "monk" => "exalted_monk",
-                            stored => stored,
-                        }
-                    } else {
-                        &vocation
-                    };
-                    extension.vocation_id = Some(vocation_id(vocation)
+                    extension.vocation_id = Some(vocation_id(&vocation)
                         .ok_or_else(|| sqlx::Error::Decode("stored cyclopedia vocation".into()))?);
                     TabView::GeneralStats(GeneralStats {
                         experience: narrow(row.try_get::<i64, _>("total_experience")?)?,

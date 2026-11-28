@@ -281,12 +281,23 @@ async fn observe_once(
                     note_none(admission.active_generation, "content")?.native_gameplay(),
                     "content",
                 )?;
-                let source_id =
-                    note_none(creature.state.object_look_type, "content reason=object_look_missing")?;
+                let item = &note_none(
+                    native.item_policy_for_source_id(note_none(
+                        creature.state.object_look_type,
+                        "content",
+                    )?),
+                    "content",
+                )?
+                .record()
+                .production_definition;
                 wire::Look::Item {
                     definition_ref: note_none(
-                        native.object_look_item_ref(source_id),
-                        "content reason=object_look_item_ref",
+                        note_none(native.item_index(), "content")?.definition_ref(
+                            "Item",
+                            &item.production_key,
+                            &item.revision_ref,
+                        ),
+                        "content",
                     )?
                     .get(),
                 }

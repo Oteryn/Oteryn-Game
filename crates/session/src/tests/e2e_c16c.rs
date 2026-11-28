@@ -81,22 +81,17 @@ fn visible(session: &Session<DuplexStream>) -> Result<String, BoxError> {
 #[test]
 fn e2e_c16c_replays_real_companion_visibility_payloads() -> Result<(), BoxError> {
     block_on(async {
-        let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR");
-        let legacy = match directory.as_deref().map(std::path::Path::new) {
-            // The new transcript has its own replay test and uses the same expected filename
-            // with a different format. Keep exercising the two-action legacy fixture.
-            Some(root) if !root.join(replay_capture::C16C_FILES[1]).try_exists()? => Some(root),
-            _ => None,
-        };
-        let (convince, animate, expected) = if let Some(root) = legacy {
-            (
-                std::fs::read(root.join("c16c-convince.bin"))?,
-                std::fs::read(root.join("c16c-animate.bin"))?,
-                std::fs::read_to_string(root.join("c16c-expected.txt"))?,
-            )
-        } else {
-            fixture()?
-        };
+        let (convince, animate, expected) =
+            if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+                let root = std::path::Path::new(&root);
+                (
+                    std::fs::read(root.join("c16c-convince.bin"))?,
+                    std::fs::read(root.join("c16c-animate.bin"))?,
+                    std::fs::read_to_string(root.join("c16c-expected.txt"))?,
+                )
+            } else {
+                fixture()?
+            };
         let rat = named_actor(2, "Rat", at(1, 0))?;
         let dead = corpse(3, at(2, 0));
         let (client, peer) = entity_peer(

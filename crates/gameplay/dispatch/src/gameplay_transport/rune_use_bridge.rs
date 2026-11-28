@@ -38,7 +38,6 @@ pub(super) mod test_faults {
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub(in crate::gameplay_transport) enum Point {
         BeforeCommit,
-        SessionReadBusy,
         AfterCommit,
     }
     thread_local! {
@@ -183,10 +182,12 @@ fn target(
                 generation: c.generation,
             })
             .or_else(|| {
-                entities
-                    .players
-                    .iter()
-                    .find(|p| p.actor == a)
+                (matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune { item: 3165, .. }
+                ) || (intense_healing && a == actor))
+                    .then(|| entities.players.iter().find(|p| p.actor == a))
+                    .flatten()
                     .map(|p| EntityRef {
                         identity: a.placement_identity(),
                         generation: p.generation,
@@ -290,22 +291,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             position.floor = self.runtime_floor(position.floor);
         }
-        let store =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
-        let read_session = async || {
-            #[cfg(test)]
-            if test_faults::take(test_faults::Point::SessionReadBusy) {
-                return Err(crate::durability::DurabilityError::RootUnavailable);
-            }
-            store.current_session_at(command.game_session_id).await
-        };
-        let budget = super::AdmissionRetryBudget::for_root(&command.game_session_id, self.root);
-        let (current, _) = match budget.retry_command_guard(read_session).await {
-            Ok(current) => current,
-            Err(error) => {
-                super::operator_event(&format!("event=rune_session_read_failed error={error:?}"));
-                return None;
-            }
+        let Ok((current, _)) =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(command.game_session_id)
+                .await
+        else {
+            return None;
         };
         if current.session_state() != crate::foundation::GameSessionState::Active
             || super::item_fence_of(current) != command.item_fence
@@ -408,7 +399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3189 | 3197 | 3200 | 17512,
+                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
                         ..
                     }
                 )

@@ -78,8 +78,8 @@ def policies(raw_bank, raw_xml, ids):
     seen=set()
     for item in ET.fromstring(raw_xml):
         low=int(item.get('id',item.get('fromid','-1'))); high=int(item.get('id',item.get('toid','-1')))
-        for item_id in range(low,high+1):
-            if item_id not in bank: continue
+        for item_id in sorted(ids):
+            if not low<=item_id<=high: continue
             if item_id in seen: raise ValueError('duplicate XML item overrides')
             seen.add(item_id); p=bank[item_id]
             p['xml_attributes']=[dict(a.attrib) for a in item]
@@ -88,7 +88,6 @@ def policies(raw_bank, raw_xml, ids):
                 if key in ['movable','pickupable','allowpickupable','blockprojectile']:
                     target={'allowpickupable':'pickupable','blockprojectile':'block_projectile'}.get(key,key)
                     p[target]=bool_xml(value)
-                elif key=='blocking': p['block_solid']=bool_xml(value)
                 elif key=='speed': p['ground_speed']=int(value)&65535
                 elif key=='floorchange':
                     if value.lower() not in ['down','north','south','southalt','west','east','eastalt']:

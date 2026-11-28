@@ -2,7 +2,6 @@
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
-use super::rune_use_bridge_fixtures::{Case as RuneUseCase, run_case as run_rune_use_case};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -18,7 +17,6 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use crate::spell::cast::CharacterCastFacts;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
@@ -207,51 +205,6 @@ fn field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs() -> TestResu
 }
 
 #[test]
-fn combat_rune_use_explosion_casts_and_debits() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::Explosion)))
-}
-
-#[test]
-fn combat_rune_use_fireball_casts_and_keeps_connection_open() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::Fireball)))
-}
-
-#[test]
-fn combat_rune_use_fireball_refuses_insufficient_magic_level() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::FireballIneligible)))
-}
-
-#[test]
-fn field_runes_postgres_thais_ignores_unrelated_unknown_sight_tiles() -> TestResult {
-    large_stack(|| {
-        run(async |admin| {
-            // Crystal 201189f8 data/scripts/runes/fire_field.lua:5,9-10,18 creates a fire field with rune 3188.
-            // src/creatures/combat/combat.cpp:1199-1201 substitutes the safe field in Optional PvP.
-            field_scenario(admin, 3188, 1, 21465, true, false, false, Scenario::Thais).await
-        })
-    })
-}
-
-#[test]
-fn field_runes_postgres_casts_on_the_caster_tile() -> TestResult {
-    large_stack(|| {
-        run(async |admin| {
-            for (rune, count, item) in [
-                (3149, 9, 2135),
-                (3188, 1, 21465),
-                (3190, 5, 21465),
-                (3192, 9, 21465),
-            ] {
-                field_scenario(
-                    admin.clone(), rune, count, item, true, false, false, Scenario::CasterTile,
-                ).await?;
-            }
-            Ok(())
-        })
-    })
-}
-
-#[test]
 fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -378,8 +331,6 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
-    CasterTile,
-    Thais,
     HolderBusy,
     DestroyField,
     DestroyFar,
@@ -902,32 +853,7 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let thais = scenario == Scenario::Thais;
-    let map = if thais {
-        let path = std::env::var_os("OTERYN_TEST_THAIS_BUNDLE").ok_or("Thais bundle path")?;
-        let bytes = std::fs::read(path)?;
-        let bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
-        let identity = bundle.manifest.identity;
-        let pins = crate::map::BundlePins {
-            digest: bundle.digest,
-            project_format_version: identity.project_format_version,
-            world_schema_version: identity.world_schema_version,
-            content_revision: identity.content_revision,
-            production: false,
-        };
-        let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-        crate::map::boot::boot(
-            &bytes,
-            &crate::map::boot::BootPins {
-                bundle: pins,
-                map_revision: crate::map::overlay::map_revision(&base),
-                start: crate::map::overlay::TilePos { x: 32369, y: 32230, floor: -7 },
-            },
-            world,
-            crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-            |key| crate::map::boot::native_item_definition(Some(native), key),
-        ).map_err(debug)?
-    } else if scenario == Scenario::DestroyBlocked {
+    let map = if scenario == Scenario::DestroyBlocked {
         field_world_inner(world, 0, true)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
@@ -940,14 +866,11 @@ async fn field_scenario_inner(
         .movement_cells(entry_room.movement_cells())
         .map_err(debug)?;
     // Runtime floors are the negation of the bundle's native floors.
-    let (x, y) = if thais {
-        (32369, 32230)
-    } else if protection {
-        (1, 0)
-    } else {
-        (100, 100)
+    let start = MovementLocalPosition {
+        x: if protection { 1 } else { 100 },
+        y: if protection { 0 } else { 100 },
+        floor: 7,
     };
-    let start = MovementLocalPosition { x, y, floor: 7 };
     let room = entry_room
         .bundle_view(
             cells.clone(),
@@ -988,22 +911,6 @@ async fn field_scenario_inner(
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-    }
-    if thais {
-        assert_eq!(
-            cells.spell_tiles().lookup(cells.scope(), crate::content::LogicalCell {
-                x: 32367, y: 32257, z: 7,
-            }),
-            Err(crate::content::SpellTileLookupError::Unknown),
-        );
-        let mut runtime = dependencies.runtime.lock().await;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
-        let pin = runtime.content_pin().clone();
-        runtime.realize_native_qualification_spawn(
-            pin,
-            "oteryn:creature.snake",
-            MovementLocalPosition { x: 32365, y: 32284, floor: 7 },
-        ).map_err(debug)?;
     }
     let mut owner = dependencies.owner(&harness, &authority);
     // Equipped scenarios explicitly advance residual evaluation to application+11s.
@@ -1259,10 +1166,10 @@ async fn field_scenario_inner(
     let crate::gameplay_transport::world_map::MapUpdate::Snapshot(baseline) = baseline else {
         return Err("map baseline snapshot".into());
     };
-    let baseline =
+    let map_header =
         oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&baseline.payload)
-            .map_err(debug)?;
-    let map_header = baseline.header;
+            .map_err(debug)?
+            .header;
     let inventory_definition = |id| -> TestResult<std::num::NonZeroU32> {
         let key = format!("oteryn:item.tibia.i{id}");
         let index = native.item_index().ok_or("inventory index")?;
@@ -1271,7 +1178,6 @@ async fn field_scenario_inner(
             .definition_ref("Item", &key, revision)
             .ok_or_else(|| "inventory definition".into())
     };
-    let cast_x = start.x + i32::from(!matches!(scenario, Scenario::CasterTile | Scenario::Thais));
     let rune_definition = inventory_definition(rune)?;
     let machete_definition = inventory_definition(machete_id)?;
     let destroy_definition = inventory_definition(3148)?;
@@ -1331,7 +1237,7 @@ async fn field_scenario_inner(
             use_with: None,
             use_with_map_item: None,
             use_with_position: Some(SpellTargetPosition {
-                x: cast_x,
+                x: start.x + 1,
                 y: start.y,
                 floor: wire_start.floor,
             }),
@@ -1404,7 +1310,7 @@ async fn field_scenario_inner(
             )
             .map_err(debug)?;
             assert!(
-                delta.tiles.iter().any(|tile| tile.position.x == cast_x
+                delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
                     && tile.position.floor == start.floor
                     && tile.items.len() > 1),
@@ -2011,26 +1917,10 @@ async fn field_scenario_inner(
                 &delta.payload,
             )
             .map_err(debug)?;
-            let original_stack_size = if thais {
-                baseline
-                    .tiles
-                    .iter()
-                    .find(|tile| {
-                        tile.position.x == cast_x
-                            && tile.position.y == start.y
-                            && tile.position.floor == start.floor
-                    })
-                    .ok_or("Thais cast tile in baseline")?
-                    .items
-                    .len()
-            } else {
-                1
-            };
             assert!(
-                delta.tiles.iter().any(|tile| tile.position.x == cast_x
+                delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
-                    && tile.position.floor == start.floor
-                    && tile.items.len() == original_stack_size),
+                    && tile.items.len() == 1),
                 "expiry invalidates the cache and sends a leave on the converted floor"
             );
         }

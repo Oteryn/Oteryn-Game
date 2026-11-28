@@ -7,7 +7,6 @@ impl SnapshotState {
         Self {
             world_spatial_observation: Some(session.world_spatial),
             entities: session.entities.clone(),
-            replay: session.replay.clone(),
             world_object_overlay: Some(session.world_object_overlay.clone()),
             actor_vitals: session.actor_vitals,
             combat_state: session.combat_state,
@@ -35,7 +34,6 @@ impl SnapshotState {
             session.world_spatial = value;
         }
         session.entities = self.entities;
-        session.replay = self.replay;
         if let Some(value) = self.world_object_overlay {
             session.world_object_overlay = value;
         }
