@@ -31,6 +31,11 @@ pub(super) async fn seed(
     spawn: SpawnOwners<'_>,
     layout: Layout,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Keep the bounded qualification batch ahead of scheduled background passes.
+    // A refused mint remains terminal; this guard never resubmits a pass.
+    let _foreground = matches!(layout, Layout::Cap)
+        .then(|| root.foreground_demand())
+        .transpose()?;
     let character = record.character_id;
     let scope = current.current_runtime_scope();
     let gameplay_fence = CurrentCharacterGameplayFence {
